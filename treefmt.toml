@@ -1,0 +1,75 @@
+# treefmt configuration for Mayfly Optimization Algorithm
+# See: https://numtide.github.io/treefmt/
+
+# Formatters to run
+[formatter.go]
+command = "gofmt"
+options = ["-w"]
+includes = ["*.go"]
+
+[formatter.go-imports]
+command = "goimports"
+options = ["-w"]
+includes = ["*.go"]
+priority = 1
+
+# TOML formatting
+[formatter.toml]
+command = "taplo"
+options = ["format"]
+includes = ["*.toml"]
+
+# Markdown formatting (using prettier if available)
+# Commented out - install with: npm install -g prettier
+# [formatter.markdown]
+# command = "prettier"
+# options = ["--write", "--prose-wrap", "preserve"]
+# includes = ["*.md"]
+
+# JSON formatting
+# Commented out - install with: npm install -g prettier
+# [formatter.json]
+# command = "prettier"
+# options = ["--write"]
+# includes = ["*.json"]
+
+# YAML formatting
+# Commented out - install with: npm install -g prettier
+# [formatter.yaml]
+# command = "prettier"
+# options = ["--write"]
+# includes = ["*.yaml", "*.yml"]
+
+# Shell script formatting
+# Commented out - install with: go install mvdan.cc/sh/v3/cmd/shfmt@latest
+# [formatter.shell]
+# command = "shfmt"
+# options = ["-w", "-i", "2"]
+# includes = ["*.sh"]
+
+# Global excludes
+[global]
+excludes = [
+  # Version control
+  ".git/**",
+
+  # Build artifacts
+  "*.test",
+  "*.prof",
+  "coverage.out",
+  "coverage.html",
+
+  # Dependencies
+  "vendor/**",
+  "node_modules/**",
+
+  # IDE and editor files
+  ".vscode/**",
+  ".idea/**",
+  "*.swp",
+  "*.swo",
+
+  # OS files
+  ".DS_Store",
+  "Thumbs.db",
+]

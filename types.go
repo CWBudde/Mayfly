@@ -1,0 +1,120 @@
+// Package mayfly implements the Mayfly Optimization Algorithm (MA).
+//
+// Developers: K. Zervoudakis & S. Tsafarakis
+//
+// Contact Info: kzervoudakis@isc.tuc.gr
+//
+//	School of Production Engineering and Management,
+//	Technical University of Crete, Chania, Greece
+//
+// Please cite as:
+// Zervoudakis, K., & Tsafarakis, S. (2020). A mayfly optimization algorithm.
+// Computers & Industrial Engineering, 145, 106559.
+// https://doi.org/10.1016/j.cie.2020.106559
+//
+// Go implementation by [Your Name]
+package mayfly
+
+import (
+	"math"
+	"math/rand"
+)
+
+// ObjectiveFunction represents a function to be optimized.
+// It takes a position vector and returns a fitness cost.
+type ObjectiveFunction func([]float64) float64
+
+// Best represents the best position and cost found.
+type Best struct {
+	Position []float64
+	Cost     float64
+}
+
+// Mayfly represents a single mayfly (male or female) in the population.
+type Mayfly struct {
+	Position []float64
+	Velocity []float64
+	Cost     float64
+	Best     Best
+}
+
+// Config holds the configuration parameters for the Mayfly Algorithm.
+type Config struct {
+	// Problem parameters
+	ObjectiveFunc ObjectiveFunction
+	ProblemSize   int     // Number of decision variables
+	LowerBound    float64 // Lower bound for decision variables
+	UpperBound    float64 // Upper bound for decision variables
+
+	// Algorithm parameters
+	MaxIterations int     // Maximum number of iterations
+	NPop          int     // Population size for males
+	NPopF         int     // Population size for females
+	G             float64 // Inertia weight
+	GDamp         float64 // Inertia weight damping ratio
+	A1            float64 // Personal learning coefficient
+	A2            float64 // Global learning coefficient (males)
+	A3            float64 // Global learning coefficient (females)
+	Beta          float64 // Distance sight coefficient
+	Dance         float64 // Nuptial dance coefficient
+	FL            float64 // Random flight coefficient
+	DanceDamp     float64 // Dance damping ratio
+	FLDamp        float64 // Flight damping ratio
+
+	// Mating parameters
+	NC int     // Number of offspring
+	NM int     // Number of mutants
+	Mu float64 // Mutation rate
+
+	// Velocity limits
+	VelMax float64
+	VelMin float64
+
+	// Random source (optional, will use default if nil)
+	Rand *rand.Rand
+
+	// DESMA (Dynamic Elite Strategy) parameters
+	UseDESMA        bool    // Enable DESMA variant
+	EliteCount      int     // Number of elite mayflies to generate (default: 5)
+	SearchRange     float64 // Initial search range for elite generation (default: auto-calculated)
+	EnlargeFactor   float64 // Factor to enlarge search range when improving (default: 1.05)
+	ReductionFactor float64 // Factor to reduce search range when not improving (default: 0.95)
+}
+
+// Result holds the results of the optimization.
+type Result struct {
+	GlobalBest     Best
+	BestSolution   []float64 // Best cost at each iteration
+	FuncEvalCount  int
+	IterationCount int
+}
+
+// newMayfly creates an empty mayfly with allocated slices.
+func newMayfly(size int) *Mayfly {
+	return &Mayfly{
+		Position: make([]float64, size),
+		Velocity: make([]float64, size),
+		Cost:     math.Inf(1),
+		Best: Best{
+			Position: make([]float64, size),
+			Cost:     math.Inf(1),
+		},
+	}
+}
+
+// clone creates a deep copy of a mayfly.
+func (m *Mayfly) clone() *Mayfly {
+	clone := &Mayfly{
+		Position: make([]float64, len(m.Position)),
+		Velocity: make([]float64, len(m.Velocity)),
+		Cost:     m.Cost,
+		Best: Best{
+			Position: make([]float64, len(m.Best.Position)),
+			Cost:     m.Best.Cost,
+		},
+	}
+	copy(clone.Position, m.Position)
+	copy(clone.Velocity, m.Velocity)
+	copy(clone.Best.Position, m.Best.Position)
+	return clone
+}

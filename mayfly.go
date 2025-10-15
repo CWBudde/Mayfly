@@ -120,6 +120,16 @@ func Optimize(config *Config) (*Result, error) {
 		chaosMap = NewLogisticMap(seed)
 	}
 
+	// Initialize GSASMA parameters if enabled
+	var annealingScheduler *AnnealingScheduler
+	if config.UseGSASMA {
+		annealingScheduler = NewAnnealingScheduler(
+			config.InitialTemperature,
+			config.CoolingRate,
+			config.CoolingSchedule,
+		)
+	}
+
 	// Main loop
 	for it := 0; it < config.MaxIterations; it++ {
 		// EOBBMA: Use Bare Bones Gaussian updates instead of velocity-based
@@ -396,6 +406,35 @@ func Optimize(config *Config) (*Result, error) {
 			sortMayflies(males)
 		}
 
+		// GSASMA: Apply Golden Sine Algorithm with Simulated Annealing to elite males
+		if config.UseGSASMA {
+			// Apply GSA to elite males (top 20%)
+			updatedGlobalBest, updatedGlobalBestCost, gsaFuncEvals := applyGSASMAToEliteMales(
+				males,
+				0.2, // Elite ratio: top 20%
+				globalBest.Position,
+				globalBest.Cost,
+				config.GoldenFactor,
+				it,
+				config.MaxIterations,
+				config.LowerBound,
+				config.UpperBound,
+				annealingScheduler,
+				config.ObjectiveFunc,
+				rng,
+			)
+			funcCount += gsaFuncEvals
+
+			// Update global best if GSA found better solution
+			if updatedGlobalBestCost < globalBest.Cost {
+				globalBest.Cost = updatedGlobalBestCost
+				copy(globalBest.Position, updatedGlobalBest)
+			}
+
+			// Re-sort after Golden Sine updates
+			sortMayflies(males)
+		}
+
 		// Mating - Create offspring
 		offspring := make([]*Mayfly, 0, config.NC)
 		for k := 0; k < config.NC/2; k++ {
@@ -470,42 +509,105 @@ func Optimize(config *Config) (*Result, error) {
 		}
 
 		// Mutation
-		for k := 0; k < config.NM; k++ {
-			// Select parent from offspring
-			i := rng.Intn(len(offspring))
-			p := offspring[i]
+		// GSASMA: Use hybrid Cauchy-Gaussian mutation
+		if config.UseGSASMA {
+			// Apply hybrid mutation with adaptive Cauchy probability
+			for k := 0; k < config.NM; k++ {
+				// Select parent from offspring
+				i := rng.Intn(len(offspring))
+				p := offspring[i]
 
-			mut := newMayfly(config.ProblemSize)
-			mut.Position = Mutate(p.Position, config.Mu, config.LowerBound, config.UpperBound, rng)
+				mut := newMayfly(config.ProblemSize)
 
-			// OLCE-MA: Apply chaotic exploitation to mutated offspring
-			if config.UseOLCE {
-				for j := 0; j < config.ProblemSize; j++ {
-					// Apply chaotic perturbation
-					chaosValue := chaosMap.Next()
-					perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
-					mut.Position[j] += perturbation
+				// Calculate adaptive Cauchy probability based on iteration progress
+				iterRatio := float64(it) / float64(config.MaxIterations)
+				var cauchyProb float64
+				if iterRatio < 0.33 {
+					cauchyProb = 0.7 // Early: high exploration
+				} else if iterRatio < 0.66 {
+					cauchyProb = 0.5 // Middle: balanced
+				} else {
+					cauchyProb = config.CauchyMutationRate // Late: configured rate (default 0.3)
+				}
 
-					// Apply bounds
-					if mut.Position[j] < config.LowerBound {
-						mut.Position[j] = config.LowerBound
-					}
-					if mut.Position[j] > config.UpperBound {
-						mut.Position[j] = config.UpperBound
+				// Apply hybrid mutation
+				mut.Position = HybridMutate(
+					p.Position,
+					config.Mu,
+					config.LowerBound,
+					config.UpperBound,
+					cauchyProb,
+					rng,
+				)
+
+				// OLCE-MA: Apply chaotic exploitation to mutated offspring if OLCE is also enabled
+				if config.UseOLCE {
+					for j := 0; j < config.ProblemSize; j++ {
+						// Apply chaotic perturbation
+						chaosValue := chaosMap.Next()
+						perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
+						mut.Position[j] += perturbation
+
+						// Apply bounds
+						if mut.Position[j] < config.LowerBound {
+							mut.Position[j] = config.LowerBound
+						}
+						if mut.Position[j] > config.UpperBound {
+							mut.Position[j] = config.UpperBound
+						}
 					}
 				}
-			}
 
-			mut.Cost = config.ObjectiveFunc(mut.Position)
-			funcCount++
-			if mut.Cost < globalBest.Cost {
-				globalBest.Cost = mut.Cost
-				copy(globalBest.Position, mut.Position)
-			}
-			copy(mut.Best.Position, mut.Position)
-			mut.Best.Cost = mut.Cost
+				mut.Cost = config.ObjectiveFunc(mut.Position)
+				funcCount++
+				if mut.Cost < globalBest.Cost {
+					globalBest.Cost = mut.Cost
+					copy(globalBest.Position, mut.Position)
+				}
+				copy(mut.Best.Position, mut.Position)
+				mut.Best.Cost = mut.Cost
 
-			offspring = append(offspring, mut)
+				offspring = append(offspring, mut)
+			}
+		} else {
+			// Standard mutation
+			for k := 0; k < config.NM; k++ {
+				// Select parent from offspring
+				i := rng.Intn(len(offspring))
+				p := offspring[i]
+
+				mut := newMayfly(config.ProblemSize)
+				mut.Position = Mutate(p.Position, config.Mu, config.LowerBound, config.UpperBound, rng)
+
+				// OLCE-MA: Apply chaotic exploitation to mutated offspring
+				if config.UseOLCE {
+					for j := 0; j < config.ProblemSize; j++ {
+						// Apply chaotic perturbation
+						chaosValue := chaosMap.Next()
+						perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
+						mut.Position[j] += perturbation
+
+						// Apply bounds
+						if mut.Position[j] < config.LowerBound {
+							mut.Position[j] = config.LowerBound
+						}
+						if mut.Position[j] > config.UpperBound {
+							mut.Position[j] = config.UpperBound
+						}
+					}
+				}
+
+				mut.Cost = config.ObjectiveFunc(mut.Position)
+				funcCount++
+				if mut.Cost < globalBest.Cost {
+					globalBest.Cost = mut.Cost
+					copy(globalBest.Position, mut.Position)
+				}
+				copy(mut.Best.Position, mut.Position)
+				mut.Best.Cost = mut.Cost
+
+				offspring = append(offspring, mut)
+			}
 		}
 
 		// Merge offspring into populations
@@ -558,7 +660,33 @@ func Optimize(config *Config) (*Result, error) {
 			lastGlobalBestCost = globalBest.Cost
 		}
 
+		// GSASMA: Apply Opposition-Based Learning to global best
+		if config.UseGSASMA && config.ApplyOBLToGlobalBest {
+			// Apply OBL every 10 iterations to avoid excessive function evaluations
+			if it%10 == 0 {
+				updatedGlobalBest, updatedGlobalBestCost, oblFuncEvals, improved := applyOBLToGlobalBest(
+					globalBest.Position,
+					globalBest.Cost,
+					config.LowerBound,
+					config.UpperBound,
+					config.ObjectiveFunc,
+					rng,
+				)
+				funcCount += oblFuncEvals
+
+				if improved {
+					globalBest.Cost = updatedGlobalBestCost
+					copy(globalBest.Position, updatedGlobalBest)
+				}
+			}
+		}
+
 		bestSolution[it] = globalBest.Cost
+
+		// GSASMA: Update temperature schedule
+		if config.UseGSASMA {
+			annealingScheduler.Update()
+		}
 
 		// Update parameters
 		g *= config.GDamp

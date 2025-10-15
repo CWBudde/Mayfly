@@ -26,8 +26,9 @@ func Crossover(x1, x2 []float64, lowerBound, upperBound float64, rng *rand.Rand)
 	return off1, off2
 }
 
-// Mutate applies mutation to a position vector.
-func Mutate(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+// MutateGaussian applies Gaussian mutation to a position vector.
+// This uses a normal (Gaussian) distribution for perturbations.
+func MutateGaussian(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
 	nMu := int(math.Ceil(mu * float64(nVar)))
 	sigma := 0.1 * (upperBound - lowerBound)
@@ -51,4 +52,10 @@ func Mutate(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []f
 	minVec(y, upperBound)
 
 	return y
+}
+
+// Mutate applies mutation to a position vector using Gaussian distribution.
+// This is an alias for MutateGaussian for backward compatibility.
+func Mutate(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	return MutateGaussian(x, mu, lowerBound, upperBound, rng)
 }

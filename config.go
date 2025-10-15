@@ -97,8 +97,43 @@ func NewEOBBMAConfig() *Config {
 func NewMPMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseMPMA = true
-	config.MedianWeight = 0.5      // Balanced influence of median vs global best
-	config.GravityType = "linear"  // Linear decay by default (simplest)
+	config.MedianWeight = 0.5        // Balanced influence of median vs global best
+	config.GravityType = "linear"    // Linear decay by default (simplest)
 	config.UseWeightedMedian = false // Standard median by default
+	return config
+}
+
+// NewGSASMAConfig creates a default configuration for the GSASMA variant
+// (Golden Sine Algorithm with Simulated Annealing Mayfly Algorithm).
+// You must set ObjectiveFunc, ProblemSize, LowerBound, and UpperBound.
+//
+// GSASMA enhances the standard Mayfly Algorithm with:
+// - Golden Sine Algorithm for adaptive exploration using golden ratio and sine function
+// - Simulated Annealing for probabilistic acceptance to escape local optima
+// - Hybrid Cauchy-Gaussian mutation for balanced exploration/exploitation
+// - Opposition-Based Learning on global best for expanded search coverage
+//
+// This variant is particularly effective for:
+// - Engineering optimization problems with many local optima
+// - Problems requiring fast convergence speed
+// - Complex multimodal landscapes where standard algorithms plateau
+//
+// Key advantages:
+// - 10-20% improvement in convergence speed on engineering problems
+// - Better escape from local optima through SA acceptance
+// - Adaptive mutation strategy that transitions from exploration to exploitation
+// - Minimal tuning required with sensible defaults
+//
+// Reference: Improved mayfly algorithm based on hybrid mutation (2022)
+// Electronics Letters / IEEE
+func NewGSASMAConfig() *Config {
+	config := NewDefaultConfig()
+	config.UseGSASMA = true
+	config.InitialTemperature = 100.0      // High initial temp for early exploration
+	config.CoolingRate = 0.95              // Gradual cooling (95% per iteration)
+	config.CauchyMutationRate = 0.3        // 30% Cauchy, 70% Gaussian by late phase
+	config.GoldenFactor = 1.0              // Standard golden sine influence
+	config.CoolingSchedule = "exponential" // Fast early cooling, slow late cooling
+	config.ApplyOBLToGlobalBest = true     // Enable OBL for better coverage
 	return config
 }

@@ -130,10 +130,35 @@ func Optimize(config *Config) (*Result, error) {
 		)
 	}
 
+	// Initialize AOBLMOA parameters if enabled
+	var paretoArchive *ParetoArchive
+	if config.UseAOBLMOA {
+		initializeAOBLMOA(config)
+		paretoArchive = NewParetoArchive(config.ArchiveSize)
+	}
+
 	// Main loop
 	for it := 0; it < config.MaxIterations; it++ {
-		// EOBBMA: Use Bare Bones Gaussian updates instead of velocity-based
-		if config.UseEOBBMA {
+		// AOBLMOA: Use hybrid Mayfly-Aquila updates with opposition-based learning
+		if config.UseAOBLMOA {
+			// Apply AOBLMOA to populations
+			applyAOBLMOAToPopulation(males, females, globalBest, it, config.MaxIterations, config)
+
+			// Count function evaluations (approximation)
+			// Aquila strategies: 1 eval per mayfly
+			// Opposition learning: OppositionProbability * population size * 2 (original + opposition)
+			aoblmoaEvals := config.NPop + config.NPopF
+			oppositionEvals := int(config.OppositionProbability * float64(config.NPop+config.NPopF) * 2)
+			funcCount += aoblmoaEvals + oppositionEvals
+
+			// Update global best from updated populations
+			for i := 0; i < config.NPop; i++ {
+				if males[i].Cost < globalBest.Cost {
+					globalBest.Cost = males[i].Cost
+					copy(globalBest.Position, males[i].Position)
+				}
+			}
+		} else if config.UseEOBBMA {
 			// Update females with Gaussian sampling around best males
 			for i := 0; i < config.NPopF; i++ {
 				// Decide whether to use Lévy flight or Gaussian update
@@ -679,6 +704,11 @@ func Optimize(config *Config) (*Result, error) {
 					copy(globalBest.Position, updatedGlobalBest)
 				}
 			}
+		}
+
+		// AOBLMOA: Update Pareto archive
+		if config.UseAOBLMOA {
+			updateParetoArchive(paretoArchive, males, females)
 		}
 
 		bestSolution[it] = globalBest.Cost

@@ -138,3 +138,43 @@ func NewGSASMAConfig() *Config {
 	config.ApplyOBLToGlobalBest = true     // Enable OBL for better coverage
 	return config
 }
+
+// NewAOBLMOAConfig creates a default configuration for the AOBLMOA variant
+// (Aquila Optimizer-Based Learning Multi-Objective Algorithm).
+// You must set ObjectiveFunc, ProblemSize, LowerBound, and UpperBound.
+//
+// AOBLMOA enhances the standard Mayfly Algorithm with:
+// - Aquila Optimizer's four hunting strategies for hybrid exploration/exploitation
+// - Opposition-Based Learning for expanded search space coverage
+// - Multi-objective optimization support with Pareto dominance
+// - Crowding distance for diversity preservation
+//
+// The Aquila Optimizer integration provides four distinct hunting behaviors:
+// 1. Expanded exploration (X1): High soar with vertical stoop for global search
+// 2. Narrowed exploration (X2): Contour flight with short glide for local exploration
+// 3. Expanded exploitation (X3): Low flight with slow descent for convergence
+// 4. Narrowed exploitation (X4): Walk and grab for intensive local search
+//
+// This variant is particularly effective for:
+// - Multi-objective optimization problems with conflicting objectives
+// - Complex landscapes requiring adaptive strategy switching
+// - Problems benefiting from hybrid metaheuristic approaches
+// - Engineering design with multiple performance criteria
+//
+// Key advantages:
+// - Automatic strategy switching based on iteration progress
+// - Maintains Pareto-optimal solutions in archive
+// - Better diversity through crowding distance
+// - Combines Mayfly's social behavior with Aquila's hunting strategies
+//
+// Reference: AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023)
+// PubMed / Various journals
+func NewAOBLMOAConfig() *Config {
+	config := NewDefaultConfig()
+	config.UseAOBLMOA = true
+	config.AquilaWeight = 0.5           // Balanced hybrid between Mayfly and Aquila
+	config.OppositionProbability = 0.3  // Apply opposition to 30% of solutions
+	config.ArchiveSize = 100            // Store up to 100 Pareto-optimal solutions
+	config.StrategySwitch = 0           // Will be set to MaxIterations * 2/3 during optimization
+	return config
+}

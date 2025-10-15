@@ -106,6 +106,13 @@ type Config struct {
 	GoldenFactor         float64 // Golden sine influence factor (default: 1.0)
 	CoolingSchedule      string  // Temperature schedule: "exponential", "linear", "logarithmic" (default: "exponential")
 	ApplyOBLToGlobalBest bool    // Apply opposition-based learning to global best (default: true)
+
+	// AOBLMOA (Aquila Optimizer-Based Learning Multi-Objective Algorithm) parameters
+	UseAOBLMOA           bool    // Enable AOBLMOA variant
+	AquilaWeight         float64 // Weight for Aquila strategy influence (default: 0.5)
+	OppositionProbability float64 // Probability of applying opposition-based learning (default: 0.3)
+	ArchiveSize          int     // Maximum size of Pareto archive for multi-objective (default: 100)
+	StrategySwitch       int     // Iteration threshold for switching strategies (default: MaxIterations * 2/3)
 }
 
 // Result holds the results of the optimization.

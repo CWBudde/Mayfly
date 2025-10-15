@@ -101,6 +101,55 @@ var benchmarkProblems = []BenchmarkProblem{
 		UpperBound:  600,
 		GlobalOptim: 0,
 	},
+	// CEC-style functions
+	{
+		Name:        "Schwefel_10D",
+		Func:        Schwefel,
+		Dimensions:  10,
+		LowerBound:  -500,
+		UpperBound:  500,
+		GlobalOptim: 0,
+	},
+	{
+		Name:        "Levy_10D",
+		Func:        Levy,
+		Dimensions:  10,
+		LowerBound:  -10,
+		UpperBound:  10,
+		GlobalOptim: 0,
+	},
+	{
+		Name:        "Zakharov_10D",
+		Func:        Zakharov,
+		Dimensions:  10,
+		LowerBound:  -10,
+		UpperBound:  10,
+		GlobalOptim: 0,
+	},
+	{
+		Name:        "BentCigar_10D",
+		Func:        BentCigar,
+		Dimensions:  10,
+		LowerBound:  -100,
+		UpperBound:  100,
+		GlobalOptim: 0,
+	},
+	{
+		Name:        "Discus_10D",
+		Func:        Discus,
+		Dimensions:  10,
+		LowerBound:  -100,
+		UpperBound:  100,
+		GlobalOptim: 0,
+	},
+	{
+		Name:        "HappyCat_10D",
+		Func:        HappyCat,
+		Dimensions:  10,
+		LowerBound:  -2,
+		UpperBound:  2,
+		GlobalOptim: 0,
+	},
 }
 
 // BenchmarkResult holds the results of a single benchmark run.

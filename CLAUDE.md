@@ -164,6 +164,8 @@ Critical internal functions in `mayfly.go`:
 
 Located in `functions.go`. All functions are **minimization** problems with known global minima:
 
+### Classic Benchmark Functions
+
 | Function | Global Min | Optimal Point | Bounds | Type |
 |----------|-----------|---------------|--------|------|
 | Sphere | 0 | (0,...,0) | [-10,10] | Unimodal, convex |
@@ -172,10 +174,29 @@ Located in `functions.go`. All functions are **minimization** problems with know
 | Ackley | 0 | (0,...,0) | [-32.768,32.768] | Multimodal, flat outer |
 | Griewank | 0 | (0,...,0) | [-600,600] | Many local minima |
 
+### CEC-Style Benchmark Functions
+
+| Function | Global Min | Optimal Point | Bounds | Type |
+|----------|-----------|---------------|--------|------|
+| Schwefel | 0 | (420.97,...,420.97) | [-500,500] | Highly multimodal, deceptive |
+| Levy | 0 | (1,...,1) | [-10,10] | Multimodal |
+| Zakharov | 0 | (0,...,0) | [-10,10] | Unimodal, polynomial |
+| DixonPrice | 0 | Special pattern* | [-10,10] | Unimodal, valley |
+| Michalewicz | -9.66 (10D) | Variable | [0,π] | Multimodal, steep valleys |
+| BentCigar | 0 | (0,...,0) | [-100,100] | Unimodal, ill-conditioned |
+| Discus | 0 | (0,...,0) | [-100,100] | Unimodal, ill-conditioned |
+| Weierstrass | 0 | (0,...,0) | [-0.5,0.5] | Continuous, non-differentiable |
+| HappyCat | 0 | (-1,...,-1) | [-2,2] | Multimodal, plate-shaped |
+| ExpandedSchafferF6 | 0 | (0,...,0) | [-100,100] | Multimodal, composite |
+
+*DixonPrice optimum: x_i = 2^(-(2^i - 2)/2^i)
+
 **Performance expectations** (500 iterations):
 - Sphere: ~1e-5 to 1e-10
 - Rastrigin: 30-100 (multimodal, harder)
 - Rosenbrock: 0.1-10 (narrow valley challenge)
+- Schwefel: High variance due to deceptive landscape
+- BentCigar/Discus: Test ill-conditioning handling
 
 ## Module Structure
 
@@ -185,7 +206,9 @@ Located in `functions.go`. All functions are **minimization** problems with know
 │   ├── Config struct      # All parameters
 │   ├── Optimize()         # Main entry point
 │   └── generateEliteMayflies()  # DESMA logic
-├── functions.go           # Benchmark functions (5 standard)
+├── functions.go           # Benchmark functions (15 total: 5 classic + 10 CEC-style)
+├── functions_test.go      # Comprehensive function tests
+├── benchmark_test.go      # Performance benchmark suite
 ├── go.mod                 # Root module
 ├── PLAN.md               # Development roadmap (10 phases)
 ├── justfile              # Task runner recipes

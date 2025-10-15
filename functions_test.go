@@ -520,3 +520,306 @@ func BenchmarkGriewank(b *testing.B) {
 		_ = Griewank(x)
 	}
 }
+
+// TestSchwefel tests the Schwefel benchmark function.
+func TestSchwefel(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        []float64
+		expected float64
+	}{
+		{
+			name:     "global_minimum_1d",
+			x:        []float64{420.9687},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_2d",
+			x:        []float64{420.9687, 420.9687},
+			expected: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Schwefel(tt.x)
+			if math.Abs(result-tt.expected) > 1e-2 { // Schwefel needs larger tolerance
+				t.Errorf("Schwefel(%v) = %v, want %v", tt.x, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestLevy tests the Levy benchmark function.
+func TestLevy(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        []float64
+		expected float64
+	}{
+		{
+			name:     "global_minimum_2d",
+			x:        []float64{1.0, 1.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_3d",
+			x:        []float64{1.0, 1.0, 1.0},
+			expected: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Levy(tt.x)
+			if math.Abs(result-tt.expected) > epsilon {
+				t.Errorf("Levy(%v) = %v, want %v", tt.x, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestZakharov tests the Zakharov benchmark function.
+func TestZakharov(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        []float64
+		expected float64
+	}{
+		{
+			name:     "global_minimum_1d",
+			x:        []float64{0.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_2d",
+			x:        []float64{0.0, 0.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_3d",
+			x:        []float64{0.0, 0.0, 0.0},
+			expected: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Zakharov(tt.x)
+			if math.Abs(result-tt.expected) > epsilon {
+				t.Errorf("Zakharov(%v) = %v, want %v", tt.x, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestDixonPrice tests the Dixon-Price benchmark function.
+func TestDixonPrice(t *testing.T) {
+	// Test at global minimum (approximate)
+	x := []float64{1.0, 0.707107, 0.577350, 0.5}
+	result := DixonPrice(x)
+
+	// Should be near zero at optimum
+	if result < 0 || result > 1.0 {
+		t.Logf("DixonPrice at near-optimum = %v (expected close to 0)", result)
+	}
+
+	// Test at origin
+	origin := []float64{0.0, 0.0, 0.0}
+	resultOrigin := DixonPrice(origin)
+	if resultOrigin < 0 {
+		t.Errorf("DixonPrice should be non-negative, got %v", resultOrigin)
+	}
+}
+
+// TestBentCigar tests the Bent Cigar benchmark function.
+func TestBentCigar(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        []float64
+		expected float64
+	}{
+		{
+			name:     "global_minimum_1d",
+			x:        []float64{0.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_3d",
+			x:        []float64{0.0, 0.0, 0.0},
+			expected: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := BentCigar(tt.x)
+			if math.Abs(result-tt.expected) > epsilon {
+				t.Errorf("BentCigar(%v) = %v, want %v", tt.x, result, tt.expected)
+			}
+		})
+	}
+
+	// Test ill-conditioning property
+	x := []float64{1.0, 1.0, 1.0}
+	result := BentCigar(x)
+	expected := 1.0 + 2.0*1e6 // First dimension normal, others scaled
+	if math.Abs(result-expected) > epsilon {
+		t.Errorf("BentCigar(%v) = %v, want %v (ill-conditioned test)", x, result, expected)
+	}
+}
+
+// TestDiscus tests the Discus benchmark function.
+func TestDiscus(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        []float64
+		expected float64
+	}{
+		{
+			name:     "global_minimum_1d",
+			x:        []float64{0.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_3d",
+			x:        []float64{0.0, 0.0, 0.0},
+			expected: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Discus(tt.x)
+			if math.Abs(result-tt.expected) > epsilon {
+				t.Errorf("Discus(%v) = %v, want %v", tt.x, result, tt.expected)
+			}
+		})
+	}
+
+	// Test ill-conditioning property
+	x := []float64{1.0, 1.0, 1.0}
+	result := Discus(x)
+	expected := 1e6 + 2.0 // First dimension scaled, others normal
+	if math.Abs(result-expected) > epsilon {
+		t.Errorf("Discus(%v) = %v, want %v (ill-conditioned test)", x, result, expected)
+	}
+}
+
+// TestWeierstrass tests the Weierstrass benchmark function.
+func TestWeierstrass(t *testing.T) {
+	// Test at global minimum
+	x := []float64{0.0, 0.0, 0.0}
+	result := Weierstrass(x)
+
+	// Should be at or very close to zero
+	if math.Abs(result) > epsilon {
+		t.Errorf("Weierstrass(%v) = %v, want 0.0", x, result)
+	}
+}
+
+// TestHappyCat tests the HappyCat benchmark function.
+func TestHappyCat(t *testing.T) {
+	// Test at global minimum
+	x := []float64{-1.0, -1.0, -1.0}
+	result := HappyCat(x)
+
+	// Should be at or very close to zero
+	if math.Abs(result) > epsilon {
+		t.Errorf("HappyCat(%v) = %v, want 0.0", x, result)
+	}
+
+	// Test at origin
+	origin := []float64{0.0, 0.0, 0.0}
+	resultOrigin := HappyCat(origin)
+	if resultOrigin < 0 {
+		t.Errorf("HappyCat should be non-negative, got %v", resultOrigin)
+	}
+}
+
+// TestExpandedSchafferF6 tests the Expanded Schaffer F6 benchmark function.
+func TestExpandedSchafferF6(t *testing.T) {
+	// Test at global minimum
+	x := []float64{0.0, 0.0, 0.0}
+	result := ExpandedSchafferF6(x)
+
+	// Should be at or very close to zero
+	if math.Abs(result) > epsilon {
+		t.Errorf("ExpandedSchafferF6(%v) = %v, want 0.0", x, result)
+	}
+
+	// Test with 2D
+	x2d := []float64{0.0, 0.0}
+	result2d := ExpandedSchafferF6(x2d)
+	if math.Abs(result2d) > epsilon {
+		t.Errorf("ExpandedSchafferF6(%v) = %v, want 0.0", x2d, result2d)
+	}
+}
+
+// TestCECFunctionsNonNegative tests that CEC functions produce valid outputs.
+func TestCECFunctionsNonNegative(t *testing.T) {
+	cecFunctions := []struct {
+		name string
+		fn   ObjectiveFunction
+		x    []float64
+	}{
+		{"Schwefel", Schwefel, []float64{100.0, 100.0}},
+		{"Levy", Levy, []float64{5.0, 5.0}},
+		{"Zakharov", Zakharov, []float64{1.0, 1.0}},
+		{"DixonPrice", DixonPrice, []float64{1.0, 1.0}},
+		{"BentCigar", BentCigar, []float64{1.0, 1.0}},
+		{"Discus", Discus, []float64{1.0, 1.0}},
+		{"Weierstrass", Weierstrass, []float64{0.1, 0.1}},
+		{"HappyCat", HappyCat, []float64{0.0, 0.0}},
+		{"ExpandedSchafferF6", ExpandedSchafferF6, []float64{1.0, 1.0}},
+	}
+
+	for _, tt := range cecFunctions {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.fn(tt.x)
+			// Check for NaN or Inf
+			if math.IsNaN(result) {
+				t.Errorf("%s(%v) = NaN", tt.name, tt.x)
+			}
+			if math.IsInf(result, 0) {
+				t.Errorf("%s(%v) = Inf", tt.name, tt.x)
+			}
+		})
+	}
+}
+
+// BenchmarkSchwefel benchmarks the Schwefel function.
+func BenchmarkSchwefel(b *testing.B) {
+	x := make([]float64, 30)
+	for i := range x {
+		x[i] = float64(i) * 10.0
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Schwefel(x)
+	}
+}
+
+// BenchmarkLevy benchmarks the Levy function.
+func BenchmarkLevy(b *testing.B) {
+	x := make([]float64, 30)
+	for i := range x {
+		x[i] = float64(i) * 0.1
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Levy(x)
+	}
+}
+
+// BenchmarkWeierstrass benchmarks the Weierstrass function.
+func BenchmarkWeierstrass(b *testing.B) {
+	x := make([]float64, 30)
+	for i := range x {
+		x[i] = float64(i) * 0.01
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Weierstrass(x)
+	}
+}

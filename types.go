@@ -79,6 +79,24 @@ type Config struct {
 	SearchRange     float64 // Initial search range for elite generation (default: auto-calculated)
 	EnlargeFactor   float64 // Factor to enlarge search range when improving (default: 1.05)
 	ReductionFactor float64 // Factor to reduce search range when not improving (default: 0.95)
+
+	// OLCE-MA (Orthogonal Learning and Chaotic Exploitation) parameters
+	UseOLCE          bool    // Enable OLCE-MA variant
+	OrthogonalFactor float64 // Orthogonal learning strength (default: 0.3)
+	ChaosFactor      float64 // Chaos perturbation strength for offspring (default: 0.1)
+
+	// EOBBMA (Elite Opposition-Based Bare Bones Mayfly Algorithm) parameters
+	UseEOBBMA            bool    // Enable EOBBMA variant
+	LevyAlpha            float64 // Lévy stability parameter (default: 1.5, range: 0 < alpha <= 2)
+	LevyBeta             float64 // Lévy scale parameter (default: 1.0)
+	OppositionRate       float64 // Probability of opposition learning (default: 0.3)
+	EliteOppositionCount int     // Number of elite solutions to apply opposition (default: 3)
+
+	// MPMA (Median Position-Based Mayfly Algorithm) parameters
+	UseMPMA          bool    // Enable MPMA variant
+	MedianWeight     float64 // Influence of median position on velocity (default: 0.5)
+	GravityType      string  // Type of gravity coefficient: "linear", "exponential", "sigmoid" (default: "linear")
+	UseWeightedMedian bool    // Use fitness-weighted median (default: false)
 }
 
 // Result holds the results of the optimization.

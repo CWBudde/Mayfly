@@ -18,6 +18,8 @@ package mayfly
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"time"
 )
 
 // Optimize runs the Mayfly Optimization Algorithm with the given configuration.
@@ -48,7 +50,11 @@ func Optimize(config *Config) (*Result, error) {
 		config.VelMin = -config.VelMax
 	}
 
+	// Initialize random number generator if not provided
 	rng := config.Rand
+	if rng == nil {
+		rng = defaultRand()
+	}
 
 	// Initialize populations
 	males := make([]*Mayfly, config.NPop)
@@ -106,90 +112,200 @@ func Optimize(config *Config) (*Result, error) {
 		lastGlobalBestCost = globalBest.Cost
 	}
 
+	// Initialize OLCE-MA parameters if enabled
+	var chaosMap *LogisticMap
+	if config.UseOLCE {
+		// Initialize chaotic map with random seed
+		seed := rng.Float64()
+		chaosMap = NewLogisticMap(seed)
+	}
+
 	// Main loop
 	for it := 0; it < config.MaxIterations; it++ {
-		// Update females
-		for i := 0; i < config.NPopF; i++ {
-			e := unifrndVec(-1, 1, config.ProblemSize, rng)
+		// EOBBMA: Use Bare Bones Gaussian updates instead of velocity-based
+		if config.UseEOBBMA {
+			// Update females with Gaussian sampling around best males
+			for i := 0; i < config.NPopF; i++ {
+				// Decide whether to use Lévy flight or Gaussian update
+				if rng.Float64() < 0.5 {
+					// Use Gaussian update toward best male
+					newPos := gaussianUpdate(females[i].Position, males[i].Position,
+						config.LowerBound, config.UpperBound, rng)
+					copy(females[i].Position, newPos)
+				} else {
+					// Use Lévy flight for exploration
+					levyStep := levyFlightVec(config.ProblemSize, config.LevyAlpha, config.LevyBeta, rng)
+					for j := 0; j < config.ProblemSize; j++ {
+						females[i].Position[j] += levyStep[j] * (config.UpperBound - config.LowerBound) * 0.01
+					}
+					maxVec(females[i].Position, config.LowerBound)
+					minVec(females[i].Position, config.UpperBound)
+				}
 
-			if females[i].Cost > males[i].Cost {
-				// Attracted to male
-				for j := 0; j < config.ProblemSize; j++ {
-					rmf := males[i].Position[j] - females[i].Position[j]
-					females[i].Velocity[j] = g*females[i].Velocity[j] +
-						config.A3*math.Exp(-config.Beta*rmf*rmf)*(males[i].Position[j]-females[i].Position[j])
-				}
-			} else {
-				// Random flight
-				for j := 0; j < config.ProblemSize; j++ {
-					females[i].Velocity[j] = g*females[i].Velocity[j] + fl*e[j]
-				}
+				females[i].Cost = config.ObjectiveFunc(females[i].Position)
+				funcCount++
 			}
 
-			// Apply velocity limits
-			maxVec(females[i].Velocity, config.VelMin)
-			minVec(females[i].Velocity, config.VelMax)
-
-			// Update position
-			for j := 0; j < config.ProblemSize; j++ {
-				females[i].Position[j] += females[i].Velocity[j]
-			}
-
-			// Apply position limits
-			maxVec(females[i].Position, config.LowerBound)
-			minVec(females[i].Position, config.UpperBound)
-
-			// Evaluate
-			females[i].Cost = config.ObjectiveFunc(females[i].Position)
-			funcCount++
-		}
-
-		// Update males
-		for i := 0; i < config.NPop; i++ {
-			e := unifrndVec(-1, 1, config.ProblemSize, rng)
-
-			if males[i].Cost > globalBest.Cost {
-				// Update velocity with personal and global best
-				for j := 0; j < config.ProblemSize; j++ {
-					rpbest := males[i].Best.Position[j] - males[i].Position[j]
-					rgbest := globalBest.Position[j] - males[i].Position[j]
-					males[i].Velocity[j] = g*males[i].Velocity[j] +
-						config.A1*math.Exp(-config.Beta*rpbest*rpbest)*(males[i].Best.Position[j]-males[i].Position[j]) +
-						config.A2*math.Exp(-config.Beta*rgbest*rgbest)*(globalBest.Position[j]-males[i].Position[j])
+			// Update males with Gaussian sampling around personal and global best
+			for i := 0; i < config.NPop; i++ {
+				// Decide whether to use Gaussian toward personal best or global best
+				if rng.Float64() < 0.5 {
+					// Gaussian toward personal best
+					newPos := gaussianUpdate(males[i].Position, males[i].Best.Position,
+						config.LowerBound, config.UpperBound, rng)
+					copy(males[i].Position, newPos)
+				} else {
+					// Gaussian toward global best
+					newPos := gaussianUpdate(males[i].Position, globalBest.Position,
+						config.LowerBound, config.UpperBound, rng)
+					copy(males[i].Position, newPos)
 				}
-			} else {
-				// Nuptial dance
-				for j := 0; j < config.ProblemSize; j++ {
-					males[i].Velocity[j] = g*males[i].Velocity[j] + dance*e[j]
+
+				males[i].Cost = config.ObjectiveFunc(males[i].Position)
+				funcCount++
+
+				// Update personal best
+				if males[i].Cost < males[i].Best.Cost {
+					copy(males[i].Best.Position, males[i].Position)
+					males[i].Best.Cost = males[i].Cost
+
+					// Update global best
+					if males[i].Best.Cost < globalBest.Cost {
+						globalBest.Cost = males[i].Best.Cost
+						copy(globalBest.Position, males[i].Best.Position)
+					}
 				}
 			}
+		} else {
+			// Standard velocity-based updates
+			// Update females
+			for i := 0; i < config.NPopF; i++ {
+				e := unifrndVec(-1, 1, config.ProblemSize, rng)
 
-			// Apply velocity limits
-			maxVec(males[i].Velocity, config.VelMin)
-			minVec(males[i].Velocity, config.VelMax)
+				if females[i].Cost > males[i].Cost {
+					// Attracted to male
+					for j := 0; j < config.ProblemSize; j++ {
+						rmf := males[i].Position[j] - females[i].Position[j]
+						females[i].Velocity[j] = g*females[i].Velocity[j] +
+							config.A3*math.Exp(-config.Beta*rmf*rmf)*(males[i].Position[j]-females[i].Position[j])
+					}
+				} else {
+					// Random flight
+					for j := 0; j < config.ProblemSize; j++ {
+						females[i].Velocity[j] = g*females[i].Velocity[j] + fl*e[j]
+					}
+				}
 
-			// Update position
-			for j := 0; j < config.ProblemSize; j++ {
-				males[i].Position[j] += males[i].Velocity[j]
+				// Apply velocity limits
+				maxVec(females[i].Velocity, config.VelMin)
+				minVec(females[i].Velocity, config.VelMax)
+
+				// Update position
+				for j := 0; j < config.ProblemSize; j++ {
+					females[i].Position[j] += females[i].Velocity[j]
+				}
+
+				// Apply position limits
+				maxVec(females[i].Position, config.LowerBound)
+				minVec(females[i].Position, config.UpperBound)
+
+				// Evaluate
+				females[i].Cost = config.ObjectiveFunc(females[i].Position)
+				funcCount++
 			}
 
-			// Apply position limits
-			maxVec(males[i].Position, config.LowerBound)
-			minVec(males[i].Position, config.UpperBound)
+			// MPMA: Calculate median position if enabled
+			var medianPos []float64
+			var mpmaG float64 // MPMA-specific gravity coefficient
+			if config.UseMPMA {
+				if config.UseWeightedMedian {
+					// Create fitness weights (better fitness = higher weight)
+					weights := make([]float64, len(males))
+					maxCost := males[len(males)-1].Cost // Worst cost (sorted)
+					minCost := males[0].Cost            // Best cost
+					for i := range males {
+						// Normalize and invert (better solutions get higher weight)
+						if maxCost > minCost {
+							weights[i] = 1.0 - (males[i].Cost-minCost)/(maxCost-minCost)
+						} else {
+							weights[i] = 1.0 // All equal
+						}
+					}
+					medianPos = calculateWeightedMedianPosition(males, weights)
+				} else {
+					medianPos = calculateMedianPosition(males)
+				}
+				// Calculate non-linear gravity coefficient
+				mpmaG = calculateGravityCoefficient(config.GravityType, it, config.MaxIterations)
+			}
 
-			// Evaluate
-			males[i].Cost = config.ObjectiveFunc(males[i].Position)
-			funcCount++
+			// Update males
+			for i := 0; i < config.NPop; i++ {
+				e := unifrndVec(-1, 1, config.ProblemSize, rng)
 
-			// Update personal best
-			if males[i].Cost < males[i].Best.Cost {
-				copy(males[i].Best.Position, males[i].Position)
-				males[i].Best.Cost = males[i].Cost
+				if males[i].Cost > globalBest.Cost {
+					// Update velocity with personal and global best
+					if config.UseMPMA {
+						// MPMA: Include median position in velocity update
+						for j := 0; j < config.ProblemSize; j++ {
+							rpbest := males[i].Best.Position[j] - males[i].Position[j]
+							rgbest := globalBest.Position[j] - males[i].Position[j]
+							rmedian := medianPos[j] - males[i].Position[j]
 
-				// Update global best
-				if males[i].Best.Cost < globalBest.Cost {
-					globalBest.Cost = males[i].Best.Cost
-					copy(globalBest.Position, males[i].Best.Position)
+							// Modified velocity update with median position and non-linear gravity
+							males[i].Velocity[j] = mpmaG*males[i].Velocity[j] +
+								config.A1*math.Exp(-config.Beta*rpbest*rpbest)*(males[i].Best.Position[j]-males[i].Position[j]) +
+								config.A2*math.Exp(-config.Beta*rgbest*rgbest)*(globalBest.Position[j]-males[i].Position[j]) +
+								config.MedianWeight*math.Exp(-config.Beta*rmedian*rmedian)*(medianPos[j]-males[i].Position[j])
+						}
+					} else {
+						// Standard velocity update
+						for j := 0; j < config.ProblemSize; j++ {
+							rpbest := males[i].Best.Position[j] - males[i].Position[j]
+							rgbest := globalBest.Position[j] - males[i].Position[j]
+							males[i].Velocity[j] = g*males[i].Velocity[j] +
+								config.A1*math.Exp(-config.Beta*rpbest*rpbest)*(males[i].Best.Position[j]-males[i].Position[j]) +
+								config.A2*math.Exp(-config.Beta*rgbest*rgbest)*(globalBest.Position[j]-males[i].Position[j])
+						}
+					}
+				} else {
+					// Nuptial dance
+					gVal := g
+					if config.UseMPMA {
+						gVal = mpmaG // Use MPMA gravity for dance too
+					}
+					for j := 0; j < config.ProblemSize; j++ {
+						males[i].Velocity[j] = gVal*males[i].Velocity[j] + dance*e[j]
+					}
+				}
+
+				// Apply velocity limits
+				maxVec(males[i].Velocity, config.VelMin)
+				minVec(males[i].Velocity, config.VelMax)
+
+				// Update position
+				for j := 0; j < config.ProblemSize; j++ {
+					males[i].Position[j] += males[i].Velocity[j]
+				}
+
+				// Apply position limits
+				maxVec(males[i].Position, config.LowerBound)
+				minVec(males[i].Position, config.UpperBound)
+
+				// Evaluate
+				males[i].Cost = config.ObjectiveFunc(males[i].Position)
+				funcCount++
+
+				// Update personal best
+				if males[i].Cost < males[i].Best.Cost {
+					copy(males[i].Best.Position, males[i].Position)
+					males[i].Best.Cost = males[i].Cost
+
+					// Update global best
+					if males[i].Best.Cost < globalBest.Cost {
+						globalBest.Cost = males[i].Best.Cost
+						copy(globalBest.Position, males[i].Best.Position)
+					}
 				}
 			}
 		}
@@ -197,6 +313,88 @@ func Optimize(config *Config) (*Result, error) {
 		// Sort populations by cost
 		sortMayflies(males)
 		sortMayflies(females)
+
+		// OLCE-MA: Apply orthogonal learning to elite males
+		if config.UseOLCE {
+			// Prepare bounds vectors for orthogonal learning
+			lb := make([]float64, config.ProblemSize)
+			ub := make([]float64, config.ProblemSize)
+			for j := 0; j < config.ProblemSize; j++ {
+				lb[j] = config.LowerBound
+				ub[j] = config.UpperBound
+			}
+
+			// Apply to top 20% of males
+			ApplyOrthogonalLearningToElite(
+				males,
+				0.2, // Top 20%
+				globalBest.Position,
+				config.OrthogonalFactor,
+				lb, ub,
+				config.ObjectiveFunc,
+				rng,
+			)
+
+			// Count function evaluations from orthogonal learning
+			// Each elite male generates 4 candidates (L4 array)
+			numElite := int(float64(len(males)) * 0.2)
+			if numElite < 1 {
+				numElite = 1
+			}
+			funcCount += numElite * 4
+
+			// Update global best if orthogonal learning found better solution
+			for i := 0; i < numElite; i++ {
+				if males[i].Cost < globalBest.Cost {
+					globalBest.Cost = males[i].Cost
+					copy(globalBest.Position, males[i].Position)
+				}
+			}
+
+			// Re-sort after orthogonal learning
+			sortMayflies(males)
+		}
+
+		// EOBBMA: Apply elite opposition-based learning
+		if config.UseEOBBMA {
+			// Apply opposition to top elite solutions with probability OppositionRate
+			numEliteOpposition := config.EliteOppositionCount
+			if numEliteOpposition > len(males) {
+				numEliteOpposition = len(males)
+			}
+
+			for i := 0; i < numEliteOpposition; i++ {
+				if rng.Float64() < config.OppositionRate {
+					// Generate opposition point
+					oppPos := oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
+
+					// Evaluate opposition point
+					oppCost := config.ObjectiveFunc(oppPos)
+					funcCount++
+
+					// If opposition is better, replace the elite
+					if oppCost < males[i].Cost {
+						copy(males[i].Position, oppPos)
+						males[i].Cost = oppCost
+
+						// Update personal best
+						if oppCost < males[i].Best.Cost {
+							copy(males[i].Best.Position, oppPos)
+							males[i].Best.Cost = oppCost
+						}
+
+						// Update global best
+						if oppCost < globalBest.Cost {
+							globalBest.Cost = oppCost
+							copy(globalBest.Position, oppPos)
+						}
+					}
+				}
+			}
+
+			// Re-sort after opposition learning
+			sortMayflies(males)
+		}
 
 		// Mating - Create offspring
 		offspring := make([]*Mayfly, 0, config.NC)
@@ -211,6 +409,24 @@ func Optimize(config *Config) (*Result, error) {
 			// Create offspring 1
 			off1 := newMayfly(config.ProblemSize)
 			copy(off1.Position, off1Pos)
+
+			// OLCE-MA: Apply chaotic exploitation to offspring
+			if config.UseOLCE {
+				for j := 0; j < config.ProblemSize; j++ {
+					chaosValue := chaosMap.Next()
+					perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
+					off1.Position[j] += perturbation
+
+					// Apply bounds
+					if off1.Position[j] < config.LowerBound {
+						off1.Position[j] = config.LowerBound
+					}
+					if off1.Position[j] > config.UpperBound {
+						off1.Position[j] = config.UpperBound
+					}
+				}
+			}
+
 			off1.Cost = config.ObjectiveFunc(off1.Position)
 			funcCount++
 			if off1.Cost < globalBest.Cost {
@@ -223,6 +439,24 @@ func Optimize(config *Config) (*Result, error) {
 			// Create offspring 2
 			off2 := newMayfly(config.ProblemSize)
 			copy(off2.Position, off2Pos)
+
+			// OLCE-MA: Apply chaotic exploitation to offspring
+			if config.UseOLCE {
+				for j := 0; j < config.ProblemSize; j++ {
+					chaosValue := chaosMap.Next()
+					perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
+					off2.Position[j] += perturbation
+
+					// Apply bounds
+					if off2.Position[j] < config.LowerBound {
+						off2.Position[j] = config.LowerBound
+					}
+					if off2.Position[j] > config.UpperBound {
+						off2.Position[j] = config.UpperBound
+					}
+				}
+			}
+
 			off2.Cost = config.ObjectiveFunc(off2.Position)
 			funcCount++
 			if off2.Cost < globalBest.Cost {
@@ -243,6 +477,25 @@ func Optimize(config *Config) (*Result, error) {
 
 			mut := newMayfly(config.ProblemSize)
 			mut.Position = Mutate(p.Position, config.Mu, config.LowerBound, config.UpperBound, rng)
+
+			// OLCE-MA: Apply chaotic exploitation to mutated offspring
+			if config.UseOLCE {
+				for j := 0; j < config.ProblemSize; j++ {
+					// Apply chaotic perturbation
+					chaosValue := chaosMap.Next()
+					perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
+					mut.Position[j] += perturbation
+
+					// Apply bounds
+					if mut.Position[j] < config.LowerBound {
+						mut.Position[j] = config.LowerBound
+					}
+					if mut.Position[j] > config.UpperBound {
+						mut.Position[j] = config.UpperBound
+					}
+				}
+			}
+
 			mut.Cost = config.ObjectiveFunc(mut.Position)
 			funcCount++
 			if mut.Cost < globalBest.Cost {
@@ -319,4 +572,9 @@ func Optimize(config *Config) (*Result, error) {
 		FuncEvalCount:  funcCount,
 		IterationCount: config.MaxIterations,
 	}, nil
+}
+
+// defaultRand creates a default random number generator
+func defaultRand() *rand.Rand {
+	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }

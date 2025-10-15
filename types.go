@@ -99,13 +99,13 @@ type Config struct {
 	UseWeightedMedian bool    // Use fitness-weighted median (default: false)
 
 	// GSASMA (Golden Sine Algorithm with Simulated Annealing MA) parameters
-	UseGSASMA          bool    // Enable GSASMA variant
-	InitialTemperature float64 // Starting temperature for simulated annealing (default: 100)
-	CoolingRate        float64 // Temperature decay rate (default: 0.95)
-	CauchyMutationRate float64 // Probability of Cauchy mutation vs Gaussian (default: 0.3)
-	GoldenFactor       float64 // Golden sine influence factor (default: 1.0)
-	CoolingSchedule    string  // Temperature schedule: "exponential", "linear", "logarithmic" (default: "exponential")
-	ApplyOBLToGlobalBest bool  // Apply opposition-based learning to global best (default: true)
+	UseGSASMA            bool    // Enable GSASMA variant
+	InitialTemperature   float64 // Starting temperature for simulated annealing (default: 100)
+	CoolingRate          float64 // Temperature decay rate (default: 0.95)
+	CauchyMutationRate   float64 // Probability of Cauchy mutation vs Gaussian (default: 0.3)
+	GoldenFactor         float64 // Golden sine influence factor (default: 1.0)
+	CoolingSchedule      string  // Temperature schedule: "exponential", "linear", "logarithmic" (default: "exponential")
+	ApplyOBLToGlobalBest bool    // Apply opposition-based learning to global best (default: true)
 }
 
 // Result holds the results of the optimization.

@@ -59,7 +59,7 @@ func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperB
 		// Generate random coefficients
 		r1 := rng.Float64() * 2 * math.Pi // [0, 2π]
 		r2 := rng.Float64() * 2 * math.Pi // [0, 2π]
-		r3 := rng.Float64() * 2            // [0, 2]
+		r3 := rng.Float64() * 2           // [0, 2]
 
 		// Apply Golden Sine Algorithm formula
 		// The sine function creates oscillatory movement

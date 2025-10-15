@@ -73,12 +73,13 @@ func NewOLCEConfig() *Config {
 func NewEOBBMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseEOBBMA = true
-	config.LevyAlpha = 1.5         // Standard Lévy parameter (heavy-tailed)
-	config.LevyBeta = 1.0          // Unit scale
-	config.OppositionRate = 0.3    // Apply opposition to 30% of elite solutions
+	config.LevyAlpha = 1.5          // Standard Lévy parameter (heavy-tailed)
+	config.LevyBeta = 1.0           // Unit scale
+	config.OppositionRate = 0.3     // Apply opposition to 30% of elite solutions
 	config.EliteOppositionCount = 3 // Top 3 solutions get opposition
 	return config
 }
+
 // NewMPMAConfig creates a default configuration for the MPMA variant
 // (Median Position-Based Mayfly Algorithm).
 // You must set ObjectiveFunc, ProblemSize, LowerBound, and UpperBound.

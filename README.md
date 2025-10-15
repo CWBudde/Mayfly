@@ -1041,6 +1041,187 @@ result, err := mayfly.Optimize(config)
 
 **Note**: Full multi-objective interface (accepting `MultiObjectiveFunction` that returns multiple values) is available through the internal archive system. The Pareto front is maintained during optimization using NSGA-II selection with crowding distance.
 
+## Unified Framework & API (Phase 7)
+
+The library provides a unified framework for working with all algorithm variants through a consistent API, intelligent algorithm selection, and comprehensive comparison tools.
+
+### Variant Interface
+
+All algorithm variants implement the `AlgorithmVariant` interface, providing a consistent way to interact with any algorithm:
+
+```go
+// Get a variant by name
+variant := mayfly.NewVariant("desma")
+
+// Get variant information
+fmt.Println(variant.Name())         // "DESMA"
+fmt.Println(variant.FullName())     // "Dynamic Elite Strategy Mayfly Algorithm"
+fmt.Println(variant.Description())  // Brief description
+fmt.Println(variant.RecommendedFor()) // Problem types this variant excels at
+
+// Get default configuration
+config := variant.GetConfig()
+```
+
+Available variant names: `"ma"`, `"desma"`, `"olce"`, `"eobbma"`, `"gsasma"`, `"mpma"`, `"aoblmoa"`
+
+### Fluent Builder API
+
+Build and run optimizations with a fluent interface:
+
+```go
+result, err := mayfly.NewBuilder("gsasma").
+    ForProblem(mayfly.Rastrigin, 20, -5.12, 5.12).
+    WithIterations(500).
+    WithPopulation(30, 30).
+    WithConfig(func(c *mayfly.Config) {
+        c.CoolingRate = 0.97
+    }).
+    Optimize()
+```
+
+### Algorithm Selection
+
+Let the library recommend the best algorithm for your problem:
+
+```go
+// Define problem characteristics
+characteristics := mayfly.ProblemCharacteristics{
+    Dimensionality:            30,
+    Modality:                  mayfly.HighlyMultimodal,
+    Landscape:                 mayfly.Rugged,
+    ExpensiveEvaluations:      false,
+    RequiresFastConvergence:   false,
+    RequiresStableConvergence: false,
+    MultiObjective:            false,
+}
+
+// Get recommendations
+selector := mayfly.NewAlgorithmSelector()
+recommendations := selector.RecommendAlgorithms(characteristics)
+
+// Use the best recommendation
+best := recommendations[0]
+result, err := mayfly.NewBuilderFromVariant(best.Variant).
+    ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
+    Optimize()
+```
+
+Or use quick recommendations for standard benchmarks:
+
+```go
+rec := mayfly.RecommendForBenchmark("Schwefel")
+fmt.Printf("Recommended: %s (Score: %.1f%%)\n",
+    rec.Variant.Name(), rec.Score*100)
+```
+
+### Automatic Problem Classification
+
+Classify unknown problems automatically:
+
+```go
+characteristics := mayfly.ClassifyProblem(myFunction, 10, -10, 10)
+best := selector.RecommendBest(characteristics)
+```
+
+### Algorithm Comparison Framework
+
+Compare multiple algorithms statistically:
+
+```go
+runner := mayfly.NewComparisonRunner().
+    WithVariantNames("ma", "desma", "olce", "eobbma").
+    WithRuns(30).  // 30 runs for statistical significance
+    WithIterations(500).
+    WithVerbose(true)
+
+result := runner.Compare(
+    "Rastrigin",
+    mayfly.Rastrigin,
+    30,      // problem size
+    -5.12, 5.12,
+)
+
+// Print comprehensive statistical analysis
+result.PrintComparisonResults()
+```
+
+The comparison framework provides:
+- Mean, median, standard deviation, best/worst for each algorithm
+- Statistical rankings
+- Wilcoxon signed-rank tests for pairwise comparisons
+- Friedman test for overall differences
+- Convergence analysis
+
+### Configuration Presets
+
+Use predefined configurations for common problem types:
+
+```go
+config, err := mayfly.NewPresetConfig(mayfly.PresetDeceptive)
+config.ObjectiveFunc = mayfly.Schwefel
+config.ProblemSize = 10
+config.LowerBound = -500
+config.UpperBound = 500
+
+result, err := mayfly.Optimize(config)
+```
+
+Available presets:
+- `PresetUnimodal` - Standard MA for single-optimum problems
+- `PresetMultimodal` - DESMA for multi-modal problems
+- `PresetHighlyMultimodal` - OLCE-MA for many local optima
+- `PresetDeceptive` - EOBBMA for deceptive landscapes
+- `PresetNarrowValley` - MPMA for ill-conditioned problems
+- `PresetHighDimensional` - OLCE-MA with larger population
+- `PresetFastConvergence` - GSASMA for quick results
+- `PresetStableConvergence` - MPMA for robust optimization
+- `PresetMultiObjective` - AOBLMOA for multi-objective
+
+### Configuration Files
+
+Save and load configurations from JSON:
+
+```go
+// Save configuration
+config := mayfly.NewOLCEConfig()
+config.ProblemSize = 20
+config.MaxIterations = 500
+err := mayfly.SaveConfigToFile(config, "config.json")
+
+// Load configuration
+config, err := mayfly.LoadConfigFromFile("config.json")
+config.ObjectiveFunc = mayfly.Rastrigin  // Set function separately
+result, err := mayfly.Optimize(config)
+```
+
+### Auto-Tuning
+
+Automatically tune configuration based on problem characteristics:
+
+```go
+config := mayfly.NewGSASMAConfig()
+characteristics := mayfly.ProblemCharacteristics{
+    Dimensionality:            50,
+    RequiresFastConvergence:   true,
+}
+
+mayfly.AutoTuneConfig(config, characteristics)
+// Population and iterations adjusted automatically
+```
+
+### Examples
+
+Complete examples available in `examples/selector/` and `examples/benchmark_suite/`:
+
+```bash
+# Algorithm selection demo
+cd examples/selector && go run main.go
+
+# Comprehensive benchmark comparison
+cd examples/benchmark_suite && go run main.go
+```
+
 ### Algorithm Comparison
 
 | Variant | Best For | Overhead | Key Strength |

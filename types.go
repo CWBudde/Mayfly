@@ -41,78 +41,78 @@ type Mayfly struct {
 // Config holds the configuration parameters for the Mayfly Algorithm.
 type Config struct {
 	// Problem parameters
-	ObjectiveFunc ObjectiveFunction
-	ProblemSize   int     // Number of decision variables
-	LowerBound    float64 // Lower bound for decision variables
-	UpperBound    float64 // Upper bound for decision variables
+	ObjectiveFunc ObjectiveFunction `json:"-"` // Cannot serialize functions
+	ProblemSize   int               `json:"problem_size"`
+	LowerBound    float64           `json:"lower_bound"`
+	UpperBound    float64           `json:"upper_bound"`
 
 	// Algorithm parameters
-	MaxIterations int     // Maximum number of iterations
-	NPop          int     // Population size for males
-	NPopF         int     // Population size for females
-	G             float64 // Inertia weight
-	GDamp         float64 // Inertia weight damping ratio
-	A1            float64 // Personal learning coefficient
-	A2            float64 // Global learning coefficient (males)
-	A3            float64 // Global learning coefficient (females)
-	Beta          float64 // Distance sight coefficient
-	Dance         float64 // Nuptial dance coefficient
-	FL            float64 // Random flight coefficient
-	DanceDamp     float64 // Dance damping ratio
-	FLDamp        float64 // Flight damping ratio
+	MaxIterations int     `json:"max_iterations"`
+	NPop          int     `json:"npop"`
+	NPopF         int     `json:"npopf"`
+	G             float64 `json:"g"`
+	GDamp         float64 `json:"g_damp"`
+	A1            float64 `json:"a1"`
+	A2            float64 `json:"a2"`
+	A3            float64 `json:"a3"`
+	Beta          float64 `json:"beta"`
+	Dance         float64 `json:"dance"`
+	FL            float64 `json:"fl"`
+	DanceDamp     float64 `json:"dance_damp"`
+	FLDamp        float64 `json:"fl_damp"`
 
 	// Mating parameters
-	NC int     // Number of offspring
-	NM int     // Number of mutants
-	Mu float64 // Mutation rate
+	NC int     `json:"nc"`
+	NM int     `json:"nm"`
+	Mu float64 `json:"mu"`
 
 	// Velocity limits
-	VelMax float64
-	VelMin float64
+	VelMax float64 `json:"vel_max"`
+	VelMin float64 `json:"vel_min"`
 
 	// Random source (optional, will use default if nil)
-	Rand *rand.Rand
+	Rand *rand.Rand `json:"-"` // Cannot serialize
 
 	// DESMA (Dynamic Elite Strategy) parameters
-	UseDESMA        bool    // Enable DESMA variant
-	EliteCount      int     // Number of elite mayflies to generate (default: 5)
-	SearchRange     float64 // Initial search range for elite generation (default: auto-calculated)
-	EnlargeFactor   float64 // Factor to enlarge search range when improving (default: 1.05)
-	ReductionFactor float64 // Factor to reduce search range when not improving (default: 0.95)
+	UseDESMA        bool    `json:"use_desma"`
+	EliteCount      int     `json:"elite_count"`
+	SearchRange     float64 `json:"search_range"`
+	EnlargeFactor   float64 `json:"enlarge_factor"`
+	ReductionFactor float64 `json:"reduction_factor"`
 
 	// OLCE-MA (Orthogonal Learning and Chaotic Exploitation) parameters
-	UseOLCE          bool    // Enable OLCE-MA variant
-	OrthogonalFactor float64 // Orthogonal learning strength (default: 0.3)
-	ChaosFactor      float64 // Chaos perturbation strength for offspring (default: 0.1)
+	UseOLCE          bool    `json:"use_olce"`
+	OrthogonalFactor float64 `json:"orthogonal_factor"`
+	ChaosFactor      float64 `json:"chaos_factor"`
 
 	// EOBBMA (Elite Opposition-Based Bare Bones Mayfly Algorithm) parameters
-	UseEOBBMA            bool    // Enable EOBBMA variant
-	LevyAlpha            float64 // Lévy stability parameter (default: 1.5, range: 0 < alpha <= 2)
-	LevyBeta             float64 // Lévy scale parameter (default: 1.0)
-	OppositionRate       float64 // Probability of opposition learning (default: 0.3)
-	EliteOppositionCount int     // Number of elite solutions to apply opposition (default: 3)
+	UseEOBBMA            bool    `json:"use_eobbma"`
+	LevyAlpha            float64 `json:"levy_alpha"`
+	LevyBeta             float64 `json:"levy_beta"`
+	OppositionRate       float64 `json:"opposition_rate"`
+	EliteOppositionCount int     `json:"elite_opposition_count"`
 
 	// MPMA (Median Position-Based Mayfly Algorithm) parameters
-	UseMPMA           bool    // Enable MPMA variant
-	MedianWeight      float64 // Influence of median position on velocity (default: 0.5)
-	GravityType       string  // Type of gravity coefficient: "linear", "exponential", "sigmoid" (default: "linear")
-	UseWeightedMedian bool    // Use fitness-weighted median (default: false)
+	UseMPMA           bool    `json:"use_mpma"`
+	MedianWeight      float64 `json:"median_weight"`
+	GravityType       string  `json:"gravity_type"`
+	UseWeightedMedian bool    `json:"use_weighted_median"`
 
 	// GSASMA (Golden Sine Algorithm with Simulated Annealing MA) parameters
-	UseGSASMA            bool    // Enable GSASMA variant
-	InitialTemperature   float64 // Starting temperature for simulated annealing (default: 100)
-	CoolingRate          float64 // Temperature decay rate (default: 0.95)
-	CauchyMutationRate   float64 // Probability of Cauchy mutation vs Gaussian (default: 0.3)
-	GoldenFactor         float64 // Golden sine influence factor (default: 1.0)
-	CoolingSchedule      string  // Temperature schedule: "exponential", "linear", "logarithmic" (default: "exponential")
-	ApplyOBLToGlobalBest bool    // Apply opposition-based learning to global best (default: true)
+	UseGSASMA            bool    `json:"use_gsasma"`
+	InitialTemperature   float64 `json:"initial_temperature"`
+	CoolingRate          float64 `json:"cooling_rate"`
+	CauchyMutationRate   float64 `json:"cauchy_mutation_rate"`
+	GoldenFactor         float64 `json:"golden_factor"`
+	CoolingSchedule      string  `json:"cooling_schedule"`
+	ApplyOBLToGlobalBest bool    `json:"apply_obl_to_global_best"`
 
 	// AOBLMOA (Aquila Optimizer-Based Learning Multi-Objective Algorithm) parameters
-	UseAOBLMOA           bool    // Enable AOBLMOA variant
-	AquilaWeight         float64 // Weight for Aquila strategy influence (default: 0.5)
-	OppositionProbability float64 // Probability of applying opposition-based learning (default: 0.3)
-	ArchiveSize          int     // Maximum size of Pareto archive for multi-objective (default: 100)
-	StrategySwitch       int     // Iteration threshold for switching strategies (default: MaxIterations * 2/3)
+	UseAOBLMOA            bool    `json:"use_aoblmoa"`
+	AquilaWeight          float64 `json:"aquila_weight"`
+	OppositionProbability float64 `json:"opposition_probability"`
+	ArchiveSize           int     `json:"archive_size"`
+	StrategySwitch        int     `json:"strategy_switch"`
 }
 
 // Result holds the results of the optimization.

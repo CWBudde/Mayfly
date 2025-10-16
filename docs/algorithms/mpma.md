@@ -105,7 +105,9 @@ Weighted median: ~0.2 (shifted toward better solution x1)
 
 **Applied to**: Median calculation when `UseWeightedMedian = true`
 
-## Usage Example
+## Usage Examples
+
+### Basic Usage
 
 ```go
 package main
@@ -130,6 +132,147 @@ func main() {
     }
 
     fmt.Printf("Best Cost: %f\n", result.GlobalBest.Cost)
+}
+```
+
+### Advanced Usage with Sigmoid Gravity
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Configure MPMA with sigmoid gravity for smooth phase transition
+    config := mayfly.NewMPMAConfig()
+    config.ObjectiveFunc = mayfly.BentCigar  // Ill-conditioned function
+    config.ProblemSize = 20
+    config.LowerBound = -10
+    config.UpperBound = 10
+    config.MaxIterations = 800
+
+    // Use sigmoid gravity for balanced exploration-exploitation
+    config.GravityType = "sigmoid"
+
+    // Strong median influence for stability
+    config.MedianWeight = 0.7
+
+    // Use fitness-weighted median
+    config.UseWeightedMedian = true
+
+    // Larger population for ill-conditioned problems
+    config.NPop = 30
+    config.NPopF = 30
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Final Cost: %.6f\n", result.GlobalBest.Cost)
+    fmt.Printf("Iterations: %d\n", result.IterationCount)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+}
+```
+
+### Real-World Example: System Identification
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// System identification: fit transfer function parameters to measured data
+// This is a classic control engineering problem requiring stable convergence
+func systemIdentificationError(params []float64) float64 {
+    // Transfer function: H(s) = K / (τ₁s + 1)(τ₂s + 1)
+    // Parameters: K (gain), τ₁ (time constant 1), τ₂ (time constant 2)
+    K := params[0]
+    tau1 := params[1]
+    tau2 := params[2]
+
+    // Simulated "measured" frequency response data
+    // (In practice, this would come from experiments)
+    frequencies := []float64{0.1, 0.5, 1.0, 2.0, 5.0, 10.0}
+    measuredMagnitudes := []float64{0.95, 0.85, 0.65, 0.35, 0.10, 0.03}
+    measuredPhases := []float64{-5, -25, -45, -75, -110, -145} // degrees
+
+    totalError := 0.0
+
+    for i, omega := range frequencies {
+        // Calculate model response at this frequency
+        s := complex(0, omega) // s = jω
+
+        // Transfer function: H(jω)
+        numerator := complex(K, 0)
+        denominator := (complex(1, 0) + complex(tau1, 0)*s) *
+            (complex(1, 0) + complex(tau2, 0)*s)
+
+        H := numerator / denominator
+
+        // Extract magnitude and phase
+        modelMagnitude := math.Abs(real(H)*real(H) + imag(H)*imag(H))
+        modelMagnitude = math.Sqrt(modelMagnitude)
+        modelPhase := math.Atan2(imag(H), real(H)) * 180 / math.Pi
+
+        // Compute error
+        magError := math.Abs(modelMagnitude - measuredMagnitudes[i])
+        phaseError := math.Abs(modelPhase - measuredPhases[i])
+
+        // Weight magnitude error more heavily
+        totalError += magError*10 + phaseError*0.1
+    }
+
+    // Add penalty for physically unrealistic parameters
+    if K < 0 || tau1 < 0 || tau2 < 0 {
+        totalError += 1000
+    }
+
+    return totalError
+}
+
+func main() {
+    fmt.Println("=== System Identification with MPMA ===\n")
+
+    // MPMA is ideal for system identification
+    // (requires stable convergence, handles ill-conditioning well)
+    config := mayfly.NewMPMAConfig()
+    config.ObjectiveFunc = systemIdentificationError
+    config.ProblemSize = 3  // K, τ₁, τ₂
+    config.LowerBound = 0.01
+    config.UpperBound = 10.0
+    config.MaxIterations = 600
+
+    // Use exponential gravity for quick convergence
+    config.GravityType = "exponential"
+
+    // Moderate median influence
+    config.MedianWeight = 0.5
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println("Identified Transfer Function Parameters:")
+    fmt.Printf("  K (Gain):          %.4f\n", result.GlobalBest.Position[0])
+    fmt.Printf("  τ₁ (Time const 1): %.4f s\n", result.GlobalBest.Position[1])
+    fmt.Printf("  τ₂ (Time const 2): %.4f s\n", result.GlobalBest.Position[2])
+    fmt.Printf("\nFitting Error: %.6f\n", result.GlobalBest.Cost)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+
+    fmt.Println("\nTransfer Function:")
+    K := result.GlobalBest.Position[0]
+    tau1 := result.GlobalBest.Position[1]
+    tau2 := result.GlobalBest.Position[2]
+    fmt.Printf("H(s) = %.4f / ((%.4fs + 1)(%.4fs + 1))\n", K, tau1, tau2)
 }
 ```
 

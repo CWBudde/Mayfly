@@ -60,7 +60,9 @@ Lévy flight:      ○○○○○────────○○   (small steps 
 
 **Example**: If elite is at x=7 in bounds [0,10], opposition point is at x=3
 
-## Usage Example
+## Usage Examples
+
+### Basic Usage
 
 ```go
 package main
@@ -85,6 +87,174 @@ func main() {
     }
 
     fmt.Printf("Best Cost: %f\n", result.GlobalBest.Cost)
+}
+```
+
+### Advanced Usage with Lévy Flight Tuning
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Configure EOBBMA for deceptive landscape with custom Lévy parameters
+    config := mayfly.NewEOBBMAConfig()
+    config.ObjectiveFunc = mayfly.Schwefel
+    config.ProblemSize = 30
+    config.LowerBound = -500
+    config.UpperBound = 500
+    config.MaxIterations = 1000
+
+    // Tune Lévy flight parameters
+    config.LevyAlpha = 1.3    // More heavy-tailed for aggressive exploration
+    config.LevyBeta = 1.5      // Larger jumps for wide search space
+
+    // Aggressive opposition learning
+    config.OppositionRate = 0.4          // 40% probability
+    config.EliteOppositionCount = 5       // Apply to top 5 solutions
+
+    // Larger population for complex landscape
+    config.NPop = 40
+    config.NPopF = 40
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Final Cost: %.2f\n", result.GlobalBest.Cost)
+    fmt.Printf("Iterations: %d\n", result.IterationCount)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+
+    // Show first few dimensions of solution
+    fmt.Printf("Solution (first 5 dims): ")
+    for i := 0; i < min(5, len(result.GlobalBest.Position)); i++ {
+        fmt.Printf("%.2f ", result.GlobalBest.Position[i])
+    }
+    fmt.Println()
+}
+
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
+}
+```
+
+### Real-World Example: Portfolio Optimization with Risk
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// Portfolio optimization: maximize return while managing risk
+// This creates a deceptive landscape due to risk-return tradeoffs
+func portfolioObjective(allocation []float64) float64 {
+    // Simulated asset returns (annual %)
+    returns := []float64{0.12, 0.08, 0.15, 0.06, 0.18, 0.10}
+
+    // Simulated asset volatilities (risk)
+    volatilities := []float64{0.20, 0.10, 0.25, 0.05, 0.30, 0.12}
+
+    // Correlation effects (diversification)
+    correlations := [][]float64{
+        {1.0, 0.3, 0.5, 0.1, 0.6, 0.2},
+        {0.3, 1.0, 0.2, 0.4, 0.3, 0.5},
+        {0.5, 0.2, 1.0, 0.1, 0.7, 0.3},
+        {0.1, 0.4, 0.1, 1.0, 0.2, 0.6},
+        {0.6, 0.3, 0.7, 0.2, 1.0, 0.4},
+        {0.2, 0.5, 0.3, 0.6, 0.4, 1.0},
+    }
+
+    // Normalize allocations to sum to 1 (full investment)
+    totalAlloc := 0.0
+    for _, a := range allocation {
+        totalAlloc += a
+    }
+    normalized := make([]float64, len(allocation))
+    for i := range allocation {
+        normalized[i] = allocation[i] / totalAlloc
+    }
+
+    // Calculate expected return
+    expectedReturn := 0.0
+    for i := range normalized {
+        expectedReturn += normalized[i] * returns[i]
+    }
+
+    // Calculate portfolio risk (variance)
+    portfolioRisk := 0.0
+    for i := range normalized {
+        for j := range normalized {
+            portfolioRisk += normalized[i] * normalized[j] *
+                volatilities[i] * volatilities[j] * correlations[i][j]
+        }
+    }
+    portfolioStdDev := math.Sqrt(portfolioRisk)
+
+    // Penalty for concentration (encourage diversification)
+    concentrationPenalty := 0.0
+    for _, a := range normalized {
+        if a > 0.4 {  // Penalize if more than 40% in one asset
+            concentrationPenalty += (a - 0.4) * 2.0
+        }
+    }
+
+    // Sharpe-like objective: maximize return per unit risk
+    // Negate for minimization; risk-free rate = 0.02
+    riskAdjustedReturn := (expectedReturn - 0.02) / portfolioStdDev
+
+    // Minimize: -Sharpe + concentration penalty
+    return -riskAdjustedReturn + concentrationPenalty
+}
+
+func main() {
+    fmt.Println("=== Portfolio Optimization with EOBBMA ===\n")
+
+    // EOBBMA is excellent for this deceptive problem
+    // (risk-return landscape has many local optima)
+    config := mayfly.NewEOBBMAConfig()
+    config.ObjectiveFunc = portfolioObjective
+    config.ProblemSize = 6  // 6 assets
+    config.LowerBound = 0.0  // Min allocation
+    config.UpperBound = 1.0  // Max allocation
+    config.MaxIterations = 500
+
+    // Moderate Lévy flights for financial optimization
+    config.LevyAlpha = 1.5   // Balanced exploration
+    config.LevyBeta = 1.0
+    config.OppositionRate = 0.3
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    // Normalize final allocation
+    totalAlloc := 0.0
+    for _, a := range result.GlobalBest.Position {
+        totalAlloc += a
+    }
+
+    fmt.Println("Optimal Portfolio Allocation:")
+    assetNames := []string{"Stocks", "Bonds", "Real Estate", "Cash", "Commodities", "Crypto"}
+    for i, a := range result.GlobalBest.Position {
+        percentage := (a / totalAlloc) * 100
+        fmt.Printf("  %s: %.1f%%\n", assetNames[i], percentage)
+    }
+
+    fmt.Printf("\nObjective Value: %.6f\n", result.GlobalBest.Cost)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
 }
 ```
 

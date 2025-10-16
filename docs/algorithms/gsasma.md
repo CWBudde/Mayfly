@@ -100,7 +100,9 @@ Explores the **opposite region** of the search space:
 
 **Applied to**: Global best solution periodically
 
-## Usage Example
+## Usage Examples
+
+### Basic Usage
 
 ```go
 package main
@@ -125,6 +127,158 @@ func main() {
     }
 
     fmt.Printf("Best Cost: %f\n", result.GlobalBest.Cost)
+}
+```
+
+### Advanced Usage with Custom Cooling Schedule
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Configure GSASMA with logarithmic cooling for thorough exploration
+    config := mayfly.NewGSASMAConfig()
+    config.ObjectiveFunc = mayfly.Rastrigin
+    config.ProblemSize = 30
+    config.LowerBound = -5.12
+    config.UpperBound = 5.12
+    config.MaxIterations = 800
+
+    // Use logarithmic cooling for highly multimodal problems
+    config.CoolingSchedule = "logarithmic"
+    config.InitialTemperature = 500.0  // Higher temp for more exploration
+    config.CoolingRate = 0.98           // Slower cooling
+
+    // Adjust mutation balance
+    config.CauchyMutationRate = 0.4  // More Cauchy for exploration
+
+    // Tune Golden Sine influence
+    config.GoldenFactor = 1.5  // More aggressive updates
+
+    // Enable OBL
+    config.ApplyOBLToGlobalBest = true
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Final Cost: %.4f\n", result.GlobalBest.Cost)
+    fmt.Printf("Iterations: %d\n", result.IterationCount)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+}
+```
+
+### Real-World Example: PID Controller Tuning
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// Simulate control system response with PID controller
+// Objective: minimize settling time + overshoot + steady-state error
+func pidPerformance(params []float64) float64 {
+    kp := params[0]  // Proportional gain
+    ki := params[1]  // Integral gain
+    kd := params[2]  // Derivative gain
+
+    // Simulate step response (simplified model)
+    dt := 0.01
+    duration := 5.0
+    steps := int(duration / dt)
+
+    setpoint := 1.0
+    output := 0.0
+    integral := 0.0
+    prevError := 0.0
+
+    overshoot := 0.0
+    settlingTime := duration
+    steadyStateError := 0.0
+    oscillations := 0
+
+    for i := 0; i < steps; i++ {
+        t := float64(i) * dt
+        error := setpoint - output
+
+        // PID calculation
+        integral += error * dt
+        derivative := (error - prevError) / dt
+        control := kp*error + ki*integral + kd*derivative
+
+        // Simple plant model: first-order system
+        tau := 1.0  // Time constant
+        output += (control - output) / tau * dt
+
+        // Track overshoot
+        if output > setpoint && (output-setpoint) > overshoot {
+            overshoot = output - setpoint
+        }
+
+        // Detect settling (within 2% of setpoint)
+        if math.Abs(error) < 0.02 && settlingTime == duration {
+            settlingTime = t
+        }
+
+        // Count oscillations
+        if i > 0 && (error*prevError) < 0 {
+            oscillations++
+        }
+
+        prevError = error
+    }
+
+    // Final steady-state error
+    steadyStateError = math.Abs(setpoint - output)
+
+    // Combined performance metric (minimize)
+    cost := settlingTime*10 +      // Penalize slow settling
+        overshoot*50 +         // Heavily penalize overshoot
+        steadyStateError*100 + // Heavily penalize steady-state error
+        float64(oscillations)  // Penalize oscillatory behavior
+
+    return cost
+}
+
+func main() {
+    fmt.Println("=== PID Controller Tuning with GSASMA ===\n")
+
+    // GSASMA is ideal for control system tuning
+    // (fast convergence + stable exploration-exploitation)
+    config := mayfly.NewGSASMAConfig()
+    config.ObjectiveFunc = pidPerformance
+    config.ProblemSize = 3  // Kp, Ki, Kd
+    config.LowerBound = 0.0
+    config.UpperBound = 10.0
+    config.MaxIterations = 300
+
+    // Use exponential cooling for quick convergence
+    config.CoolingSchedule = "exponential"
+    config.InitialTemperature = 100.0
+    config.CoolingRate = 0.95
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println("Optimal PID Parameters:")
+    fmt.Printf("  Kp (Proportional): %.4f\n", result.GlobalBest.Position[0])
+    fmt.Printf("  Ki (Integral):     %.4f\n", result.GlobalBest.Position[1])
+    fmt.Printf("  Kd (Derivative):   %.4f\n", result.GlobalBest.Position[2])
+    fmt.Printf("\nPerformance Cost: %.4f\n", result.GlobalBest.Cost)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+    fmt.Println("\nLower cost = better performance (faster settling, less overshoot)")
 }
 ```
 

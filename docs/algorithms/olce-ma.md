@@ -49,7 +49,9 @@ z(n+1) = 4 * z(n) * (1 - z(n))
 
 The algorithm balances exploration and exploitation through proven parameter defaults that work well without tuning.
 
-## Usage Example
+## Usage Examples
+
+### Basic Usage
 
 ```go
 package main
@@ -74,6 +76,123 @@ func main() {
     }
 
     fmt.Printf("Best Cost: %f\n", result.GlobalBest.Cost)
+}
+```
+
+### Advanced Usage with Custom Parameters
+
+```go
+package main
+
+import (
+    "fmt"
+    "math/rand"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Configure OLCE-MA for high-dimensional multimodal optimization
+    config := mayfly.NewOLCEConfig()
+    config.ObjectiveFunc = mayfly.Rastrigin
+    config.ProblemSize = 30  // High dimensionality
+    config.LowerBound = -5.12
+    config.UpperBound = 5.12
+    config.MaxIterations = 1000
+
+    // Tune OLCE-specific parameters
+    config.OrthogonalFactor = 0.4  // Increase exploration
+    config.ChaosFactor = 0.15       // Stronger chaos perturbation
+
+    // Increase population for high-D problems
+    config.NPop = 40
+    config.NPopF = 40
+
+    // Use fixed seed for reproducibility
+    config.Rand = rand.New(rand.NewSource(42))
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Final Cost: %.6f\n", result.GlobalBest.Cost)
+    fmt.Printf("Iterations: %d\n", result.IterationCount)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+}
+```
+
+### Real-World Example: Neural Network Hyperparameter Tuning
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// Simulate neural network validation error for given hyperparameters
+func nnValidationError(params []float64) float64 {
+    learningRate := params[0]
+    momentum := params[1]
+    dropout := params[2]
+    l2Reg := params[3]
+
+    // Simulate training with these hyperparameters
+    // (replace with actual model training in practice)
+
+    // Penalize extreme values
+    error := 0.0
+
+    // Learning rate: optimal around 0.001-0.01
+    lrOptimal := 0.005
+    error += math.Abs(learningRate - lrOptimal) * 10
+
+    // Momentum: optimal around 0.9
+    error += math.Abs(momentum - 0.9) * 5
+
+    // Dropout: optimal around 0.2-0.3
+    dropoutOptimal := 0.25
+    error += math.Abs(dropout - dropoutOptimal) * 8
+
+    // L2 regularization: optimal around 0.0001
+    l2Optimal := 0.0001
+    error += math.Abs(l2Reg - l2Optimal) * 1000
+
+    // Add some noise to simulate stochastic training
+    noise := (math.Sin(learningRate*100) + math.Cos(momentum*50)) * 0.1
+
+    return error + math.Abs(noise)
+}
+
+func main() {
+    fmt.Println("=== Neural Network Hyperparameter Optimization with OLCE-MA ===\n")
+
+    // OLCE-MA excels at this multimodal optimization problem
+    config := mayfly.NewOLCEConfig()
+    config.ObjectiveFunc = nnValidationError
+    config.ProblemSize = 4  // 4 hyperparameters
+    config.LowerBound = 0.0001
+    config.UpperBound = 0.5
+    config.MaxIterations = 300
+
+    // Smaller population for expensive evaluations
+    config.NPop = 20
+    config.NPopF = 20
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println("Optimal Hyperparameters:")
+    fmt.Printf("  Learning Rate: %.6f\n", result.GlobalBest.Position[0])
+    fmt.Printf("  Momentum:      %.6f\n", result.GlobalBest.Position[1])
+    fmt.Printf("  Dropout:       %.6f\n", result.GlobalBest.Position[2])
+    fmt.Printf("  L2 Reg:        %.6f\n", result.GlobalBest.Position[3])
+    fmt.Printf("\nValidation Error: %.6f\n", result.GlobalBest.Cost)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
 }
 ```
 

@@ -99,9 +99,9 @@ AOBLMOA includes **complete multi-objective optimization** framework:
 - **Hypervolume**: Volume dominated by Pareto front (higher is better)
 - **IGD**: Inverted Generational Distance to true front (lower is better)
 
-## Usage Example
+## Usage Examples
 
-### Single-Objective Optimization
+### Basic Single-Objective Optimization
 
 ```go
 package main
@@ -129,30 +129,199 @@ func main() {
 }
 ```
 
-### Multi-Objective Optimization
+### Advanced Usage with Custom Strategy Weighting
 
 ```go
-// Define multi-objective function (example: minimize both objectives)
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Configure AOBLMOA with custom Aquila/Mayfly blend
+    config := mayfly.NewAOBLMOAConfig()
+    config.ObjectiveFunc = mayfly.Schwefel  // Deceptive landscape
+    config.ProblemSize = 30
+    config.LowerBound = -500
+    config.UpperBound = 500
+    config.MaxIterations = 1000
+
+    // More Aquila for aggressive exploration
+    config.AquilaWeight = 0.7  // 70% Aquila, 30% Mayfly
+
+    // Aggressive opposition learning
+    config.OppositionProbability = 0.4
+
+    // Larger archive for diverse solutions
+    config.ArchiveSize = 150
+
+    // Custom strategy switch point (default is 2/3 of iterations)
+    config.StrategySwitch = 600  // Switch at iteration 600
+
+    // Larger population for complex landscape
+    config.NPop = 50
+    config.NPopF = 50
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Final Cost: %.2f\n", result.GlobalBest.Cost)
+    fmt.Printf("Iterations: %d\n", result.IterationCount)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+}
+```
+
+### Multi-Objective Optimization Example
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// Multi-objective function: minimize both objectives
+// Objective 1: Distance from origin (Sphere)
+// Objective 2: Rosenbrock function value
 func multiObjective(x []float64) float64 {
-    // For single-objective interface, use weighted sum or primary objective
     obj1 := mayfly.Sphere(x)      // Minimize distance to origin
     obj2 := mayfly.Rosenbrock(x)  // Minimize Rosenbrock valley
 
-    // Return weighted combination (or use primary objective)
+    // For single-objective interface, use weighted sum
+    // (Pareto front is still maintained internally)
     return 0.5*obj1 + 0.5*obj2
 }
 
-config := mayfly.NewAOBLMOAConfig()
-config.ObjectiveFunc = multiObjective
-config.ProblemSize = 10
-config.LowerBound = -5
-config.UpperBound = 10
-config.ArchiveSize = 100  // Store up to 100 Pareto-optimal solutions
+func main() {
+    fmt.Println("=== Multi-Objective Optimization with AOBLMOA ===\n")
 
-result, err := mayfly.Optimize(config)
+    config := mayfly.NewAOBLMOAConfig()
+    config.ObjectiveFunc = multiObjective
+    config.ProblemSize = 10
+    config.LowerBound = -5
+    config.UpperBound = 10
+    config.MaxIterations = 500
+    config.ArchiveSize = 100  // Store up to 100 Pareto-optimal solutions
 
-// Pareto archive is maintained internally
-// Access via result.GlobalBest for single-objective equivalent
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Best Compromise Solution Cost: %.6f\n", result.GlobalBest.Cost)
+    fmt.Println("\nNote: Internal Pareto archive maintained during optimization")
+    fmt.Println("using NSGA-II selection with crowding distance.")
+}
+```
+
+### Real-World Example: Multi-Criteria Resource Allocation
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// Resource allocation with multiple conflicting objectives:
+// 1. Maximize total performance
+// 2. Minimize total cost
+// 3. Balance resource distribution (minimize variance)
+func resourceAllocation(allocation []float64) float64 {
+    // Simulated performance gains per resource unit
+    performance := []float64{1.5, 2.0, 1.2, 1.8, 2.5}
+
+    // Simulated costs per resource unit
+    costs := []float64{10.0, 15.0, 8.0, 12.0, 20.0}
+
+    // Calculate objectives
+    totalPerformance := 0.0
+    totalCost := 0.0
+    for i := range allocation {
+        totalPerformance += allocation[i] * performance[i]
+        totalCost += allocation[i] * costs[i]
+    }
+
+    // Calculate distribution balance (lower variance = better)
+    mean := 0.0
+    for _, a := range allocation {
+        mean += a
+    }
+    mean /= float64(len(allocation))
+
+    variance := 0.0
+    for _, a := range allocation {
+        diff := a - mean
+        variance += diff * diff
+    }
+    variance /= float64(len(allocation))
+
+    // Normalize objectives to similar scales
+    perfObjective := -totalPerformance / 50.0 // Negate to minimize (was maximize)
+    costObjective := totalCost / 100.0
+    balanceObjective := math.Sqrt(variance) / 10.0
+
+    // Weighted combination (can be adjusted based on priorities)
+    // Higher weights = higher importance
+    return 0.4*perfObjective + 0.4*costObjective + 0.2*balanceObjective
+}
+
+func main() {
+    fmt.Println("=== Multi-Criteria Resource Allocation with AOBLMOA ===\n")
+
+    // AOBLMOA excels at multi-criteria problems with conflicting objectives
+    config := mayfly.NewAOBLMOAConfig()
+    config.ObjectiveFunc = resourceAllocation
+    config.ProblemSize = 5  // 5 resources to allocate
+    config.LowerBound = 0.0  // Minimum allocation
+    config.UpperBound = 20.0 // Maximum allocation per resource
+    config.MaxIterations = 600
+
+    // Balanced Aquila/Mayfly blend
+    config.AquilaWeight = 0.5
+
+    // Moderate opposition
+    config.OppositionProbability = 0.3
+
+    // Larger archive for diverse Pareto solutions
+    config.ArchiveSize = 120
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println("Optimal Resource Allocation:")
+    resourceNames := []string{"Server Capacity", "Network Bandwidth", "Storage", "Memory", "Processing"}
+    for i, amount := range result.GlobalBest.Position {
+        fmt.Printf("  %s: %.2f units\n", resourceNames[i], amount)
+    }
+
+    // Calculate final objectives for display
+    performance := []float64{1.5, 2.0, 1.2, 1.8, 2.5}
+    costs := []float64{10.0, 15.0, 8.0, 12.0, 20.0}
+
+    totalPerf := 0.0
+    totalCost := 0.0
+    for i, a := range result.GlobalBest.Position {
+        totalPerf += a * performance[i]
+        totalCost += a * costs[i]
+    }
+
+    fmt.Printf("\nPerformance Metrics:\n")
+    fmt.Printf("  Total Performance: %.2f\n", totalPerf)
+    fmt.Printf("  Total Cost:        $%.2f\n", totalCost)
+    fmt.Printf("  Combined Score:    %.6f (lower is better)\n", result.GlobalBest.Cost)
+    fmt.Printf("\nFunction Evaluations: %d\n", result.FuncEvalCount)
+}
 ```
 
 **Note**: Full multi-objective interface (accepting `MultiObjectiveFunction` that returns multiple values) is available through the internal archive system. The Pareto front is maintained during optimization using NSGA-II selection with crowding distance.

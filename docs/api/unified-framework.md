@@ -264,7 +264,271 @@ mayfly.AutoTuneConfig(config, characteristics)
 - **Stable convergence**: Optimizes for robustness
 - **Expensive evaluations**: Reduces population/iterations
 
-## Examples
+## Complete Working Examples
+
+### Example 1: Automatic Algorithm Selection
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Let the library choose the best algorithm for your problem
+    characteristics := mayfly.ProblemCharacteristics{
+        Dimensionality:            30,
+        Modality:                  mayfly.HighlyMultimodal,
+        Landscape:                 mayfly.Rugged,
+        ExpensiveEvaluations:      false,
+        RequiresFastConvergence:   false,
+        RequiresStableConvergence: false,
+        MultiObjective:            false,
+    }
+
+    selector := mayfly.NewAlgorithmSelector()
+    recommendations := selector.RecommendAlgorithms(characteristics)
+
+    fmt.Println("=== Algorithm Recommendations ===")
+    for i, rec := range recommendations[:3] {  // Show top 3
+        fmt.Printf("%d. %s (%.1f%% match)\n",
+            i+1, rec.Variant.FullName(), rec.Score*100)
+        fmt.Printf("   Reason: %s\n\n", rec.Reason)
+    }
+
+    // Use the best recommendation
+    best := recommendations[0]
+    result, err := mayfly.NewBuilderFromVariant(best.Variant).
+        ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
+        WithIterations(500).
+        Optimize()
+
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Best Cost with %s: %.4f\n",
+        best.Variant.Name(), result.GlobalBest.Cost)
+}
+```
+
+### Example 2: Builder API for Quick Prototyping
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+    "github.com/CWBudde/mayfly"
+)
+
+// Custom objective: minimize energy consumption of a system
+func energyConsumption(params []float64) float64 {
+    voltage := params[0]
+    frequency := params[1]
+    loadFactor := params[2]
+
+    // Simplified energy model: E = V² * f * load
+    energy := voltage * voltage * frequency * loadFactor
+
+    // Add constraints as penalties
+    penalty := 0.0
+
+    // Voltage must be between 3.3V and 5V
+    if voltage < 3.3 || voltage > 5.0 {
+        penalty += 1000
+    }
+
+    // Frequency: 1-100 MHz
+    if frequency < 1.0 || frequency > 100.0 {
+        penalty += 1000
+    }
+
+    // Load factor: 0-1
+    if loadFactor < 0 || loadFactor > 1.0 {
+        penalty += 1000
+    }
+
+    return energy + penalty
+}
+
+func main() {
+    fmt.Println("=== System Energy Optimization ===\n")
+
+    // Use builder API for quick setup
+    result, err := mayfly.NewBuilder("gsasma").  // Fast convergence
+        ForProblem(energyConsumption, 3, 0, 100).
+        WithIterations(300).
+        WithPopulation(25, 25).
+        WithConfig(func(c *mayfly.Config) {
+            // Fine-tune GSASMA parameters
+            c.CoolingRate = 0.97
+            c.CauchyMutationRate = 0.3
+        }).
+        Optimize()
+
+    if err != nil {
+        panic(err)
+    }
+
+    voltage := result.GlobalBest.Position[0]
+    frequency := result.GlobalBest.Position[1]
+    loadFactor := result.GlobalBest.Position[2]
+
+    fmt.Printf("Optimal Configuration:\n")
+    fmt.Printf("  Voltage:    %.2f V\n", voltage)
+    fmt.Printf("  Frequency:  %.2f MHz\n", frequency)
+    fmt.Printf("  Load Factor: %.3f\n", loadFactor)
+    fmt.Printf("\nMinimum Energy: %.4f units\n", result.GlobalBest.Cost)
+}
+```
+
+### Example 3: Comparison Across Multiple Variants
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    fmt.Println("=== Comparing Algorithm Variants ===\n")
+
+    // Define the problem
+    problemFunc := mayfly.Rastrigin
+    dimensions := 20
+    lower, upper := -5.12, 5.12
+    iterations := 400
+
+    // Test multiple variants
+    variants := []string{"ma", "desma", "olce", "eobbma", "gsasma"}
+    results := make(map[string]float64)
+
+    for _, variant := range variants {
+        result, err := mayfly.NewBuilder(variant).
+            ForProblem(problemFunc, dimensions, lower, upper).
+            WithIterations(iterations).
+            Optimize()
+
+        if err != nil {
+            fmt.Printf("Error with %s: %v\n", variant, err)
+            continue
+        }
+
+        results[variant] = result.GlobalBest.Cost
+        fmt.Printf("%s: %.4f (after %d evaluations)\n",
+            variant, result.GlobalBest.Cost, result.FuncEvalCount)
+    }
+
+    // Find best
+    bestVariant := ""
+    bestCost := math.MaxFloat64
+    for variant, cost := range results {
+        if cost < bestCost {
+            bestCost = cost
+            bestVariant = variant
+        }
+    }
+
+    fmt.Printf("\nBest variant: %s with cost %.4f\n", bestVariant, bestCost)
+}
+```
+
+### Example 4: Configuration Presets
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    fmt.Println("=== Using Configuration Presets ===\n")
+
+    // Automatically configure for deceptive landscapes
+    config, err := mayfly.NewPresetConfig(mayfly.PresetDeceptive)
+    if err != nil {
+        panic(err)
+    }
+
+    // Just set the problem-specific parameters
+    config.ObjectiveFunc = mayfly.Schwefel
+    config.ProblemSize = 20
+    config.LowerBound = -500
+    config.UpperBound = 500
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Using preset: PresetDeceptive\n")
+    fmt.Printf("Algorithm: %s\n", "EOBBMA")  // Preset selects EOBBMA
+    fmt.Printf("Best Cost: %.2f\n", result.GlobalBest.Cost)
+    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
+}
+```
+
+### Example 5: Auto-Tuning Based on Problem Characteristics
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    fmt.Println("=== Auto-Tuning Configuration ===\n")
+
+    // Start with a base configuration
+    config := mayfly.NewOLCEConfig()
+    config.ObjectiveFunc = mayfly.Rastrigin
+    config.ProblemSize = 50  // High dimensionality
+    config.LowerBound = -5.12
+    config.UpperBound = 5.12
+
+    // Define problem characteristics
+    characteristics := mayfly.ProblemCharacteristics{
+        Dimensionality:            50,
+        Modality:                  mayfly.HighlyMultimodal,
+        RequiresFastConvergence:   true,
+        RequiresStableConvergence: false,
+    }
+
+    // Auto-tune the configuration
+    mayfly.AutoTuneConfig(config, characteristics)
+
+    // Configuration is now automatically adjusted:
+    // - Population increased for high dimensionality
+    // - Iterations optimized for fast convergence
+    // - OLCE parameters tuned for multimodal landscape
+
+    result, err := mayfly.Optimize(config)
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("Auto-tuned for:\n")
+    fmt.Printf("  - High dimensionality (D=%d)\n", characteristics.Dimensionality)
+    fmt.Printf("  - Highly multimodal landscape\n")
+    fmt.Printf("  - Fast convergence requirement\n\n")
+
+    fmt.Printf("Final population: %d males, %d females\n", config.NPop, config.NPopF)
+    fmt.Printf("Max iterations: %d\n", config.MaxIterations)
+    fmt.Printf("\nBest Cost: %.4f\n", result.GlobalBest.Cost)
+}
+```
+
+## Running Examples
 
 Complete examples available in the `examples/` directory:
 

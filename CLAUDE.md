@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Go implementation of the Mayfly Optimization Algorithm (MA) and its enhanced variants. This is a metaheuristic optimization library converted from MATLAB while maintaining research fidelity. The project is evolving into a comprehensive suite of Mayfly algorithm variants.
+Go implementation of the Mayfly Optimization Algorithm (MA) and its enhanced variants. This is a metaheuristic optimization library converted from MATLAB while maintaining research fidelity.
 
-**Current Status**: Phase 1 complete (Standard MA + DESMA variant)
-**Future Phases**: See PLAN.md for roadmap to implement 7+ additional variants
+**Current Status**: All 7 algorithm variants implemented (Standard MA, DESMA, OLCE-MA, EOBBMA, GSASMA, MPMA, AOBLMOA)
+**Documentation**: Complete docs/ folder with algorithm guides, API reference, and tutorials
+**Future Phases**: See PLAN.md for roadmap
 
 ## Build & Development Commands
 

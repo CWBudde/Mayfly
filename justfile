@@ -8,14 +8,22 @@ default:
 build:
     go build -v ./...
 
-# Run tests with coverage
+# Run tests with coverage (fast - without race detection)
 test:
-    go test -v -race -coverprofile=coverage.out ./...
+    go test -v -coverprofile=coverage.out ./...
     go tool cover -html=coverage.out -o coverage.html
 
-# Run tests without coverage
+# Run tests without coverage (quickest)
 test-quick:
-    go test -v ./...
+    go test -v -short ./...
+
+# Run tests with race detection (slower, skips long-running benchmark suite)
+test-race:
+    go test -v -race -short -timeout 5m ./...
+
+# Run all tests including long-running benchmark suite (no race detection)
+test-full:
+    go test -v -timeout 10m ./...
 
 # Run integration tests (Gherkin/Cucumber)
 test-integration:
@@ -64,8 +72,14 @@ docs:
 # Run all checks (format, lint, test)
 check: fmt treefmt lint test
 
+# Run all checks with race detection
+check-race: fmt treefmt lint test-race
+
 # Full CI pipeline
 ci: tidy verify check
+
+# Full CI pipeline with race detection
+ci-race: tidy verify check-race
 
 # Profile CPU performance
 profile-cpu:

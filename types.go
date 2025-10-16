@@ -34,91 +34,70 @@ type Best struct {
 type Mayfly struct {
 	Position []float64
 	Velocity []float64
-	Cost     float64
 	Best     Best
+	Cost     float64
 }
 
 // Config holds the configuration parameters for the Mayfly Algorithm.
 type Config struct {
-	// Problem parameters
-	ObjectiveFunc ObjectiveFunction `json:"-"` // Cannot serialize functions
-	ProblemSize   int               `json:"problem_size"`
-	LowerBound    float64           `json:"lower_bound"`
-	UpperBound    float64           `json:"upper_bound"`
-
-	// Algorithm parameters
-	MaxIterations int     `json:"max_iterations"`
-	NPop          int     `json:"npop"`
-	NPopF         int     `json:"npopf"`
-	G             float64 `json:"g"`
-	GDamp         float64 `json:"g_damp"`
-	A1            float64 `json:"a1"`
-	A2            float64 `json:"a2"`
-	A3            float64 `json:"a3"`
-	Beta          float64 `json:"beta"`
-	Dance         float64 `json:"dance"`
-	FL            float64 `json:"fl"`
-	DanceDamp     float64 `json:"dance_damp"`
-	FLDamp        float64 `json:"fl_damp"`
-
-	// Mating parameters
-	NC int     `json:"nc"`
-	NM int     `json:"nm"`
-	Mu float64 `json:"mu"`
-
-	// Velocity limits
-	VelMax float64 `json:"vel_max"`
-	VelMin float64 `json:"vel_min"`
-
-	// Random source (optional, will use default if nil)
-	Rand *rand.Rand `json:"-"` // Cannot serialize
-
-	// DESMA (Dynamic Elite Strategy) parameters
-	UseDESMA        bool    `json:"use_desma"`
-	EliteCount      int     `json:"elite_count"`
-	SearchRange     float64 `json:"search_range"`
-	EnlargeFactor   float64 `json:"enlarge_factor"`
-	ReductionFactor float64 `json:"reduction_factor"`
-
-	// OLCE-MA (Orthogonal Learning and Chaotic Exploitation) parameters
-	UseOLCE          bool    `json:"use_olce"`
-	OrthogonalFactor float64 `json:"orthogonal_factor"`
-	ChaosFactor      float64 `json:"chaos_factor"`
-
-	// EOBBMA (Elite Opposition-Based Bare Bones Mayfly Algorithm) parameters
-	UseEOBBMA            bool    `json:"use_eobbma"`
-	LevyAlpha            float64 `json:"levy_alpha"`
-	LevyBeta             float64 `json:"levy_beta"`
-	OppositionRate       float64 `json:"opposition_rate"`
-	EliteOppositionCount int     `json:"elite_opposition_count"`
-
-	// MPMA (Median Position-Based Mayfly Algorithm) parameters
-	UseMPMA           bool    `json:"use_mpma"`
-	MedianWeight      float64 `json:"median_weight"`
-	GravityType       string  `json:"gravity_type"`
-	UseWeightedMedian bool    `json:"use_weighted_median"`
-
-	// GSASMA (Golden Sine Algorithm with Simulated Annealing MA) parameters
-	UseGSASMA            bool    `json:"use_gsasma"`
-	InitialTemperature   float64 `json:"initial_temperature"`
-	CoolingRate          float64 `json:"cooling_rate"`
-	CauchyMutationRate   float64 `json:"cauchy_mutation_rate"`
-	GoldenFactor         float64 `json:"golden_factor"`
-	CoolingSchedule      string  `json:"cooling_schedule"`
-	ApplyOBLToGlobalBest bool    `json:"apply_obl_to_global_best"`
-
-	// AOBLMOA (Aquila Optimizer-Based Learning Multi-Objective Algorithm) parameters
-	UseAOBLMOA            bool    `json:"use_aoblmoa"`
-	AquilaWeight          float64 `json:"aquila_weight"`
-	OppositionProbability float64 `json:"opposition_probability"`
-	ArchiveSize           int     `json:"archive_size"`
-	StrategySwitch        int     `json:"strategy_switch"`
+	ObjectiveFunc         ObjectiveFunction `json:"-"`
+	Rand                  *rand.Rand        `json:"-"`
+	CoolingSchedule       string            `json:"cooling_schedule"`
+	GravityType           string            `json:"gravity_type"`
+	ReductionFactor       float64           `json:"reduction_factor"`
+	Dance                 float64           `json:"dance"`
+	NPop                  int               `json:"npop"`
+	NPopF                 int               `json:"npopf"`
+	G                     float64           `json:"g"`
+	GDamp                 float64           `json:"g_damp"`
+	A1                    float64           `json:"a1"`
+	A2                    float64           `json:"a2"`
+	A3                    float64           `json:"a3"`
+	ChaosFactor           float64           `json:"chaos_factor"`
+	OrthogonalFactor      float64           `json:"orthogonal_factor"`
+	FL                    float64           `json:"fl"`
+	DanceDamp             float64           `json:"dance_damp"`
+	FLDamp                float64           `json:"fl_damp"`
+	NC                    int               `json:"nc"`
+	NM                    int               `json:"nm"`
+	Mu                    float64           `json:"mu"`
+	VelMax                float64           `json:"vel_max"`
+	VelMin                float64           `json:"vel_min"`
+	EliteCount            int               `json:"elite_count"`
+	SearchRange           float64           `json:"search_range"`
+	EnlargeFactor         float64           `json:"enlarge_factor"`
+	MaxIterations         int               `json:"max_iterations"`
+	UpperBound            float64           `json:"upper_bound"`
+	Beta                  float64           `json:"beta"`
+	LevyAlpha             float64           `json:"levy_alpha"`
+	StrategySwitch        int               `json:"strategy_switch"`
+	ArchiveSize           int               `json:"archive_size"`
+	LevyBeta              float64           `json:"levy_beta"`
+	OppositionRate        float64           `json:"opposition_rate"`
+	EliteOppositionCount  int               `json:"elite_opposition_count"`
+	OppositionProbability float64           `json:"opposition_probability"`
+	AquilaWeight          float64           `json:"aquila_weight"`
+	MedianWeight          float64           `json:"median_weight"`
+	LowerBound            float64           `json:"lower_bound"`
+	ProblemSize           int               `json:"problem_size"`
+	GoldenFactor          float64           `json:"golden_factor"`
+	InitialTemperature    float64           `json:"initial_temperature"`
+	CoolingRate           float64           `json:"cooling_rate"`
+	CauchyMutationRate    float64           `json:"cauchy_mutation_rate"`
+	UseGSASMA             bool              `json:"use_gsasma"`
+	UseWeightedMedian     bool              `json:"use_weighted_median"`
+	ApplyOBLToGlobalBest  bool              `json:"apply_obl_to_global_best"`
+	UseAOBLMOA            bool              `json:"use_aoblmoa"`
+	UseMPMA               bool              `json:"use_mpma"`
+	UseEOBBMA             bool              `json:"use_eobbma"`
+	UseOLCE               bool              `json:"use_olce"`
+	UseDESMA              bool              `json:"use_desma"`
 }
 
 // Result holds the results of the optimization.
 type Result struct {
+	BestSolution   []float64
 	GlobalBest     Best
-	BestSolution   []float64 // Best cost at each iteration
 	FuncEvalCount  int
 	IterationCount int
 }
@@ -150,5 +129,6 @@ func (m *Mayfly) clone() *Mayfly {
 	copy(clone.Position, m.Position)
 	copy(clone.Velocity, m.Velocity)
 	copy(clone.Best.Position, m.Best.Position)
+
 	return clone
 }

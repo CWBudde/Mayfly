@@ -22,10 +22,10 @@ import (
 
 // AnnealingScheduler manages the temperature schedule for simulated annealing.
 type AnnealingScheduler struct {
+	ScheduleType       string
 	InitialTemperature float64
 	CurrentTemperature float64
 	CoolingRate        float64
-	ScheduleType       string // "exponential", "linear", "logarithmic"
 	Iteration          int
 }
 
@@ -38,6 +38,7 @@ func NewAnnealingScheduler(initialTemp, coolingRate float64, scheduleType string
 	if scheduleType == "" {
 		scheduleType = "exponential"
 	}
+
 	return &AnnealingScheduler{
 		InitialTemperature: initialTemp,
 		CurrentTemperature: initialTemp,
@@ -93,30 +94,7 @@ func (as *AnnealingScheduler) Reset() {
 	as.Iteration = 0
 }
 
-// acceptanceProbability calculates the Metropolis acceptance probability.
-// This is the core of simulated annealing: it allows worse solutions
-// to be accepted with a probability that decreases as temperature decreases.
-//
-// Metropolis criterion:
-//
-//	P(accept) = exp(-ΔE / T)
-//
-// where:
-//   - ΔE = newCost - oldCost (energy difference, positive for worse solutions)
-//   - T = current temperature
-//
-// Behavior:
-//   - If newCost < oldCost (better): always accept (P = 1)
-//   - If newCost > oldCost (worse): accept with probability P < 1
-//   - Higher temperature: higher acceptance probability for worse solutions
-//   - Lower temperature: lower acceptance probability (more greedy)
-//
-// Parameters:
-//   - oldCost: cost of current solution
-//   - newCost: cost of candidate solution
-//   - temperature: current temperature
-//
-// Returns: acceptance probability in [0, 1]
+// Returns: acceptance probability in [0, 1].
 func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 	// If new solution is better, always accept
 	if newCost < oldCost {
@@ -130,16 +108,7 @@ func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 	return probability
 }
 
-// shouldAccept determines whether to accept a new solution based on
-// the Metropolis criterion and a random number.
-//
-// Parameters:
-//   - oldCost: cost of current solution
-//   - newCost: cost of candidate solution
-//   - temperature: current temperature
-//   - rng: random number generator
-//
-// Returns: true if the new solution should be accepted
+// Returns: true if the new solution should be accepted.
 func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 	if rng == nil {
 		rng = rand.New(rand.NewSource(0))
@@ -152,25 +121,9 @@ func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 	return rng.Float64() < prob
 }
 
-// annealedUpdate performs a position update with simulated annealing acceptance.
-// This combines position generation with probabilistic acceptance.
-//
-// Strategy:
-//  1. Generate candidate position using provided update function
-//  2. Evaluate candidate cost
-//  3. Accept based on Metropolis criterion
-//
-// Parameters:
-//   - mayfly: mayfly to update (modified in-place if accepted)
-//   - candidatePos: candidate position to evaluate
-//   - temperature: current temperature
-//   - objectiveFunc: objective function to evaluate
-//   - rng: random number generator
-//
-// Returns: (accepted bool, funcEvals int)
+// Returns: (accepted bool, funcEvals int).
 func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 	objectiveFunc ObjectiveFunction, rng *rand.Rand) (bool, int) {
-
 	// Evaluate candidate
 	candidateCost := objectiveFunc(candidatePos)
 	funcEvals := 1
@@ -224,16 +177,7 @@ func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, m
 	// Otherwise, maintain current temperature (will cool naturally on next Update)
 }
 
-// simulatedAnnealingAcceptance is a helper that encapsulates the full SA acceptance logic.
-// Use this in optimization loops for clean integration.
-//
-// Parameters:
-//   - oldCost: current cost
-//   - newCost: candidate cost
-//   - scheduler: annealing scheduler
-//   - rng: random number generator
-//
-// Returns: true if candidate should be accepted
+// Returns: true if candidate should be accepted.
 func simulatedAnnealingAcceptance(oldCost, newCost float64, scheduler *AnnealingScheduler, rng *rand.Rand) bool {
 	return shouldAccept(oldCost, newCost, scheduler.GetTemperature(), rng)
 }

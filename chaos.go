@@ -25,6 +25,7 @@ func NewLogisticMap(seed float64) *LogisticMap {
 		if seed <= 0.0 {
 			seed = 0.314159 // Safe default
 		}
+
 		if seed >= 1.0 {
 			seed = 0.271828 // Safe default
 		}
@@ -51,6 +52,7 @@ func (lm *LogisticMap) Next() float64 {
 	if lm.x <= 0.0 {
 		lm.x = 1e-10
 	}
+
 	if lm.x >= 1.0 {
 		lm.x = 1.0 - 1e-10
 	}
@@ -75,9 +77,11 @@ func (lm *LogisticMap) Reset(seed float64) {
 		if seed <= 0.0 {
 			seed = 0.314159
 		}
+
 		if seed >= 1.0 {
 			seed = 0.271828
 		}
 	}
+
 	lm.x = seed
 }

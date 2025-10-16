@@ -112,6 +112,7 @@ func ValidateConfig(config *Config) error {
 		if config.EliteCount < 0 {
 			return fmt.Errorf("elite_count must be non-negative (got %d)", config.EliteCount)
 		}
+
 		if config.EnlargeFactor <= 0 || config.ReductionFactor <= 0 {
 			return fmt.Errorf("enlarge_factor and reduction_factor must be positive")
 		}
@@ -121,6 +122,7 @@ func ValidateConfig(config *Config) error {
 		if config.OrthogonalFactor < 0 || config.OrthogonalFactor > 1 {
 			return fmt.Errorf("orthogonal_factor should be in [0,1] (got %f)", config.OrthogonalFactor)
 		}
+
 		if config.ChaosFactor < 0 || config.ChaosFactor > 1 {
 			return fmt.Errorf("chaos_factor should be in [0,1] (got %f)", config.ChaosFactor)
 		}
@@ -130,9 +132,11 @@ func ValidateConfig(config *Config) error {
 		if config.LevyAlpha <= 0 || config.LevyAlpha > 2 {
 			return fmt.Errorf("levy_alpha should be in (0,2] (got %f)", config.LevyAlpha)
 		}
+
 		if config.LevyBeta <= 0 {
 			return fmt.Errorf("levy_beta must be positive (got %f)", config.LevyBeta)
 		}
+
 		if config.OppositionRate < 0 || config.OppositionRate > 1 {
 			return fmt.Errorf("opposition_rate should be in [0,1] (got %f)", config.OppositionRate)
 		}
@@ -142,6 +146,7 @@ func ValidateConfig(config *Config) error {
 		if config.MedianWeight < 0 || config.MedianWeight > 1 {
 			return fmt.Errorf("median_weight should be in [0,1] (got %f)", config.MedianWeight)
 		}
+
 		validGravityTypes := map[string]bool{"linear": true, "exponential": true, "sigmoid": true}
 		if !validGravityTypes[config.GravityType] {
 			return fmt.Errorf("gravity_type must be 'linear', 'exponential', or 'sigmoid' (got '%s')", config.GravityType)
@@ -152,12 +157,15 @@ func ValidateConfig(config *Config) error {
 		if config.InitialTemperature <= 0 {
 			return fmt.Errorf("initial_temperature must be positive (got %f)", config.InitialTemperature)
 		}
+
 		if config.CoolingRate <= 0 || config.CoolingRate >= 1 {
 			return fmt.Errorf("cooling_rate should be in (0,1) (got %f)", config.CoolingRate)
 		}
+
 		if config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1 {
 			return fmt.Errorf("cauchy_mutation_rate should be in [0,1] (got %f)", config.CauchyMutationRate)
 		}
+
 		validSchedules := map[string]bool{"exponential": true, "linear": true, "logarithmic": true}
 		if !validSchedules[config.CoolingSchedule] {
 			return fmt.Errorf("cooling_schedule must be 'exponential', 'linear', or 'logarithmic' (got '%s')", config.CoolingSchedule)
@@ -168,9 +176,11 @@ func ValidateConfig(config *Config) error {
 		if config.AquilaWeight < 0 || config.AquilaWeight > 1 {
 			return fmt.Errorf("aquila_weight should be in [0,1] (got %f)", config.AquilaWeight)
 		}
+
 		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
 			return fmt.Errorf("opposition_probability should be in [0,1] (got %f)", config.OppositionProbability)
 		}
+
 		if config.ArchiveSize < 0 {
 			return fmt.Errorf("archive_size must be non-negative (got %d)", config.ArchiveSize)
 		}
@@ -181,18 +191,23 @@ func ValidateConfig(config *Config) error {
 	if config.UseDESMA {
 		activeVariants++
 	}
+
 	if config.UseOLCE {
 		activeVariants++
 	}
+
 	if config.UseEOBBMA {
 		activeVariants++
 	}
+
 	if config.UseMPMA {
 		activeVariants++
 	}
+
 	if config.UseGSASMA {
 		activeVariants++
 	}
+
 	if config.UseAOBLMOA {
 		activeVariants++
 	}
@@ -334,11 +349,12 @@ func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
 	}
 }
 
-// max returns the maximum of two integers
+// max returns the maximum of two integers.
 func max(a, b int) int {
 	if a > b {
 		return a
 	}
+
 	return b
 }
 

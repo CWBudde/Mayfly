@@ -28,15 +28,19 @@ func Optimize(config *Config) (*Result, error) {
 	if config == nil {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
+
 	if config.ObjectiveFunc == nil {
 		return nil, fmt.Errorf("ObjectiveFunc is required")
 	}
+
 	if config.ProblemSize <= 0 {
 		return nil, fmt.Errorf("ProblemSize must be positive")
 	}
+
 	if config.LowerBound >= config.UpperBound {
 		return nil, fmt.Errorf("LowerBound must be less than UpperBound")
 	}
+
 	if config.MaxIterations <= 0 {
 		return nil, fmt.Errorf("MaxIterations must be positive")
 	}
@@ -45,6 +49,7 @@ func Optimize(config *Config) (*Result, error) {
 	if config.NM == 0 {
 		config.NM = int(math.Round(0.05 * float64(config.NPop)))
 	}
+
 	if config.VelMax == 0 {
 		config.VelMax = 0.1 * (config.UpperBound - config.LowerBound)
 		config.VelMin = -config.VelMax
@@ -101,7 +106,9 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize DESMA parameters if enabled
 	var searchRange float64
+
 	var lastGlobalBestCost float64
+
 	if config.UseDESMA {
 		if config.SearchRange == 0 {
 			// Auto-calculate initial search range as 10% of the search space
@@ -109,11 +116,13 @@ func Optimize(config *Config) (*Result, error) {
 		} else {
 			searchRange = config.SearchRange
 		}
+
 		lastGlobalBestCost = globalBest.Cost
 	}
 
 	// Initialize OLCE-MA parameters if enabled
 	var chaosMap *LogisticMap
+
 	if config.UseOLCE {
 		// Initialize chaotic map with random seed
 		seed := rng.Float64()
@@ -132,6 +141,7 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize AOBLMOA parameters if enabled
 	var paretoArchive *ParetoArchive
+
 	if config.UseAOBLMOA {
 		initializeAOBLMOA(config)
 		paretoArchive = NewParetoArchive(config.ArchiveSize)
@@ -173,6 +183,7 @@ func Optimize(config *Config) (*Result, error) {
 					for j := 0; j < config.ProblemSize; j++ {
 						females[i].Position[j] += levyStep[j] * (config.UpperBound - config.LowerBound) * 0.01
 					}
+
 					maxVec(females[i].Position, config.LowerBound)
 					minVec(females[i].Position, config.UpperBound)
 				}
@@ -251,13 +262,16 @@ func Optimize(config *Config) (*Result, error) {
 
 			// MPMA: Calculate median position if enabled
 			var medianPos []float64
+
 			var mpmaG float64 // MPMA-specific gravity coefficient
+
 			if config.UseMPMA {
 				if config.UseWeightedMedian {
 					// Create fitness weights (better fitness = higher weight)
 					weights := make([]float64, len(males))
 					maxCost := males[len(males)-1].Cost // Worst cost (sorted)
 					minCost := males[0].Cost            // Best cost
+
 					for i := range males {
 						// Normalize and invert (better solutions get higher weight)
 						if maxCost > minCost {
@@ -266,6 +280,7 @@ func Optimize(config *Config) (*Result, error) {
 							weights[i] = 1.0 // All equal
 						}
 					}
+
 					medianPos = calculateWeightedMedianPosition(males, weights)
 				} else {
 					medianPos = calculateMedianPosition(males)
@@ -309,6 +324,7 @@ func Optimize(config *Config) (*Result, error) {
 					if config.UseMPMA {
 						gVal = mpmaG // Use MPMA gravity for dance too
 					}
+
 					for j := 0; j < config.ProblemSize; j++ {
 						males[i].Velocity[j] = gVal*males[i].Velocity[j] + dance*e[j]
 					}
@@ -354,6 +370,7 @@ func Optimize(config *Config) (*Result, error) {
 			// Prepare bounds vectors for orthogonal learning
 			lb := make([]float64, config.ProblemSize)
 			ub := make([]float64, config.ProblemSize)
+
 			for j := 0; j < config.ProblemSize; j++ {
 				lb[j] = config.LowerBound
 				ub[j] = config.UpperBound
@@ -376,6 +393,7 @@ func Optimize(config *Config) (*Result, error) {
 			if numElite < 1 {
 				numElite = 1
 			}
+
 			funcCount += numElite * 4
 
 			// Update global best if orthogonal learning found better solution
@@ -462,6 +480,7 @@ func Optimize(config *Config) (*Result, error) {
 
 		// Mating - Create offspring
 		offspring := make([]*Mayfly, 0, config.NC)
+
 		for k := 0; k < config.NC/2; k++ {
 			// Select parents (best males and females)
 			p1 := males[k]
@@ -485,6 +504,7 @@ func Optimize(config *Config) (*Result, error) {
 					if off1.Position[j] < config.LowerBound {
 						off1.Position[j] = config.LowerBound
 					}
+
 					if off1.Position[j] > config.UpperBound {
 						off1.Position[j] = config.UpperBound
 					}
@@ -493,10 +513,12 @@ func Optimize(config *Config) (*Result, error) {
 
 			off1.Cost = config.ObjectiveFunc(off1.Position)
 			funcCount++
+
 			if off1.Cost < globalBest.Cost {
 				globalBest.Cost = off1.Cost
 				copy(globalBest.Position, off1.Position)
 			}
+
 			copy(off1.Best.Position, off1.Position)
 			off1.Best.Cost = off1.Cost
 
@@ -515,6 +537,7 @@ func Optimize(config *Config) (*Result, error) {
 					if off2.Position[j] < config.LowerBound {
 						off2.Position[j] = config.LowerBound
 					}
+
 					if off2.Position[j] > config.UpperBound {
 						off2.Position[j] = config.UpperBound
 					}
@@ -523,10 +546,12 @@ func Optimize(config *Config) (*Result, error) {
 
 			off2.Cost = config.ObjectiveFunc(off2.Position)
 			funcCount++
+
 			if off2.Cost < globalBest.Cost {
 				globalBest.Cost = off2.Cost
 				copy(globalBest.Position, off2.Position)
 			}
+
 			copy(off2.Best.Position, off2.Position)
 			off2.Best.Cost = off2.Cost
 
@@ -546,7 +571,9 @@ func Optimize(config *Config) (*Result, error) {
 
 				// Calculate adaptive Cauchy probability based on iteration progress
 				iterRatio := float64(it) / float64(config.MaxIterations)
+
 				var cauchyProb float64
+
 				if iterRatio < 0.33 {
 					cauchyProb = 0.7 // Early: high exploration
 				} else if iterRatio < 0.66 {
@@ -577,6 +604,7 @@ func Optimize(config *Config) (*Result, error) {
 						if mut.Position[j] < config.LowerBound {
 							mut.Position[j] = config.LowerBound
 						}
+
 						if mut.Position[j] > config.UpperBound {
 							mut.Position[j] = config.UpperBound
 						}
@@ -585,10 +613,12 @@ func Optimize(config *Config) (*Result, error) {
 
 				mut.Cost = config.ObjectiveFunc(mut.Position)
 				funcCount++
+
 				if mut.Cost < globalBest.Cost {
 					globalBest.Cost = mut.Cost
 					copy(globalBest.Position, mut.Position)
 				}
+
 				copy(mut.Best.Position, mut.Position)
 				mut.Best.Cost = mut.Cost
 
@@ -616,6 +646,7 @@ func Optimize(config *Config) (*Result, error) {
 						if mut.Position[j] < config.LowerBound {
 							mut.Position[j] = config.LowerBound
 						}
+
 						if mut.Position[j] > config.UpperBound {
 							mut.Position[j] = config.UpperBound
 						}
@@ -624,10 +655,12 @@ func Optimize(config *Config) (*Result, error) {
 
 				mut.Cost = config.ObjectiveFunc(mut.Position)
 				funcCount++
+
 				if mut.Cost < globalBest.Cost {
 					globalBest.Cost = mut.Cost
 					copy(globalBest.Position, mut.Position)
 				}
+
 				copy(mut.Best.Position, mut.Position)
 				mut.Best.Cost = mut.Cost
 
@@ -643,6 +676,7 @@ func Optimize(config *Config) (*Result, error) {
 		// Sort and keep best
 		sortMayflies(males)
 		sortMayflies(females)
+
 		males = males[:config.NPop]
 		females = females[:config.NPopF]
 
@@ -732,7 +766,7 @@ func Optimize(config *Config) (*Result, error) {
 	}, nil
 }
 
-// defaultRand creates a default random number generator
+// defaultRand creates a default random number generator.
 func defaultRand() *rand.Rand {
 	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// Tolerance for floating point comparisons
+// Tolerance for floating point comparisons.
 const epsilon = 1e-10
 
 // TestSphere tests the Sphere benchmark function.
@@ -69,8 +69,10 @@ func TestSphereDimensionality(t *testing.T) {
 			for i := range x {
 				x[i] = 1.0
 			}
+
 			result = Sphere(x)
 			expected := float64(dim)
+
 			if math.Abs(result-expected) > epsilon {
 				t.Errorf("Sphere(%dd ones) = %v, want %v", dim, result, expected)
 			}
@@ -138,6 +140,7 @@ func TestRastriginNonZero(t *testing.T) {
 			}
 			// Should be greater than at origin
 			origin := make([]float64, len(tt.x))
+
 			originResult := Rastrigin(origin)
 			if result <= originResult {
 				t.Logf("Rastrigin(%v) = %v, origin = %v (expected higher at non-zero)",
@@ -214,6 +217,7 @@ func TestRosenbrockNonOptimal(t *testing.T) {
 			for i := range optimum {
 				optimum[i] = 1.0
 			}
+
 			optimumResult := Rosenbrock(optimum)
 			if result <= optimumResult {
 				t.Errorf("Rosenbrock(%v) = %v, optimum = %v (expected higher at non-optimal)",
@@ -286,6 +290,7 @@ func TestAckleyNonZero(t *testing.T) {
 			}
 			// Should be greater than at origin
 			origin := make([]float64, len(tt.x))
+
 			originResult := Ackley(origin)
 			if result <= originResult {
 				t.Logf("Ackley(%v) = %v, origin = %v (expected higher at non-zero)",
@@ -361,8 +366,8 @@ func TestGriewankNonZero(t *testing.T) {
 // TestBenchmarkFunctionsSymmetry tests that functions are symmetric around origin.
 func TestBenchmarkFunctionsSymmetry(t *testing.T) {
 	symmetricFunctions := []struct {
-		name string
 		fn   ObjectiveFunction
+		name string
 	}{
 		{"Sphere", Sphere},
 		{"Rastrigin", Rastrigin},
@@ -377,6 +382,7 @@ func TestBenchmarkFunctionsSymmetry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := tt.fn(x)
 			resultNeg := tt.fn(xNeg)
+
 			if math.Abs(result-resultNeg) > epsilon {
 				t.Errorf("%s not symmetric: f(%v)=%v, f(%v)=%v",
 					tt.name, x, result, xNeg, resultNeg)
@@ -405,8 +411,8 @@ func TestBenchmarkFunctionsMonotonicity(t *testing.T) {
 // TestBenchmarkFunctionsEdgeCases tests edge cases.
 func TestBenchmarkFunctionsEdgeCases(t *testing.T) {
 	functions := []struct {
-		name string
 		fn   ObjectiveFunction
+		name string
 	}{
 		{"Sphere", Sphere},
 		{"Rastrigin", Rastrigin},
@@ -432,6 +438,7 @@ func TestBenchmarkFunctionsEdgeCases(t *testing.T) {
 			if math.IsNaN(result) {
 				t.Errorf("%s(large values) = NaN", fn.name)
 			}
+
 			if math.IsInf(result, 0) {
 				t.Errorf("%s(large values) = Inf", fn.name)
 			}
@@ -467,7 +474,9 @@ func BenchmarkSphere(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.1
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Sphere(x)
 	}
@@ -479,7 +488,9 @@ func BenchmarkRastrigin(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.1
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Rastrigin(x)
 	}
@@ -491,7 +502,9 @@ func BenchmarkRosenbrock(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.1
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Rosenbrock(x)
 	}
@@ -503,7 +516,9 @@ func BenchmarkAckley(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.1
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Ackley(x)
 	}
@@ -515,7 +530,9 @@ func BenchmarkGriewank(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.1
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Griewank(x)
 	}
@@ -626,6 +643,7 @@ func TestDixonPrice(t *testing.T) {
 
 	// Test at origin
 	origin := []float64{0.0, 0.0, 0.0}
+
 	resultOrigin := DixonPrice(origin)
 	if resultOrigin < 0 {
 		t.Errorf("DixonPrice should be non-negative, got %v", resultOrigin)
@@ -664,6 +682,7 @@ func TestBentCigar(t *testing.T) {
 	x := []float64{1.0, 1.0, 1.0}
 	result := BentCigar(x)
 	expected := 1.0 + 2.0*1e6 // First dimension normal, others scaled
+
 	if math.Abs(result-expected) > epsilon {
 		t.Errorf("BentCigar(%v) = %v, want %v (ill-conditioned test)", x, result, expected)
 	}
@@ -701,6 +720,7 @@ func TestDiscus(t *testing.T) {
 	x := []float64{1.0, 1.0, 1.0}
 	result := Discus(x)
 	expected := 1e6 + 2.0 // First dimension scaled, others normal
+
 	if math.Abs(result-expected) > epsilon {
 		t.Errorf("Discus(%v) = %v, want %v (ill-conditioned test)", x, result, expected)
 	}
@@ -731,6 +751,7 @@ func TestHappyCat(t *testing.T) {
 
 	// Test at origin
 	origin := []float64{0.0, 0.0, 0.0}
+
 	resultOrigin := HappyCat(origin)
 	if resultOrigin < 0 {
 		t.Errorf("HappyCat should be non-negative, got %v", resultOrigin)
@@ -751,6 +772,7 @@ func TestExpandedSchafferF6(t *testing.T) {
 	// Test with 2D
 	x2d := []float64{0.0, 0.0}
 	result2d := ExpandedSchafferF6(x2d)
+
 	if math.Abs(result2d) > epsilon {
 		t.Errorf("ExpandedSchafferF6(%v) = %v, want 0.0", x2d, result2d)
 	}
@@ -781,6 +803,7 @@ func TestCECFunctionsNonNegative(t *testing.T) {
 			if math.IsNaN(result) {
 				t.Errorf("%s(%v) = NaN", tt.name, tt.x)
 			}
+
 			if math.IsInf(result, 0) {
 				t.Errorf("%s(%v) = Inf", tt.name, tt.x)
 			}
@@ -794,7 +817,9 @@ func BenchmarkSchwefel(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 10.0
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Schwefel(x)
 	}
@@ -806,7 +831,9 @@ func BenchmarkLevy(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.1
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Levy(x)
 	}
@@ -818,7 +845,9 @@ func BenchmarkWeierstrass(b *testing.B) {
 	for i := range x {
 		x[i] = float64(i) * 0.01
 	}
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = Weierstrass(x)
 	}

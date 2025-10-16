@@ -39,6 +39,7 @@ func TestNewVariant(t *testing.T) {
 				if variant == nil {
 					t.Fatalf("Expected variant %s, got nil", tt.expected)
 				}
+
 				if variant.Name() != tt.expected {
 					t.Errorf("Expected %s, got %s", tt.expected, variant.Name())
 				}
@@ -85,15 +86,19 @@ func TestGetAllVariants(t *testing.T) {
 		if v.Name() == "" {
 			t.Error("Variant name should not be empty")
 		}
+
 		if v.FullName() == "" {
 			t.Error("Variant full name should not be empty")
 		}
+
 		if v.Description() == "" {
 			t.Error("Variant description should not be empty")
 		}
+
 		if len(v.RecommendedFor()) == 0 {
 			t.Errorf("Variant %s should have recommended use cases", v.Name())
 		}
+
 		if v.EstimatedOverhead() < 1.0 {
 			t.Errorf("Variant %s overhead should be >= 1.0, got %.2f", v.Name(), v.EstimatedOverhead())
 		}
@@ -102,13 +107,13 @@ func TestGetAllVariants(t *testing.T) {
 
 func TestVariantApplicability(t *testing.T) {
 	// Test that variants score appropriately for their target problems
-
 	// DESMA should score high for multimodal
 	desma := NewVariant("desma")
 	multimodal := ProblemCharacteristics{
 		Modality:  Multimodal,
 		Landscape: Rugged,
 	}
+
 	score := desma.ApplicableTo(multimodal)
 	if score < 0.7 {
 		t.Errorf("DESMA should score high (>0.7) for multimodal, got %.2f", score)
@@ -120,6 +125,7 @@ func TestVariantApplicability(t *testing.T) {
 		Landscape: Deceptive,
 		Modality:  HighlyMultimodal,
 	}
+
 	score = eobbma.ApplicableTo(deceptive)
 	if score < 0.8 {
 		t.Errorf("EOBBMA should score high (>0.8) for deceptive, got %.2f", score)
@@ -131,6 +137,7 @@ func TestVariantApplicability(t *testing.T) {
 		RequiresStableConvergence: true,
 		Landscape:                 NarrowValley,
 	}
+
 	score = mpma.ApplicableTo(stable)
 	if score < 0.8 {
 		t.Errorf("MPMA should score high (>0.8) for stable convergence, got %.2f", score)
@@ -141,6 +148,7 @@ func TestVariantApplicability(t *testing.T) {
 	multiObj := ProblemCharacteristics{
 		MultiObjective: true,
 	}
+
 	score = aoblmoa.ApplicableTo(multiObj)
 	if score < 0.9 {
 		t.Errorf("AOBLMOA should score very high (>0.9) for multi-objective, got %.2f", score)
@@ -167,12 +175,15 @@ func TestVariantBuilder(t *testing.T) {
 	if config.ProblemSize != 10 {
 		t.Errorf("Expected ProblemSize 10, got %d", config.ProblemSize)
 	}
+
 	if config.MaxIterations != 100 {
 		t.Errorf("Expected MaxIterations 100, got %d", config.MaxIterations)
 	}
+
 	if config.NPop != 20 {
 		t.Errorf("Expected NPop 20, got %d", config.NPop)
 	}
+
 	if !config.UseDESMA {
 		t.Error("Expected UseDESMA to be true")
 	}
@@ -197,6 +208,7 @@ func TestVariantBuilderWithConfig(t *testing.T) {
 	if config.CoolingRate != 0.97 {
 		t.Errorf("Expected CoolingRate 0.97, got %f", config.CoolingRate)
 	}
+
 	if config.InitialTemperature != 150.0 {
 		t.Errorf("Expected InitialTemperature 150.0, got %f", config.InitialTemperature)
 	}
@@ -212,6 +224,7 @@ func TestVariantBuilderErrors(t *testing.T) {
 	// Missing objective function
 	builder = NewBuilder("ma")
 	builder.config.ObjectiveFunc = nil // Force nil
+
 	_, err := builder.Build()
 	if err == nil {
 		t.Error("Build should fail without objective function")
@@ -219,6 +232,7 @@ func TestVariantBuilderErrors(t *testing.T) {
 
 	// Invalid problem size
 	builder = NewBuilder("ma").ForProblem(Sphere, -1, -10, 10)
+
 	_, err = builder.Build()
 	if err == nil {
 		t.Error("Build should fail with negative problem size")

@@ -12,6 +12,7 @@ func oppositionPoint(position []float64, lowerBound, upperBound float64) []float
 	for i := 0; i < len(position); i++ {
 		result[i] = lowerBound + upperBound - position[i]
 	}
+
 	return result
 }
 
@@ -32,6 +33,7 @@ func gaussianUpdate(current, best []float64, lowerBound, upperBound float64, rng
 		if stddev < 0 {
 			stddev = -stddev
 		}
+
 		if stddev < 1e-10 {
 			// Small exploration when current and best are very close
 			stddev = (upperBound - lowerBound) * 0.01
@@ -44,6 +46,7 @@ func gaussianUpdate(current, best []float64, lowerBound, upperBound float64, rng
 		if result[i] < lowerBound {
 			result[i] = lowerBound
 		}
+
 		if result[i] > upperBound {
 			result[i] = upperBound
 		}

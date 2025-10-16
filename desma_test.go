@@ -9,6 +9,7 @@ import (
 // TestGenerateEliteMayflies tests the DESMA elite generation mechanism.
 func TestGenerateEliteMayflies(t *testing.T) {
 	tests := []struct {
+		objFunc     ObjectiveFunction
 		name        string
 		currentBest Best
 		searchRange float64
@@ -16,7 +17,6 @@ func TestGenerateEliteMayflies(t *testing.T) {
 		problemSize int
 		lowerBound  float64
 		upperBound  float64
-		objFunc     ObjectiveFunction
 		seed        int64
 	}{
 		{
@@ -70,6 +70,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 				for i := range tt.currentBest.Position {
 					tt.currentBest.Position[i] = 0.01 * float64(i)
 				}
+
 				tt.currentBest.Cost = tt.objFunc(tt.currentBest.Position)
 			}
 
@@ -94,6 +95,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 			if elite == nil {
 				t.Fatal("generateEliteMayflies() returned nil elite")
 			}
+
 			if len(elite.Position) != tt.problemSize {
 				t.Errorf("generateEliteMayflies() elite.Position length = %v, want %v",
 					len(elite.Position), tt.problemSize)
@@ -111,6 +113,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 			if math.IsNaN(elite.Cost) {
 				t.Error("generateEliteMayflies() elite.Cost is NaN")
 			}
+
 			if math.IsInf(elite.Cost, 0) {
 				t.Error("generateEliteMayflies() elite.Cost is Inf")
 			}
@@ -119,6 +122,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 			// (Allow some tolerance for floating point precision)
 			expectedCost := tt.objFunc(elite.Position)
 			tolerance := math.Max(1e-10, math.Abs(expectedCost)*1e-10)
+
 			if math.Abs(elite.Cost-expectedCost) > tolerance {
 				t.Logf("generateEliteMayflies() elite.Cost = %v, re-evaluated = %v (possible floating point variance)",
 					elite.Cost, expectedCost)
@@ -131,6 +135,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 						i, i)
 				}
 			}
+
 			if elite.Best.Cost != elite.Cost {
 				t.Error("generateEliteMayflies() elite.Best.Cost != elite.Cost")
 			}
@@ -138,12 +143,14 @@ func TestGenerateEliteMayflies(t *testing.T) {
 			// Check that elite is near currentBest (within searchRange)
 			// Note: may be clamped to bounds, so this is a soft check
 			nearbyCount := 0
+
 			for i := 0; i < tt.problemSize; i++ {
 				distance := math.Abs(elite.Position[i] - tt.currentBest.Position[i])
 				if distance <= tt.searchRange {
 					nearbyCount++
 				}
 			}
+
 			t.Logf("Elite has %d/%d dimensions within searchRange of currentBest",
 				nearbyCount, tt.problemSize)
 		})

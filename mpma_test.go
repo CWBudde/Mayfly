@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// TestGravityCoefficient tests non-linear gravity coefficient functions
+// TestGravityCoefficient tests non-linear gravity coefficient functions.
 func TestGravityCoefficient(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -75,7 +75,7 @@ func TestGravityCoefficient(t *testing.T) {
 	}
 }
 
-// TestGravityCoefficientInvalidType tests handling of invalid gravity types
+// TestGravityCoefficientInvalidType tests handling of invalid gravity types.
 func TestGravityCoefficientInvalidType(t *testing.T) {
 	// Should default to linear for unknown types
 	g := calculateGravityCoefficient("unknown", 250, 500)
@@ -86,7 +86,7 @@ func TestGravityCoefficientInvalidType(t *testing.T) {
 	}
 }
 
-// TestNewMPMAConfig tests the MPMA configuration factory
+// TestNewMPMAConfig tests the MPMA configuration factory.
 func TestNewMPMAConfig(t *testing.T) {
 	config := NewMPMAConfig()
 
@@ -103,12 +103,14 @@ func TestNewMPMAConfig(t *testing.T) {
 	// Verify default gravity type
 	validTypes := []string{"linear", "exponential", "sigmoid"}
 	found := false
+
 	for _, validType := range validTypes {
 		if config.GravityType == validType {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Errorf("expected GravityType to be one of %v, got %s", validTypes, config.GravityType)
 	}
@@ -117,12 +119,13 @@ func TestNewMPMAConfig(t *testing.T) {
 	if config.NPop == 0 {
 		t.Error("expected NPop to be set")
 	}
+
 	if config.MaxIterations == 0 {
 		t.Error("expected MaxIterations to be set")
 	}
 }
 
-// TestMPMAOptimization tests MPMA on a simple optimization problem
+// TestMPMAOptimization tests MPMA on a simple optimization problem.
 func TestMPMAOptimization(t *testing.T) {
 	config := NewMPMAConfig()
 	config.ObjectiveFunc = Sphere
@@ -147,12 +150,13 @@ func TestMPMAOptimization(t *testing.T) {
 	if len(result.GlobalBest.Position) != config.ProblemSize {
 		t.Errorf("expected position length %d, got %d", config.ProblemSize, len(result.GlobalBest.Position))
 	}
+
 	if len(result.BestSolution) != config.MaxIterations {
 		t.Errorf("expected solution history length %d, got %d", config.MaxIterations, len(result.BestSolution))
 	}
 }
 
-// TestCalculateMedianPosition tests median position calculation
+// TestCalculateMedianPosition tests median position calculation.
 func TestCalculateMedianPosition(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -213,7 +217,7 @@ func TestCalculateMedianPosition(t *testing.T) {
 	}
 }
 
-// TestCalculateWeightedMedianPosition tests weighted median calculation
+// TestCalculateWeightedMedianPosition tests weighted median calculation.
 func TestCalculateWeightedMedianPosition(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -33,5 +33,6 @@ func levyFlightVec(size int, alpha, beta float64, rng *rand.Rand) []float64 {
 	for i := 0; i < size; i++ {
 		vec[i] = levyFlight(alpha, beta, rng)
 	}
+
 	return vec
 }

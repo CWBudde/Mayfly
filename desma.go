@@ -6,7 +6,6 @@ import "math/rand"
 // It generates elite mayflies around the current global best position.
 func generateEliteMayflies(currentBest Best, searchRange float64, eliteCount, problemSize int,
 	lowerBound, upperBound float64, objFunc ObjectiveFunction, rng *rand.Rand) (*Mayfly, int) {
-
 	bestElite := newMayfly(problemSize)
 	copy(bestElite.Position, currentBest.Position)
 	bestElite.Cost = currentBest.Cost

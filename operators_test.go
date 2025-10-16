@@ -51,6 +51,7 @@ func TestCrossover(t *testing.T) {
 			if len(off1) != len(tt.x1) {
 				t.Errorf("Crossover() off1 length = %v, want %v", len(off1), len(tt.x1))
 			}
+
 			if len(off2) != len(tt.x2) {
 				t.Errorf("Crossover() off2 length = %v, want %v", len(off2), len(tt.x2))
 			}
@@ -74,10 +75,12 @@ func TestCrossover(t *testing.T) {
 			// Check that offspring are different from parents (highly likely with random L)
 			diff1 := false
 			diff2 := false
+
 			for i := 0; i < len(tt.x1); i++ {
 				if math.Abs(off1[i]-tt.x1[i]) > 1e-10 {
 					diff1 = true
 				}
+
 				if math.Abs(off2[i]-tt.x2[i]) > 1e-10 {
 					diff2 = true
 				}
@@ -136,6 +139,7 @@ func TestCrossoverBoundaryViolations(t *testing.T) {
 			t.Errorf("Crossover() off1[%d] = %v, expected to be clamped to [%v, %v]",
 				i, off1[i], lowerBound, upperBound)
 		}
+
 		if off2[i] < lowerBound || off2[i] > upperBound {
 			t.Errorf("Crossover() off2[%d] = %v, expected to be clamped to [%v, %v]",
 				i, off2[i], lowerBound, upperBound)
@@ -165,6 +169,7 @@ func TestCrossoverSymmetry(t *testing.T) {
 			t.Errorf("Crossover() symmetry: off1a[%d]=%v should equal off2b[%d]=%v",
 				i, off1a[i], i, off2b[i])
 		}
+
 		if math.Abs(off2a[i]-off1b[i]) > 1e-10 {
 			t.Errorf("Crossover() symmetry: off2a[%d]=%v should equal off1b[%d]=%v",
 				i, off2a[i], i, off1b[i])
@@ -244,6 +249,7 @@ func TestMutate(t *testing.T) {
 			// Check that mutation occurred (at least some genes should differ)
 			expectedMutations := int(math.Ceil(tt.mu * float64(len(tt.x))))
 			actualMutations := 0
+
 			for i := 0; i < len(tt.x); i++ {
 				if math.Abs(y[i]-tt.x[i]) > 1e-10 {
 					actualMutations++

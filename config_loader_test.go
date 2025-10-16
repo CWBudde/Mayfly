@@ -37,18 +37,23 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	if loadedConfig.ProblemSize != 15 {
 		t.Errorf("Expected ProblemSize 15, got %d", loadedConfig.ProblemSize)
 	}
+
 	if loadedConfig.LowerBound != -5 {
 		t.Errorf("Expected LowerBound -5, got %f", loadedConfig.LowerBound)
 	}
+
 	if loadedConfig.UpperBound != 5 {
 		t.Errorf("Expected UpperBound 5, got %f", loadedConfig.UpperBound)
 	}
+
 	if loadedConfig.MaxIterations != 300 {
 		t.Errorf("Expected MaxIterations 300, got %d", loadedConfig.MaxIterations)
 	}
+
 	if loadedConfig.EliteCount != 7 {
 		t.Errorf("Expected EliteCount 7, got %d", loadedConfig.EliteCount)
 	}
+
 	if !loadedConfig.UseDESMA {
 		t.Error("Expected UseDESMA to be true")
 	}
@@ -56,8 +61,8 @@ func TestSaveAndLoadConfig(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
-		name    string
 		config  *Config
+		name    string
 		wantErr bool
 	}{
 		{

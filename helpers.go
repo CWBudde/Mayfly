@@ -7,6 +7,7 @@ func unifrnd(min, max float64, rng *rand.Rand) float64 {
 	if rng == nil {
 		return min + rand.Float64()*(max-min)
 	}
+
 	return min + rng.Float64()*(max-min)
 }
 
@@ -16,6 +17,7 @@ func unifrndVec(min, max float64, size int, rng *rand.Rand) []float64 {
 	for i := range vec {
 		vec[i] = unifrnd(min, max, rng)
 	}
+
 	return vec
 }
 
@@ -24,6 +26,7 @@ func randn(rng *rand.Rand) float64 {
 	if rng == nil {
 		return rand.NormFloat64()
 	}
+
 	return rng.NormFloat64()
 }
 

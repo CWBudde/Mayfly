@@ -18,6 +18,7 @@ func TestComparisonRunner(t *testing.T) {
 	if runner.Runs != 30 {
 		t.Errorf("Default runs should be 30, got %d", runner.Runs)
 	}
+
 	if runner.MaxIterations != 500 {
 		t.Errorf("Default max iterations should be 500, got %d", runner.MaxIterations)
 	}
@@ -32,9 +33,11 @@ func TestComparisonRunner(t *testing.T) {
 	if len(runner.Variants) != 2 {
 		t.Errorf("Expected 2 variants, got %d", len(runner.Variants))
 	}
+
 	if runner.Runs != 3 {
 		t.Errorf("Expected 3 runs, got %d", runner.Runs)
 	}
+
 	if runner.MaxIterations != 50 {
 		t.Errorf("Expected 50 iterations, got %d", runner.MaxIterations)
 	}
@@ -93,12 +96,15 @@ func TestComparisonRunnerCompare(t *testing.T) {
 		if stats.Best > stats.Worst {
 			t.Errorf("Best (%f) should be <= Worst (%f) for algorithm %d", stats.Best, stats.Worst, i)
 		}
+
 		if stats.Mean < stats.Best || stats.Mean > stats.Worst {
 			t.Errorf("Mean (%f) should be between Best (%f) and Worst (%f)", stats.Mean, stats.Best, stats.Worst)
 		}
+
 		if stats.StdDev < 0 {
 			t.Errorf("StdDev should be non-negative, got %f", stats.StdDev)
 		}
+
 		if stats.AvgFuncEvals <= 0 {
 			t.Errorf("AvgFuncEvals should be positive, got %f", stats.AvgFuncEvals)
 		}
@@ -108,10 +114,12 @@ func TestComparisonRunnerCompare(t *testing.T) {
 	rankSum := 0
 	for _, rank := range result.Rankings {
 		rankSum += rank
+
 		if rank < 1 || rank > 2 {
 			t.Errorf("Rank should be 1 or 2, got %d", rank)
 		}
 	}
+
 	if rankSum != 3 { // 1 + 2 = 3
 		t.Errorf("Rank sum should be 3, got %d", rankSum)
 	}
@@ -141,6 +149,7 @@ func TestWilcoxonSignedRankTest(t *testing.T) {
 	if result.Algorithm1 != "Alg1" {
 		t.Errorf("Expected Algorithm1 'Alg1', got '%s'", result.Algorithm1)
 	}
+
 	if result.Algorithm2 != "Alg2" {
 		t.Errorf("Expected Algorithm2 'Alg2', got '%s'", result.Algorithm2)
 	}
@@ -240,12 +249,15 @@ func TestCalculateAlgorithmStatistics(t *testing.T) {
 	if stats.Best != 1.0 {
 		t.Errorf("Expected Best=1.0, got %f", stats.Best)
 	}
+
 	if stats.Worst != 3.0 {
 		t.Errorf("Expected Worst=3.0, got %f", stats.Worst)
 	}
+
 	if stats.Mean < stats.Best || stats.Mean > stats.Worst {
 		t.Errorf("Mean %f should be between Best and Worst", stats.Mean)
 	}
+
 	if stats.StdDev < 0 {
 		t.Errorf("StdDev should be non-negative, got %f", stats.StdDev)
 	}
@@ -279,9 +291,11 @@ func TestRankAlgorithms(t *testing.T) {
 	if rankings[0] != 2 {
 		t.Errorf("First algorithm should be rank 2, got %d", rankings[0])
 	}
+
 	if rankings[1] != 1 {
 		t.Errorf("Second algorithm should be rank 1, got %d", rankings[1])
 	}
+
 	if rankings[2] != 3 {
 		t.Errorf("Third algorithm should be rank 3, got %d", rankings[2])
 	}
@@ -290,13 +304,13 @@ func TestRankAlgorithms(t *testing.T) {
 func TestNormalCDF(t *testing.T) {
 	// Test standard normal CDF at known points
 	tests := []struct {
-		x        float64
-		expected float64
+		x         float64
+		expected  float64
 		tolerance float64
 	}{
-		{0.0, 0.5, 0.01},      // Mean
-		{-1.96, 0.025, 0.01},  // ~2.5th percentile
-		{1.96, 0.975, 0.01},   // ~97.5th percentile
+		{0.0, 0.5, 0.01},     // Mean
+		{-1.96, 0.025, 0.01}, // ~2.5th percentile
+		{1.96, 0.975, 0.01},  // ~97.5th percentile
 	}
 
 	for _, tt := range tests {

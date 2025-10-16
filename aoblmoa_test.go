@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// TestAquilaExpandedExploration tests the X1 strategy (high soar with vertical stoop)
+// TestAquilaExpandedExploration tests the X1 strategy (high soar with vertical stoop).
 func TestAquilaExpandedExploration(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
@@ -35,18 +35,20 @@ func TestAquilaExpandedExploration(t *testing.T) {
 
 	// Check that result is different from current (exploration should move position)
 	isDifferent := false
+
 	for i := range result {
 		if math.Abs(result[i]-current[i]) > 1e-10 {
 			isDifferent = true
 			break
 		}
 	}
+
 	if !isDifferent {
 		t.Error("Expected exploration to change position, but result equals current")
 	}
 }
 
-// TestAquilaNarrowedExploration tests the X2 strategy (contour flight with short glide)
+// TestAquilaNarrowedExploration tests the X2 strategy (contour flight with short glide).
 func TestAquilaNarrowedExploration(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
@@ -79,7 +81,7 @@ func TestAquilaNarrowedExploration(t *testing.T) {
 	}
 }
 
-// TestAquilaExpandedExploitation tests the X3 strategy (low flight with slow descent)
+// TestAquilaExpandedExploitation tests the X3 strategy (low flight with slow descent).
 func TestAquilaExpandedExploitation(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
@@ -107,7 +109,7 @@ func TestAquilaExpandedExploitation(t *testing.T) {
 	}
 }
 
-// TestAquilaNarrowedExploitation tests the X4 strategy (walk and grab)
+// TestAquilaNarrowedExploitation tests the X4 strategy (walk and grab).
 func TestAquilaNarrowedExploitation(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
@@ -137,9 +139,11 @@ func TestAquilaNarrowedExploitation(t *testing.T) {
 	// In final iterations (narrowed exploitation), solution should be close to best
 	// Check that at least some dimensions moved toward best
 	movedTowardBest := false
+
 	for i := range result {
 		distanceToBest := math.Abs(result[i] - best[i])
 		distanceCurrentToBest := math.Abs(current[i] - best[i])
+
 		if distanceToBest < distanceCurrentToBest {
 			movedTowardBest = true
 			break
@@ -151,7 +155,7 @@ func TestAquilaNarrowedExploitation(t *testing.T) {
 	_ = movedTowardBest // Just verify it doesn't crash for now
 }
 
-// TestSelectAquilaStrategy tests strategy selection based on iteration progress
+// TestSelectAquilaStrategy tests strategy selection based on iteration progress.
 func TestSelectAquilaStrategy(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
@@ -160,6 +164,7 @@ func TestSelectAquilaStrategy(t *testing.T) {
 	// Test exploration phase (first 2/3 of iterations)
 	earlyIter := 30
 	strategy := selectAquilaStrategy(earlyIter, maxIter, rng)
+
 	if strategy != ExpandedExploration && strategy != NarrowedExploration {
 		t.Errorf("Expected exploration strategy in early iteration %d, got %v", earlyIter, strategy)
 	}
@@ -167,12 +172,13 @@ func TestSelectAquilaStrategy(t *testing.T) {
 	// Test exploitation phase (last 1/3 of iterations)
 	lateIter := 80
 	strategy = selectAquilaStrategy(lateIter, maxIter, rng)
+
 	if strategy != ExpandedExploitation && strategy != NarrowedExploitation {
 		t.Errorf("Expected exploitation strategy in late iteration %d, got %v", lateIter, strategy)
 	}
 }
 
-// TestGenerateLevyFlight tests Lévy flight generation
+// TestGenerateLevyFlight tests Lévy flight generation.
 func TestGenerateLevyFlight(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
@@ -187,6 +193,7 @@ func TestGenerateLevyFlight(t *testing.T) {
 
 	// Check that flights are not all the same (should be random)
 	allSame := true
+
 	for i := 1; i < len(flights); i++ {
 		if math.Abs(flights[i]-flights[0]) > 1e-10 {
 			allSame = false
@@ -200,6 +207,7 @@ func TestGenerateLevyFlight(t *testing.T) {
 
 	// Check that at least some flights are non-zero
 	hasNonZero := false
+
 	for _, f := range flights {
 		if math.Abs(f) > 1e-10 {
 			hasNonZero = true
@@ -212,7 +220,7 @@ func TestGenerateLevyFlight(t *testing.T) {
 	}
 }
 
-// TestApplyAquilaStrategy tests the main strategy application function
+// TestApplyAquilaStrategy tests the main strategy application function.
 func TestApplyAquilaStrategy(t *testing.T) {
 	config := NewDefaultConfig()
 	config.Rand = rand.New(rand.NewSource(42))
@@ -263,11 +271,12 @@ func TestApplyAquilaStrategy(t *testing.T) {
 	}
 }
 
-// TestDominates tests the Pareto dominance checking function
+// TestDominates tests the Pareto dominance checking function.
 func TestDominates(t *testing.T) {
 	// Test case 1: a dominates b (a is better in all objectives)
 	a := []float64{1.0, 2.0}
 	b := []float64{2.0, 3.0}
+
 	if !dominates(a, b) {
 		t.Error("Expected a to dominate b (a is better in all objectives)")
 	}
@@ -280,9 +289,11 @@ func TestDominates(t *testing.T) {
 	// Test case 3: Neither dominates (trade-off solutions)
 	c := []float64{1.0, 3.0}
 	d := []float64{2.0, 2.0}
+
 	if dominates(c, d) {
 		t.Error("Expected c not to dominate d (trade-off)")
 	}
+
 	if dominates(d, c) {
 		t.Error("Expected d not to dominate c (trade-off)")
 	}
@@ -290,6 +301,7 @@ func TestDominates(t *testing.T) {
 	// Test case 4: Equal solutions don't dominate
 	e := []float64{1.0, 2.0}
 	f := []float64{1.0, 2.0}
+
 	if dominates(e, f) {
 		t.Error("Expected equal solutions not to dominate each other")
 	}
@@ -297,6 +309,7 @@ func TestDominates(t *testing.T) {
 	// Test case 5: Strictly better in one, equal in others
 	g := []float64{1.0, 2.0}
 	h := []float64{1.0, 3.0}
+
 	if !dominates(g, h) {
 		t.Error("Expected g to dominate h (better in one, equal in other)")
 	}
@@ -304,6 +317,7 @@ func TestDominates(t *testing.T) {
 	// Test case 6: Different lengths should not dominate
 	i := []float64{1.0, 2.0}
 	j := []float64{1.0}
+
 	if dominates(i, j) {
 		t.Error("Expected solutions with different lengths not to dominate")
 	}
@@ -311,6 +325,7 @@ func TestDominates(t *testing.T) {
 	// Test case 7: Three objectives
 	k := []float64{1.0, 2.0, 3.0}
 	l := []float64{2.0, 3.0, 4.0}
+
 	if !dominates(k, l) {
 		t.Error("Expected k to dominate l (better in all three objectives)")
 	}
@@ -318,12 +333,13 @@ func TestDominates(t *testing.T) {
 	// Test case 8: Three objectives with trade-off
 	m := []float64{1.0, 3.0, 2.0}
 	n := []float64{2.0, 2.0, 3.0}
+
 	if dominates(m, n) {
 		t.Error("Expected m not to dominate n (trade-off in three objectives)")
 	}
 }
 
-// TestFastNonDominatedSort tests the non-dominated sorting algorithm
+// TestFastNonDominatedSort tests the non-dominated sorting algorithm.
 func TestFastNonDominatedSort(t *testing.T) {
 	// Create test solutions
 	solutions := []*ParetoSolution{
@@ -359,12 +375,13 @@ func TestFastNonDominatedSort(t *testing.T) {
 	for _, front := range fronts {
 		totalInFronts += len(front)
 	}
+
 	if totalInFronts != len(solutions) {
 		t.Errorf("Expected all %d solutions in fronts, got %d", len(solutions), totalInFronts)
 	}
 }
 
-// TestFastNonDominatedSortEmptyPopulation tests sorting with empty input
+// TestFastNonDominatedSortEmptyPopulation tests sorting with empty input.
 func TestFastNonDominatedSortEmptyPopulation(t *testing.T) {
 	solutions := []*ParetoSolution{}
 	fronts := fastNonDominatedSort(solutions)
@@ -374,7 +391,7 @@ func TestFastNonDominatedSortEmptyPopulation(t *testing.T) {
 	}
 }
 
-// TestFastNonDominatedSortSingleSolution tests sorting with single solution
+// TestFastNonDominatedSortSingleSolution tests sorting with single solution.
 func TestFastNonDominatedSortSingleSolution(t *testing.T) {
 	solutions := []*ParetoSolution{
 		{ObjectiveValues: []float64{1.0, 2.0}},
@@ -395,7 +412,7 @@ func TestFastNonDominatedSortSingleSolution(t *testing.T) {
 	}
 }
 
-// TestCalculateCrowdingDistance tests the crowding distance calculation
+// TestCalculateCrowdingDistance tests the crowding distance calculation.
 func TestCalculateCrowdingDistance(t *testing.T) {
 	// Create test solutions in first front
 	solutions := []*ParetoSolution{
@@ -412,6 +429,7 @@ func TestCalculateCrowdingDistance(t *testing.T) {
 	if !math.IsInf(solutions[0].CrowdingDistance, 1) {
 		t.Errorf("Expected boundary solution 0 to have infinite crowding distance, got %f", solutions[0].CrowdingDistance)
 	}
+
 	if !math.IsInf(solutions[3].CrowdingDistance, 1) {
 		t.Errorf("Expected boundary solution 3 to have infinite crowding distance, got %f", solutions[3].CrowdingDistance)
 	}
@@ -420,12 +438,13 @@ func TestCalculateCrowdingDistance(t *testing.T) {
 	if math.IsInf(solutions[1].CrowdingDistance, 1) || solutions[1].CrowdingDistance <= 0 {
 		t.Errorf("Expected middle solution 1 to have finite positive crowding distance, got %f", solutions[1].CrowdingDistance)
 	}
+
 	if math.IsInf(solutions[2].CrowdingDistance, 1) || solutions[2].CrowdingDistance <= 0 {
 		t.Errorf("Expected middle solution 2 to have finite positive crowding distance, got %f", solutions[2].CrowdingDistance)
 	}
 }
 
-// TestCalculateCrowdingDistanceEmptyFront tests crowding distance with empty front
+// TestCalculateCrowdingDistanceEmptyFront tests crowding distance with empty front.
 func TestCalculateCrowdingDistanceEmptyFront(t *testing.T) {
 	solutions := []*ParetoSolution{}
 	frontIndices := []int{}
@@ -434,7 +453,7 @@ func TestCalculateCrowdingDistanceEmptyFront(t *testing.T) {
 	calculateCrowdingDistance(solutions, frontIndices)
 }
 
-// TestCalculateCrowdingDistanceSingleSolution tests crowding distance with one solution
+// TestCalculateCrowdingDistanceSingleSolution tests crowding distance with one solution.
 func TestCalculateCrowdingDistanceSingleSolution(t *testing.T) {
 	solutions := []*ParetoSolution{
 		{ObjectiveValues: []float64{1.0, 2.0}},
@@ -449,7 +468,7 @@ func TestCalculateCrowdingDistanceSingleSolution(t *testing.T) {
 	}
 }
 
-// TestCalculateCrowdingDistanceTwoSolutions tests crowding distance with two solutions
+// TestCalculateCrowdingDistanceTwoSolutions tests crowding distance with two solutions.
 func TestCalculateCrowdingDistanceTwoSolutions(t *testing.T) {
 	solutions := []*ParetoSolution{
 		{ObjectiveValues: []float64{1.0, 3.0}},
@@ -463,19 +482,22 @@ func TestCalculateCrowdingDistanceTwoSolutions(t *testing.T) {
 	if !math.IsInf(solutions[0].CrowdingDistance, 1) {
 		t.Errorf("Expected solution 0 to have infinite crowding distance, got %f", solutions[0].CrowdingDistance)
 	}
+
 	if !math.IsInf(solutions[1].CrowdingDistance, 1) {
 		t.Errorf("Expected solution 1 to have infinite crowding distance, got %f", solutions[1].CrowdingDistance)
 	}
 }
 
-// TestCrowdingDistanceComparison tests the comparison function for NSGA-II selection
+// TestCrowdingDistanceComparison tests the comparison function for NSGA-II selection.
 func TestCrowdingDistanceComparison(t *testing.T) {
 	// Test case 1: Lower rank is preferred
 	a := &ParetoSolution{Rank: 1, CrowdingDistance: 1.0}
 	b := &ParetoSolution{Rank: 2, CrowdingDistance: 2.0}
+
 	if !crowdingDistanceComparison(a, b) {
 		t.Error("Expected lower rank solution to be preferred")
 	}
+
 	if crowdingDistanceComparison(b, a) {
 		t.Error("Expected higher rank solution not to be preferred")
 	}
@@ -483,9 +505,11 @@ func TestCrowdingDistanceComparison(t *testing.T) {
 	// Test case 2: Same rank, higher crowding distance is preferred
 	c := &ParetoSolution{Rank: 1, CrowdingDistance: 2.0}
 	d := &ParetoSolution{Rank: 1, CrowdingDistance: 1.0}
+
 	if !crowdingDistanceComparison(c, d) {
 		t.Error("Expected higher crowding distance to be preferred")
 	}
+
 	if crowdingDistanceComparison(d, c) {
 		t.Error("Expected lower crowding distance not to be preferred")
 	}
@@ -497,7 +521,7 @@ func TestCrowdingDistanceComparison(t *testing.T) {
 	_ = crowdingDistanceComparison(e, f)
 }
 
-// TestCalculateHypervolume tests hypervolume calculation for 2D problems
+// TestCalculateHypervolume tests hypervolume calculation for 2D problems.
 func TestCalculateHypervolume(t *testing.T) {
 	// Create a simple Pareto front
 	solutions := []*ParetoSolution{
@@ -528,12 +552,13 @@ func TestCalculateHypervolume(t *testing.T) {
 	// HV = 4*2 + 3*1 + 2*1 = 8 + 3 + 2 = 13
 	expectedHV := 13.0
 	tolerance := 1e-6
+
 	if math.Abs(hypervolume-expectedHV) > tolerance {
 		t.Errorf("Expected hypervolume %f, got %f", expectedHV, hypervolume)
 	}
 }
 
-// TestCalculateHypervolumeEmpty tests hypervolume with empty solution set
+// TestCalculateHypervolumeEmpty tests hypervolume with empty solution set.
 func TestCalculateHypervolumeEmpty(t *testing.T) {
 	solutions := []*ParetoSolution{}
 	referencePoint := []float64{5.0, 5.0}
@@ -545,7 +570,7 @@ func TestCalculateHypervolumeEmpty(t *testing.T) {
 	}
 }
 
-// TestCalculateIGD tests Inverted Generational Distance calculation
+// TestCalculateIGD tests Inverted Generational Distance calculation.
 func TestCalculateIGD(t *testing.T) {
 	// True Pareto front
 	trueFront := []*ParetoSolution{
@@ -575,7 +600,7 @@ func TestCalculateIGD(t *testing.T) {
 	}
 }
 
-// TestCalculateIGDEmpty tests IGD with empty fronts
+// TestCalculateIGDEmpty tests IGD with empty fronts.
 func TestCalculateIGDEmpty(t *testing.T) {
 	trueFront := []*ParetoSolution{
 		{ObjectiveValues: []float64{0.0, 1.0}},
@@ -595,7 +620,7 @@ func TestCalculateIGDEmpty(t *testing.T) {
 	}
 }
 
-// TestSelectByNSGA2 tests NSGA-II selection mechanism
+// TestSelectByNSGA2 tests NSGA-II selection mechanism.
 func TestSelectByNSGA2(t *testing.T) {
 	// Create test solutions with known ranks and crowding distances
 	solutions := []*ParetoSolution{
@@ -629,7 +654,7 @@ func TestSelectByNSGA2(t *testing.T) {
 	}
 }
 
-// TestParetoArchive tests the Pareto archive functionality
+// TestParetoArchive tests the Pareto archive functionality.
 func TestParetoArchive(t *testing.T) {
 	archive := NewParetoArchive(5)
 
@@ -652,6 +677,7 @@ func TestParetoArchive(t *testing.T) {
 	if best == nil {
 		t.Fatal("Expected best solution, got nil")
 	}
+
 	if best.ObjectiveValues[0] != 0.0 {
 		t.Errorf("Expected best solution to have first objective 0.0, got %f", best.ObjectiveValues[0])
 	}
@@ -671,7 +697,7 @@ func TestParetoArchive(t *testing.T) {
 	}
 }
 
-// TestParetoArchiveEmpty tests empty archive
+// TestParetoArchiveEmpty tests empty archive.
 func TestParetoArchiveEmpty(t *testing.T) {
 	archive := NewParetoArchive(10)
 
@@ -681,7 +707,7 @@ func TestParetoArchiveEmpty(t *testing.T) {
 	}
 }
 
-// TestInitializeAOBLMOA tests AOBLMOA initialization
+// TestInitializeAOBLMOA tests AOBLMOA initialization.
 func TestInitializeAOBLMOA(t *testing.T) {
 	config := NewAOBLMOAConfig()
 	config.MaxIterations = 100
@@ -709,7 +735,7 @@ func TestInitializeAOBLMOA(t *testing.T) {
 	}
 }
 
-// TestAOBLMOAOptimizeSphere tests AOBLMOA on Sphere function
+// TestAOBLMOAOptimizeSphere tests AOBLMOA on Sphere function.
 func TestAOBLMOAOptimizeSphere(t *testing.T) {
 	config := NewAOBLMOAConfig()
 	config.Rand = rand.New(rand.NewSource(42))
@@ -738,7 +764,7 @@ func TestAOBLMOAOptimizeSphere(t *testing.T) {
 	}
 }
 
-// TestAOBLMOAOptimizeRastrigin tests AOBLMOA on Rastrigin function
+// TestAOBLMOAOptimizeRastrigin tests AOBLMOA on Rastrigin function.
 func TestAOBLMOAOptimizeRastrigin(t *testing.T) {
 	config := NewAOBLMOAConfig()
 	config.Rand = rand.New(rand.NewSource(42))
@@ -768,7 +794,7 @@ func TestAOBLMOAOptimizeRastrigin(t *testing.T) {
 	}
 }
 
-// TestApplyAOBLMOAToPopulation tests population-level AOBLMOA application
+// TestApplyAOBLMOAToPopulation tests population-level AOBLMOA application.
 func TestApplyAOBLMOAToPopulation(t *testing.T) {
 	config := NewAOBLMOAConfig()
 	config.Rand = rand.New(rand.NewSource(42))
@@ -821,6 +847,7 @@ func TestApplyAOBLMOAToPopulation(t *testing.T) {
 	if len(males) != 5 {
 		t.Errorf("Expected 5 males after AOBLMOA, got %d", len(males))
 	}
+
 	if len(females) != 5 {
 		t.Errorf("Expected 5 females after AOBLMOA, got %d", len(females))
 	}
@@ -831,6 +858,7 @@ func TestApplyAOBLMOAToPopulation(t *testing.T) {
 			t.Errorf("Male %d has invalid cost: %f", i, m.Cost)
 		}
 	}
+
 	for i, f := range females {
 		if math.IsNaN(f.Cost) || math.IsInf(f.Cost, 0) {
 			t.Errorf("Female %d has invalid cost: %f", i, f.Cost)
@@ -838,8 +866,7 @@ func TestApplyAOBLMOAToPopulation(t *testing.T) {
 	}
 }
 
-// ZDT1 is a multi-objective test function (2 objectives)
-// Global Pareto front: f1 ∈ [0,1], f2 = 1 - sqrt(f1)
+// Global Pareto front: f1 ∈ [0,1], f2 = 1 - sqrt(f1).
 func ZDT1(x []float64) []float64 {
 	n := len(x)
 	f1 := x[0]
@@ -848,7 +875,8 @@ func ZDT1(x []float64) []float64 {
 	for i := 1; i < n; i++ {
 		g += x[i]
 	}
-	g = 1.0 + (9.0 / float64(n-1)) * g
+
+	g = 1.0 + (9.0/float64(n-1))*g
 
 	h := 1.0 - math.Sqrt(f1/g)
 
@@ -857,8 +885,7 @@ func ZDT1(x []float64) []float64 {
 	return []float64{f1, f2}
 }
 
-// ZDT2 is a multi-objective test function (2 objectives)
-// Non-convex Pareto front
+// Non-convex Pareto front.
 func ZDT2(x []float64) []float64 {
 	n := len(x)
 	f1 := x[0]
@@ -867,7 +894,8 @@ func ZDT2(x []float64) []float64 {
 	for i := 1; i < n; i++ {
 		g += x[i]
 	}
-	g = 1.0 + (9.0 / float64(n-1)) * g
+
+	g = 1.0 + (9.0/float64(n-1))*g
 
 	h := 1.0 - math.Pow(f1/g, 2.0)
 
@@ -876,8 +904,7 @@ func ZDT2(x []float64) []float64 {
 	return []float64{f1, f2}
 }
 
-// DTLZ2 is a multi-objective test function (3 objectives by default)
-// Spherical Pareto front
+// Spherical Pareto front.
 func DTLZ2(x []float64) []float64 {
 	// For simplicity, use 3 objectives
 	m := 3 // number of objectives
@@ -906,11 +933,10 @@ func DTLZ2(x []float64) []float64 {
 	return objectives
 }
 
-// TestMultiObjectiveZDT1 tests AOBLMOA on ZDT1 multi-objective problem
+// TestMultiObjectiveZDT1 tests AOBLMOA on ZDT1 multi-objective problem.
 func TestMultiObjectiveZDT1(t *testing.T) {
 	// For multi-objective, we can't use the standard Optimize function
 	// This test verifies that the multi-objective utilities work correctly
-
 	// Create a simple population with ZDT1
 	problemSize := 30
 	popSize := 50
@@ -950,12 +976,14 @@ func TestMultiObjectiveZDT1(t *testing.T) {
 
 	// Check that crowding distances are assigned
 	hasFiniteCrowding := false
+
 	for _, idx := range fronts[0] {
 		if solutions[idx].CrowdingDistance > 0 {
 			hasFiniteCrowding = true
 			break
 		}
 	}
+
 	if !hasFiniteCrowding {
 		t.Error("Expected at least one solution with positive crowding distance")
 	}
@@ -969,10 +997,12 @@ func TestMultiObjectiveZDT1(t *testing.T) {
 	// Find max values for reference point (should be worse than all solutions)
 	maxF1 := 0.0
 	maxF2 := 0.0
+
 	for _, sol := range firstFrontSolutions {
 		if sol.ObjectiveValues[0] > maxF1 {
 			maxF1 = sol.ObjectiveValues[0]
 		}
+
 		if sol.ObjectiveValues[1] > maxF2 {
 			maxF2 = sol.ObjectiveValues[1]
 		}
@@ -991,7 +1021,7 @@ func TestMultiObjectiveZDT1(t *testing.T) {
 	}
 }
 
-// TestMultiObjectiveZDT2 tests AOBLMOA on ZDT2 multi-objective problem
+// TestMultiObjectiveZDT2 tests AOBLMOA on ZDT2 multi-objective problem.
 func TestMultiObjectiveZDT2(t *testing.T) {
 	// Similar to ZDT1 test but with non-convex Pareto front
 	problemSize := 30
@@ -1043,7 +1073,7 @@ func TestMultiObjectiveZDT2(t *testing.T) {
 	}
 }
 
-// TestMultiObjectiveDTLZ2 tests AOBLMOA on DTLZ2 multi-objective problem (3 objectives)
+// TestMultiObjectiveDTLZ2 tests AOBLMOA on DTLZ2 multi-objective problem (3 objectives).
 func TestMultiObjectiveDTLZ2(t *testing.T) {
 	// DTLZ2 has 3 objectives, testing 3D multi-objective optimization
 	problemSize := 12 // Standard DTLZ2: M + K - 1, where M=3, K=10
@@ -1089,12 +1119,11 @@ func TestMultiObjectiveDTLZ2(t *testing.T) {
 			}
 		}
 	}
-
 	// Note: Hypervolume calculation only supports 2D, so skip for DTLZ2
 	// IGD would require true Pareto front which we don't have
 }
 
-// TestMultiObjectiveArchiveManagement tests Pareto archive with multi-objective problems
+// TestMultiObjectiveArchiveManagement tests Pareto archive with multi-objective problems.
 func TestMultiObjectiveArchiveManagement(t *testing.T) {
 	archive := NewParetoArchive(20)
 
@@ -1127,6 +1156,7 @@ func TestMultiObjectiveArchiveManagement(t *testing.T) {
 		calculateCrowdingDistance(archive.Solutions, fronts[0])
 
 		hasVariedCrowding := false
+
 		firstCrowding := archive.Solutions[fronts[0][0]].CrowdingDistance
 		for _, idx := range fronts[0] {
 			if math.Abs(archive.Solutions[idx].CrowdingDistance-firstCrowding) > 1e-6 {

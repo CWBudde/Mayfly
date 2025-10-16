@@ -10,25 +10,23 @@ import (
 	"github.com/cucumber/godog"
 )
 
-// Test context holds state between steps
+// Test context holds state between steps.
 type integrationTestContext struct {
-	config         *Config
-	result         *Result
-	err            error
-	standardResult *Result
-	desmaResult    *Result
-	problemSize    int
-	lowerBound     float64
-	upperBound     float64
-	objectiveFunc  func([]float64) float64
-	seed           int64
-
-	// For tracking internal state during optimization
-	malePositions           [][]*Mayfly
+	err                     error
+	result                  *Result
+	standardResult          *Result
+	desmaResult             *Result
+	config                  *Config
+	objectiveFunc           func([]float64) float64
 	femalePositions         [][]*Mayfly
-	offspringAfterCrossover [][]*Mayfly
-	offspringAfterMutation  [][]*Mayfly
 	eliteSolutions          [][]*Mayfly
+	offspringAfterMutation  [][]*Mayfly
+	offspringAfterCrossover [][]*Mayfly
+	malePositions           [][]*Mayfly
+	lowerBound              float64
+	seed                    int64
+	upperBound              float64
+	problemSize             int
 }
 
 func (ctx *integrationTestContext) reset() {
@@ -75,6 +73,7 @@ func (ctx *integrationTestContext) aFunctionWithDimension(funcName string, dimen
 func (ctx *integrationTestContext) boundsFromTo(lower, upper float64) error {
 	ctx.lowerBound = lower
 	ctx.upperBound = upper
+
 	return nil
 }
 
@@ -97,6 +96,7 @@ func (ctx *integrationTestContext) iRunStandardMAForIterations(iterations int) e
 
 	ctx.standardResult = result
 	ctx.result = result
+
 	return nil
 }
 
@@ -124,6 +124,7 @@ func (ctx *integrationTestContext) iRunDESMAForIterations(iterations int) error 
 
 	ctx.desmaResult = result
 	ctx.result = result
+
 	return nil
 }
 
@@ -206,6 +207,7 @@ func (ctx *integrationTestContext) iRunStandardMAForIterationsCapturingState(ite
 	}
 
 	ctx.result = result
+
 	return nil
 }
 
@@ -232,6 +234,7 @@ func (ctx *integrationTestContext) allFemalePositionsShouldBeWithinBounds() erro
 	if ctx.result == nil {
 		return fmt.Errorf("no result available")
 	}
+
 	return nil
 }
 
@@ -240,6 +243,7 @@ func (ctx *integrationTestContext) allOffspringPositionsShouldBeWithinBoundsAfte
 	if ctx.result == nil {
 		return fmt.Errorf("no result available")
 	}
+
 	return nil
 }
 
@@ -248,6 +252,7 @@ func (ctx *integrationTestContext) allOffspringPositionsShouldBeWithinBoundsAfte
 	if ctx.result == nil {
 		return fmt.Errorf("no result available")
 	}
+
 	return nil
 }
 
@@ -256,6 +261,7 @@ func (ctx *integrationTestContext) allVelocitiesShouldBeWithinCalculatedVelocity
 	if ctx.result == nil {
 		return fmt.Errorf("no result available")
 	}
+
 	return nil
 }
 
@@ -264,6 +270,7 @@ func (ctx *integrationTestContext) allEliteSolutionsShouldBeWithinBounds() error
 	if ctx.result == nil {
 		return fmt.Errorf("no result available")
 	}
+
 	return nil
 }
 
@@ -278,8 +285,10 @@ func (ctx *integrationTestContext) iSetProblemSizeTo(size int) error {
 	if ctx.config == nil {
 		return fmt.Errorf("config not initialized")
 	}
+
 	ctx.config.ProblemSize = size
 	ctx.problemSize = size
+
 	return nil
 }
 
@@ -287,8 +296,10 @@ func (ctx *integrationTestContext) iSetLowerBoundTo(bound float64) error {
 	if ctx.config == nil {
 		return fmt.Errorf("config not initialized")
 	}
+
 	ctx.config.LowerBound = bound
 	ctx.lowerBound = bound
+
 	return nil
 }
 
@@ -296,8 +307,10 @@ func (ctx *integrationTestContext) iSetUpperBoundTo(bound float64) error {
 	if ctx.config == nil {
 		return fmt.Errorf("config not initialized")
 	}
+
 	ctx.config.UpperBound = bound
 	ctx.upperBound = bound
+
 	return nil
 }
 
@@ -307,6 +320,7 @@ func (ctx *integrationTestContext) iCallOptimizeWithoutSettingObjectiveFunc() er
 	}
 
 	ctx.result, ctx.err = Optimize(ctx.config)
+
 	return nil
 }
 
@@ -326,7 +340,9 @@ func (ctx *integrationTestContext) iSetObjectiveFuncToSphere() error {
 	if ctx.config == nil {
 		return fmt.Errorf("config not initialized")
 	}
+
 	ctx.config.ObjectiveFunc = Sphere
+
 	return nil
 }
 
@@ -336,6 +352,7 @@ func (ctx *integrationTestContext) iCallOptimizeWithoutSettingProblemSize() erro
 	}
 
 	ctx.result, ctx.err = Optimize(ctx.config)
+
 	return nil
 }
 
@@ -346,6 +363,7 @@ func (ctx *integrationTestContext) aValidConfigWithNPopSetTo(npop int) error {
 	ctx.config.ProblemSize = 5
 	ctx.config.LowerBound = -10
 	ctx.config.UpperBound = 10
+
 	return nil
 }
 
@@ -360,6 +378,7 @@ func (ctx *integrationTestContext) iRunOptimization() error {
 	}
 
 	ctx.result, ctx.err = Optimize(ctx.config)
+
 	return ctx.err
 }
 
@@ -386,6 +405,7 @@ func (ctx *integrationTestContext) aValidConfigWithBoundsFromTo(lower, upper flo
 	ctx.config.UpperBound = upper
 	ctx.lowerBound = lower
 	ctx.upperBound = upper
+
 	return nil
 }
 
@@ -424,6 +444,7 @@ func (ctx *integrationTestContext) aDESMAConfigWithBoundsFromTo(lower, upper flo
 	ctx.config.UpperBound = upper
 	ctx.lowerBound = lower
 	ctx.upperBound = upper
+
 	return nil
 }
 
@@ -451,6 +472,7 @@ func (ctx *integrationTestContext) aStandardMAConfig() error {
 	ctx.config.ProblemSize = 5
 	ctx.config.LowerBound = -10
 	ctx.config.UpperBound = 10
+
 	return nil
 }
 
@@ -461,6 +483,7 @@ func (ctx *integrationTestContext) iRunOptimizationForIterations(iterations int)
 
 	ctx.config.MaxIterations = iterations
 	ctx.result, ctx.err = Optimize(ctx.config)
+
 	return ctx.err
 }
 
@@ -500,6 +523,7 @@ func (ctx *integrationTestContext) aDESMAConfigWithEliteCountSetTo(eliteCount in
 	ctx.config.LowerBound = -10
 	ctx.config.UpperBound = 10
 	ctx.config.EliteCount = eliteCount
+
 	return nil
 }
 
@@ -538,6 +562,7 @@ func (ctx *integrationTestContext) aDESMAConfigForSphereFunction() error {
 	ctx.config.ProblemSize = 5
 	ctx.config.LowerBound = -10
 	ctx.config.UpperBound = 10
+
 	return nil
 }
 
@@ -545,7 +570,9 @@ func (ctx *integrationTestContext) initialSearchRangeOf(searchRange float64) err
 	if ctx.config == nil {
 		return fmt.Errorf("config not initialized")
 	}
+
 	ctx.config.SearchRange = searchRange
+
 	return nil
 }
 
@@ -567,6 +594,7 @@ func (ctx *integrationTestContext) aDESMAConfig() error {
 	ctx.config.ProblemSize = 5
 	ctx.config.LowerBound = -10
 	ctx.config.UpperBound = 10
+
 	return nil
 }
 
@@ -583,6 +611,7 @@ func (ctx *integrationTestContext) iRunBothOptimizations() error {
 	if err != nil {
 		return err
 	}
+
 	ctx.standardResult = standardResult
 
 	// Run DESMA
@@ -597,6 +626,7 @@ func (ctx *integrationTestContext) iRunBothOptimizations() error {
 	if err != nil {
 		return err
 	}
+
 	ctx.desmaResult = desmaResult
 
 	return nil
@@ -640,6 +670,7 @@ func containsMiddle(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 

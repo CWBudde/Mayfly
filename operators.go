@@ -43,6 +43,7 @@ func MutateGaussian(x []float64, mu, lowerBound, upperBound float64, rng *rand.R
 	} else {
 		indices = rand.Perm(nVar)[:nMu]
 	}
+
 	for _, j := range indices {
 		y[j] = x[j] + sigma*randn(rng)
 	}

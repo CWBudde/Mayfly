@@ -1,0 +1,330 @@
+# golangci-lint v2 configuration for Mayfly Optimization Algorithm
+# https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  build-tags: []
+  skip-dirs: []
+  skip-files: []
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  go: '1.21'
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  unique-by-line: true
+  sort-results: true
+
+linters:
+  disable-all: true
+  enable:
+    # Enabled by default
+    - errcheck       # Checks for unchecked errors
+    - gosimple       # Simplify code
+    - govet          # Reports suspicious constructs
+    - ineffassign    # Detects unused variable assignments
+    - staticcheck    # Advanced static analysis
+    - unused         # Checks for unused code
+
+    # Code quality and best practices
+    - gofmt          # Checks if code is formatted with gofmt
+    - goimports      # Checks imports organization
+    - misspell       # Finds commonly misspelled words
+    - revive         # Fast, configurable, extensible linter
+    - stylecheck     # Replacement for golint with better style checks
+    - unconvert      # Remove unnecessary type conversions
+    - unparam        # Reports unused function parameters
+    - gocyclo        # Computes cyclomatic complexity
+    - gocognit       # Computes cognitive complexity
+    - cyclop         # Package for calculating cyclomatic complexity
+
+    # Error handling
+    - errorlint      # Error wrapping checks
+    - goerr113       # Go error handling (sentinel errors)
+
+    # Performance
+    - prealloc       # Finds slice declarations that could be preallocated
+    - bodyclose      # Checks HTTP response body is closed
+
+    # Security
+    - gosec          # Security checks
+
+    # Code complexity
+    - nestif         # Reports deeply nested if statements
+    - funlen         # Tool for detection of long functions
+    - maintidx       # Maintainability index calculator
+
+    # Testing
+    - testpackage    # Makes you use separate _test package
+    - tparallel      # Detects inappropriate usage of t.Parallel()
+
+    # Common mistakes
+    - nilerr         # Finds code that returns nil even if it checks that error is not nil
+    - nilnil         # Checks that there is no simultaneous return of nil error and invalid value
+    - nolintlint     # Reports ill-formed or insufficient nolint directives
+    - makezero       # Finds slice declarations with non-zero initial length
+    - bidichk        # Checks for dangerous unicode character sequences
+
+    # Code organization
+    - gci            # Controls Go package import order and makes it always deterministic
+    - godot          # Checks if comments end in a period
+    - whitespace     # Checks for unnecessary whitespace
+    - wsl            # Whitespace linter forces you to use empty lines
+
+    # Potential bugs
+    - copyloopvar    # Detects places where loop variables are copied
+    - durationcheck  # Checks for two durations multiplied together
+    - exportloopref  # Checks for pointers to enclosing loop variables
+    - noctx          # Finds sending HTTP request without context.Context
+
+    # Documentation
+    - godox          # Detects TODO, BUG, FIXME comments
+
+    # Additional useful linters
+    - goconst        # Finds repeated strings that could be replaced by a constant
+    - gocritic       # Provides diagnostics that check for bugs, performance and style issues
+    - goprintffuncname # Checks that printf-like functions are named with f at the end
+    - nakedret       # Finds naked returns in functions greater than a specified length
+    - predeclared    # Finds code that shadows predeclared identifiers
+    - promlinter     # Checks Prometheus metrics naming via promlint
+    - reassign       # Checks that package variables are not reassigned
+    - tenv           # Detects using os.Setenv instead of t.Setenv
+    - testifylint    # Checks usage of github.com/stretchr/testify
+    - usestdlibvars  # Detects the possibility to use variables/constants from stdlib
+    - wastedassign   # Finds wasted assignment statements
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+
+  govet:
+    enable-all: true
+    settings:
+      shadow:
+        strict: true
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/cwbudde/mayfly
+
+  revive:
+    confidence: 0.8
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  stylecheck:
+    checks: ["all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
+    dot-import-whitelist: []
+    initialisms: ["ACL", "API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "ID", "IP", "JSON", "QPS", "RAM", "RPC", "SLA", "SMTP", "SQL", "SSH", "TCP", "TLS", "TTL", "UDP", "UI", "GID", "UID", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XMPP", "XSRF", "XSS", "SIP", "RTP", "AMQP", "DB", "TS"]
+    http-status-code-whitelist: []
+
+  gocyclo:
+    min-complexity: 15
+
+  gocognit:
+    min-complexity: 20
+
+  cyclop:
+    max-complexity: 15
+    skip-tests: true
+
+  funlen:
+    lines: 100
+    statements: 50
+    ignore-comments: true
+
+  maintidx:
+    under: 20
+
+  nestif:
+    min-complexity: 5
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - hugeParam
+      - rangeValCopy
+      - exitAfterDefer
+      - whyNoLint
+      - singleCaseSwitch
+      - commentedOutCode
+
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104 # Audit errors not checked - covered by errcheck
+      - G304 # File path provided as taint input
+      - G306 # Poor file permissions used when creating a directory
+
+  misspell:
+    locale: US
+    ignore-words: []
+
+  nakedret:
+    max-func-lines: 30
+
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: true
+
+  unparam:
+    check-exported: false
+
+  unused:
+    field-writes-are-uses: true
+    post-statements-are-reads: true
+    exported-is-used: true
+    exported-fields-are-used: true
+    parameters-are-used: true
+    local-variables-are-used: true
+    generated-is-used: true
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+  wsl:
+    strict-append: true
+    allow-assign-and-call: true
+    allow-multiline-assign: true
+    allow-cuddle-declarations: false
+    allow-trailing-comment: false
+    force-case-trailing-whitespace: 0
+    force-err-cuddling: false
+    allow-separated-leading-comment: false
+
+  godox:
+    keywords:
+      - TODO
+      - BUG
+      - FIXME
+      - OPTIMIZE
+      - HACK
+
+  errorlint:
+    errorf: true
+    errorf-multi: true
+    asserts: true
+    comparison: true
+
+  goerr113:
+    check-error-free-funcs: true
+
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    require-specific: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  fix: false
+
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - maintidx
+        - gocognit
+
+    # Exclude benchmark files from certain checks
+    - path: benchmark_test\.go
+      linters:
+        - funlen
+        - gocognit
+        - gocyclo
+
+    # Ignore long lines in examples
+    - path: examples/
+      linters:
+        - lll
+
+    # Exclude known false positives
+    - text: "shadow: declaration of .err. shadows declaration"
+      linters:
+        - govet
+
+    # Allow init functions without explanation in main packages
+    - path: cmd/
+      text: "init function"
+      linters:
+        - gochecknoinits
+
+    # Mathematical algorithms can have complex functions
+    - path: mayfly\.go
+      linters:
+        - gocyclo
+        - gocognit
+        - cyclop
+        - funlen
+        - maintidx
+
+    # Allow TODO/FIXME comments (we want to track them, not fail on them)
+    - linters:
+        - godox
+      text: "TODO|FIXME|BUG"
+
+  exclude-use-default: false
+  exclude-case-sensitive: false
+  include: []
+
+severity:
+  default-severity: error
+  case-sensitive: false
+  rules:
+    - linters:
+        - godox
+      severity: warning
+    - linters:
+        - stylecheck
+      severity: warning

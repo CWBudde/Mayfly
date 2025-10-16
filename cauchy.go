@@ -5,22 +5,7 @@ import (
 	"math/rand"
 )
 
-// cauchyRand generates a random number from a Cauchy distribution.
-// The Cauchy distribution (also called Lorentzian distribution) is a continuous
-// probability distribution with heavy tails, making it useful for optimization
-// algorithms that need occasional large jumps to escape local optima.
-//
-// The Cauchy distribution has no defined mean or variance due to its heavy tails.
-// This property makes Cauchy mutation more explorative than Gaussian mutation,
-// as it can generate larger jumps with higher probability.
-//
-// Parameters:
-//   - x0: location parameter (center of distribution)
-//   - gamma: scale parameter (half-width at half-maximum)
-//   - rng: random number generator
-//
-// Generation method: Inverse transform sampling
-// If U ~ Uniform(0,1), then X = x0 + gamma * tan(π*(U - 0.5)) ~ Cauchy(x0, gamma)
+// If U ~ Uniform(0,1), then X = x0 + gamma * tan(π*(U - 0.5)) ~ Cauchy(x0, gamma).
 func cauchyRand(x0, gamma float64, rng *rand.Rand) float64 {
 	if rng == nil {
 		rng = rand.New(rand.NewSource(0))
@@ -44,27 +29,11 @@ func cauchyRandVec(size int, x0, gamma float64, rng *rand.Rand) []float64 {
 	for i := 0; i < size; i++ {
 		vec[i] = cauchyRand(x0, gamma, rng)
 	}
+
 	return vec
 }
 
-// MutateCauchy applies Cauchy mutation to a position vector.
-// This uses the Cauchy distribution for perturbations, which has heavier
-// tails than the Gaussian distribution used in MutateGaussian.
-//
-// Cauchy mutation characteristics:
-//   - More exploration: Higher probability of large jumps
-//   - No defined variance: Can generate arbitrarily large perturbations
-//   - Better for escaping local optima
-//   - More suitable for early-stage exploration
-//
-// Parameters:
-//   - x: position vector to mutate
-//   - mu: mutation rate (proportion of dimensions to mutate)
-//   - lowerBound: lower bound for decision variables
-//   - upperBound: upper bound for decision variables
-//   - rng: random number generator
-//
-// Returns: mutated position vector
+// Returns: mutated position vector.
 func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
 	nMu := int(math.Ceil(mu * float64(nVar)))
@@ -109,22 +78,7 @@ func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Ran
 	return y
 }
 
-// HybridMutate applies a hybrid mutation combining Cauchy and Gaussian distributions.
-// This adaptive approach balances exploration (Cauchy) and exploitation (Gaussian).
-//
-// Parameters:
-//   - x: position vector to mutate
-//   - mu: mutation rate (proportion of dimensions to mutate)
-//   - lowerBound: lower bound for decision variables
-//   - upperBound: upper bound for decision variables
-//   - cauchyProb: probability of using Cauchy mutation (vs Gaussian)
-//   - rng: random number generator
-//
-// Strategy:
-//   - Early iterations (cauchyProb high): More Cauchy for exploration
-//   - Late iterations (cauchyProb low): More Gaussian for exploitation
-//
-// Returns: mutated position vector
+// Returns: mutated position vector.
 func HybridMutate(x []float64, mu, lowerBound, upperBound, cauchyProb float64, rng *rand.Rand) []float64 {
 	if rng == nil {
 		rng = rand.New(rand.NewSource(0))
@@ -134,5 +88,6 @@ func HybridMutate(x []float64, mu, lowerBound, upperBound, cauchyProb float64, r
 	if rng.Float64() < cauchyProb {
 		return MutateCauchy(x, mu, lowerBound, upperBound, rng)
 	}
+
 	return MutateGaussian(x, mu, lowerBound, upperBound, rng)
 }

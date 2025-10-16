@@ -11,31 +11,28 @@ type MultiObjectiveFunction func([]float64) []float64
 
 // ParetoSolution represents a solution in the Pareto archive.
 type ParetoSolution struct {
-	Position          []float64 // Decision variables
-	ObjectiveValues   []float64 // Multiple objective values
-	Rank              int       // Pareto rank (1 = non-dominated front)
-	CrowdingDistance  float64   // Crowding distance for diversity
-	DominationCount   int       // Number of solutions that dominate this one
-	DominatedSolutions []int    // Indices of solutions dominated by this one
+	Position           []float64
+	ObjectiveValues    []float64
+	DominatedSolutions []int
+	Rank               int
+	CrowdingDistance   float64
+	DominationCount    int
 }
 
-// dominates checks if solution a dominates solution b (for minimization).
-// Solution a dominates b if:
-//   - a is no worse than b in all objectives
-//   - a is strictly better than b in at least one objective
-//
-// For minimization: a[i] <= b[i] for all i, and a[j] < b[j] for at least one j
+// For minimization: a[i] <= b[i] for all i, and a[j] < b[j] for at least one j.
 func dominates(a, b []float64) bool {
 	if len(a) != len(b) {
 		return false
 	}
 
 	strictlyBetter := false
+
 	for i := 0; i < len(a); i++ {
 		if a[i] > b[i] {
 			// a is worse in this objective
 			return false
 		}
+
 		if a[i] < b[i] {
 			// a is strictly better in this objective
 			strictlyBetter = true
@@ -45,13 +42,7 @@ func dominates(a, b []float64) bool {
 	return strictlyBetter
 }
 
-// fastNonDominatedSort performs fast non-dominated sorting on a population.
-// This is a key component of NSGA-II and other multi-objective algorithms.
-//
-// Returns:
-//   - fronts: List of Pareto fronts, where fronts[0] is the first (best) front
-//
-// Algorithm complexity: O(MN²) where M is number of objectives, N is population size
+// Algorithm complexity: O(MN²) where M is number of objectives, N is population size.
 func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 	n := len(solutions)
 	if n == 0 {
@@ -86,6 +77,7 @@ func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 		// If no one dominates this solution, it's in the first front
 		if solutions[i].DominationCount == 0 {
 			solutions[i].Rank = 1
+
 			firstFront = append(firstFront, i)
 		}
 	}
@@ -106,6 +98,7 @@ func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 				// If j is now non-dominated in remaining solutions
 				if solutions[j].DominationCount == 0 {
 					solutions[j].Rank = rank + 1
+
 					nextFront = append(nextFront, j)
 				}
 			}
@@ -144,6 +137,7 @@ func calculateCrowdingDistance(solutions []*ParetoSolution, frontIndices []int) 
 		for _, idx := range frontIndices {
 			solutions[idx].CrowdingDistance = math.Inf(1)
 		}
+
 		return
 	}
 
@@ -197,6 +191,7 @@ func crowdingDistanceComparison(a, b *ParetoSolution) bool {
 	if a.Rank < b.Rank {
 		return true
 	}
+
 	if a.Rank > b.Rank {
 		return false
 	}
@@ -284,10 +279,12 @@ func calculateIGD(obtainedFront, trueFront []*ParetoSolution) float64 {
 		for _, obtainedPoint := range obtainedFront {
 			// Calculate Euclidean distance in objective space
 			distance := 0.0
+
 			for i := 0; i < len(truePoint.ObjectiveValues); i++ {
 				diff := truePoint.ObjectiveValues[i] - obtainedPoint.ObjectiveValues[i]
 				distance += diff * diff
 			}
+
 			distance = math.Sqrt(distance)
 
 			if distance < minDistance {

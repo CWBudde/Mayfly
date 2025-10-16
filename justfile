@@ -47,9 +47,17 @@ treefmt:
     export PATH=$HOME/go/bin:$PATH
     treefmt
 
-# Run linter (requires golangci-lint)
+# Run linter with configuration file
 lint:
-    golangci-lint run
+    #!/usr/bin/env bash
+    export PATH=$HOME/go/bin:$PATH
+    golangci-lint run --config .golangci.yml ./...
+
+# Run linter with configuration file
+lint-fix:
+    #!/usr/bin/env bash
+    export PATH=$HOME/go/bin:$PATH
+    golangci-lint run --config .golangci.yml --fix ./...
 
 # Tidy up dependencies
 tidy:

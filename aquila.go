@@ -19,7 +19,7 @@ import (
 // Abualigah, L., et al. (2021). Aquila Optimizer: A novel meta-heuristic
 // optimization algorithm. Computers & Industrial Engineering, 157, 107250.
 
-// AquilaStrategy represents which hunting strategy to use
+// AquilaStrategy represents which hunting strategy to use.
 type AquilaStrategy int
 
 const (
@@ -40,6 +40,7 @@ func selectAquilaStrategy(currentIter, maxIter int, rng *rand.Rand) AquilaStrate
 		if rng.Float64() < 0.5 {
 			return ExpandedExploration
 		}
+
 		return NarrowedExploration
 	}
 
@@ -47,6 +48,7 @@ func selectAquilaStrategy(currentIter, maxIter int, rng *rand.Rand) AquilaStrate
 	if rng.Float64() < 0.5 {
 		return ExpandedExploitation
 	}
+
 	return NarrowedExploitation
 }
 
@@ -61,7 +63,6 @@ func selectAquilaStrategy(currentIter, maxIter int, rng *rand.Rand) AquilaStrate
 //   - rand is a random number in [0, 1]
 func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIter int,
 	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -73,6 +74,7 @@ func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIt
 		if result[i] < lowerBound {
 			result[i] = lowerBound
 		}
+
 		if result[i] > upperBound {
 			result[i] = upperBound
 		}
@@ -92,7 +94,6 @@ func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIt
 //   - D is the problem dimension
 func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, problemSize int,
 	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-
 	result := make([]float64, len(current))
 
 	// Generate Lévy flight multiplier
@@ -104,8 +105,8 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, pr
 
 	for i := 0; i < len(current); i++ {
 		// Generate random position components
-		y := rng.Float64() * (upperBound - lowerBound) + lowerBound
-		x := rng.Float64() * (upperBound - lowerBound) + lowerBound
+		y := rng.Float64()*(upperBound-lowerBound) + lowerBound
+		x := rng.Float64()*(upperBound-lowerBound) + lowerBound
 
 		// X2(t+1) = Xbest(t) * Levy(D) + XR(t) + (y - x) * rand
 		result[i] = best[i]*levyD + xr[i] + (y-x)*rng.Float64()
@@ -114,6 +115,7 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, pr
 		if result[i] < lowerBound {
 			result[i] = lowerBound
 		}
+
 		if result[i] > upperBound {
 			result[i] = upperBound
 		}
@@ -133,7 +135,6 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, pr
 //   - UB, LB are upper and lower bounds
 func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxIter int,
 	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -145,13 +146,14 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 
 	for i := 0; i < len(current); i++ {
 		// X3(t+1) = (Xbest(t) - XM(t)) * α - rand + ((UB - LB) * rand + LB) * δ
-		exploration := ((upperBound - lowerBound) * rng.Float64() + lowerBound) * delta
+		exploration := ((upperBound-lowerBound)*rng.Float64() + lowerBound) * delta
 		result[i] = (best[i]-mean[i])*alpha - rng.Float64() + exploration
 
 		// Apply bounds
 		if result[i] < lowerBound {
 			result[i] = lowerBound
 		}
+
 		if result[i] > upperBound {
 			result[i] = upperBound
 		}
@@ -170,7 +172,6 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 //   - Levy(D) provides small random walks
 func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, problemSize int,
 	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -188,12 +189,13 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, p
 
 	for i := 0; i < len(current); i++ {
 		// X4(t+1) = QF * Xbest(t) - (G1 * X(t) * rand) - G2 * Levy(D) + rand * G1
-		result[i] = qf*best[i] - (g1*current[i]*rng.Float64()) - g2*levyD + rng.Float64()*g1
+		result[i] = qf*best[i] - (g1 * current[i] * rng.Float64()) - g2*levyD + rng.Float64()*g1
 
 		// Apply bounds
 		if result[i] < lowerBound {
 			result[i] = lowerBound
 		}
+
 		if result[i] > upperBound {
 			result[i] = upperBound
 		}
@@ -217,14 +219,15 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, p
 //   - New position for the mayfly
 func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 	strategy AquilaStrategy, currentIter, maxIter int, config *Config) []float64 {
-
 	// Calculate mean position of population
 	mean := make([]float64, config.ProblemSize)
+
 	for _, m := range population {
 		for i := 0; i < config.ProblemSize; i++ {
 			mean[i] += m.Position[i]
 		}
 	}
+
 	for i := 0; i < config.ProblemSize; i++ {
 		mean[i] /= float64(len(population))
 	}
@@ -251,6 +254,7 @@ func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 		// Should never happen, but return current position as fallback
 		result := make([]float64, len(mayfly.Position))
 		copy(result, mayfly.Position)
+
 		return result
 	}
 }

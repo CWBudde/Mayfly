@@ -10,21 +10,21 @@ import (
 // These values were established during initial implementation and should not degrade
 // significantly in future changes.
 type RegressionBaseline struct {
-	Name             string
 	Function         ObjectiveFunction
+	Name             string
 	Dimensions       int
 	LowerBound       float64
 	UpperBound       float64
 	Iterations       int
 	Seed             int64
+	ExpectedBest     float64
+	ExpectedMean     float64
+	Tolerance        float64
+	SuccessThreshold float64
 	UseDESMA         bool
-	ExpectedBest     float64 // Expected best cost (upper bound)
-	ExpectedMean     float64 // Expected mean cost over multiple runs
-	Tolerance        float64 // Acceptable deviation (multiplier)
-	SuccessThreshold float64 // Minimum success rate (0-1)
 }
 
-// Regression baselines for Standard MA and DESMA
+// Regression baselines for Standard MA and DESMA.
 var regressionBaselines = []RegressionBaseline{
 	{
 		Name:             "StandardMA_Sphere_10D",
@@ -311,6 +311,7 @@ func TestRegressionReproducibility(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Optimization failed: %v", err)
 		}
+
 		return result.GlobalBest.Cost
 	}
 
@@ -337,8 +338,8 @@ func TestRegressionNoRegression(t *testing.T) {
 
 	// Test that DESMA consistently outperforms Standard MA on known problems
 	testCases := []struct {
-		name       string
 		function   ObjectiveFunction
+		name       string
 		dimensions int
 		lower      float64
 		upper      float64
@@ -371,6 +372,7 @@ func TestRegressionNoRegression(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Standard MA failed: %v", err)
 				}
+
 				maCosts[i] = maResult.GlobalBest.Cost
 
 				// DESMA
@@ -386,6 +388,7 @@ func TestRegressionNoRegression(t *testing.T) {
 				if err != nil {
 					t.Fatalf("DESMA failed: %v", err)
 				}
+
 				desmaCosts[i] = desmaResult.GlobalBest.Cost
 			}
 

@@ -57,16 +57,16 @@ type ProblemCharacteristics struct {
 	MultiObjective bool
 }
 
-// Modality describes the number of optima in the problem
+// Modality describes the number of optima in the problem.
 type Modality int
 
 const (
-	Unimodal          Modality = iota // Single optimum
-	Multimodal                         // Several optima
-	HighlyMultimodal                   // Many optima (10+)
+	Unimodal         Modality = iota // Single optimum
+	Multimodal                       // Several optima
+	HighlyMultimodal                 // Many optima (10+)
 )
 
-// Landscape describes the problem terrain
+// Landscape describes the problem terrain.
 type Landscape int
 
 const (
@@ -76,16 +76,16 @@ const (
 	NarrowValley                  // Ill-conditioned
 )
 
-// variantRegistry holds all available algorithm variants
+// variantRegistry holds all available algorithm variants.
 var variantRegistry = map[string]AlgorithmVariant{
-	"ma":       &StandardMAVariant{},
-	"desma":    &DESMAVariant{},
-	"olce":     &OLCEVariant{},
-	"olce-ma":  &OLCEVariant{}, // alias
-	"eobbma":   &EOBBMAVariant{},
-	"gsasma":   &GSASMAVariant{},
-	"mpma":     &MPMAVariant{},
-	"aoblmoa":  &AOBLMOAVariant{},
+	"ma":      &StandardMAVariant{},
+	"desma":   &DESMAVariant{},
+	"olce":    &OLCEVariant{},
+	"olce-ma": &OLCEVariant{}, // alias
+	"eobbma":  &EOBBMAVariant{},
+	"gsasma":  &GSASMAVariant{},
+	"mpma":    &MPMAVariant{},
+	"aoblmoa": &AOBLMOAVariant{},
 }
 
 // NewVariant creates an algorithm variant by name.
@@ -104,6 +104,7 @@ func NewVariant(name string) AlgorithmVariant {
 	if name == "standard" {
 		name = "ma"
 	}
+
 	return variantRegistry[name]
 }
 
@@ -117,11 +118,13 @@ func ListVariants() []string {
 		if name == "olce-ma" || name == "standard" {
 			continue
 		}
+
 		if !seen[name] {
 			variants = append(variants, name)
 			seen[name] = true
 		}
 	}
+
 	return variants
 }
 
@@ -136,6 +139,7 @@ func GetAllVariants() []AlgorithmVariant {
 			seen[variant] = true
 		}
 	}
+
 	return variants
 }
 
@@ -174,9 +178,11 @@ func (v *StandardMAVariant) ApplicableTo(characteristics ProblemCharacteristics)
 	if characteristics.Modality == Unimodal {
 		score += 0.2
 	}
+
 	if characteristics.Landscape == Smooth {
 		score += 0.2
 	}
+
 	if characteristics.Dimensionality <= 50 {
 		score += 0.1
 	}
@@ -232,9 +238,11 @@ func (v *DESMAVariant) ApplicableTo(characteristics ProblemCharacteristics) floa
 	if characteristics.Modality == Multimodal || characteristics.Modality == HighlyMultimodal {
 		score += 0.3
 	}
+
 	if characteristics.Landscape == Rugged {
 		score += 0.2
 	}
+
 	if !characteristics.ExpensiveEvaluations {
 		score += 0.1 // Overhead is acceptable
 	}
@@ -296,6 +304,7 @@ func (v *OLCEVariant) ApplicableTo(characteristics ProblemCharacteristics) float
 	if characteristics.Dimensionality >= 10 {
 		score += 0.2 // Benefits from diversity
 	}
+
 	if characteristics.Landscape == Rugged {
 		score += 0.1
 	}
@@ -351,9 +360,11 @@ func (v *EOBBMAVariant) ApplicableTo(characteristics ProblemCharacteristics) flo
 	if characteristics.Landscape == Deceptive {
 		score += 0.4
 	}
+
 	if characteristics.Modality == HighlyMultimodal {
 		score += 0.2
 	}
+
 	if characteristics.ExpensiveEvaluations {
 		score += 0.1 // Low overhead
 	}
@@ -409,9 +420,11 @@ func (v *GSASMAVariant) ApplicableTo(characteristics ProblemCharacteristics) flo
 	if characteristics.RequiresFastConvergence {
 		score += 0.3
 	}
+
 	if characteristics.Modality == Multimodal {
 		score += 0.2
 	}
+
 	if !characteristics.ExpensiveEvaluations {
 		score += 0.1 // Moderate overhead acceptable
 	}
@@ -467,9 +480,11 @@ func (v *MPMAVariant) ApplicableTo(characteristics ProblemCharacteristics) float
 	if characteristics.RequiresStableConvergence {
 		score += 0.3
 	}
+
 	if characteristics.Landscape == NarrowValley {
 		score += 0.3
 	}
+
 	if characteristics.ExpensiveEvaluations {
 		score += 0.1 // No overhead
 	}
@@ -520,9 +535,11 @@ func (v *AOBLMOAVariant) ApplicableTo(characteristics ProblemCharacteristics) fl
 	if characteristics.MultiObjective {
 		score += 0.4
 	}
+
 	if characteristics.Modality == HighlyMultimodal {
 		score += 0.2
 	}
+
 	if characteristics.Landscape == Rugged || characteristics.Landscape == Deceptive {
 		score += 0.1
 	}
@@ -553,13 +570,13 @@ type VariantBuilder struct {
 	config  *Config
 }
 
-// NewBuilder creates a new builder for the specified variant.
-// Example: NewBuilder("desma").ForProblem(fn, 10, -5, 5).WithIterations(500).Build()
+// Example: NewBuilder("desma").ForProblem(fn, 10, -5, 5).WithIterations(500).Build().
 func NewBuilder(variantName string) *VariantBuilder {
 	variant := NewVariant(variantName)
 	if variant == nil {
 		return nil
 	}
+
 	return &VariantBuilder{
 		variant: variant,
 		config:  variant.GetConfig(),
@@ -579,10 +596,12 @@ func (b *VariantBuilder) ForProblem(fn ObjectiveFunction, size int, lower, upper
 	if b == nil {
 		return nil
 	}
+
 	b.config.ObjectiveFunc = fn
 	b.config.ProblemSize = size
 	b.config.LowerBound = lower
 	b.config.UpperBound = upper
+
 	return b
 }
 
@@ -591,7 +610,9 @@ func (b *VariantBuilder) WithIterations(iterations int) *VariantBuilder {
 	if b == nil {
 		return nil
 	}
+
 	b.config.MaxIterations = iterations
+
 	return b
 }
 
@@ -600,18 +621,21 @@ func (b *VariantBuilder) WithPopulation(males, females int) *VariantBuilder {
 	if b == nil {
 		return nil
 	}
+
 	b.config.NPop = males
 	b.config.NPopF = females
+
 	return b
 }
 
-// WithConfig applies a custom configuration function.
-// Example: WithConfig(func(c *Config) { c.A1 = 2.0; c.Beta = 3.0 })
+// Example: WithConfig(func(c *Config) { c.A1 = 2.0; c.Beta = 3.0 }).
 func (b *VariantBuilder) WithConfig(fn func(*Config)) *VariantBuilder {
 	if b == nil {
 		return nil
 	}
+
 	fn(b.config)
+
 	return b
 }
 
@@ -620,12 +644,15 @@ func (b *VariantBuilder) Build() (*Config, error) {
 	if b == nil {
 		return nil, fmt.Errorf("builder is nil (unknown variant?)")
 	}
+
 	if b.config.ObjectiveFunc == nil {
 		return nil, fmt.Errorf("objective function not set")
 	}
+
 	if b.config.ProblemSize <= 0 {
 		return nil, fmt.Errorf("problem size must be positive")
 	}
+
 	return b.config, nil
 }
 
@@ -635,6 +662,7 @@ func (b *VariantBuilder) Optimize() (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return Optimize(config)
 }
 
@@ -643,13 +671,15 @@ func (b *VariantBuilder) GetVariant() AlgorithmVariant {
 	if b == nil {
 		return nil
 	}
+
 	return b.variant
 }
 
-// min returns the minimum of two float64 values
+// min returns the minimum of two float64 values.
 func min(a, b float64) float64 {
 	if a < b {
 		return a
 	}
+
 	return b
 }

@@ -34,7 +34,6 @@ package mayfly
 //   - Updated position for the mayfly
 func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 	isMale bool, currentIter, maxIter int, config *Config) []float64 {
-
 	// Determine if we should apply Aquila strategy or standard Mayfly update
 	useAquilaStrategy := config.Rand.Float64() < config.AquilaWeight
 
@@ -68,17 +67,9 @@ func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 	return newPosition
 }
 
-// applyAOBLMOAToPopulation applies AOBLMOA to an entire population.
-// This is the main entry point for AOBLMOA during optimization.
-//
-// The function:
-// 1. Selects appropriate Aquila strategy based on iteration
-// 2. Applies hybrid update (Mayfly + Aquila)
-// 3. Applies opposition-based learning to select individuals
-// 4. Updates positions and evaluates fitness
+// 4. Updates positions and evaluates fitness.
 func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 	currentIter, maxIter int, config *Config) {
-
 	// Update males with AOBLMOA
 	for i := 0; i < len(males); i++ {
 		newPos := applyAOBLMOA(males[i], globalBest, males, true, currentIter, maxIter, config)
@@ -134,6 +125,7 @@ func initializeAOBLMOA(config *Config) {
 	if config.OppositionProbability < 0 {
 		config.OppositionProbability = 0
 	}
+
 	if config.OppositionProbability > 1 {
 		config.OppositionProbability = 1
 	}
@@ -142,6 +134,7 @@ func initializeAOBLMOA(config *Config) {
 	if config.AquilaWeight < 0 {
 		config.AquilaWeight = 0
 	}
+
 	if config.AquilaWeight > 1 {
 		config.AquilaWeight = 1
 	}
@@ -182,9 +175,9 @@ func (pa *ParetoArchive) Add(solution *ParetoSolution) {
 // For single-objective problems, the objective value is just the cost.
 func (pa *ParetoArchive) AddFromMayfly(mayfly *Mayfly) {
 	solution := &ParetoSolution{
-		Position:        make([]float64, len(mayfly.Position)),
-		ObjectiveValues: []float64{mayfly.Cost},
-		Rank:            0,
+		Position:         make([]float64, len(mayfly.Position)),
+		ObjectiveValues:  []float64{mayfly.Cost},
+		Rank:             0,
 		CrowdingDistance: 0,
 	}
 	copy(solution.Position, mayfly.Position)

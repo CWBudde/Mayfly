@@ -9,10 +9,10 @@ import (
 // TestUnifrnd tests the unifrnd function for uniform random generation.
 func TestUnifrnd(t *testing.T) {
 	tests := []struct {
+		rng  *rand.Rand
 		name string
 		min  float64
 		max  float64
-		rng  *rand.Rand
 	}{
 		{"default_rng_0_1", 0.0, 1.0, nil},
 		{"default_rng_negative", -10.0, 10.0, nil},
@@ -43,6 +43,7 @@ func TestUnifrndDeterministic(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		val1 := unifrnd(-5.0, 5.0, rng1)
 		val2 := unifrnd(-5.0, 5.0, rng2)
+
 		if val1 != val2 {
 			t.Errorf("unifrnd() with same seed produced different values: %v vs %v", val1, val2)
 		}
@@ -52,11 +53,11 @@ func TestUnifrndDeterministic(t *testing.T) {
 // TestUnifrndVec tests the vector version of uniform random generation.
 func TestUnifrndVec(t *testing.T) {
 	tests := []struct {
+		rng  *rand.Rand
 		name string
 		min  float64
 		max  float64
 		size int
-		rng  *rand.Rand
 	}{
 		{"size_10", 0.0, 1.0, 10, nil},
 		{"size_50", -10.0, 10.0, 50, rand.New(rand.NewSource(42))},
@@ -101,8 +102,8 @@ func TestUnifrndVecDeterministic(t *testing.T) {
 // TestRandn tests normal distribution generation.
 func TestRandn(t *testing.T) {
 	tests := []struct {
-		name    string
 		rng     *rand.Rand
+		name    string
 		samples int
 	}{
 		{"default_rng", nil, 1000},
@@ -112,6 +113,7 @@ func TestRandn(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var sum, sumSq float64
+
 			for i := 0; i < tt.samples; i++ {
 				val := randn(tt.rng)
 				sum += val
@@ -142,6 +144,7 @@ func TestRandnDeterministic(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		val1 := randn(rng1)
 		val2 := randn(rng2)
+
 		if val1 != val2 {
 			t.Errorf("randn() with same seed produced different values: %v vs %v", val1, val2)
 		}
@@ -153,8 +156,8 @@ func TestMaxVec(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []float64
-		bound    float64
 		expected []float64
+		bound    float64
 	}{
 		{
 			name:     "all_below_bound",
@@ -202,8 +205,8 @@ func TestMinVec(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []float64
-		bound    float64
 		expected []float64
+		bound    float64
 	}{
 		{
 			name:     "all_above_bound",
@@ -347,6 +350,7 @@ func TestSortMayfliesSingleElement(t *testing.T) {
 		{Cost: 5.0, Position: []float64{1.0}},
 	}
 	sortMayflies(mayflies)
+
 	if mayflies[0].Cost != 5.0 {
 		t.Errorf("sortMayflies() modified single element: got cost %v, want 5.0", mayflies[0].Cost)
 	}

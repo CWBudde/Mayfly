@@ -10,23 +10,23 @@ import (
 
 // ComparisonResult holds the results of comparing multiple algorithms.
 type ComparisonResult struct {
-	AlgorithmNames []string                 // Names of algorithms compared
-	BenchmarkName  string                   // Name of the benchmark function
-	RunResults     [][]RunResult            // [algorithm][run]
-	Statistics     []AlgorithmStatistics    // Statistics for each algorithm
-	Rankings       []int                    // Rank of each algorithm (1=best)
-	WilcoxonTests  [][]WilcoxonResult       // [alg1][alg2] pairwise comparisons
-	FriedmanResult *FriedmanTestResult      // Overall statistical test
-	BestAlgorithm  int                      // Index of best algorithm
+	FriedmanResult *FriedmanTestResult
+	BenchmarkName  string
+	AlgorithmNames []string
+	RunResults     [][]RunResult
+	Statistics     []AlgorithmStatistics
+	Rankings       []int
+	WilcoxonTests  [][]WilcoxonResult
+	BestAlgorithm  int
 }
 
 // RunResult holds the result of a single optimization run.
 type RunResult struct {
-	BestCost       float64
-	FuncEvals      int
-	Iterations     int
-	ConvergenceAt  int     // Iteration where target was reached (0 if not reached)
-	ExecutionTime  float64 // Seconds
+	BestCost      float64
+	FuncEvals     int
+	Iterations    int
+	ConvergenceAt int     // Iteration where target was reached (0 if not reached)
+	ExecutionTime float64 // Seconds
 }
 
 // AlgorithmStatistics holds statistical measures for an algorithm's performance.
@@ -45,27 +45,27 @@ type AlgorithmStatistics struct {
 type WilcoxonResult struct {
 	Algorithm1  string
 	Algorithm2  string
+	Winner      string
 	WStatistic  float64
 	PValue      float64
-	Significant bool // True if p < 0.05
-	Winner      string // "Algorithm1", "Algorithm2", or "Tie"
+	Significant bool
 }
 
 // FriedmanTestResult holds the result of a Friedman test.
 type FriedmanTestResult struct {
-	ChiSquare   float64
-	PValue      float64
-	Significant bool // True if p < 0.05
+	ChiSquare        float64
+	PValue           float64
+	Significant      bool // True if p < 0.05
 	DegreesOfFreedom int
 }
 
 // ComparisonRunner orchestrates multi-algorithm comparisons.
 type ComparisonRunner struct {
-	Variants       []AlgorithmVariant
-	Runs           int     // Number of runs per algorithm
-	TargetCost     float64 // Success threshold (optional, 0 = unused)
-	MaxIterations  int     // Max iterations per run
-	Verbose        bool    // Print progress
+	Variants      []AlgorithmVariant
+	Runs          int     // Number of runs per algorithm
+	TargetCost    float64 // Success threshold (optional, 0 = unused)
+	MaxIterations int     // Max iterations per run
+	Verbose       bool    // Print progress
 }
 
 // NewComparisonRunner creates a new comparison runner.
@@ -88,13 +88,16 @@ func (cr *ComparisonRunner) WithVariants(variants ...AlgorithmVariant) *Comparis
 // WithVariantNames sets the variants to compare by name.
 func (cr *ComparisonRunner) WithVariantNames(names ...string) *ComparisonRunner {
 	variants := make([]AlgorithmVariant, 0, len(names))
+
 	for _, name := range names {
 		variant := NewVariant(name)
 		if variant != nil {
 			variants = append(variants, variant)
 		}
 	}
+
 	cr.Variants = variants
+
 	return cr
 }
 
@@ -129,7 +132,6 @@ func (cr *ComparisonRunner) Compare(
 	problemSize int,
 	lower, upper float64,
 ) *ComparisonResult {
-
 	algorithmNames := make([]string, len(cr.Variants))
 	runResults := make([][]RunResult, len(cr.Variants))
 
@@ -162,11 +164,13 @@ func (cr *ComparisonRunner) Compare(
 					ConvergenceAt: 0,
 					ExecutionTime: elapsed,
 				}
+
 				continue
 			}
 
 			// Find convergence iteration
 			convergenceAt := 0
+
 			if cr.TargetCost > 0 {
 				for iter, cost := range result.BestSolution {
 					if cost <= cr.TargetCost {
@@ -199,6 +203,7 @@ func (cr *ComparisonRunner) Compare(
 	// Rank algorithms by mean performance
 	rankings := rankAlgorithms(statistics)
 	bestAlgorithm := 0
+
 	for i, rank := range rankings {
 		if rank == 1 {
 			bestAlgorithm = i
@@ -210,6 +215,7 @@ func (cr *ComparisonRunner) Compare(
 	wilcoxonTests := make([][]WilcoxonResult, len(cr.Variants))
 	for i := range cr.Variants {
 		wilcoxonTests[i] = make([]WilcoxonResult, len(cr.Variants))
+
 		for j := range cr.Variants {
 			if i != j {
 				wilcoxonTests[i][j] = wilcoxonSignedRankTest(
@@ -252,6 +258,7 @@ func calculateAlgorithmStatistics(runs []RunResult, targetCost float64) Algorith
 		costs[i] = run.BestCost
 		funcEvals += float64(run.FuncEvals)
 		execTime += run.ExecutionTime
+
 		if targetCost > 0 && run.BestCost <= targetCost {
 			successCount++
 		}
@@ -267,6 +274,7 @@ func calculateAlgorithmStatistics(runs []RunResult, targetCost float64) Algorith
 	for _, cost := range costs {
 		mean += cost
 	}
+
 	mean /= float64(len(costs))
 
 	// Median
@@ -277,10 +285,12 @@ func calculateAlgorithmStatistics(runs []RunResult, targetCost float64) Algorith
 
 	// Standard deviation
 	variance := 0.0
+
 	for _, cost := range costs {
 		diff := cost - mean
 		variance += diff * diff
 	}
+
 	variance /= float64(len(costs))
 	stdDev := math.Sqrt(variance)
 
@@ -366,6 +376,7 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 	// Calculate W+ and W- (sum of positive and negative ranks)
 	wPlus := 0.0
 	wMinus := 0.0
+
 	for i, diff := range differences {
 		if diff > 0 {
 			wPlus += ranks[i]
@@ -387,6 +398,7 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 	significant := pValue < 0.05
 
 	winner := "Tie"
+
 	if significant {
 		if wPlus < wMinus {
 			winner = name1 // Algorithm 1 has lower costs (better)
@@ -416,16 +428,19 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 
 	// Rank algorithms for each run
 	ranks := make([][]float64, n)
+
 	for run := 0; run < n; run++ {
 		costs := make([]float64, k)
 		for alg := 0; alg < k; alg++ {
 			costs[alg] = runResults[alg][run].BestCost
 		}
+
 		ranks[run] = rankValues(costs)
 	}
 
 	// Calculate sum of ranks for each algorithm
 	rankSums := make([]float64, k)
+
 	for alg := 0; alg < k; alg++ {
 		for run := 0; run < n; run++ {
 			rankSums[alg] += ranks[run][alg]
@@ -474,6 +489,7 @@ func rankValues(values []float64) []float64 {
 
 	// Assign ranks (handle ties by averaging)
 	ranks := make([]float64, len(values))
+
 	i := 0
 	for i < len(indexed) {
 		j := i
@@ -486,11 +502,13 @@ func rankValues(values []float64) []float64 {
 		for k := i; k < j; k++ {
 			avgRank += float64(k + 1)
 		}
+
 		avgRank /= float64(j - i)
 		// Assign average rank
 		for k := i; k < j; k++ {
 			ranks[indexed[k].index] = avgRank
 		}
+
 		i = j
 	}
 
@@ -537,6 +555,7 @@ func (cr *ComparisonResult) PrintComparisonResults() {
 		fmt.Printf("%-10s | %8.2e | %8.2e | %8.2e | %8.2e | %8.2e | %5d\n",
 			name, stats.Mean, stats.Median, stats.StdDev, stats.Best, stats.Worst, rank)
 	}
+
 	fmt.Println(strings.Repeat("-", 80))
 
 	// Best algorithm
@@ -545,17 +564,21 @@ func (cr *ComparisonResult) PrintComparisonResults() {
 	// Wilcoxon tests (only significant results)
 	fmt.Println("\nSignificant Pairwise Differences (Wilcoxon signed-rank test, α=0.05):")
 	fmt.Println(strings.Repeat("-", 80))
+
 	foundSignificant := false
+
 	for i := range cr.AlgorithmNames {
 		for j := i + 1; j < len(cr.AlgorithmNames); j++ {
 			test := cr.WilcoxonTests[i][j]
 			if test.Significant {
 				foundSignificant = true
+
 				fmt.Printf("%s vs %s: p=%.4f, Winner: %s\n",
 					test.Algorithm1, test.Algorithm2, test.PValue, test.Winner)
 			}
 		}
 	}
+
 	if !foundSignificant {
 		fmt.Println("No significant differences found.")
 	}
@@ -567,6 +590,7 @@ func (cr *ComparisonResult) PrintComparisonResults() {
 			cr.FriedmanResult.ChiSquare,
 			cr.FriedmanResult.DegreesOfFreedom,
 			cr.FriedmanResult.PValue)
+
 		if cr.FriedmanResult.Significant {
 			fmt.Println(" (Significant at α=0.05)")
 		} else {

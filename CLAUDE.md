@@ -163,64 +163,69 @@ Critical internal functions in `mayfly.go`:
 
 ## Benchmark Functions
 
-Located in `functions.go`. All functions are **minimization** problems with known global minima:
+**Full documentation**: See `docs/benchmarks.md` for complete benchmark function reference.
 
-### Classic Benchmark Functions
+Located in `functions.go`. All functions are **minimization** problems with known global minima.
 
-| Function | Global Min | Optimal Point | Bounds | Type |
-|----------|-----------|---------------|--------|------|
-| Sphere | 0 | (0,...,0) | [-10,10] | Unimodal, convex |
-| Rastrigin | 0 | (0,...,0) | [-5.12,5.12] | Highly multimodal |
-| Rosenbrock | 0 | (1,...,1) | [-5,10] | Unimodal, narrow valley |
-| Ackley | 0 | (0,...,0) | [-32.768,32.768] | Multimodal, flat outer |
-| Griewank | 0 | (0,...,0) | [-600,600] | Many local minima |
+### Quick Reference
 
-### CEC-Style Benchmark Functions
+**Classic Functions** (5): Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
+**CEC-Style Functions** (10): Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6
 
-| Function | Global Min | Optimal Point | Bounds | Type |
-|----------|-----------|---------------|--------|------|
-| Schwefel | 0 | (420.97,...,420.97) | [-500,500] | Highly multimodal, deceptive |
-| Levy | 0 | (1,...,1) | [-10,10] | Multimodal |
-| Zakharov | 0 | (0,...,0) | [-10,10] | Unimodal, polynomial |
-| DixonPrice | 0 | Special pattern* | [-10,10] | Unimodal, valley |
-| Michalewicz | -9.66 (10D) | Variable | [0,π] | Multimodal, steep valleys |
-| BentCigar | 0 | (0,...,0) | [-100,100] | Unimodal, ill-conditioned |
-| Discus | 0 | (0,...,0) | [-100,100] | Unimodal, ill-conditioned |
-| Weierstrass | 0 | (0,...,0) | [-0.5,0.5] | Continuous, non-differentiable |
-| HappyCat | 0 | (-1,...,-1) | [-2,2] | Multimodal, plate-shaped |
-| ExpandedSchafferF6 | 0 | (0,...,0) | [-100,100] | Multimodal, composite |
-
-*DixonPrice optimum: x_i = 2^(-(2^i - 2)/2^i)
-
-**Performance expectations** (500 iterations):
+**Performance expectations** (500 iterations, D=30):
 - Sphere: ~1e-5 to 1e-10
 - Rastrigin: 30-100 (multimodal, harder)
 - Rosenbrock: 0.1-10 (narrow valley challenge)
 - Schwefel: High variance due to deceptive landscape
 - BentCigar/Discus: Test ill-conditioning handling
 
+For detailed function descriptions, parameters, and expected results, see `docs/benchmarks.md`.
+
 ## Module Structure
 
 ```
 .
-├── mayfly.go              # Core algorithm (533 lines)
-│   ├── Config struct      # All parameters
-│   ├── Optimize()         # Main entry point
-│   └── generateEliteMayflies()  # DESMA logic
-├── functions.go           # Benchmark functions (15 total: 5 classic + 10 CEC-style)
-├── functions_test.go      # Comprehensive function tests
-├── benchmark_test.go      # Performance benchmark suite
+├── mayfly.go              # Core algorithm
+├── functions.go           # Benchmark functions (15 total)
+├── variants.go            # Variant interface and implementations
+├── selector.go            # Algorithm selection
+├── comparison.go          # Statistical comparison framework
+├── config.go              # Configuration structures
+├── config_loader.go       # JSON config support
+├── types.go               # Core type definitions
+├── *_test.go              # Comprehensive test suite
+├── benchmark_test.go      # Performance benchmarks
 ├── go.mod                 # Root module
-├── PLAN.md               # Development roadmap (10 phases)
-├── justfile              # Task runner recipes
+├── README.md              # Concise overview (323 lines, was 1314)
+├── CLAUDE.md              # Development guide (this file)
+├── PLAN.md                # Development roadmap
+├── justfile               # Task runner recipes
+├── docs/                  # Documentation folder
+│   ├── getting-started.md # Tutorial
+│   ├── benchmarks.md      # Benchmark function reference
+│   ├── research.md        # Academic citations
+│   ├── algorithms/        # Algorithm-specific docs
+│   │   ├── standard-ma.md
+│   │   ├── desma.md
+│   │   ├── olce-ma.md
+│   │   ├── eobbma.md
+│   │   ├── gsasma.md
+│   │   ├── mpma.md
+│   │   └── aoblmoa.md
+│   └── api/               # API documentation
+│       ├── configuration.md
+│       ├── unified-framework.md
+│       └── comparison-framework.md
 └── examples/
-    ├── main.go           # Basic usage demo
-    ├── go.mod            # Local replace directive
-    └── comparison/
-        └── main.go       # MA vs DESMA comparison
+    ├── main.go            # Basic usage
+    ├── comparison/        # Algorithm comparison
+    ├── selector/          # Algorithm selection demo
+    └── benchmark_suite/   # Comprehensive benchmarks
 ```
 
 **Module replacement**: Examples use `replace github.com/cwbudde/mayfly => ../` in go.mod for local development.
+
+**Documentation structure**: All technical details have been moved to `docs/` folder for better organization.
 
 ## Testing Strategy (Future - Phase 1)
 
@@ -350,11 +355,17 @@ func maximizeProfit(x []float64) float64 {
 
 ## Research Citations
 
-When implementing variants, maintain research fidelity and cite properly:
+**Full citations**: See `docs/research.md` for complete academic references.
+
+All variants maintain research fidelity to original papers:
 
 1. **Original MA**: Zervoudakis & Tsafarakis (2020). *Computers & Industrial Engineering*, 145, 106559.
-2. **DESMA**: *PLOS One*, 2022. (Dynamic elite strategy)
-3. **Future variants**: See PLAN.md references section
+2. **DESMA**: *PLOS One*, 2022
+3. **OLCE-MA**: Zhou et al. (2022). *International Journal of Machine Learning and Cybernetics*, 13, 3625–3643
+4. **EOBBMA**: *Arabian Journal for Science and Engineering*, 2024
+5. **GSASMA**: *Electronics Letters / IEEE*, 2022
+6. **MPMA**: *IEEE Access*, 2022
+7. **AOBLMOA**: *PubMed / Various journals*, 2023
 
 ## Common Pitfalls
 
@@ -387,11 +398,23 @@ just profile-mem
 
 ## Key Files Reference
 
-- `mayfly.go:244-526` - Main `Optimize()` function
-- `mayfly.go:473-510` - DESMA elite strategy
-- `mayfly.go:543-583` - Elite generation mechanism
-- `mayfly.go:128-139` - Mayfly constructor
-- `mayfly.go:201-242` - Genetic operators
+### Core Implementation
+- `mayfly.go` - Main optimization algorithm
+- `variants.go` - Variant interface and implementations
+- `selector.go` - Algorithm selection logic
+- `comparison.go` - Statistical comparison framework
+- `config.go` / `config_loader.go` - Configuration management
+- `functions.go` - Benchmark functions
+
+### Documentation
+- `README.md` - Concise project overview (323 lines)
+- `docs/getting-started.md` - Tutorial and examples
+- `docs/algorithms/` - Individual algorithm documentation
+- `docs/api/` - API reference documentation
+- `docs/benchmarks.md` - Benchmark function reference
+- `docs/research.md` - Academic citations
+
+### Development
 - `justfile` - All build/test commands
-- `PLAN.md` - Full development roadmap
-- `.github/copilot-instructions.md` - Original AI guidance (historical)
+- `PLAN.md` - Development roadmap
+- `CLAUDE.md` - This file (development guide)

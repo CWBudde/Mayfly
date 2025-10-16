@@ -26,6 +26,7 @@ func TestNewMayfly(t *testing.T) {
 			if m.Position == nil {
 				t.Error("newMayfly() Position is nil")
 			}
+
 			if len(m.Position) != tt.size {
 				t.Errorf("newMayfly() Position length = %v, want %v", len(m.Position), tt.size)
 			}
@@ -34,6 +35,7 @@ func TestNewMayfly(t *testing.T) {
 			if m.Velocity == nil {
 				t.Error("newMayfly() Velocity is nil")
 			}
+
 			if len(m.Velocity) != tt.size {
 				t.Errorf("newMayfly() Velocity length = %v, want %v", len(m.Velocity), tt.size)
 			}
@@ -47,6 +49,7 @@ func TestNewMayfly(t *testing.T) {
 			if m.Best.Position == nil {
 				t.Error("newMayfly() Best.Position is nil")
 			}
+
 			if len(m.Best.Position) != tt.size {
 				t.Errorf("newMayfly() Best.Position length = %v, want %v", len(m.Best.Position), tt.size)
 			}
@@ -61,9 +64,11 @@ func TestNewMayfly(t *testing.T) {
 				if m.Position[i] != 0.0 {
 					t.Errorf("newMayfly() Position[%d] = %v, want 0.0", i, m.Position[i])
 				}
+
 				if m.Velocity[i] != 0.0 {
 					t.Errorf("newMayfly() Velocity[%d] = %v, want 0.0", i, m.Velocity[i])
 				}
+
 				if m.Best.Position[i] != 0.0 {
 					t.Errorf("newMayfly() Best.Position[%d] = %v, want 0.0", i, m.Best.Position[i])
 				}
@@ -90,6 +95,7 @@ func TestMayflyClone(t *testing.T) {
 	if clone.Cost != original.Cost {
 		t.Errorf("clone() Cost = %v, want %v", clone.Cost, original.Cost)
 	}
+
 	if clone.Best.Cost != original.Best.Cost {
 		t.Errorf("clone() Best.Cost = %v, want %v", clone.Best.Cost, original.Best.Cost)
 	}
@@ -125,15 +131,19 @@ func TestMayflyClone(t *testing.T) {
 	if original.Position[0] == 999.0 {
 		t.Error("clone() Position is not a deep copy")
 	}
+
 	if original.Velocity[1] == 888.0 {
 		t.Error("clone() Velocity is not a deep copy")
 	}
+
 	if original.Cost == 777.0 {
 		t.Error("clone() Cost should be independent")
 	}
+
 	if original.Best.Position[2] == 666.0 {
 		t.Error("clone() Best.Position is not a deep copy")
 	}
+
 	if original.Best.Cost == 555.0 {
 		t.Error("clone() Best.Cost should be independent")
 	}
@@ -147,42 +157,55 @@ func TestNewDefaultConfig(t *testing.T) {
 	if config.MaxIterations != 2000 {
 		t.Errorf("NewDefaultConfig() MaxIterations = %v, want 2000", config.MaxIterations)
 	}
+
 	if config.NPop != 20 {
 		t.Errorf("NewDefaultConfig() NPop = %v, want 20", config.NPop)
 	}
+
 	if config.NPopF != 20 {
 		t.Errorf("NewDefaultConfig() NPopF = %v, want 20", config.NPopF)
 	}
+
 	if config.G != 0.8 {
 		t.Errorf("NewDefaultConfig() G = %v, want 0.8", config.G)
 	}
+
 	if config.A1 != 1.0 {
 		t.Errorf("NewDefaultConfig() A1 = %v, want 1.0", config.A1)
 	}
+
 	if config.A2 != 1.5 {
 		t.Errorf("NewDefaultConfig() A2 = %v, want 1.5", config.A2)
 	}
+
 	if config.A3 != 1.5 {
 		t.Errorf("NewDefaultConfig() A3 = %v, want 1.5", config.A3)
 	}
+
 	if config.Beta != 2.0 {
 		t.Errorf("NewDefaultConfig() Beta = %v, want 2.0", config.Beta)
 	}
+
 	if config.Dance != 5.0 {
 		t.Errorf("NewDefaultConfig() Dance = %v, want 5.0", config.Dance)
 	}
+
 	if config.FL != 1.0 {
 		t.Errorf("NewDefaultConfig() FL = %v, want 1.0", config.FL)
 	}
+
 	if config.DanceDamp != 0.8 {
 		t.Errorf("NewDefaultConfig() DanceDamp = %v, want 0.8", config.DanceDamp)
 	}
+
 	if config.FLDamp != 0.99 {
 		t.Errorf("NewDefaultConfig() FLDamp = %v, want 0.99", config.FLDamp)
 	}
+
 	if config.NC != 20 {
 		t.Errorf("NewDefaultConfig() NC = %v, want 20", config.NC)
 	}
+
 	if config.Mu != 0.01 {
 		t.Errorf("NewDefaultConfig() Mu = %v, want 0.01", config.Mu)
 	}
@@ -191,12 +214,15 @@ func TestNewDefaultConfig(t *testing.T) {
 	if config.UseDESMA != false {
 		t.Errorf("NewDefaultConfig() UseDESMA = %v, want false", config.UseDESMA)
 	}
+
 	if config.EliteCount != 5 {
 		t.Errorf("NewDefaultConfig() EliteCount = %v, want 5", config.EliteCount)
 	}
+
 	if config.EnlargeFactor != 1.05 {
 		t.Errorf("NewDefaultConfig() EnlargeFactor = %v, want 1.05", config.EnlargeFactor)
 	}
+
 	if config.ReductionFactor != 0.95 {
 		t.Errorf("NewDefaultConfig() ReductionFactor = %v, want 0.95", config.ReductionFactor)
 	}
@@ -205,6 +231,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	if config.NM != 0 {
 		t.Errorf("NewDefaultConfig() NM = %v, want 0 (auto-calculated)", config.NM)
 	}
+
 	if config.SearchRange != 0 {
 		t.Errorf("NewDefaultConfig() SearchRange = %v, want 0 (auto-calculated)", config.SearchRange)
 	}
@@ -213,6 +240,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	if config.ObjectiveFunc != nil {
 		t.Error("NewDefaultConfig() ObjectiveFunc should be nil (user must set)")
 	}
+
 	if config.Rand != nil {
 		t.Error("NewDefaultConfig() Rand should be nil (optional)")
 	}
@@ -231,6 +259,7 @@ func TestNewDESMAConfig(t *testing.T) {
 	if config.MaxIterations != 2000 {
 		t.Errorf("NewDESMAConfig() MaxIterations = %v, want 2000", config.MaxIterations)
 	}
+
 	if config.NPop != 20 {
 		t.Errorf("NewDESMAConfig() NPop = %v, want 20", config.NPop)
 	}
@@ -239,9 +268,11 @@ func TestNewDESMAConfig(t *testing.T) {
 	if config.EliteCount != 5 {
 		t.Errorf("NewDESMAConfig() EliteCount = %v, want 5", config.EliteCount)
 	}
+
 	if config.EnlargeFactor != 1.05 {
 		t.Errorf("NewDESMAConfig() EnlargeFactor = %v, want 1.05", config.EnlargeFactor)
 	}
+
 	if config.ReductionFactor != 0.95 {
 		t.Errorf("NewDESMAConfig() ReductionFactor = %v, want 0.95", config.ReductionFactor)
 	}
@@ -265,18 +296,23 @@ func TestConfigModification(t *testing.T) {
 	if config.MaxIterations != 1000 {
 		t.Errorf("Modified MaxIterations = %v, want 1000", config.MaxIterations)
 	}
+
 	if config.NPop != 50 {
 		t.Errorf("Modified NPop = %v, want 50", config.NPop)
 	}
+
 	if config.G != 0.9 {
 		t.Errorf("Modified G = %v, want 0.9", config.G)
 	}
+
 	if config.ObjectiveFunc == nil {
 		t.Error("Modified ObjectiveFunc is nil")
 	}
+
 	if config.ProblemSize != 10 {
 		t.Errorf("Modified ProblemSize = %v, want 10", config.ProblemSize)
 	}
+
 	if config.Rand == nil {
 		t.Error("Modified Rand is nil")
 	}
@@ -295,6 +331,7 @@ func TestConfigIndependence(t *testing.T) {
 	if config2.MaxIterations == 500 {
 		t.Error("Config instances are not independent")
 	}
+
 	if config2.NPop == 100 {
 		t.Error("Config instances are not independent")
 	}
@@ -303,6 +340,7 @@ func TestConfigIndependence(t *testing.T) {
 	if config2.MaxIterations != 2000 {
 		t.Errorf("config2 MaxIterations = %v, want 2000", config2.MaxIterations)
 	}
+
 	if config2.NPop != 20 {
 		t.Errorf("config2 NPop = %v, want 20", config2.NPop)
 	}
@@ -318,6 +356,7 @@ func TestBestStruct(t *testing.T) {
 	if len(best.Position) != 3 {
 		t.Errorf("Best.Position length = %v, want 3", len(best.Position))
 	}
+
 	if best.Cost != 5.5 {
 		t.Errorf("Best.Cost = %v, want 5.5", best.Cost)
 	}
@@ -329,6 +368,7 @@ func TestBestStruct(t *testing.T) {
 	if best.Position[0] != 10.0 {
 		t.Errorf("Modified Best.Position[0] = %v, want 10.0", best.Position[0])
 	}
+
 	if best.Cost != 1.0 {
 		t.Errorf("Modified Best.Cost = %v, want 1.0", best.Cost)
 	}
@@ -350,6 +390,7 @@ func TestResultStruct(t *testing.T) {
 	if len(result.GlobalBest.Position) != 2 {
 		t.Errorf("Result.GlobalBest.Position length = %v, want 2", len(result.GlobalBest.Position))
 	}
+
 	if result.GlobalBest.Cost != 3.5 {
 		t.Errorf("Result.GlobalBest.Cost = %v, want 3.5", result.GlobalBest.Cost)
 	}
@@ -363,6 +404,7 @@ func TestResultStruct(t *testing.T) {
 	if result.FuncEvalCount != 1000 {
 		t.Errorf("Result.FuncEvalCount = %v, want 1000", result.FuncEvalCount)
 	}
+
 	if result.IterationCount != 100 {
 		t.Errorf("Result.IterationCount = %v, want 100", result.IterationCount)
 	}
@@ -399,6 +441,7 @@ func TestObjectiveFunctionType(t *testing.T) {
 	// Test with built-in function
 	objFunc = Sphere
 	x = []float64{0.0, 0.0, 0.0}
+
 	result = objFunc(x)
 	if result != 0.0 {
 		t.Errorf("Sphere at origin = %v, want 0.0", result)

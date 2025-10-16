@@ -10,9 +10,9 @@ import (
 // AlgorithmRecommendation represents a recommended algorithm variant with a confidence score.
 type AlgorithmRecommendation struct {
 	Variant    AlgorithmVariant
-	Score      float64 // 0-1, higher is better
-	Confidence float64 // 0-1, how confident we are in this recommendation
-	Reasoning  string  // Human-readable explanation
+	Reasoning  string
+	Score      float64
+	Confidence float64
 }
 
 // AlgorithmSelector provides intelligent algorithm selection based on problem characteristics.
@@ -65,6 +65,7 @@ func (s *AlgorithmSelector) RecommendBest(characteristics ProblemCharacteristics
 			Reasoning:  "Default fallback to Standard MA",
 		}
 	}
+
 	return recommendations[0]
 }
 
@@ -148,12 +149,15 @@ func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteris
 	}
 
 	summary := ""
+
 	for i, reason := range reasons {
 		if i > 0 {
 			summary += "; "
 		}
+
 		summary += reason
 	}
+
 	return summary
 }
 
@@ -161,15 +165,18 @@ func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteris
 // This performs lightweight test runs to estimate problem properties.
 func ClassifyProblem(fn ObjectiveFunction, size int, lower, upper float64) ProblemCharacteristics {
 	const sampleSize = 50 // Number of random samples
+
 	const testIterations = 20 // Short test runs
 
 	// Sample random points to analyze landscape
 	samples := make([]float64, sampleSize)
+
 	for i := 0; i < sampleSize; i++ {
 		point := make([]float64, size)
 		for j := 0; j < size; j++ {
 			point[j] = unifrnd(lower, upper, nil)
 		}
+
 		samples[i] = fn(point)
 	}
 
@@ -186,10 +193,10 @@ func ClassifyProblem(fn ObjectiveFunction, size int, lower, upper float64) Probl
 		Dimensionality:            size,
 		Modality:                  modality,
 		Landscape:                 landscape,
-		ExpensiveEvaluations:      false, // User should set this
-		RequiresFastConvergence:   false, // User should set this
+		ExpensiveEvaluations:      false,           // User should set this
+		RequiresFastConvergence:   false,           // User should set this
 		RequiresStableConvergence: stability < 0.5, // Low stability suggests need for stable algorithm
-		MultiObjective:            false, // User should set this
+		MultiObjective:            false,           // User should set this
 	}
 }
 
@@ -204,13 +211,16 @@ func estimateModality(samples []float64) Modality {
 	for _, s := range samples {
 		mean += s
 	}
+
 	mean /= float64(len(samples))
 
 	variance := 0.0
+
 	for _, s := range samples {
 		diff := s - mean
 		variance += diff * diff
 	}
+
 	variance /= float64(len(samples))
 	stdDev := math.Sqrt(variance)
 
@@ -227,6 +237,7 @@ func estimateModality(samples []float64) Modality {
 	} else if cv > 0.5 {
 		return Multimodal
 	}
+
 	return Unimodal
 }
 
@@ -258,10 +269,12 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 		for _, g := range gradients {
 			gradMag += g * g
 		}
+
 		gradMag = math.Sqrt(gradMag)
 
 		gradientVariance += gradMag
 	}
+
 	gradientVariance /= float64(samples / 2)
 
 	// High gradient variance suggests rugged landscape
@@ -273,6 +286,7 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 	} else if gradientVariance < 0.01 {
 		return NarrowValley
 	}
+
 	return Smooth
 }
 
@@ -302,20 +316,24 @@ func testConvergenceStability(fn ObjectiveFunction, size int, lower, upper float
 
 	// Calculate coefficient of variation
 	mean := 0.0
+
 	for _, r := range results {
 		if !math.IsInf(r, 1) {
 			mean += r
 		}
 	}
+
 	mean /= float64(runs)
 
 	variance := 0.0
+
 	for _, r := range results {
 		if !math.IsInf(r, 1) {
 			diff := r - mean
 			variance += diff * diff
 		}
 	}
+
 	variance /= float64(runs)
 
 	// Return normalized stability (0 = unstable, 1 = very stable)
@@ -439,5 +457,6 @@ func PrintRecommendations(recommendations []AlgorithmRecommendation) {
 			rec.Confidence*100,
 			rec.Reasoning)
 	}
+
 	fmt.Println(strings.Repeat("=", 80))
 }

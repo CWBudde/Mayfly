@@ -38,12 +38,15 @@ func TestAlgorithmSelector(t *testing.T) {
 		if rec.Score < 0 || rec.Score > 1 {
 			t.Errorf("Score should be in [0,1], got %.2f", rec.Score)
 		}
+
 		if rec.Confidence < 0 || rec.Confidence > 1 {
 			t.Errorf("Confidence should be in [0,1], got %.2f", rec.Confidence)
 		}
+
 		if rec.Variant == nil {
 			t.Error("Variant should not be nil")
 		}
+
 		if rec.Reasoning == "" {
 			t.Error("Reasoning should not be empty")
 		}
@@ -75,14 +78,14 @@ func TestRecommendForBenchmark(t *testing.T) {
 		expectedName string
 		minScore     float64
 	}{
-		{"Sphere", "MA", 0.5},           // Unimodal - standard MA
-		{"Rastrigin", "", 0.7},          // Highly multimodal - OLCE-MA or DESMA
-		{"Schwefel", "EOBBMA", 0.8},     // Deceptive - EOBBMA
-		{"Rosenbrock", "", 0.7},         // Narrow valley - MPMA or others
-		{"Ackley", "", 0.6},             // Multimodal
-		{"Griewank", "", 0.7},           // Highly multimodal
-		{"BentCigar", "", 0.6},          // Ill-conditioned
-		{"Discus", "", 0.6},             // Ill-conditioned
+		{"Sphere", "MA", 0.5},       // Unimodal - standard MA
+		{"Rastrigin", "", 0.7},      // Highly multimodal - OLCE-MA or DESMA
+		{"Schwefel", "EOBBMA", 0.8}, // Deceptive - EOBBMA
+		{"Rosenbrock", "", 0.7},     // Narrow valley - MPMA or others
+		{"Ackley", "", 0.6},         // Multimodal
+		{"Griewank", "", 0.7},       // Highly multimodal
+		{"BentCigar", "", 0.6},      // Ill-conditioned
+		{"Discus", "", 0.6},         // Ill-conditioned
 	}
 
 	for _, tt := range benchmarks {
@@ -133,7 +136,6 @@ func TestRecommendForUnknownBenchmark(t *testing.T) {
 func TestClassifyProblem(t *testing.T) {
 	// This is a lightweight test since ClassifyProblem does sampling
 	// We just verify it returns valid characteristics
-
 	characteristics := ClassifyProblem(Sphere, 5, -10, 10)
 
 	if characteristics.Dimensionality != 5 {
@@ -156,9 +158,9 @@ func TestClassifyProblem(t *testing.T) {
 
 func TestEstimateModality(t *testing.T) {
 	// Test modality estimation with known distributions
-
 	// Low variance should indicate unimodal
 	samples := []float64{1.0, 1.1, 0.9, 1.05, 0.95, 1.2, 0.8}
+
 	modality := estimateModality(samples)
 	if modality == HighlyMultimodal {
 		t.Error("Low variance should not be classified as highly multimodal")
@@ -166,6 +168,7 @@ func TestEstimateModality(t *testing.T) {
 
 	// High variance should indicate multimodal
 	samples = []float64{1.0, 100.0, 5.0, 200.0, 10.0, 150.0}
+
 	modality = estimateModality(samples)
 	if modality == Unimodal {
 		t.Error("High variance should not be classified as unimodal")
@@ -194,12 +197,14 @@ func TestProblemCharacteristicsValidation(t *testing.T) {
 
 	// Should recommend EOBBMA highly for deceptive + highly multimodal
 	found := false
+
 	for _, rec := range recommendations {
 		if rec.Variant.Name() == "EOBBMA" && rec.Score > 0.7 {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Error("EOBBMA should be highly recommended for deceptive + highly multimodal")
 	}

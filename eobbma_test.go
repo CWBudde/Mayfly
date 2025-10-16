@@ -9,10 +9,10 @@ import (
 // TestLevyFlight tests the Lévy flight distribution generator.
 func TestLevyFlight(t *testing.T) {
 	tests := []struct {
+		rng   *rand.Rand
 		name  string
 		alpha float64
 		beta  float64
-		rng   *rand.Rand
 	}{
 		{"standard_levy", 1.5, 1.0, rand.New(rand.NewSource(42))},
 		{"alpha_2.0", 2.0, 1.0, rand.New(rand.NewSource(123))},
@@ -24,7 +24,9 @@ func TestLevyFlight(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Generate multiple samples
 			samples := 1000
+
 			var values []float64
+
 			for i := 0; i < samples; i++ {
 				val := levyFlight(tt.alpha, tt.beta, tt.rng)
 				values = append(values, val)
@@ -38,12 +40,14 @@ func TestLevyFlight(t *testing.T) {
 			// Check that distribution has heavy tails (some large values)
 			// At least one value should be > 5 in 1000 samples for heavy-tailed distribution
 			hasLargeValue := false
+
 			for _, v := range values {
 				if math.Abs(v) > 5.0 {
 					hasLargeValue = true
 					break
 				}
 			}
+
 			if !hasLargeValue {
 				t.Logf("Warning: levyFlight() may not be generating heavy-tailed distribution")
 			}
@@ -63,6 +67,7 @@ func TestLevyFlightDeterministic(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		val1 := levyFlight(alpha, beta, rng1)
 		val2 := levyFlight(alpha, beta, rng2)
+
 		if val1 != val2 {
 			t.Errorf("levyFlight() with same seed produced different values: %v vs %v", val1, val2)
 		}
@@ -72,11 +77,11 @@ func TestLevyFlightDeterministic(t *testing.T) {
 // TestLevyFlightVector tests vector Lévy flight generation.
 func TestLevyFlightVector(t *testing.T) {
 	tests := []struct {
+		rng   *rand.Rand
 		name  string
 		size  int
 		alpha float64
 		beta  float64
-		rng   *rand.Rand
 	}{
 		{"size_10", 10, 1.5, 1.0, rand.New(rand.NewSource(42))},
 		{"size_50", 50, 1.5, 1.0, rand.New(rand.NewSource(123))},
@@ -107,9 +112,9 @@ func TestOppositionLearning(t *testing.T) {
 	tests := []struct {
 		name       string
 		position   []float64
+		expected   []float64
 		lowerBound float64
 		upperBound float64
-		expected   []float64
 	}{
 		{
 			name:       "center_point",
@@ -161,12 +166,12 @@ func TestOppositionLearning(t *testing.T) {
 // TestGaussianUpdate tests the Bare Bones Gaussian-based update.
 func TestGaussianUpdate(t *testing.T) {
 	tests := []struct {
+		rng        *rand.Rand
 		name       string
 		current    []float64
 		best       []float64
 		lowerBound float64
 		upperBound float64
-		rng        *rand.Rand
 	}{
 		{
 			name:       "standard_case",
@@ -205,12 +210,14 @@ func TestGaussianUpdate(t *testing.T) {
 
 			// Check not all zeros (very unlikely with Gaussian)
 			allSame := true
+
 			for i := 1; i < len(result); i++ {
 				if result[i] != result[0] {
 					allSame = false
 					break
 				}
 			}
+
 			if allSame && len(result) > 1 {
 				t.Logf("Warning: gaussianUpdate() produced identical values across all dimensions")
 			}

@@ -11,15 +11,15 @@ import (
 
 // BenchmarkProblem defines a benchmark optimization problem.
 type BenchmarkProblem struct {
-	Name        string
 	Func        ObjectiveFunction
+	Name        string
 	Dimensions  int
 	LowerBound  float64
 	UpperBound  float64
-	GlobalOptim float64 // Known global optimum value
+	GlobalOptim float64
 }
 
-// Standard benchmark problems suite
+// Standard benchmark problems suite.
 var benchmarkProblems = []BenchmarkProblem{
 	{
 		Name:        "Sphere_10D",
@@ -187,14 +187,17 @@ func calculateStatistics(values []float64) Statistics {
 	for _, v := range values {
 		sum += v
 	}
+
 	mean := sum / float64(len(values))
 
 	// Standard deviation
 	variance := 0.0
+
 	for _, v := range values {
 		diff := v - mean
 		variance += diff * diff
 	}
+
 	stdDev := math.Sqrt(variance / float64(len(values)))
 
 	// Median (sort a copy)
@@ -203,6 +206,7 @@ func calculateStatistics(values []float64) Statistics {
 	sort.Float64s(sorted)
 
 	var median float64
+
 	n := len(sorted)
 	if n%2 == 0 {
 		median = (sorted[n/2-1] + sorted[n/2]) / 2
@@ -291,6 +295,7 @@ func BenchmarkOptimizeSphere_StandardMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -307,6 +312,7 @@ func BenchmarkOptimizeSphere_DESMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -323,6 +329,7 @@ func BenchmarkOptimizeRastrigin_StandardMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -339,6 +346,7 @@ func BenchmarkOptimizeRastrigin_DESMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -355,6 +363,7 @@ func BenchmarkOptimizeRosenbrock_StandardMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -371,6 +380,7 @@ func BenchmarkOptimizeRosenbrock_DESMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -387,6 +397,7 @@ func BenchmarkOptimizeAckley_StandardMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -403,6 +414,7 @@ func BenchmarkOptimizeAckley_DESMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -419,6 +431,7 @@ func BenchmarkOptimizeGriewank_StandardMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -435,6 +448,7 @@ func BenchmarkOptimizeGriewank_DESMA(b *testing.B) {
 	config.Rand = rand.New(rand.NewSource(42))
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_, _ = Optimize(config)
 	}
@@ -455,6 +469,7 @@ func BenchmarkDimensionScaling(b *testing.B) {
 			config.Rand = rand.New(rand.NewSource(42))
 
 			b.ResetTimer()
+
 			for i := 0; i < b.N; i++ {
 				_, _ = Optimize(config)
 			}
@@ -480,6 +495,7 @@ func BenchmarkPopulationSize(b *testing.B) {
 			config.Rand = rand.New(rand.NewSource(42))
 
 			b.ResetTimer()
+
 			for i := 0; i < b.N; i++ {
 				_, _ = Optimize(config)
 			}
@@ -499,7 +515,7 @@ func TestBenchmarkSuite(t *testing.T) {
 
 	t.Logf("\n" + strings.Repeat("=", 80))
 	t.Logf("MAYFLY ALGORITHM BENCHMARK SUITE")
-	t.Logf(strings.Repeat("=", 80))
+	t.Log(strings.Repeat("=", 80))
 	t.Logf("Runs per problem: %d", runs)
 	t.Logf("Iterations per run: %d", iterations)
 	t.Logf(strings.Repeat("=", 80) + "\n")
@@ -525,9 +541,9 @@ func TestBenchmarkSuite(t *testing.T) {
 
 			// Print comparison
 			t.Logf("\n%s - BENCHMARK RESULTS", problem.Name)
-			t.Logf(strings.Repeat("-", 80))
+			t.Log(strings.Repeat("-", 80))
 			t.Logf("%-20s | %-15s | %-15s | Improvement", "Metric", "Standard MA", "DESMA")
-			t.Logf(strings.Repeat("-", 80))
+			t.Log(strings.Repeat("-", 80))
 
 			improvement := (resultMA.MeanCost - resultDESMA.MeanCost) / resultMA.MeanCost * 100
 			t.Logf("%-20s | %15.6e | %15.6e | %+7.2f%%",
@@ -611,6 +627,7 @@ func TestBenchmarkSuiteQuick(t *testing.T) {
 	if resultMA.BestCost > threshold {
 		t.Errorf("Standard MA best cost %.6e exceeds threshold %.2f", resultMA.BestCost, threshold)
 	}
+
 	if resultDESMA.BestCost > threshold {
 		t.Errorf("DESMA best cost %.6e exceeds threshold %.2f", resultDESMA.BestCost, threshold)
 	}
@@ -663,6 +680,7 @@ func TestBenchmarkReproducibility(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Optimization failed: %v", err)
 		}
+
 		return result.GlobalBest.Cost
 	}
 

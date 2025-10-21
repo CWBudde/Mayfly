@@ -9,10 +9,10 @@ import (
 // TestUnifrnd tests the unifrnd function for uniform random generation.
 func TestUnifrnd(t *testing.T) {
 	tests := []struct {
-		rng  *rand.Rand
 		name string
 		min  float64
 		max  float64
+		rng  *rand.Rand
 	}{
 		{"default_rng_0_1", 0.0, 1.0, nil},
 		{"default_rng_negative", -10.0, 10.0, nil},
@@ -53,11 +53,11 @@ func TestUnifrndDeterministic(t *testing.T) {
 // TestUnifrndVec tests the vector version of uniform random generation.
 func TestUnifrndVec(t *testing.T) {
 	tests := []struct {
-		rng  *rand.Rand
 		name string
 		min  float64
 		max  float64
 		size int
+		rng  *rand.Rand
 	}{
 		{"size_10", 0.0, 1.0, 10, nil},
 		{"size_50", -10.0, 10.0, 50, rand.New(rand.NewSource(42))},
@@ -102,12 +102,12 @@ func TestUnifrndVecDeterministic(t *testing.T) {
 // TestRandn tests normal distribution generation.
 func TestRandn(t *testing.T) {
 	tests := []struct {
-		rng     *rand.Rand
 		name    string
 		samples int
+		rng     *rand.Rand
 	}{
-		{"default_rng", nil, 1000},
-		{"seeded_rng", rand.New(rand.NewSource(42)), 1000},
+		{"default_rng", 1000, nil},
+		{"seeded_rng", 1000, rand.New(rand.NewSource(42))},
 	}
 
 	for _, tt := range tests {

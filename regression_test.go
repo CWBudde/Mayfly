@@ -338,8 +338,8 @@ func TestRegressionNoRegression(t *testing.T) {
 
 	// Test that DESMA consistently outperforms Standard MA on known problems
 	testCases := []struct {
-		function   ObjectiveFunction
 		name       string
+		function   ObjectiveFunction
 		dimensions int
 		lower      float64
 		upper      float64

@@ -264,9 +264,9 @@ err := result.ExportToCSV("results.csv")
 err := result.ExportToJSON("results.json")
 ```
 
-## Benchmark Suite Example
+## Complete Working Examples
 
-Complete example in `examples/benchmark_suite/main.go`:
+### Example 1: Basic Comparison
 
 ```go
 package main
@@ -277,6 +277,83 @@ import (
 )
 
 func main() {
+    // Compare MA vs DESMA on Rastrigin
+    runner := mayfly.NewComparisonRunner().
+        WithVariantNames("ma", "desma").
+        WithRuns(30).
+        WithIterations(500).
+        WithVerbose(true)
+
+    result := runner.Compare(
+        "Rastrigin",
+        mayfly.Rastrigin,
+        30,      // dimensions
+        -5.12, 5.12,
+    )
+
+    // Print full statistical analysis
+    result.PrintComparisonResults()
+}
+```
+
+### Example 2: Custom Success Threshold and Convergence Tracking
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Track convergence and measure success rate
+    runner := mayfly.NewComparisonRunner().
+        WithVariantNames("ma", "desma", "olce").
+        WithRuns(30).
+        WithIterations(1000).
+        WithSuccessThreshold(40.0).  // Cost < 40 = success
+        WithConvergenceTracking(true).
+        WithVerbose(false)
+
+    result := runner.Compare(
+        "Rastrigin-30D",
+        mayfly.Rastrigin,
+        30,
+        -5.12, 5.12,
+    )
+
+    // Print summary only
+    result.PrintSummary()
+
+    fmt.Println("\n=== Success Rates ===")
+    for _, variant := range result.Variants {
+        stats := result.Statistics[variant]
+        fmt.Printf("%s: %.1f%% success (cost < 40)\n",
+            variant, stats.SuccessRate*100)
+        fmt.Printf("  Avg convergence: %d iterations\n",
+            stats.AvgConvergenceIter)
+    }
+
+    // Print statistical significance
+    fmt.Println("\n=== Statistical Tests ===")
+    result.PrintStatisticalTests()
+}
+```
+
+### Example 3: Benchmarking Multiple Problems
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    fmt.Println("=== Comprehensive Algorithm Benchmark ===\n")
+
     runner := mayfly.NewComparisonRunner().
         WithVariantNames("ma", "desma", "olce", "eobbma", "gsasma", "mpma").
         WithRuns(30).
@@ -288,14 +365,206 @@ func main() {
         {Name: "Rastrigin", Func: mayfly.Rastrigin, Size: 30, Lower: -5.12, Upper: 5.12},
         {Name: "Rosenbrock", Func: mayfly.Rosenbrock, Size: 30, Lower: -5, Upper: 10},
         {Name: "Schwefel", Func: mayfly.Schwefel, Size: 30, Lower: -500, Upper: 500},
+        {Name: "Ackley", Func: mayfly.Ackley, Size: 30, Lower: -32.768, Upper: 32.768},
     }
 
     results := runner.CompareMultiple(problems)
 
+    // Print results for each problem
     for _, result := range results {
         fmt.Printf("\n=== %s ===\n", result.ProblemName)
-        result.PrintComparisonResults()
+        result.PrintSummary()
+
+        // Show best algorithm
+        best := result.GetBestAlgorithm()
+        fmt.Printf("Winner: %s\n", best)
     }
+
+    // Summary table across all problems
+    fmt.Println("\n=== Overall Performance ===")
+    fmt.Println("Algorithm   | Wins | Avg Rank")
+    fmt.Println("------------|------|----------")
+
+    wins := make(map[string]int)
+    avgRanks := make(map[string]float64)
+    variants := results[0].Variants
+
+    for _, variant := range variants {
+        totalRank := 0.0
+        for _, result := range results {
+            if result.GetBestAlgorithm() == variant {
+                wins[variant]++
+            }
+
+            // Find rank of this variant for this problem
+            for i, ranking := range result.Rankings {
+                if ranking.Variant == variant {
+                    totalRank += float64(i + 1)
+                    break
+                }
+            }
+        }
+        avgRanks[variant] = totalRank / float64(len(results))
+
+        fmt.Printf("%-11s | %4d | %.2f\n", variant, wins[variant], avgRanks[variant])
+    }
+}
+```
+
+### Example 4: Exporting Results for Analysis
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    runner := mayfly.NewComparisonRunner().
+        WithVariantNames("ma", "desma", "olce", "eobbma").
+        WithRuns(50).  // More runs for better statistics
+        WithIterations(500).
+        WithSeed(12345)  // Reproducible results
+
+    result := runner.Compare(
+        "Rastrigin",
+        mayfly.Rastrigin,
+        30,
+        -5.12, 5.12,
+    )
+
+    // Export to CSV for external analysis (Excel, R, Python)
+    err := result.ExportToCSV("rastrigin_comparison.csv")
+    if err != nil {
+        fmt.Printf("Error exporting CSV: %v\n", err)
+    } else {
+        fmt.Println("Results exported to rastrigin_comparison.csv")
+    }
+
+    // Export to JSON for programmatic access
+    err = result.ExportToJSON("rastrigin_comparison.json")
+    if err != nil {
+        fmt.Printf("Error exporting JSON: %v\n", err)
+    } else {
+        fmt.Println("Results exported to rastrigin_comparison.json")
+    }
+
+    // Print summary
+    result.PrintComparisonResults()
+}
+```
+
+### Example 5: Parallel Execution for Speed
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    fmt.Println("=== Sequential vs Parallel Comparison ===\n")
+
+    // Sequential execution
+    fmt.Println("Running sequential comparison...")
+    start := time.Now()
+
+    runner1 := mayfly.NewComparisonRunner().
+        WithVariantNames("ma", "desma", "olce", "eobbma").
+        WithRuns(20).
+        WithIterations(300).
+        WithParallel(false)  // Sequential
+
+    result1 := runner1.Compare("Rastrigin", mayfly.Rastrigin, 30, -5.12, 5.12)
+    sequential := time.Since(start)
+
+    fmt.Printf("Sequential time: %v\n\n", sequential)
+
+    // Parallel execution
+    fmt.Println("Running parallel comparison...")
+    start = time.Now()
+
+    runner2 := mayfly.NewComparisonRunner().
+        WithVariantNames("ma", "desma", "olce", "eobbma").
+        WithRuns(20).
+        WithIterations(300).
+        WithParallel(true)  // Parallel
+
+    result2 := runner2.Compare("Rastrigin", mayfly.Rastrigin, 30, -5.12, 5.12)
+    parallel := time.Since(start)
+
+    fmt.Printf("Parallel time: %v\n", parallel)
+    fmt.Printf("Speedup: %.2fx\n\n", float64(sequential)/float64(parallel))
+
+    // Results should be similar (with different random seeds)
+    fmt.Println("=== Results Comparison ===")
+    fmt.Printf("Best (sequential): %s = %.4f\n",
+        result1.GetBestAlgorithm(),
+        result1.Statistics[result1.GetBestAlgorithm()].Mean)
+
+    fmt.Printf("Best (parallel):   %s = %.4f\n",
+        result2.GetBestAlgorithm(),
+        result2.Statistics[result2.GetBestAlgorithm()].Mean)
+}
+```
+
+### Example 6: Convergence Analysis
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/CWBudde/mayfly"
+)
+
+func main() {
+    // Enable convergence tracking
+    runner := mayfly.NewComparisonRunner().
+        WithVariantNames("ma", "desma", "gsasma").
+        WithRuns(30).
+        WithIterations(1000).
+        WithConvergenceTracking(true)
+
+    result := runner.Compare(
+        "Rastrigin",
+        mayfly.Rastrigin,
+        30,
+        -5.12, 5.12,
+    )
+
+    // Get convergence curves
+    curves := result.GetConvergenceCurves()
+
+    fmt.Println("=== Convergence Analysis ===\n")
+
+    // Show convergence at key points
+    checkpoints := []int{100, 250, 500, 750, 1000}
+
+    fmt.Println("Iteration | MA      | DESMA   | GSASMA")
+    fmt.Println("----------|---------|---------|--------")
+
+    for _, iter := range checkpoints {
+        if iter <= len(curves["ma"]) {
+            fmt.Printf("%-9d | %.4f | %.4f | %.4f\n",
+                iter,
+                curves["ma"][iter-1],
+                curves["desma"][iter-1],
+                curves["gsasma"][iter-1])
+        }
+    }
+
+    // Print convergence speed comparison
+    result.PrintConvergenceAnalysis()
+
+    // Print full statistical results
+    fmt.Println("\n")
+    result.PrintComparisonResults()
 }
 ```
 

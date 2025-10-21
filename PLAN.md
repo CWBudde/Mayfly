@@ -5,6 +5,7 @@
 ### Phase 1: Advanced Features
 
 #### 1.1 Parallel Fitness Evaluation (Core)
+
 - [ ] Implement worker pool for bounded concurrency
 - [ ] Parallelize male population fitness evaluation
 - [ ] Parallelize female population fitness evaluation
@@ -16,6 +17,7 @@
 **Rationale**: For expensive objective functions (simulations, ML training), this provides 10-20x speedup on multi-core systems. Core populations have 20+ individuals evaluated per iteration.
 
 #### 1.2 Parallel Genetic Operators
+
 - [ ] Parallel crossover offspring evaluation
 - [ ] Parallel mutation offspring evaluation
 - [ ] Thread-safe offspring slice management
@@ -24,6 +26,7 @@
 **Rationale**: Offspring generation (NC + NM individuals) happens every iteration. Parallelization reduces iteration time significantly.
 
 #### 1.3 Parallel Variant-Specific Enhancements
+
 - [ ] DESMA: Parallel elite candidate generation and evaluation
 - [ ] OLCE-MA: Parallel orthogonal learning candidate evaluation (4 per elite)
 - [ ] EOBBMA: Parallel opposition point evaluation
@@ -34,6 +37,7 @@
 **Rationale**: Variant-specific operations add significant computational overhead. OLCE generates 4 candidates per elite (top 20%), DESMA generates 5+ elite candidates. These are natural parallelization targets.
 
 #### 1.4 Multi-Algorithm Parallel Comparison Framework
+
 - [ ] Concurrent execution of multiple algorithms on same problem
 - [ ] Enhanced comparison example using goroutines
 - [ ] Statistical comparison utilities with parallel runs
@@ -42,6 +46,7 @@
 **Rationale**: Users often want to compare MA, DESMA, OLCE-MA, EOBBMA, GSASMA, MPMA, AOBLMOA on same problem. Running 7 algorithms sequentially takes 7x time; parallel execution is much faster.
 
 #### 1.5 Parallel Infrastructure Testing & Validation
+
 - [ ] Comprehensive race condition tests
 - [ ] Verify deterministic results with same seed (challenging with parallel execution)
 - [ ] Performance benchmarks showing speedup vs core count
@@ -54,11 +59,13 @@
 **Phase 1 Total Effort Estimate**: Items 1.1-1.5 represent ~5-8x the original single "Parallel Execution" item. This is a major feature requiring careful design for thread-safety across all 7 algorithm variants.
 
 #### 1.6 Convergence Detection
+
 - [ ] Early stopping criteria
 - [ ] Stagnation detection
 - [ ] Adaptive iteration limits
 
 #### 1.7 Constraint Handling
+
 - [ ] Penalty function methods
 - [ ] Feasibility rules
 - [ ] Constraint-handling utilities
@@ -66,11 +73,13 @@
 ### Phase 2: Release Preparation
 
 #### 2.1 Code Quality
+
 - [ ] Run golangci-lint and fix issues
 - [ ] Verify 80%+ test coverage
 - [ ] Performance profiling and optimization
 
 #### 2.2 Release
+
 - [ ] Setup semantic versioning
 - [ ] Create CHANGELOG.md
 - [ ] Publish to pkg.go.dev
@@ -82,11 +91,13 @@
 ### Phase 3: Advanced Features (continued)
 
 #### 3.1 Logging & Monitoring
+
 - [ ] Structured logging interface
 - [ ] Progress callbacks
 - [ ] Convergence curve export
 
 #### 3.2 Advanced Benchmarks
+
 - [ ] CEC2017 benchmark suite
 - [ ] CEC2020 benchmark suite
 - [ ] Real-world engineering problems
@@ -94,17 +105,20 @@
 ### Phase 4: Documentation
 
 #### 4.1 API Documentation
+
 - [ ] Add code examples to docs
 - [ ] Create quick reference guide
 - [ ] Document all parameters
 
 #### 4.2 Tutorials
+
 - [ ] Getting started tutorial
 - [ ] Algorithm selection guide
 - [ ] Parameter tuning tutorial
 - [ ] Custom objective function guide
 
 #### 4.3 Real-World Examples
+
 - [ ] Neural network hyperparameter tuning
 - [ ] Resource allocation problems
 - [ ] Scheduling problems

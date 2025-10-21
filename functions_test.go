@@ -366,8 +366,8 @@ func TestGriewankNonZero(t *testing.T) {
 // TestBenchmarkFunctionsSymmetry tests that functions are symmetric around origin.
 func TestBenchmarkFunctionsSymmetry(t *testing.T) {
 	symmetricFunctions := []struct {
-		fn   ObjectiveFunction
 		name string
+		fn   ObjectiveFunction
 	}{
 		{"Sphere", Sphere},
 		{"Rastrigin", Rastrigin},
@@ -411,8 +411,8 @@ func TestBenchmarkFunctionsMonotonicity(t *testing.T) {
 // TestBenchmarkFunctionsEdgeCases tests edge cases.
 func TestBenchmarkFunctionsEdgeCases(t *testing.T) {
 	functions := []struct {
-		fn   ObjectiveFunction
 		name string
+		fn   ObjectiveFunction
 	}{
 		{"Sphere", Sphere},
 		{"Rastrigin", Rastrigin},

@@ -9,10 +9,10 @@ import (
 // TestLevyFlight tests the Lévy flight distribution generator.
 func TestLevyFlight(t *testing.T) {
 	tests := []struct {
-		rng   *rand.Rand
 		name  string
 		alpha float64
 		beta  float64
+		rng   *rand.Rand
 	}{
 		{"standard_levy", 1.5, 1.0, rand.New(rand.NewSource(42))},
 		{"alpha_2.0", 2.0, 1.0, rand.New(rand.NewSource(123))},
@@ -77,11 +77,11 @@ func TestLevyFlightDeterministic(t *testing.T) {
 // TestLevyFlightVector tests vector Lévy flight generation.
 func TestLevyFlightVector(t *testing.T) {
 	tests := []struct {
-		rng   *rand.Rand
 		name  string
 		size  int
 		alpha float64
 		beta  float64
+		rng   *rand.Rand
 	}{
 		{"size_10", 10, 1.5, 1.0, rand.New(rand.NewSource(42))},
 		{"size_50", 50, 1.5, 1.0, rand.New(rand.NewSource(123))},
@@ -166,12 +166,12 @@ func TestOppositionLearning(t *testing.T) {
 // TestGaussianUpdate tests the Bare Bones Gaussian-based update.
 func TestGaussianUpdate(t *testing.T) {
 	tests := []struct {
-		rng        *rand.Rand
 		name       string
 		current    []float64
 		best       []float64
 		lowerBound float64
 		upperBound float64
+		rng        *rand.Rand
 	}{
 		{
 			name:       "standard_case",

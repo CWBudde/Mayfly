@@ -2,6 +2,7 @@ package mayfly
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -19,7 +20,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	config.EliteCount = 7
 
 	// Save to temp file
-	tmpFile := "/tmp/test_mayfly_config.json"
+	tmpFile := filepath.Join(os.TempDir(), "test_mayfly_config.json")
 	defer os.Remove(tmpFile)
 
 	err := SaveConfigToFile(config, tmpFile)
@@ -354,13 +355,13 @@ func TestInvalidPreset(t *testing.T) {
 
 func TestLoadInvalidConfigFile(t *testing.T) {
 	// Test loading non-existent file
-	_, err := LoadConfigFromFile("/tmp/nonexistent_file.json")
+	_, err := LoadConfigFromFile(filepath.Join(os.TempDir(), "nonexistent_file.json"))
 	if err == nil {
 		t.Error("Should return error for non-existent file")
 	}
 
 	// Test loading invalid JSON
-	tmpFile := "/tmp/test_invalid_config.json"
+	tmpFile := filepath.Join(os.TempDir(), "test_invalid_config.json")
 	defer os.Remove(tmpFile)
 
 	err = os.WriteFile(tmpFile, []byte("invalid json {{{"), 0644)

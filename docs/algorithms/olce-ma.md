@@ -58,7 +58,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -87,7 +87,7 @@ package main
 import (
     "fmt"
     "math/rand"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -129,7 +129,7 @@ package main
 import (
     "fmt"
     "math"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 // Simulate neural network validation error for given hyperparameters

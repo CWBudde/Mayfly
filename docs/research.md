@@ -302,7 +302,7 @@ When using this library in research, please cite:
   title={Mayfly Optimization Algorithm: Go Implementation},
   author={Budde, Christian},
   year={2024},
-  url={https://github.com/CWBudde/mayfly}
+  url={https://github.com/cwbudde/mayfly}
 }
 ```
 
@@ -330,7 +330,7 @@ When using this library in research, please cite:
 ## Contact Information
 
 For questions about the implementation or to report issues:
-- **GitHub**: https://github.com/CWBudde/mayfly/issues
+- **GitHub**: https://github.com/cwbudde/mayfly/issues
 - **Email**: Contact repository maintainers
 
 For questions about the original algorithms:

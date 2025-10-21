@@ -109,7 +109,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -137,7 +137,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -182,7 +182,7 @@ package main
 import (
     "fmt"
     "math"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 // Simulate control system response with PID controller

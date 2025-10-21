@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/CWBudde/mayfly"
+	"github.com/cwbudde/mayfly"
 )
 
 func main() {

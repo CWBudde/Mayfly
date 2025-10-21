@@ -1,3 +1,13 @@
+// Package mayfly - Cauchy Distribution Implementation
+//
+// Implements Cauchy distribution for heavy-tailed mutation in GSASMA variant.
+//
+// The Cauchy distribution has heavier tails than Gaussian, providing better
+// exploration capability while being easier to sample than Lévy flights.
+//
+// Reference:
+// Standard inverse CDF method for Cauchy distribution.
+// Used in evolutionary computation for exploration (see GSASMA variant).
 package mayfly
 
 import (
@@ -5,12 +15,10 @@ import (
 	"math/rand"
 )
 
+// cauchyRand generates a Cauchy-distributed random number.
 // If U ~ Uniform(0,1), then X = x0 + gamma * tan(π*(U - 0.5)) ~ Cauchy(x0, gamma).
+// rng must not be nil (ensured by caller).
 func cauchyRand(x0, gamma float64, rng *rand.Rand) float64 {
-	if rng == nil {
-		rng = rand.New(rand.NewSource(0))
-	}
-
 	// Generate uniform random number in (0, 1)
 	// Avoid exact 0 and 1 to prevent tan() overflow
 	u := rng.Float64()
@@ -19,7 +27,21 @@ func cauchyRand(x0, gamma float64, rng *rand.Rand) float64 {
 	}
 
 	// Apply inverse CDF: F^(-1)(u) = x0 + gamma * tan(π*(u - 0.5))
-	return x0 + gamma*math.Tan(math.Pi*(u-0.5))
+	result := x0 + gamma*math.Tan(math.Pi*(u-0.5))
+
+	// Sanitize extreme values from tan() function
+	// Cauchy can produce very large values; cap at reasonable limits
+	if math.IsNaN(result) || math.IsInf(result, 0) {
+		// Retry with different random value
+		u = rng.Float64()
+		result = x0 + gamma*math.Tan(math.Pi*(u-0.5))
+		// If still invalid, return center point
+		if math.IsNaN(result) || math.IsInf(result, 0) {
+			return x0
+		}
+	}
+
+	return result
 }
 
 // cauchyRandVec generates a vector of Cauchy-distributed random numbers.
@@ -33,6 +55,9 @@ func cauchyRandVec(size int, x0, gamma float64, rng *rand.Rand) []float64 {
 	return vec
 }
 
+// MutateCauchy applies Cauchy mutation to a solution.
+// Used in GSASMA for heavy-tailed exploration.
+// rng must not be nil (ensured by caller).
 // Returns: mutated position vector.
 func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
@@ -46,12 +71,7 @@ func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Ran
 	copy(y, x)
 
 	// Select random indices to mutate
-	var indices []int
-	if rng != nil {
-		indices = rng.Perm(nVar)[:nMu]
-	} else {
-		indices = rand.Perm(nVar)[:nMu]
-	}
+	indices := rng.Perm(nVar)[:nMu]
 
 	for _, j := range indices {
 		// Apply Cauchy perturbation centered at current position
@@ -78,12 +98,11 @@ func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Ran
 	return y
 }
 
+// HybridMutate applies either Cauchy or Gaussian mutation based on probability.
+// Used in GSASMA to balance exploration (Cauchy) and exploitation (Gaussian).
+// rng must not be nil (ensured by caller).
 // Returns: mutated position vector.
 func HybridMutate(x []float64, mu, lowerBound, upperBound, cauchyProb float64, rng *rand.Rand) []float64 {
-	if rng == nil {
-		rng = rand.New(rand.NewSource(0))
-	}
-
 	// Decide which mutation type to use
 	if rng.Float64() < cauchyProb {
 		return MutateCauchy(x, mu, lowerBound, upperBound, rng)

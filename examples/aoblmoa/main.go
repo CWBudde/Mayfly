@@ -155,9 +155,9 @@ func main() {
 	// For multi-objective, would need MultiObjectiveFunction interface
 	// For now, demonstrate weighted sum approach
 	config4.ObjectiveFunc = func(x []float64) float64 {
-		obj1 := mayfly.Sphere(x)      // Objective 1: minimize distance
-		obj2 := mayfly.Rosenbrock(x)  // Objective 2: minimize valley
-		return 0.5*obj1 + 0.5*obj2    // Weighted combination
+		obj1 := mayfly.Sphere(x)     // Objective 1: minimize distance
+		obj2 := mayfly.Rosenbrock(x) // Objective 2: minimize valley
+		return 0.5*obj1 + 0.5*obj2   // Weighted combination
 	}
 	config4.ProblemSize = 10
 	config4.LowerBound = -5

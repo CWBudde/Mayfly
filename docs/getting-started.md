@@ -5,7 +5,7 @@ A practical tutorial for getting started with the Mayfly optimization library.
 ## Installation
 
 ```bash
-go get github.com/CWBudde/mayfly
+go get github.com/cwbudde/mayfly
 ```
 
 ## Basic Usage
@@ -19,7 +19,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -433,6 +433,6 @@ go run main.go
 
 ## Getting Help
 
-- Check [GitHub Issues](https://github.com/CWBudde/mayfly/issues)
+- Check [GitHub Issues](https://github.com/cwbudde/mayfly/issues)
 - Read [CLAUDE.md](../CLAUDE.md) for development guidance
 - See [PLAN.md](../PLAN.md) for roadmap and future features

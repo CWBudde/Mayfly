@@ -114,7 +114,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -142,7 +142,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -186,7 +186,7 @@ package main
 import (
     "fmt"
     "math"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 // System identification: fit transfer function parameters to measured data

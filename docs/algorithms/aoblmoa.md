@@ -108,7 +108,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -136,7 +136,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -183,7 +183,7 @@ package main
 import (
     "fmt"
     "math"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 // Multi-objective function: minimize both objectives
@@ -228,7 +228,7 @@ package main
 import (
     "fmt"
     "math"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 // Resource allocation with multiple conflicting objectives:

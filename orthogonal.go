@@ -1,3 +1,20 @@
+// Package mayfly - Orthogonal Learning Implementation
+//
+// Implements Orthogonal Experimental Design for systematic parameter exploration.
+//
+// Reference:
+// Zhan, Z. H., Zhang, J., Li, Y., & Shi, Y. H. (2010). Orthogonal Learning
+// Particle Swarm Optimization. IEEE Transactions on Evolutionary Computation,
+// 15(6), 832-847.
+// DOI: 10.1109/TEVC.2010.2052054
+//
+// Leung, Y., & Wang, Y. (2001). An orthogonal genetic algorithm with
+// quantization for global numerical optimization. IEEE Transactions on
+// Evolutionary Computation, 5(1), 41-53.
+//
+// Orthogonal learning uses orthogonal arrays (e.g., L4) to systematically
+// explore combinations of position, personal best, and global best.
+// Increases diversity and reduces oscillatory movement in OLCE-MA variant.
 package mayfly
 
 import (

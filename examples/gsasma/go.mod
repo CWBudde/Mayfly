@@ -1,7 +1,7 @@
-module github.com/CWBudde/mayfly/examples/gsasma
+module github.com/cwbudde/mayfly/examples/gsasma
 
 go 1.23.3
 
-replace github.com/CWBudde/mayfly => ../..
+replace github.com/cwbudde/mayfly => ../..
 
-require github.com/CWBudde/mayfly v0.0.0
+require github.com/cwbudde/mayfly v0.0.0

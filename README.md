@@ -2,8 +2,8 @@
 
 A Go implementation of the Mayfly Optimization Algorithm (MA), a nature-inspired metaheuristic optimization algorithm based on the mating behavior of mayflies.
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/CWBudde/mayfly.svg)](https://pkg.go.dev/github.com/CWBudde/mayfly)
-[![Go Report Card](https://goreportcard.com/badge/github.com/CWBudde/mayfly)](https://goreportcard.com/report/github.com/CWBudde/mayfly)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cwbudde/mayfly.svg)](https://pkg.go.dev/github.com/cwbudde/mayfly)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cwbudde/mayfly)](https://goreportcard.com/report/github.com/cwbudde/mayfly)
 
 ## Overview
 
@@ -22,7 +22,7 @@ The Mayfly Algorithm is a swarm intelligence optimization algorithm inspired by 
 ### Installation
 
 ```bash
-go get github.com/CWBudde/mayfly
+go get github.com/cwbudde/mayfly
 ```
 
 ### Basic Usage
@@ -32,7 +32,7 @@ package main
 
 import (
     "fmt"
-    "github.com/CWBudde/mayfly"
+    "github.com/cwbudde/mayfly"
 )
 
 func main() {
@@ -265,6 +265,31 @@ Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orth
 
 See [Research References](docs/research.md) for complete citations.
 
+### Algorithm Implementation Map
+
+Each algorithm and operator is implemented in dedicated files with proper citations:
+
+| File | Algorithm/Operator | Reference |
+|------|-------------------|-----------|
+| `mayfly.go` | Standard Mayfly Algorithm | Zervoudakis & Tsafarakis (2020) |
+| `desma.go` | Dynamic Elite Strategy (DESMA) | Du et al. (2022), PLOS One |
+| `levy.go` | Lévy Flights (Mantegna) | Mantegna (1994), Phys. Rev. E |
+| `cauchy.go` | Cauchy Distribution | Standard inverse CDF method |
+| `opposition.go` | Opposition-Based Learning | Tizhoosh (2005), IEEE |
+| `orthogonal.go` | Orthogonal Learning (L4 array) | Zhan et al. (2010), IEEE TEVC |
+| `aquila.go` | Aquila Optimizer (4 strategies) | Abualigah et al. (2021) |
+| `golden_sine.go` | Golden Sine Algorithm | Tanyildizi & Demir (2017) |
+| `annealing.go` | Simulated Annealing | Kirkpatrick et al. (1983) |
+| `operators.go` | Crossover & Mutation | Standard genetic operators |
+| `functions.go` | 15 benchmark functions | CEC/standard test suites |
+
+**Variant compositions:**
+- **OLCE-MA** = Standard MA + `orthogonal.go` + chaos maps
+- **EOBBMA** = Standard MA + `levy.go` + `opposition.go` + Bare Bones framework
+- **GSASMA** = Standard MA + `golden_sine.go` + `annealing.go` + `cauchy.go` + `opposition.go`
+- **MPMA** = Standard MA + median position guidance
+- **AOBLMOA** = Standard MA + `aquila.go` + `opposition.go` + multi-objective framework
+
 ## Performance
 
 ### Expected Results (D=30, 500 iterations)
@@ -308,7 +333,7 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/CWBudde/mayfly/issues)
+- **Issues:** [GitHub Issues](https://github.com/cwbudde/mayfly/issues)
 - **Documentation:** [docs/](docs/)
 - **Examples:** [examples/](examples/)
 

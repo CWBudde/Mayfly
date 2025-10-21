@@ -1,3 +1,15 @@
+// Package mayfly - Golden Sine Algorithm Implementation
+//
+// Implements the Golden Sine Algorithm for convergence acceleration in GSASMA.
+//
+// Reference:
+// Tanyildizi, E., & Demir, G. (2017). Golden Sine Algorithm: A Novel
+// Math-Inspired Algorithm. Advances in Electrical and Computer Engineering,
+// 17(2), 71-78.
+// DOI: 10.4316/AECE.2017.02010
+//
+// The algorithm combines the golden ratio (φ ≈ 1.618) and sine function
+// to balance exploration and exploitation through oscillatory movement.
 package mayfly
 
 import (
@@ -5,28 +17,15 @@ import (
 	"math/rand"
 )
 
-// The Golden Sine Algorithm (GSA) is a nature-inspired optimization algorithm
-// that combines the golden ratio and sine function to balance exploration
-// and exploitation. It's particularly effective for convergence acceleration.
-//
-// Key features:
-// - Uses golden ratio (φ ≈ 1.618) for adaptive step sizing
-// - Sine function provides oscillatory behavior for escaping local optima
-// - Balances between global exploration and local exploitation
-//
-// Reference: Tanyildizi, E., & Demir, G. (2017). Golden Sine Algorithm:
-// A Novel Math-Inspired Algorithm. Advances in Electrical and Computer Engineering
-
 const (
 	// GoldenRatio is the mathematical constant φ = (1 + √5) / 2 ≈ 1.618034.
 	GoldenRatio = 1.618033988749895
 )
 
+// goldenSineUpdate applies the Golden Sine Algorithm update rule.
+// rng must not be nil (ensured by caller).
 // Returns: updated position vector.
 func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-	if rng == nil {
-		rng = rand.New(rand.NewSource(0))
-	}
 
 	size := len(position)
 	newPos := make([]float64, size)
@@ -112,11 +111,10 @@ func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest [
 	return funcEvals
 }
 
+// goldenSineConvergence applies adaptive Golden Sine update based on convergence.
+// rng must not be nil (ensured by caller).
 // Returns: updated position vector.
 func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-	if rng == nil {
-		rng = rand.New(rand.NewSource(0))
-	}
 
 	size := len(position)
 	newPos := make([]float64, size)

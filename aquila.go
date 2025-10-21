@@ -1,23 +1,26 @@
+// Package mayfly - Aquila Optimizer Implementation
+//
+// Implements the Aquila Optimizer (AO) hunting strategies for AOBLMOA variant.
+//
+// Reference:
+// Abualigah, L., Yousri, D., Abd Elaziz, M., Ewees, A. A., Al-qaness, M. A., &
+// Gandomi, A. H. (2021). Aquila Optimizer: A novel meta-heuristic optimization
+// algorithm. Computers & Industrial Engineering, 157, 107250.
+// DOI: 10.1016/j.cie.2021.107250
+//
+// The Aquila Optimizer is inspired by eagle hunting behavior with four strategies:
+// 1. X1 - Expanded exploration: High soar with vertical stoop
+// 2. X2 - Narrowed exploration: Contour flight with short glide attack
+// 3. X3 - Expanded exploitation: Low flight with slow descent attack
+// 4. X4 - Narrowed exploitation: Walk and grab prey
+//
+// Strategy selection adapts over iterations (2/3 exploration, 1/3 exploitation).
 package mayfly
 
 import (
 	"math"
 	"math/rand"
 )
-
-// Aquila Optimizer Components for AOBLMOA
-//
-// The Aquila Optimizer (AO) is inspired by the hunting behavior of Aquila (eagles).
-// It uses four hunting strategies that balance exploration and exploitation:
-//
-// 1. Expanded exploration (X1): High soar with vertical stoop
-// 2. Narrowed exploration (X2): Contour flight with short glide attack
-// 3. Expanded exploitation (X3): Low flight with slow descent attack
-// 4. Narrowed exploitation (X4): Walk and grab prey
-//
-// Reference:
-// Abualigah, L., et al. (2021). Aquila Optimizer: A novel meta-heuristic
-// optimization algorithm. Computers & Industrial Engineering, 157, 107250.
 
 // AquilaStrategy represents which hunting strategy to use.
 type AquilaStrategy int

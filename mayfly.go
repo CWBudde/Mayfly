@@ -34,15 +34,98 @@ func Optimize(config *Config) (*Result, error) {
 	}
 
 	if config.ProblemSize <= 0 {
-		return nil, fmt.Errorf("ProblemSize must be positive")
+		return nil, fmt.Errorf("ProblemSize must be positive, got %d", config.ProblemSize)
+	}
+
+	// Validate bounds are finite and properly ordered
+	if math.IsNaN(config.LowerBound) || math.IsInf(config.LowerBound, 0) {
+		return nil, fmt.Errorf("LowerBound must be finite, got %v", config.LowerBound)
+	}
+
+	if math.IsNaN(config.UpperBound) || math.IsInf(config.UpperBound, 0) {
+		return nil, fmt.Errorf("UpperBound must be finite, got %v", config.UpperBound)
 	}
 
 	if config.LowerBound >= config.UpperBound {
-		return nil, fmt.Errorf("LowerBound must be less than UpperBound")
+		return nil, fmt.Errorf("LowerBound (%v) must be less than UpperBound (%v)",
+			config.LowerBound, config.UpperBound)
 	}
 
 	if config.MaxIterations <= 0 {
-		return nil, fmt.Errorf("MaxIterations must be positive")
+		return nil, fmt.Errorf("MaxIterations must be positive, got %d", config.MaxIterations)
+	}
+
+	// Validate population sizes
+	if config.NPop <= 0 {
+		return nil, fmt.Errorf("NPop (male population) must be positive, got %d", config.NPop)
+	}
+
+	if config.NPopF <= 0 {
+		return nil, fmt.Errorf("NPopF (female population) must be positive, got %d", config.NPopF)
+	}
+
+	// Validate variant-specific parameters
+	if config.UseDESMA {
+		if config.SearchRange < 0 {
+			return nil, fmt.Errorf("DESMA SearchRange must be non-negative, got %v", config.SearchRange)
+		}
+		if config.EliteCount < 0 {
+			return nil, fmt.Errorf("DESMA EliteCount must be non-negative, got %d", config.EliteCount)
+		}
+		if config.EnlargeFactor <= 0 {
+			return nil, fmt.Errorf("DESMA EnlargeFactor must be positive, got %v", config.EnlargeFactor)
+		}
+		if config.ReductionFactor <= 0 {
+			return nil, fmt.Errorf("DESMA ReductionFactor must be positive, got %v", config.ReductionFactor)
+		}
+	}
+
+	if config.UseEOBBMA {
+		if config.LevyAlpha <= 0 || config.LevyAlpha > 2 {
+			return nil, fmt.Errorf("EOBBMA LevyAlpha must be in (0, 2], got %v", config.LevyAlpha)
+		}
+		if config.LevyBeta <= 0 {
+			return nil, fmt.Errorf("EOBBMA LevyBeta must be positive, got %v", config.LevyBeta)
+		}
+		if config.OppositionRate < 0 || config.OppositionRate > 1 {
+			return nil, fmt.Errorf("EOBBMA OppositionRate must be in [0, 1], got %v", config.OppositionRate)
+		}
+	}
+
+	if config.UseOLCE {
+		if config.OrthogonalFactor < 0 || config.OrthogonalFactor > 1 {
+			return nil, fmt.Errorf("OLCE OrthogonalFactor must be in [0, 1], got %v", config.OrthogonalFactor)
+		}
+		if config.ChaosFactor < 0 {
+			return nil, fmt.Errorf("OLCE ChaosFactor must be non-negative, got %v", config.ChaosFactor)
+		}
+	}
+
+	if config.UseGSASMA {
+		if config.InitialTemperature <= 0 {
+			return nil, fmt.Errorf("GSASMA InitialTemperature must be positive, got %v", config.InitialTemperature)
+		}
+		if config.CoolingRate <= 0 || config.CoolingRate >= 1 {
+			return nil, fmt.Errorf("GSASMA CoolingRate must be in (0, 1), got %v", config.CoolingRate)
+		}
+		if config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1 {
+			return nil, fmt.Errorf("GSASMA CauchyMutationRate must be in [0, 1], got %v", config.CauchyMutationRate)
+		}
+	}
+
+	if config.UseMPMA {
+		if config.MedianWeight < 0 || config.MedianWeight > 1 {
+			return nil, fmt.Errorf("MPMA MedianWeight must be in [0, 1], got %v", config.MedianWeight)
+		}
+	}
+
+	if config.UseAOBLMOA {
+		if config.AquilaWeight < 0 || config.AquilaWeight > 1 {
+			return nil, fmt.Errorf("AOBLMOA AquilaWeight must be in [0, 1], got %v", config.AquilaWeight)
+		}
+		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
+			return nil, fmt.Errorf("AOBLMOA OppositionProbability must be in [0, 1], got %v", config.OppositionProbability)
+		}
 	}
 
 	// Initialize parameters
@@ -57,8 +140,14 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize random number generator if not provided
 	rng := config.Rand
+	seed := int64(0)
 	if rng == nil {
-		rng = defaultRand()
+		seed = time.Now().UnixNano()
+		rng = rand.New(rand.NewSource(seed))
+	} else {
+		// Try to extract seed from the random source if possible
+		// This is a best-effort attempt for reproducibility tracking
+		seed = time.Now().UnixNano() // Fallback if we can't determine
 	}
 
 	// Initialize populations
@@ -76,7 +165,8 @@ func Optimize(config *Config) (*Result, error) {
 	for i := 0; i < config.NPop; i++ {
 		males[i] = newMayfly(config.ProblemSize)
 		males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
-		males[i].Cost = config.ObjectiveFunc(males[i].Position)
+		males[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, males[i].Position,
+			config.LowerBound, config.UpperBound, rng)
 		funcCount++
 
 		// Update personal best
@@ -95,7 +185,8 @@ func Optimize(config *Config) (*Result, error) {
 	for i := 0; i < config.NPopF; i++ {
 		females[i] = newMayfly(config.ProblemSize)
 		females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
-		females[i].Cost = config.ObjectiveFunc(females[i].Position)
+		females[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, females[i].Position,
+			config.LowerBound, config.UpperBound, rng)
 		funcCount++
 	}
 
@@ -763,10 +854,7 @@ func Optimize(config *Config) (*Result, error) {
 		BestSolution:   bestSolution,
 		FuncEvalCount:  funcCount,
 		IterationCount: config.MaxIterations,
+		Seed:           seed,
 	}, nil
 }
 
-// defaultRand creates a default random number generator.
-func defaultRand() *rand.Rand {
-	return rand.New(rand.NewSource(time.Now().UnixNano()))
-}

@@ -1,24 +1,23 @@
+// Package mayfly - Simulated Annealing Implementation
+//
+// Implements Simulated Annealing cooling schedules and acceptance criteria
+// for the GSASMA variant.
+//
+// Reference:
+// Kirkpatrick, S., Gelatt, C. D., & Vecchi, M. P. (1983). Optimization by
+// Simulated Annealing. Science, 220(4598), 671-680.
+// DOI: 10.1126/science.220.4598.671
+//
+// Simulated Annealing is inspired by the annealing process in metallurgy,
+// where controlled cooling allows atoms to settle into a low-energy state.
+// The Metropolis criterion allows probabilistic acceptance of worse solutions
+// to escape local optima.
 package mayfly
 
 import (
 	"math"
 	"math/rand"
 )
-
-// Simulated Annealing (SA) is a probabilistic technique for approximating
-// the global optimum of a function. It's inspired by the annealing process
-// in metallurgy, where controlled cooling allows atoms to settle into a
-// low-energy crystalline structure.
-//
-// Key concepts:
-// - Temperature: Controls acceptance probability of worse solutions
-// - Cooling schedule: Gradually reduces temperature over iterations
-// - Metropolis criterion: Accepts worse solutions with probability exp(-ΔE/T)
-//
-// Benefits in optimization:
-// - Escapes local optima early (high temperature)
-// - Converges to global optimum later (low temperature)
-// - Provides exploration-exploitation balance
 
 // AnnealingScheduler manages the temperature schedule for simulated annealing.
 type AnnealingScheduler struct {
@@ -108,11 +107,10 @@ func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 	return probability
 }
 
+// shouldAccept implements the Metropolis criterion for simulated annealing.
+// rng must not be nil (ensured by caller).
 // Returns: true if the new solution should be accepted.
 func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
-	if rng == nil {
-		rng = rand.New(rand.NewSource(0))
-	}
 
 	// Calculate acceptance probability
 	prob := acceptanceProbability(oldCost, newCost, temperature)

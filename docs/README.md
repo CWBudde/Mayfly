@@ -171,4 +171,4 @@ When updating documentation:
 
 ---
 
-**Questions?** Check [GitHub Issues](https://github.com/CWBudde/mayfly/issues)
+**Questions?** Check [GitHub Issues](https://github.com/cwbudde/mayfly/issues)

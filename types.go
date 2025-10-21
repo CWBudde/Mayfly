@@ -100,6 +100,7 @@ type Result struct {
 	GlobalBest     Best
 	FuncEvalCount  int
 	IterationCount int
+	Seed           int64 // Random seed used for reproducibility
 }
 
 // newMayfly creates an empty mayfly with allocated slices.
@@ -131,4 +132,37 @@ func (m *Mayfly) clone() *Mayfly {
 	copy(clone.Best.Position, m.Best.Position)
 
 	return clone
+}
+
+// sanitizeVec checks and fixes NaN/Inf values in a vector.
+// This prevents numerical issues from heavy-tailed distributions (Lévy, Cauchy)
+// and operations that can produce invalid values (log, exp, division by small numbers).
+// Invalid values are replaced with random values within bounds.
+func sanitizeVec(vec []float64, lowerBound, upperBound float64, rng *rand.Rand) {
+	for i := range vec {
+		if math.IsNaN(vec[i]) || math.IsInf(vec[i], 0) {
+			// Replace invalid value with random value in bounds
+			vec[i] = unifrnd(lowerBound, upperBound, rng)
+		}
+	}
+}
+
+// sanitizeCost checks and fixes NaN/Inf cost values.
+// Returns a very large finite value if the cost is invalid.
+func sanitizeCost(cost float64) float64 {
+	if math.IsNaN(cost) || math.IsInf(cost, 1) {
+		return 1e100 // Very large but finite penalty
+	}
+	if math.IsInf(cost, -1) {
+		return -1e100 // Very small but finite (for maximization if ever needed)
+	}
+	return cost
+}
+
+// evaluateWithSanitization evaluates the objective function after sanitizing the position.
+// This ensures all heavy-tailed operators (Lévy, Cauchy) don't pass invalid values.
+func evaluateWithSanitization(objFunc ObjectiveFunction, position []float64,
+	lowerBound, upperBound float64, rng *rand.Rand) float64 {
+	sanitizeVec(position, lowerBound, upperBound, rng)
+	return sanitizeCost(objFunc(position))
 }

@@ -106,7 +106,8 @@ func validateOffspring(config *Config) error {
 	if config.NC < 2 && effectiveNM(config) > 0 {
 		return fmt.Errorf(
 			"NC (offspring count) of %d produces no offspring for %d mutants to be drawn from; "+
-				"raise NC to at least 2 or set NM to 0",
+				"raise NC to at least 2 (note that NM=0 does not disable mutants, "+
+				"it selects the default of 5%% of NPop)",
 			config.NC, effectiveNM(config),
 		)
 	}

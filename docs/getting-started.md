@@ -334,15 +334,15 @@ result, err := mayfly.NewBuilderFromVariant(best).
 
 ### Rule of Thumb
 
-| Problem Type | Recommended Variant | Why |
-|--------------|---------------------|-----|
-| Smooth, single optimum | **Standard MA** | Efficient baseline |
-| Multiple local optima | **DESMA** | Adaptive elite search |
-| Highly multimodal | **OLCE-MA** | Orthogonal learning + chaos |
-| Deceptive landscape | **EOBBMA** | Lévy flights escape traps |
-| Need fast results | **GSASMA** | Fastest convergence |
-| Need stability | **MPMA** | Most robust |
-| Complex/adaptive needs | **AOBLMOA** | 4 hunting strategies |
+| Problem Type           | Recommended Variant | Why                         |
+| ---------------------- | ------------------- | --------------------------- |
+| Smooth, single optimum | **Standard MA**     | Efficient baseline          |
+| Multiple local optima  | **DESMA**           | Adaptive elite search       |
+| Highly multimodal      | **OLCE-MA**         | Orthogonal learning + chaos |
+| Deceptive landscape    | **EOBBMA**          | Lévy flights escape traps   |
+| Need fast results      | **GSASMA**          | Fastest convergence         |
+| Need stability         | **MPMA**            | Most robust                 |
+| Complex/adaptive needs | **AOBLMOA**         | 4 hunting strategies        |
 
 ## Common Pitfalls
 

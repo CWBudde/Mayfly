@@ -13,6 +13,7 @@ Go implementation of the Mayfly Optimization Algorithm (MA) and its enhanced var
 ## Build & Development Commands
 
 ### Using Just (Task Runner)
+
 ```bash
 # View all available commands
 just
@@ -49,6 +50,7 @@ just clean
 ```
 
 ### Direct Go Commands
+
 ```bash
 # Build
 go build -v ./...
@@ -67,6 +69,7 @@ cd examples && go run main.go
 ```
 
 ### Module Management
+
 ```bash
 # Tidy dependencies
 go mod tidy
@@ -85,12 +88,14 @@ go get -u ./...
 The algorithm maintains two distinct populations with different behaviors:
 
 **Male Population** (`males []*Mayfly`)
+
 - Track personal best positions (`Mayfly.Best`)
 - Update velocity based on personal best and global best
 - Perform "nuptial dance" when at optimum
 - Formula: `v = g*v + a1*exp(-β*r_pb²)*(pbest - x) + a2*exp(-β*r_gb²)*(gbest - x)`
 
 **Female Population** (`females []*Mayfly`)
+
 - No personal best tracking
 - Attracted to males with better fitness OR fly randomly
 - Female behavior: If `female.Cost > male.Cost` → move toward male, else random flight
@@ -120,6 +125,7 @@ Located in `mayfly.go:473-510` and `generateEliteMayflies()` at line 543.
 **Key mechanism**: After selection, generates `EliteCount` (default: 5) candidate solutions around global best within `SearchRange`. Replaces worst male if elite is better.
 
 **Adaptive search range**:
+
 - If improving: `SearchRange *= EnlargeFactor` (default 1.05)
 - If stagnating: `SearchRange *= ReductionFactor` (default 0.95)
 
@@ -138,11 +144,13 @@ config := mayfly.NewDESMAConfig()
 ```
 
 **Required fields** (must set before calling `Optimize()`):
+
 - `ObjectiveFunc` - Function to minimize
 - `ProblemSize` - Number of dimensions
 - `LowerBound` / `UpperBound` - Search space bounds
 
 **Auto-calculated if zero**:
+
 - `NM` (mutants) = 5% of `NPop`
 - `VelMax` / `VelMin` = ±10% of bounds
 - `SearchRange` (DESMA) = 10% of bounds
@@ -173,6 +181,7 @@ Located in `functions.go`. All functions are **minimization** problems with know
 **CEC-Style Functions** (10): Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6
 
 **Performance expectations** (500 iterations, D=30):
+
 - Sphere: ~1e-5 to 1e-10
 - Rastrigin: 30-100 (multimodal, harder)
 - Rosenbrock: 0.1-10 (narrow valley challenge)
@@ -232,12 +241,14 @@ For detailed function descriptions, parameters, and expected results, see `docs/
 Per PLAN.md, comprehensive testing planned:
 
 ### Test Coverage Goals
+
 - Unit tests: 90%+ coverage
 - Integration tests: All variants
 - Benchmark tests: All functions + CEC suites
 - Regression tests: Performance baselines
 
 ### Test Structure (To be created)
+
 ```
 mayfly_test.go          # Core algorithm tests
 functions_test.go       # Benchmark function validation
@@ -248,6 +259,7 @@ helpers_test.go        # Helper function tests
 ```
 
 ### Running Tests (When implemented)
+
 ```bash
 # Run all tests
 go test -v ./...
@@ -276,6 +288,7 @@ Follow the pattern established by DESMA:
 5. **Document in README** with usage section and parameter descriptions
 
 Example pattern:
+
 ```go
 // In Config struct
 UseNewVariant bool
@@ -336,11 +349,13 @@ func maximizeProfit(x []float64) float64 {
 ## Future Development (PLAN.md Phases)
 
 **Next Priority: Phase 1 - Testing Infrastructure**
+
 - Create comprehensive test suite
 - Establish CI/CD with GitHub Actions
 - Benchmark against reference implementations
 
 **Upcoming Variants** (Phases 2-6):
+
 - OLCE-MA: Orthogonal learning + chaotic exploitation
 - EOBBMA: Elite opposition-based with Lévy flight
 - GSASMA: Golden sine + simulated annealing
@@ -348,6 +363,7 @@ func maximizeProfit(x []float64) float64 {
 - AOBLMOA: Multi-objective with Aquila optimizer
 
 **Framework Unification** (Phase 7):
+
 - Common variant interface
 - Algorithm selection helper
 - Comparison framework
@@ -359,13 +375,13 @@ func maximizeProfit(x []float64) float64 {
 
 All variants maintain research fidelity to original papers:
 
-1. **Original MA**: Zervoudakis & Tsafarakis (2020). *Computers & Industrial Engineering*, 145, 106559.
-2. **DESMA**: *PLOS One*, 2022
-3. **OLCE-MA**: Zhou et al. (2022). *International Journal of Machine Learning and Cybernetics*, 13, 3625–3643
-4. **EOBBMA**: *Arabian Journal for Science and Engineering*, 2024
-5. **GSASMA**: *Electronics Letters / IEEE*, 2022
-6. **MPMA**: *IEEE Access*, 2022
-7. **AOBLMOA**: *PubMed / Various journals*, 2023
+1. **Original MA**: Zervoudakis & Tsafarakis (2020). _Computers & Industrial Engineering_, 145, 106559.
+2. **DESMA**: _PLOS One_, 2022
+3. **OLCE-MA**: Zhou et al. (2022). _International Journal of Machine Learning and Cybernetics_, 13, 3625–3643
+4. **EOBBMA**: _Arabian Journal for Science and Engineering_, 2024
+5. **GSASMA**: _Electronics Letters / IEEE_, 2022
+6. **MPMA**: _IEEE Access_, 2022
+7. **AOBLMOA**: _PubMed / Various journals_, 2023
 
 ## Common Pitfalls
 
@@ -399,6 +415,7 @@ just profile-mem
 ## Key Files Reference
 
 ### Core Implementation
+
 - `mayfly.go` - Main optimization algorithm
 - `variants.go` - Variant interface and implementations
 - `selector.go` - Algorithm selection logic
@@ -407,6 +424,7 @@ just profile-mem
 - `functions.go` - Benchmark functions
 
 ### Documentation
+
 - `README.md` - Concise project overview (323 lines)
 - `docs/getting-started.md` - Tutorial and examples
 - `docs/algorithms/` - Individual algorithm documentation
@@ -415,6 +433,7 @@ just profile-mem
 - `docs/research.md` - Academic citations
 
 ### Development
+
 - `justfile` - All build/test commands
 - `PLAN.md` - Development roadmap
 - `CLAUDE.md` - This file (development guide)

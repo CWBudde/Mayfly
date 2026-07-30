@@ -88,16 +88,19 @@ func main() {
 DESMA excels on multimodal functions with 70%+ improvement over standard MA:
 
 **Rastrigin Function (highly multimodal)**:
+
 - Standard MA: 45-60 (typical result)
 - DESMA: 15-30 (70%+ improvement)
 
 **Rosenbrock Function (narrow valley)**:
+
 - Standard MA: 10-50
 - DESMA: 0.1-5 (significant improvement)
 
 ### Function Evaluation Overhead
 
 DESMA uses approximately 8% more function evaluations than Standard MA:
+
 - Standard MA: ~30,540 evaluations (500 iterations, pop=20)
 - DESMA: ~33,000 evaluations (includes elite generation)
 
@@ -126,49 +129,60 @@ After the standard MA selection step:
 ### Elite Count
 
 **Default (balanced)**:
+
 ```go
 config.EliteCount = 5
 ```
+
 - Good balance between exploration and computational cost
 
 **More exploration**:
+
 ```go
 config.EliteCount = 10
 ```
+
 - Use when: Problem has many local optima
 - Trade-off: Higher computational cost
 
 **Less overhead**:
+
 ```go
 config.EliteCount = 3
 ```
+
 - Use when: Function evaluations are expensive
 - Trade-off: Less intensive local search
 
 ### Search Range
 
 **Auto-calculated (recommended)**:
+
 ```go
 // Leave SearchRange at 0 for automatic calculation
 config.SearchRange = 0  // Auto: 10% of (UpperBound - LowerBound)
 ```
 
 **Custom range**:
+
 ```go
 config.SearchRange = 2.0  // Fixed range of ±2.0
 ```
+
 - Use when: You know the optimal search radius
 - Trade-off: Less adaptive behavior
 
 ### Adaptation Factors
 
 **More aggressive adaptation**:
+
 ```go
 config.EnlargeFactor = 1.1    // Faster exploration increase
 config.ReductionFactor = 0.90  // Faster exploitation focus
 ```
 
 **More conservative adaptation**:
+
 ```go
 config.EnlargeFactor = 1.02   // Slower exploration increase
 config.ReductionFactor = 0.98  // Slower exploitation focus
@@ -177,17 +191,20 @@ config.ReductionFactor = 0.98  // Slower exploitation focus
 ## DESMA vs Other Variants
 
 **Choose DESMA when**:
+
 - Problem has many local optima
 - You want adaptive local search
 - Function evaluations are cheap
 - Standard MA plateaus early
 
 **Choose OLCE-MA instead when**:
+
 - Problem is highly multimodal (Rastrigin-like)
 - High dimensionality (20D+)
 - Need systematic parameter space exploration
 
 **Choose EOBBMA instead when**:
+
 - Problem is highly deceptive (Schwefel-like)
 - Want simpler parameter tuning
 - Heavy-tailed jumps are beneficial

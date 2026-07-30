@@ -19,7 +19,8 @@ import (
 func applyGSASMAToEliteMales(males []*Mayfly, eliteRatio float64, globalBest []float64,
 	globalBestCost float64, goldenFactor float64, currentIter, maxIter int,
 	lowerBound, upperBound float64, scheduler *AnnealingScheduler,
-	objectiveFunc ObjectiveFunction, rng *rand.Rand) ([]float64, float64, int) {
+	objectiveFunc ObjectiveFunction, rng *rand.Rand,
+) ([]float64, float64, int) {
 	numElite := int(float64(len(males)) * eliteRatio)
 	if numElite < 1 {
 		numElite = 1
@@ -77,9 +78,11 @@ func applyGSASMAToEliteMales(males []*Mayfly, eliteRatio float64, globalBest []f
 }
 
 // Returns: mutated offspring.
+//nolint:unused // reserved for the GSASMA variant; not wired into Optimize() yet.
 func applyHybridMutationGSASMA(offspring []*Mayfly, nMutants int, mutationRate float64,
 	currentIter, maxIter int, cauchyMutationRate, lowerBound, upperBound float64,
-	rng *rand.Rand) []*Mayfly {
+	rng *rand.Rand,
+) []*Mayfly {
 	// Calculate adaptive Cauchy probability based on iteration progress
 	iterRatio := float64(currentIter) / float64(maxIter)
 
@@ -128,7 +131,8 @@ func applyHybridMutationGSASMA(offspring []*Mayfly, nMutants int, mutationRate f
 // Returns: (updatedGlobalBest, updatedGlobalBestCost, funcEvals, improved).
 func applyOBLToGlobalBest(globalBest []float64, globalBestCost float64,
 	lowerBound, upperBound float64, objectiveFunc ObjectiveFunction,
-	rng *rand.Rand) ([]float64, float64, int, bool) {
+	rng *rand.Rand,
+) ([]float64, float64, int, bool) {
 	// Generate opposition point
 	oppPos := oppositionPoint(globalBest, lowerBound, upperBound)
 
@@ -149,6 +153,7 @@ func applyOBLToGlobalBest(globalBest []float64, globalBestCost float64,
 }
 
 // Returns: adaptive Cauchy rate.
+//nolint:unused // reserved for the GSASMA variant; not wired into Optimize() yet.
 func calculateAdaptiveCauchyRate(males []*Mayfly, baseCauchyRate float64) float64 {
 	if len(males) < 2 {
 		return baseCauchyRate

@@ -15,30 +15,35 @@ AOBLMOA is a powerful hybrid metaheuristic that combines the social behavior of 
 The **Aquila Optimizer** mimics the hunting behavior of eagles (Aquila genus) with four distinct strategies that adapt based on iteration progress:
 
 #### X1 - Expanded Exploration (High soar with vertical stoop)
+
 - **When**: First 1/3 of iterations
 - **Purpose**: Global search across entire space
 - **Formula**: `X₁ = Xbest * (1 - t/T) + (Xmean - Xbest * rand)`
 - **Behavior**: Wide-ranging exploration using population mean
 
 #### X2 - Narrowed Exploration (Contour flight with short glide)
+
 - **When**: Iterations 1/3 to 2/3
 - **Purpose**: Focused exploration with Lévy flight
 - **Formula**: `X₂ = Xbest * Levy(D) + XR + (y - x) * rand`
 - **Behavior**: Combines heavy-tailed jumps with local search
 
 #### X3 - Expanded Exploitation (Low flight with slow descent)
+
 - **When**: Last 1/3 of iterations
 - **Purpose**: Convergence to promising regions
 - **Formula**: `X₃ = (Xbest - Xmean) * α - rand + exploration`
 - **Behavior**: Balances convergence with controlled exploration
 
 #### X4 - Narrowed Exploitation (Walk and grab)
+
 - **When**: Final iterations
 - **Purpose**: Intensive local search
 - **Formula**: `X₄ = QF * Xbest - (G1 * X * rand) - G2 * Levy(D)`
 - **Behavior**: Fine-tunes solutions with quality function
 
 **Adaptive Strategy Switching**:
+
 ```
 Iteration Progress     Strategy    Mode
 ───────────────────────────────────────────
@@ -57,6 +62,7 @@ AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
 - **Best of both worlds**: Mayfly's social learning + Aquila's hunting intelligence
 
 **Example with AquilaWeight = 0.5**:
+
 ```
 50% of mayflies → Use Aquila hunting strategies (adaptive)
 50% of mayflies → Use Mayfly velocity updates (social)
@@ -72,6 +78,7 @@ AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
 - **Benefit**: Searches both sides of space simultaneously
 
 **When Applied**:
+
 - After Aquila strategy updates
 - Before accepting new positions
 - Only to solutions selected by probability threshold
@@ -81,21 +88,25 @@ AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
 AOBLMOA includes **complete multi-objective optimization** framework:
 
 #### Pareto Dominance
+
 - Solution A dominates B if: A is no worse in all objectives AND strictly better in at least one
 - Non-dominated solutions form the Pareto front
 - Archive maintains best non-dominated solutions found
 
 #### Crowding Distance
+
 - Measures density of solutions in objective space
 - Higher values = more isolated solutions (better diversity)
 - Used for selection when archive exceeds size limit
 
 #### NSGA-II Selection
+
 - Combines Pareto ranking and crowding distance
 - Maintains both convergence and diversity
 - Automatic archive management
 
 #### Performance Metrics
+
 - **Hypervolume**: Volume dominated by Pareto front (higher is better)
 - **IGD**: Inverted Generational Distance to true front (lower is better)
 
@@ -356,29 +367,36 @@ func main() {
 ### Aquila Weight Settings
 
 **Balanced Hybrid** (default):
+
 ```go
 config.AquilaWeight = 0.5  // 50% Aquila, 50% Mayfly
 ```
+
 - Best starting point for most problems
 - Combines strengths of both algorithms
 
 **More Aquila** (aggressive exploration):
+
 ```go
 config.AquilaWeight = 0.7  // 70% Aquila, 30% Mayfly
 ```
+
 - Use when: Problem has many deceptive local optima
 - Use when: Need strong exploration capability
 - Trade-off: May converge slower
 
 **More Mayfly** (social learning):
+
 ```go
 config.AquilaWeight = 0.3  // 30% Aquila, 70% Mayfly
 ```
+
 - Use when: Problem benefits from swarm intelligence
 - Use when: Social learning is effective (smooth landscapes)
 - Trade-off: Less adaptive strategy switching
 
 **Pure Strategies**:
+
 ```go
 config.AquilaWeight = 1.0  // 100% Aquila (pure Aquila Optimizer)
 config.AquilaWeight = 0.0  // 100% Mayfly (standard Mayfly Algorithm)
@@ -387,24 +405,30 @@ config.AquilaWeight = 0.0  // 100% Mayfly (standard Mayfly Algorithm)
 ### Opposition Probability Settings
 
 **Moderate Opposition** (default):
+
 ```go
 config.OppositionProbability = 0.3  // 30% of updates use OBL
 ```
+
 - Balanced exploration of opposite regions
 - Minimal computational overhead
 
 **Aggressive Opposition**:
+
 ```go
 config.OppositionProbability = 0.5  // 50% of updates use OBL
 ```
+
 - Use when: Search space is large and sparsely sampled
 - Use when: Initial solutions are far from optimum
 - Caution: Doubles function evaluations for OBL
 
 **Conservative Opposition**:
+
 ```go
 config.OppositionProbability = 0.1  // 10% of updates use OBL
 ```
+
 - Use when: Function evaluations are expensive
 - Use when: Initial population is well-distributed
 - Lower overhead, less exploration
@@ -412,17 +436,21 @@ config.OppositionProbability = 0.1  // 10% of updates use OBL
 ### Archive Size (Multi-Objective)
 
 **Small Archive** (fast, focused):
+
 ```go
 config.ArchiveSize = 50
 ```
+
 - Use when: Want only best Pareto solutions
 - Faster archive management
 - Less diversity preservation
 
 **Large Archive** (comprehensive):
+
 ```go
 config.ArchiveSize = 200
 ```
+
 - Use when: Need complete Pareto front representation
 - Better diversity across objectives
 - More computational cost for archive maintenance
@@ -430,22 +458,26 @@ config.ArchiveSize = 200
 ## AOBLMOA vs Other Variants
 
 **Choose AOBLMOA when**:
+
 - Problem has distinct phases requiring different strategies
 - You need multi-objective optimization capabilities
 - Want adaptive exploration-exploitation without manual tuning
 - Problem characteristics change across the search space
 
 **Choose EOBBMA instead when**:
+
 - Problem is purely deceptive (Schwefel-like)
 - Want simpler Bare Bones framework
 - Heavy-tailed jumps alone are sufficient
 
 **Choose GSASMA instead when**:
+
 - Need maximum convergence speed
 - Simulated annealing fits problem structure
 - Prefer hybrid mutation over strategy switching
 
 **Choose OLCE-MA instead when**:
+
 - Problem is highly multimodal with many local optima
 - Orthogonal learning benefits parameter space exploration
 - Chaotic perturbations are effective

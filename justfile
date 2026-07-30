@@ -37,27 +37,53 @@ bench:
 run:
     cd examples && go run main.go
 
-# Format code with go fmt
-fmt:
-    go fmt ./...
+# Install the formatters and linters used by `just fmt` / `just lint`
+setup-deps:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export PATH=$HOME/go/bin:$PATH
+    echo "Installing development dependencies..."
+
+    # treefmt (formatter multiplexer)
+    command -v treefmt >/dev/null 2>&1 || { echo "Installing treefmt..."; curl -fsSL https://github.com/numtide/treefmt/releases/download/v2.5.0/treefmt_2.5.0_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz treefmt; }
+
+    # golangci-lint v2 (linter + formatter runner)
+    command -v golangci-lint >/dev/null 2>&1 || { echo "Installing golangci-lint..."; go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest; }
+
+    # Go formatters
+    command -v gofumpt >/dev/null 2>&1 || { echo "Installing gofumpt..."; go install mvdan.cc/gofumpt@latest; }
+    command -v gci >/dev/null 2>&1 || { echo "Installing gci..."; go install github.com/daixiang0/gci@latest; }
+
+    # Shell formatter
+    command -v shfmt >/dev/null 2>&1 || { echo "Installing shfmt..."; go install mvdan.cc/sh/v3/cmd/shfmt@latest; }
+
+    # Markdown/JSON/YAML formatter
+    command -v prettier >/dev/null 2>&1 || { echo "Installing prettier..."; npm install -g prettier || echo "Prettier installation failed - npm not found."; }
+
+    # TOML formatter
+    command -v taplo >/dev/null 2>&1 || { echo "Installing taplo..."; cargo install taplo-cli --locked || echo "Taplo installation failed - cargo not found."; }
 
 # Format all files with treefmt
-treefmt:
+fmt:
     #!/usr/bin/env bash
     export PATH=$HOME/go/bin:$PATH
-    treefmt
+    treefmt --allow-missing-formatter
 
-# Run linter with configuration file
+# Alias for `just fmt`
+treefmt: fmt
+
+# Run linter
 lint:
     #!/usr/bin/env bash
     export PATH=$HOME/go/bin:$PATH
-    golangci-lint run --config .golangci.yml ./...
+    golangci-lint run --config ./.golangci.toml --timeout 5m ./...
 
-# Run linter with configuration file
+# Run linter (with fix)
 lint-fix:
     #!/usr/bin/env bash
     export PATH=$HOME/go/bin:$PATH
-    golangci-lint run --config .golangci.yml --fix ./...
+    golangci-lint fmt --config ./.golangci.toml
+    golangci-lint run --config ./.golangci.toml --timeout 5m --fix ./...
 
 # Tidy up dependencies
 tidy:
@@ -77,17 +103,27 @@ clean:
 docs:
     godoc -http=:6060
 
+# Fail if any file is not formatted
+check-formatted:
+    #!/usr/bin/env bash
+    export PATH=$HOME/go/bin:$PATH
+    treefmt --allow-missing-formatter --fail-on-change
+
+# Fail if go.mod/go.sum are not tidy
+check-tidy:
+    go mod tidy -diff
+
 # Run all checks (format, lint, test)
-check: fmt treefmt lint test
+check: check-formatted check-tidy lint test
 
 # Run all checks with race detection
-check-race: fmt treefmt lint test-race
+check-race: check-formatted check-tidy lint test-race
 
 # Full CI pipeline
-ci: tidy verify check
+ci: verify check
 
 # Full CI pipeline with race detection
-ci-race: tidy verify check-race
+ci-race: verify check-race
 
 # Profile CPU performance
 profile-cpu:
@@ -158,10 +194,9 @@ optimize func="Sphere" size="30" iter="1000":
     go run temp_optimize.go
     rm temp_optimize.go
 
-# Install development tools
-install-tools:
+# Install development tools (see also: just setup-deps)
+install-tools: setup-deps
     go install golang.org/x/tools/cmd/godoc@latest
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 # Check for security vulnerabilities
 security:

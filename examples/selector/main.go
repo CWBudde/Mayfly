@@ -45,7 +45,6 @@ func main() {
 		ForProblem(mayfly.Rastrigin, 10, -5.12, 5.12).
 		WithIterations(300).
 		Optimize()
-
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -168,7 +167,6 @@ func main() {
 			c.InitialTemperature = 200.0
 		}).
 		Optimize()
-
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return

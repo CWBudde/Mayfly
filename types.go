@@ -174,7 +174,8 @@ func sanitizeCost(cost float64) float64 {
 // evaluateWithSanitization evaluates the objective function after sanitizing the position.
 // This ensures all heavy-tailed operators (Lévy, Cauchy) don't pass invalid values.
 func evaluateWithSanitization(objFunc ObjectiveFunction, position []float64,
-	lowerBound, upperBound float64, rng *rand.Rand) float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) float64 {
 	sanitizeVec(position, lowerBound, upperBound, rng)
 	return sanitizeCost(objFunc(position))
 }

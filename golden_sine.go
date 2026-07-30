@@ -26,7 +26,6 @@ const (
 // rng must not be nil (ensured by caller).
 // Returns: updated position vector.
 func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-
 	size := len(position)
 	newPos := make([]float64, size)
 
@@ -54,7 +53,8 @@ func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperB
 
 // Returns: updated position vector.
 func goldenSineUpdateAdaptive(position, best []float64, goldenFactor float64,
-	currentIter, maxIter int, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	currentIter, maxIter int, lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	// Calculate adaptive factor: decreases from 2 to 1 over iterations
 	iterRatio := float64(currentIter) / float64(maxIter)
 	adaptiveFactor := goldenFactor * (2.0 - iterRatio)
@@ -63,9 +63,11 @@ func goldenSineUpdateAdaptive(position, best []float64, goldenFactor float64,
 }
 
 // Returns: number of function evaluations performed.
+//nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
 func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest []float64,
 	goldenFactor float64, currentIter, maxIter int, lowerBound, upperBound float64,
-	objectiveFunc ObjectiveFunction, rng *rand.Rand) int {
+	objectiveFunc ObjectiveFunction, rng *rand.Rand,
+) int {
 	numElite := int(float64(len(mayflies)) * eliteRatio)
 	if numElite < 1 {
 		numElite = 1
@@ -114,8 +116,8 @@ func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest [
 // goldenSineConvergence applies adaptive Golden Sine update based on convergence.
 // rng must not be nil (ensured by caller).
 // Returns: updated position vector.
+//nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
 func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
-
 	size := len(position)
 	newPos := make([]float64, size)
 

@@ -347,7 +347,7 @@ func testConvergenceStability(fn ObjectiveFunction, size int, lower, upper float
 func RecommendForBenchmark(benchmarkName string) AlgorithmRecommendation {
 	selector := NewAlgorithmSelector()
 
-	characteristics := ProblemCharacteristics{}
+	var characteristics ProblemCharacteristics
 
 	switch benchmarkName {
 	case "Sphere":

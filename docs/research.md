@@ -90,6 +90,7 @@ Academic papers and research behind the Mayfly algorithm variants implemented in
 ### Mathematical Foundation
 
 Lévy flights follow power-law distribution:
+
 - Stability parameter α ∈ (0, 2]: controls tail heaviness
 - α=1.5 provides good balance of local/global search
 - Heavy tails enable occasional large jumps to escape local optima
@@ -207,18 +208,19 @@ Lévy flights follow power-law distribution:
 
 Research papers report the following improvements over Standard MA:
 
-| Variant | Best Problem Type | Improvement | Overhead |
-|---------|------------------|-------------|----------|
-| DESMA | Multimodal | 70%+ | +8% evals |
-| OLCE-MA | Highly Multimodal | 15-30% | +12% evals |
-| EOBBMA | Deceptive | 55%+ | +1.5% evals |
-| GSASMA | Engineering | 10-20% | +15% evals |
-| MPMA | Ill-conditioned | 10-30% | 0% (baseline) |
-| AOBLMOA | Complex/Adaptive | Variable | +20-30% evals |
+| Variant | Best Problem Type | Improvement | Overhead      |
+| ------- | ----------------- | ----------- | ------------- |
+| DESMA   | Multimodal        | 70%+        | +8% evals     |
+| OLCE-MA | Highly Multimodal | 15-30%      | +12% evals    |
+| EOBBMA  | Deceptive         | 55%+        | +1.5% evals   |
+| GSASMA  | Engineering       | 10-20%      | +15% evals    |
+| MPMA    | Ill-conditioned   | 10-30%      | 0% (baseline) |
+| AOBLMOA | Complex/Adaptive  | Variable    | +20-30% evals |
 
 ### Common Benchmark Functions
 
 Papers typically evaluate on:
+
 - **CEC competitions**: CEC 2014, CEC 2017, CEC 2020 suites
 - **Classic functions**: Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
 - **Deceptive functions**: Schwefel, Michalewicz
@@ -259,6 +261,7 @@ This Go implementation maintains **research fidelity** while providing:
 ### Validation Approach
 
 Each variant has been validated against:
+
 - Benchmark functions from original papers
 - Expected performance ranges
 - Algorithm behavior characteristics
@@ -271,6 +274,7 @@ Each variant has been validated against:
 When using this library in research, please cite:
 
 ### Standard MA
+
 ```bibtex
 @article{zervoudakis2020mayfly,
   title={A mayfly optimization algorithm},
@@ -284,6 +288,7 @@ When using this library in research, please cite:
 ```
 
 ### OLCE-MA
+
 ```bibtex
 @article{zhou2022enhanced,
   title={An enhanced Mayfly optimization algorithm based on orthogonal learning and chaotic exploitation strategy},
@@ -297,6 +302,7 @@ When using this library in research, please cite:
 ```
 
 ### This Implementation
+
 ```bibtex
 @software{mayfly_go,
   title={Mayfly Optimization Algorithm: Go Implementation},
@@ -330,9 +336,11 @@ When using this library in research, please cite:
 ## Contact Information
 
 For questions about the implementation or to report issues:
+
 - **GitHub**: https://github.com/cwbudde/mayfly/issues
 - **Email**: Contact repository maintainers
 
 For questions about the original algorithms:
+
 - Refer to author contact information in respective papers
 - Check paper citations for latest contact details

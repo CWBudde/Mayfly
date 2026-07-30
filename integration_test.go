@@ -17,34 +17,11 @@ type integrationTestContext struct {
 	standardResult          *Result
 	desmaResult             *Result
 	config                  *Config
-	objectiveFunc           func([]float64) float64
-	femalePositions         [][]*Mayfly
-	eliteSolutions          [][]*Mayfly
-	offspringAfterMutation  [][]*Mayfly
-	offspringAfterCrossover [][]*Mayfly
-	malePositions           [][]*Mayfly
-	lowerBound              float64
-	seed                    int64
-	upperBound              float64
-	problemSize             int
-}
-
-func (ctx *integrationTestContext) reset() {
-	ctx.config = nil
-	ctx.result = nil
-	ctx.err = nil
-	ctx.standardResult = nil
-	ctx.desmaResult = nil
-	ctx.problemSize = 0
-	ctx.lowerBound = 0
-	ctx.upperBound = 0
-	ctx.objectiveFunc = nil
-	ctx.seed = 0
-	ctx.malePositions = nil
-	ctx.femalePositions = nil
-	ctx.offspringAfterCrossover = nil
-	ctx.offspringAfterMutation = nil
-	ctx.eliteSolutions = nil
+	objectiveFunc  func([]float64) float64
+	lowerBound     float64
+	seed           int64
+	upperBound     float64
+	problemSize    int
 }
 
 // Optimization Convergence Steps

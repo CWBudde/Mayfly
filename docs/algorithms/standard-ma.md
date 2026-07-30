@@ -7,6 +7,7 @@
 https://doi.org/10.1016/j.cie.2020.106559
 
 Original MATLAB implementation by:
+
 - K. Zervoudakis (kzervoudakis@isc.tuc.gr)
 - S. Tsafarakis
 - School of Production Engineering and Management, Technical University of Crete, Chania, Greece
@@ -112,11 +113,13 @@ v = g*v + a1*exp(-β*r_pb²)*(pbest - x) + a2*exp(-β*r_gb²)*(gbest - x)
 ```
 
 Where:
+
 - `r_pb` = distance to personal best
 - `r_gb` = distance to global best
 - `β` = distance sight coefficient
 
 When at optimum (very close to global best), males perform "nuptial dance":
+
 ```
 v = g*v + dance*e  (random flight)
 ```
@@ -149,13 +152,13 @@ Else:
 
 ## Comparison with Variants
 
-| Aspect | Standard MA | When to Consider Variants |
-|--------|-------------|---------------------------|
-| **Convergence** | Good on unimodal | DESMA/OLCE for multimodal |
-| **Local optima** | Can get trapped | EOBBMA/GSASMA for escape |
-| **Stability** | Moderate | MPMA for more stable |
-| **Speed** | Balanced | GSASMA for faster |
-| **Complexity** | Simplest | AOBLMOA for adaptive |
+| Aspect           | Standard MA      | When to Consider Variants |
+| ---------------- | ---------------- | ------------------------- |
+| **Convergence**  | Good on unimodal | DESMA/OLCE for multimodal |
+| **Local optima** | Can get trapped  | EOBBMA/GSASMA for escape  |
+| **Stability**    | Moderate         | MPMA for more stable      |
+| **Speed**        | Balanced         | GSASMA for faster         |
+| **Complexity**   | Simplest         | AOBLMOA for adaptive      |
 
 See [Algorithm Comparison](../README.md#algorithm-comparison) for detailed performance metrics.
 

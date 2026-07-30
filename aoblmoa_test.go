@@ -748,7 +748,6 @@ func TestAOBLMOAOptimizeSphere(t *testing.T) {
 	config.NPopF = 20
 
 	result, err := Optimize(config)
-
 	if err != nil {
 		t.Fatalf("Optimization failed: %v", err)
 	}
@@ -777,7 +776,6 @@ func TestAOBLMOAOptimizeRastrigin(t *testing.T) {
 	config.NPopF = 30
 
 	result, err := Optimize(config)
-
 	if err != nil {
 		t.Fatalf("Optimization failed: %v", err)
 	}

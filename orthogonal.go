@@ -56,7 +56,8 @@ var L4Array = [][]int{
 // Returns:
 //   - A new Mayfly representing the best candidate from the orthogonal exploration
 func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float64,
-	lb, ub []float64, objFunc func([]float64) float64, rng *rand.Rand) *Mayfly {
+	lb, ub []float64, objFunc func([]float64) float64, rng *rand.Rand,
+) *Mayfly {
 	dim := len(male.Position)
 	candidates := make([]*Mayfly, len(L4Array))
 
@@ -138,7 +139,8 @@ func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 //   - The males slice with top performers improved via orthogonal learning
 func ApplyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	gbest []float64, factor float64, lb, ub []float64,
-	objFunc func([]float64) float64, rng *rand.Rand) {
+	objFunc func([]float64) float64, rng *rand.Rand,
+) {
 	// Calculate number of elite males to improve
 	numElite := int(float64(len(males)) * topPercent)
 	if numElite < 1 {

@@ -65,7 +65,8 @@ func selectAquilaStrategy(currentIter, maxIter int, rng *rand.Rand) AquilaStrate
 //   - t is current iteration, T is max iterations
 //   - rand is a random number in [0, 1]
 func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIter int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -96,7 +97,8 @@ func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIt
 //   - y, x are random position components
 //   - D is the problem dimension
 func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, problemSize int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 
 	// Generate Lévy flight multiplier
@@ -137,7 +139,8 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, pr
 //   - XM is the mean position
 //   - UB, LB are upper and lower bounds
 func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxIter int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -174,7 +177,8 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 //   - G1, G2 are control parameters
 //   - Levy(D) provides small random walks
 func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, problemSize int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -221,7 +225,8 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, p
 // Returns:
 //   - New position for the mayfly
 func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
-	strategy AquilaStrategy, currentIter, maxIter int, config *Config) []float64 {
+	strategy AquilaStrategy, currentIter, maxIter int, config *Config,
+) []float64 {
 	// Calculate mean position of population
 	mean := make([]float64, config.ProblemSize)
 

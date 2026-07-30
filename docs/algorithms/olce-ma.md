@@ -22,6 +22,7 @@ Applies **orthogonal experimental design** to elite males (top 20% of population
 - **Applied to**: Elite males after sorting by fitness
 
 **Benefits**:
+
 - Explores parameter space more systematically than random search
 - Reduces redundant evaluations
 - Maintains population diversity in promising regions
@@ -35,11 +36,13 @@ x_chaos = ChaosFactor * chaos_value * (UpperBound - LowerBound)
 ```
 
 Where chaos values follow the logistic map:
+
 ```
 z(n+1) = 4 * z(n) * (1 - z(n))
 ```
 
 **Properties**:
+
 - Deterministic but appears random
 - Covers search space ergodically
 - Helps escape local optima
@@ -215,20 +218,24 @@ func main() {
 ### Multimodal Functions
 
 **Rastrigin (D=10, highly multimodal)**:
+
 - Standard MA: 45-60
 - OLCE-MA: 15-35 (30%+ improvement)
 
 **Rosenbrock (D=10, narrow valley)**:
+
 - Standard MA: 10-50
 - OLCE-MA: 1-10 (significant improvement)
 
 **Ackley (D=10, multimodal)**:
+
 - Standard MA: 2-5
 - OLCE-MA: 0.5-2 (50%+ improvement)
 
 ### Overhead
 
 OLCE-MA uses approximately 12% more function evaluations:
+
 - Standard MA: ~30,540 evaluations (500 iterations, pop=20)
 - OLCE-MA: ~34,200 evaluations (includes orthogonal learning overhead)
 
@@ -244,24 +251,30 @@ OLCE-MA uses approximately 12% more function evaluations:
 ### Orthogonal Factor
 
 **Default (balanced)**:
+
 ```go
 config.OrthogonalFactor = 0.3
 ```
+
 - Good balance between exploration and exploitation
 - Recommended for most problems
 
 **More exploration**:
+
 ```go
 config.OrthogonalFactor = 0.5
 ```
+
 - Use when: Problem has very high dimensionality
 - Use when: Need more systematic parameter space exploration
 - Trade-off: More computational overhead
 
 **More exploitation**:
+
 ```go
 config.OrthogonalFactor = 0.1
 ```
+
 - Use when: Problem requires fine-tuning near solutions
 - Use when: Want minimal overhead
 - Trade-off: Less diversity maintenance
@@ -269,23 +282,29 @@ config.OrthogonalFactor = 0.1
 ### Chaos Factor
 
 **Default (balanced)**:
+
 ```go
 config.ChaosFactor = 0.1
 ```
+
 - Provides good local perturbation without disrupting convergence
 
 **Stronger chaos**:
+
 ```go
 config.ChaosFactor = 0.3
 ```
+
 - Use when: Need aggressive local optima escape
 - Use when: Problem has many deceptive local optima
 - Caution: May slow convergence if too high
 
 **Weaker chaos**:
+
 ```go
 config.ChaosFactor = 0.05
 ```
+
 - Use when: Solutions need fine refinement
 - Use when: Convergence speed is critical
 - Trade-off: Less local optima escape capability
@@ -293,22 +312,26 @@ config.ChaosFactor = 0.05
 ## OLCE-MA vs Other Variants
 
 **Choose OLCE-MA when**:
+
 - Problem is highly multimodal (Rastrigin-like)
 - High dimensionality (20D+)
 - You prioritize solution quality over convergence speed
 - Systematic parameter exploration is beneficial
 
 **Choose DESMA instead when**:
+
 - Need simpler adaptive local search
 - Function evaluations are cheap
 - Want less computational overhead
 
 **Choose EOBBMA instead when**:
+
 - Problem is highly deceptive (Schwefel-like)
 - Want simplest parameter tuning
 - Heavy-tailed jumps are more effective than chaos
 
 **Choose GSASMA instead when**:
+
 - Need maximum convergence speed
 - Simulated annealing fits problem structure
 - Prefer hybrid mutation over orthogonal learning

@@ -1,75 +1,68 @@
-# treefmt configuration for Mayfly Optimization Algorithm
-# See: https://numtide.github.io/treefmt/
+# treefmt configuration for the Mayfly Optimization Algorithm library.
+# Run with: just fmt  (treefmt --allow-missing-formatter)
+# See: https://treefmt.com
 
-# Formatters to run
-[formatter.go]
-command = "gofmt"
-options = ["-w"]
-includes = ["*.go"]
-
-[formatter.go-imports]
-command = "goimports"
-options = ["-w"]
-includes = ["*.go"]
-priority = 1
-
-# TOML formatting
-[formatter.toml]
-command = "taplo"
-options = ["format"]
-includes = ["*.toml"]
-
-# Markdown formatting (using prettier if available)
-# Commented out - install with: npm install -g prettier
-# [formatter.markdown]
-# command = "prettier"
-# options = ["--write", "--prose-wrap", "preserve"]
-# includes = ["*.md"]
-
-# JSON formatting
-# Commented out - install with: npm install -g prettier
-# [formatter.json]
-# command = "prettier"
-# options = ["--write"]
-# includes = ["*.json"]
-
-# YAML formatting
-# Commented out - install with: npm install -g prettier
-# [formatter.yaml]
-# command = "prettier"
-# options = ["--write"]
-# includes = ["*.yaml", "*.yml"]
-
-# Shell script formatting
-# Commented out - install with: go install mvdan.cc/sh/v3/cmd/shfmt@latest
-# [formatter.shell]
-# command = "shfmt"
-# options = ["-w", "-i", "2"]
-# includes = ["*.sh"]
-
-# Global excludes
 [global]
 excludes = [
-  # Version control
-  ".git/**",
-
-  # Build artifacts
+  # go tooling owns these
+  "go.mod",
+  "go.sum",
+  # build & coverage artifacts
   "*.test",
   "*.prof",
   "coverage.out",
   "coverage.html",
-
-  # Dependencies
+  # dependencies
   "vendor/**",
   "node_modules/**",
-
-  # IDE and editor files
-  ".vscode/**",
-  ".idea/**",
-  "*.swp",
-  "*.swo",
-
-  # OS files
-  ".DS_Store",
-  "Thumbs.db",
+  # generated changelog
+  "CHANGELOG.md",
+  # gitignore
+  "**/.gitignore",
 ]
+
+### Go
+
+[formatter.gofumpt]
+command = "gofumpt"
+options = ["-w"]
+includes = ["*.go"]
+
+[formatter.gci]
+command = "gci"
+options = [
+  "write",
+  "--skip-generated",
+  "-s",
+  "standard",
+  "-s",
+  "default",
+  "-s",
+  "prefix(github.com/cwbudde/mayfly)",
+]
+includes = ["*.go"]
+priority = 1 # run after gofumpt
+
+### Misc
+
+[formatter.prettier]
+command = "prettier"
+options = ["-w"]
+includes = ["*.md", "*.json", "*.yaml", "*.yml"]
+
+[formatter.taplo]
+command = "taplo"
+options = ["format"]
+includes = ["*.toml"]
+
+### Shell
+
+[formatter.shellcheck]
+command = "shellcheck"
+includes = ["*.sh"]
+
+[formatter.shfmt]
+command = "shfmt"
+options = ["-s", "-w", "-i", "2"]
+includes = ["*.sh"]
+priority = 1                      # run after shellcheck

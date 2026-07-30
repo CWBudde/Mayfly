@@ -144,14 +144,12 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize random number generator if not provided
 	rng := config.Rand
-	seed := int64(0)
+	// The seed is only tracked for reporting; a caller-provided *rand.Rand does
+	// not expose its seed, so we record the time-based fallback in that case.
+	seed := time.Now().UnixNano()
+
 	if rng == nil {
-		seed = time.Now().UnixNano()
 		rng = rand.New(rand.NewSource(seed))
-	} else {
-		// Try to extract seed from the random source if possible
-		// This is a best-effort attempt for reproducibility tracking
-		seed = time.Now().UnixNano() // Fallback if we can't determine
 	}
 
 	// Initialize populations

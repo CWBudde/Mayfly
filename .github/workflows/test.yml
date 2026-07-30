@@ -61,6 +61,7 @@ jobs:
   test:
     name: Test (go ${{ matrix.go-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -92,10 +93,11 @@ jobs:
         run: go mod verify
 
       - name: Run unit tests
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        # -race on a 2-core runner puts the suite close to the 10m default.
+        run: go test -v -race -timeout 25m -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Run regression tests
-        run: go test -v -run TestRegression ./...
+        run: go test -v -timeout 15m -run TestRegression ./...
 
       - name: Generate coverage report
         run: go tool cover -html=coverage.out -o coverage.html

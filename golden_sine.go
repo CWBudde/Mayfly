@@ -29,7 +29,7 @@ func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperB
 	size := len(position)
 	newPos := make([]float64, size)
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		// Generate random coefficients
 		r1 := rng.Float64() * 2 * math.Pi // [0, 2π]
 		r2 := rng.Float64() * 2 * math.Pi // [0, 2π]
@@ -63,6 +63,7 @@ func goldenSineUpdateAdaptive(position, best []float64, goldenFactor float64,
 }
 
 // Returns: number of function evaluations performed.
+//
 //nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
 func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest []float64,
 	goldenFactor float64, currentIter, maxIter int, lowerBound, upperBound float64,
@@ -80,7 +81,7 @@ func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest [
 	funcEvals := 0
 
 	// Apply Golden Sine Algorithm to elite mayflies
-	for i := 0; i < numElite; i++ {
+	for i := range numElite {
 		// Generate candidate position using adaptive Golden Sine
 		candidatePos := goldenSineUpdateAdaptive(
 			mayflies[i].Position,
@@ -116,6 +117,7 @@ func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest [
 // goldenSineConvergence applies adaptive Golden Sine update based on convergence.
 // rng must not be nil (ensured by caller).
 // Returns: updated position vector.
+//
 //nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
 func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	size := len(position)
@@ -123,7 +125,7 @@ func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, u
 
 	// Calculate average distance to best as convergence indicator
 	avgDistance := 0.0
-	for i := 0; i < size; i++ {
+	for i := range size {
 		avgDistance += math.Abs(position[i] - best[i])
 	}
 
@@ -138,7 +140,7 @@ func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, u
 	// Far from best: larger factor (exploration)
 	adaptedFactor := goldenFactor * (0.5 + convergenceFactor)
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		r1 := rng.Float64() * 2 * math.Pi
 		r2 := rng.Float64() * 2 * math.Pi
 		r3 := rng.Float64() * 2

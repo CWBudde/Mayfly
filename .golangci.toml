@@ -73,7 +73,14 @@ enabled-tags = [
   'performance',
   'style',
 ]
-disabled-checks = ['hugeParam', 'rangeValCopy', 'whyNoLint', 'singleCaseSwitch']
+disabled-checks = [
+  'hugeParam',
+  'rangeValCopy',
+  'whyNoLint',
+  'singleCaseSwitch',
+  # Algorithm formulas are quoted as comments, e.g. "X1(t+1) = Xbest(t) * ...".
+  'commentedOutCode',
+]
 
 [linters.settings.gosec]
 excludes = [
@@ -89,6 +96,7 @@ strict = false
 
 [linters.settings.misspell]
 locale = 'US'
+ignore-rules = ['Modelling'] # part of a cited conference name
 
 [linters.settings.nakedret]
 max-func-lines = 30
@@ -136,20 +144,20 @@ path = '_test\.go'
 linters = ['govet']
 text = 'fieldalignment'
 
-# The comparison framework prints its report to stdout on purpose.
+# The comparison, selector and config helpers print human-readable reports.
 [[linters.exclusions.rules]]
-path = 'comparison\.go'
+path = '(comparison|config_loader|selector)\.go'
 linters = ['forbidigo']
 
 # Known complexity hotspots: the monolithic Optimize() loop and the flat
 # validation/reporting routines. Tracked for refactoring in PLAN.md.
 [[linters.exclusions.rules]]
 path = 'mayfly\.go'
-linters = ['gocognit', 'nestif']
+linters = ['gocognit', 'gocyclo', 'nestif']
 
 [[linters.exclusions.rules]]
 path = 'config_loader\.go'
-linters = ['gocognit']
+linters = ['gocognit', 'gocyclo']
 
 [[linters.exclusions.rules]]
 path = 'comparison\.go'
@@ -157,7 +165,7 @@ linters = ['gocognit']
 
 [[linters.exclusions.rules]]
 path = 'selector\.go'
-linters = ['gocyclo']
+linters = ['gocyclo', 'cyclop']
 
 # Examples are teaching material, not production code.
 [[linters.exclusions.rules]]

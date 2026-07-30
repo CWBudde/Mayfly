@@ -187,7 +187,7 @@ func TestGenerateLevyFlight(t *testing.T) {
 
 	// Generate multiple Lévy flights to check they're different
 	flights := make([]float64, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		flights[i] = generateLevyFlight(dim, alpha, rng)
 	}
 
@@ -659,7 +659,7 @@ func TestParetoArchive(t *testing.T) {
 	archive := NewParetoArchive(5)
 
 	// Add some solutions
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		sol := &ParetoSolution{
 			Position:        []float64{float64(i), float64(i)},
 			ObjectiveValues: []float64{float64(i), 3.0 - float64(i)},
@@ -808,11 +808,11 @@ func TestApplyAOBLMOAToPopulation(t *testing.T) {
 	males := make([]*Mayfly, 5)
 	females := make([]*Mayfly, 5)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		males[i] = newMayfly(3)
 		females[i] = newMayfly(3)
 
-		for j := 0; j < 3; j++ {
+		for j := range 3 {
 			males[i].Position[j] = config.Rand.Float64()*10.0 - 5.0
 			females[i].Position[j] = config.Rand.Float64()*10.0 - 5.0
 		}
@@ -916,10 +916,10 @@ func DTLZ2(x []float64) []float64 {
 	// Calculate objectives
 	objectives := make([]float64, m)
 
-	for i := 0; i < m; i++ {
+	for i := range m {
 		objectives[i] = 1.0 + g
 
-		for j := 0; j < m-i-1; j++ {
+		for j := range m - i - 1 {
 			objectives[i] *= math.Cos(x[j] * math.Pi / 2.0)
 		}
 
@@ -943,9 +943,9 @@ func TestMultiObjectiveZDT1(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
 	// Generate random solutions
-	for i := 0; i < popSize; i++ {
+	for i := range popSize {
 		x := make([]float64, problemSize)
-		for j := 0; j < problemSize; j++ {
+		for j := range problemSize {
 			x[j] = rng.Float64()
 		}
 
@@ -1029,9 +1029,9 @@ func TestMultiObjectiveZDT2(t *testing.T) {
 	rng := rand.New(rand.NewSource(123))
 
 	// Generate random solutions
-	for i := 0; i < popSize; i++ {
+	for i := range popSize {
 		x := make([]float64, problemSize)
-		for j := 0; j < problemSize; j++ {
+		for j := range problemSize {
 			x[j] = rng.Float64()
 		}
 
@@ -1081,9 +1081,9 @@ func TestMultiObjectiveDTLZ2(t *testing.T) {
 	rng := rand.New(rand.NewSource(456))
 
 	// Generate random solutions
-	for i := 0; i < popSize; i++ {
+	for i := range popSize {
 		x := make([]float64, problemSize)
-		for j := 0; j < problemSize; j++ {
+		for j := range problemSize {
 			x[j] = rng.Float64()
 		}
 
@@ -1128,9 +1128,9 @@ func TestMultiObjectiveArchiveManagement(t *testing.T) {
 	// Add solutions from different fronts
 	rng := rand.New(rand.NewSource(789))
 
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		x := make([]float64, 10)
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			x[j] = rng.Float64()
 		}
 

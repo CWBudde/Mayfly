@@ -70,7 +70,7 @@ func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIt
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
-	for i := 0; i < len(current); i++ {
+	for i := range current {
 		// X1(t+1) = Xbest(t) * (1 - t/T) + (XM(t) - Xbest(t) * rand)
 		result[i] = best[i]*(1.0-t) + (mean[i] - best[i]*rng.Float64())
 
@@ -108,7 +108,7 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, pr
 	randomIdx := rng.Intn(len(population))
 	xr := population[randomIdx].Position
 
-	for i := 0; i < len(current); i++ {
+	for i := range len(current) {
 		// Generate random position components
 		y := rng.Float64()*(upperBound-lowerBound) + lowerBound
 		x := rng.Float64()*(upperBound-lowerBound) + lowerBound
@@ -150,7 +150,7 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 	// δ is a small value for fine-tuning
 	delta := 0.1
 
-	for i := 0; i < len(current); i++ {
+	for i := range len(current) {
 		// X3(t+1) = (Xbest(t) - XM(t)) * α - rand + ((UB - LB) * rand + LB) * δ
 		exploration := ((upperBound-lowerBound)*rng.Float64() + lowerBound) * delta
 		result[i] = (best[i]-mean[i])*alpha - rng.Float64() + exploration
@@ -194,7 +194,7 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, p
 	// Generate Lévy flight
 	levyD := generateLevyFlight(problemSize, 1.5, rng)
 
-	for i := 0; i < len(current); i++ {
+	for i := range len(current) {
 		// X4(t+1) = QF * Xbest(t) - (G1 * X(t) * rand) - G2 * Levy(D) + rand * G1
 		result[i] = qf*best[i] - (g1 * current[i] * rng.Float64()) - g2*levyD + rng.Float64()*g1
 
@@ -231,12 +231,12 @@ func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 	mean := make([]float64, config.ProblemSize)
 
 	for _, m := range population {
-		for i := 0; i < config.ProblemSize; i++ {
+		for i := range config.ProblemSize {
 			mean[i] += m.Position[i]
 		}
 	}
 
-	for i := 0; i < config.ProblemSize; i++ {
+	for i := range config.ProblemSize {
 		mean[i] /= float64(len(population))
 	}
 

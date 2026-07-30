@@ -26,7 +26,7 @@ import (
 // where a is the lower bound and b is the upper bound.
 func oppositionPoint(position []float64, lowerBound, upperBound float64) []float64 {
 	result := make([]float64, len(position))
-	for i := 0; i < len(position); i++ {
+	for i := range len(position) {
 		result[i] = lowerBound + upperBound - position[i]
 	}
 
@@ -40,7 +40,7 @@ func oppositionPoint(position []float64, lowerBound, upperBound float64) []float
 func gaussianUpdate(current, best []float64, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	result := make([]float64, len(current))
 
-	for i := 0; i < len(current); i++ {
+	for i := range len(current) {
 		// Mean is the midpoint between current and best
 		mean := (current[i] + best[i]) / 2.0
 

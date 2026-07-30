@@ -165,9 +165,11 @@ func sanitizeCost(cost float64) float64 {
 	if math.IsNaN(cost) || math.IsInf(cost, 1) {
 		return 1e100 // Very large but finite penalty
 	}
+
 	if math.IsInf(cost, -1) {
 		return -1e100 // Very small but finite (for maximization if ever needed)
 	}
+
 	return cost
 }
 

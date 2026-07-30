@@ -6,20 +6,20 @@ import (
 	"math/rand"
 )
 
-// unifrnd generates a random float64 between min and max.
-func unifrnd(min, max float64, rng *rand.Rand) float64 {
+// unifrnd generates a random float64 between lower and upper.
+func unifrnd(lower, upper float64, rng *rand.Rand) float64 {
 	if rng == nil {
-		return min + rand.Float64()*(max-min)
+		return lower + rand.Float64()*(upper-lower)
 	}
 
-	return min + rng.Float64()*(max-min)
+	return lower + rng.Float64()*(upper-lower)
 }
 
-// unifrndVec generates a vector of random float64 values between min and max.
-func unifrndVec(min, max float64, size int, rng *rand.Rand) []float64 {
+// unifrndVec generates a vector of random float64 values between lower and upper.
+func unifrndVec(lower, upper float64, size int, rng *rand.Rand) []float64 {
 	vec := make([]float64, size)
 	for i := range vec {
-		vec[i] = unifrnd(min, max, rng)
+		vec[i] = unifrnd(lower, upper, rng)
 	}
 
 	return vec
@@ -56,8 +56,8 @@ func minVec(vec []float64, bound float64) {
 func sortMayflies(mayflies []*Mayfly) {
 	// Simple bubble sort for small populations
 	n := len(mayflies)
-	for i := 0; i < n-1; i++ {
-		for j := 0; j < n-i-1; j++ {
+	for i := range n - 1 {
+		for j := range n - i - 1 {
 			if mayflies[j].Cost > mayflies[j+1].Cost {
 				mayflies[j], mayflies[j+1] = mayflies[j+1], mayflies[j]
 			}

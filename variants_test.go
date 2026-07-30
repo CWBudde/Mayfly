@@ -191,6 +191,7 @@ func TestVariantBuilder(t *testing.T) {
 func TestVariantBuilderWithConfig(t *testing.T) {
 	// Test custom config modification
 	builder := NewBuilder("gsasma")
+
 	config, err := builder.
 		ForProblem(Rastrigin, 20, -5.12, 5.12).
 		WithIterations(200).

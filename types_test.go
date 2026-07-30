@@ -60,7 +60,7 @@ func TestNewMayfly(t *testing.T) {
 			}
 
 			// Check that slices are zero-initialized
-			for i := 0; i < tt.size; i++ {
+			for i := range tt.size {
 				if m.Position[i] != 0.0 {
 					t.Errorf("newMayfly() Position[%d] = %v, want 0.0", i, m.Position[i])
 				}
@@ -101,21 +101,21 @@ func TestMayflyClone(t *testing.T) {
 	}
 
 	// Check Position values
-	for i := 0; i < len(original.Position); i++ {
+	for i := range len(original.Position) {
 		if clone.Position[i] != original.Position[i] {
 			t.Errorf("clone() Position[%d] = %v, want %v", i, clone.Position[i], original.Position[i])
 		}
 	}
 
 	// Check Velocity values
-	for i := 0; i < len(original.Velocity); i++ {
+	for i := range len(original.Velocity) {
 		if clone.Velocity[i] != original.Velocity[i] {
 			t.Errorf("clone() Velocity[%d] = %v, want %v", i, clone.Velocity[i], original.Velocity[i])
 		}
 	}
 
 	// Check Best.Position values
-	for i := 0; i < len(original.Best.Position); i++ {
+	for i := range len(original.Best.Position) {
 		if clone.Best.Position[i] != original.Best.Position[i] {
 			t.Errorf("clone() Best.Position[%d] = %v, want %v", i, clone.Best.Position[i], original.Best.Position[i])
 		}
@@ -426,6 +426,7 @@ func TestObjectiveFunctionType(t *testing.T) {
 		for _, val := range x {
 			sum += val * val
 		}
+
 		return sum
 	}
 

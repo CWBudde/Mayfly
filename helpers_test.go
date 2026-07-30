@@ -24,7 +24,7 @@ func TestUnifrnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Generate multiple samples to test distribution
 			samples := 1000
-			for i := 0; i < samples; i++ {
+			for range samples {
 				val := unifrnd(tt.min, tt.max, tt.rng)
 				if val < tt.min || val > tt.max {
 					t.Errorf("unifrnd() = %v, want value in range [%v, %v]", val, tt.min, tt.max)
@@ -40,7 +40,7 @@ func TestUnifrndDeterministic(t *testing.T) {
 	rng1 := rand.New(rand.NewSource(seed))
 	rng2 := rand.New(rand.NewSource(seed))
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		val1 := unifrnd(-5.0, 5.0, rng1)
 		val2 := unifrnd(-5.0, 5.0, rng2)
 
@@ -92,7 +92,7 @@ func TestUnifrndVecDeterministic(t *testing.T) {
 	vec1 := unifrndVec(-10.0, 10.0, size, rand.New(rand.NewSource(seed)))
 	vec2 := unifrndVec(-10.0, 10.0, size, rand.New(rand.NewSource(seed)))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		if vec1[i] != vec2[i] {
 			t.Errorf("unifrndVec()[%d] with same seed produced different values: %v vs %v", i, vec1[i], vec2[i])
 		}
@@ -114,7 +114,7 @@ func TestRandn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var sum, sumSq float64
 
-			for i := 0; i < tt.samples; i++ {
+			for range tt.samples {
 				val := randn(tt.rng)
 				sum += val
 				sumSq += val * val
@@ -141,7 +141,7 @@ func TestRandnDeterministic(t *testing.T) {
 	rng1 := rand.New(rand.NewSource(seed))
 	rng2 := rand.New(rand.NewSource(seed))
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		val1 := randn(rng1)
 		val2 := randn(rng2)
 
@@ -191,7 +191,7 @@ func TestMaxVec(t *testing.T) {
 			copy(vec, tt.input)
 			maxVec(vec, tt.bound)
 
-			for i := 0; i < len(vec); i++ {
+			for i := range len(vec) {
 				if vec[i] != tt.expected[i] {
 					t.Errorf("maxVec()[%d] = %v, want %v", i, vec[i], tt.expected[i])
 				}
@@ -240,7 +240,7 @@ func TestMinVec(t *testing.T) {
 			copy(vec, tt.input)
 			minVec(vec, tt.bound)
 
-			for i := 0; i < len(vec); i++ {
+			for i := range len(vec) {
 				if vec[i] != tt.expected[i] {
 					t.Errorf("minVec()[%d] = %v, want %v", i, vec[i], tt.expected[i])
 				}
@@ -263,7 +263,7 @@ func TestMaxMinVecChaining(t *testing.T) {
 	maxVec(vec, lowerBound)
 	minVec(vec, upperBound)
 
-	for i := 0; i < len(vec); i++ {
+	for i := range len(vec) {
 		if vec[i] != expected[i] {
 			t.Errorf("After maxVec+minVec: vec[%d] = %v, want %v", i, vec[i], expected[i])
 		}

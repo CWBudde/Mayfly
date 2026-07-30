@@ -2,6 +2,7 @@ package mayfly
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -12,11 +13,11 @@ import (
 
 // Test context holds state between steps.
 type integrationTestContext struct {
-	err                     error
-	result                  *Result
-	standardResult          *Result
-	desmaResult             *Result
-	config                  *Config
+	err            error
+	result         *Result
+	standardResult *Result
+	desmaResult    *Result
+	config         *Config
 	objectiveFunc  func([]float64) float64
 	lowerBound     float64
 	seed           int64
@@ -112,7 +113,7 @@ func (ctx *integrationTestContext) iRunDESMAForIterationsWithSeed(iterations int
 
 func (ctx *integrationTestContext) theBestCostShouldBeLessThan(threshold float64) error {
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	if ctx.result.GlobalBest.Cost >= threshold {
@@ -124,7 +125,7 @@ func (ctx *integrationTestContext) theBestCostShouldBeLessThan(threshold float64
 
 func (ctx *integrationTestContext) theBestPositionShouldBeNearZeroVectorWithinTolerance(tolerance float64) error {
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	for i, val := range ctx.result.GlobalBest.Position {
@@ -138,7 +139,7 @@ func (ctx *integrationTestContext) theBestPositionShouldBeNearZeroVectorWithinTo
 
 func (ctx *integrationTestContext) theBestPositionShouldBeNearOnesVectorWithinTolerance(tolerance float64) error {
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	for i, val := range ctx.result.GlobalBest.Position {
@@ -152,7 +153,7 @@ func (ctx *integrationTestContext) theBestPositionShouldBeNearOnesVectorWithinTo
 
 func (ctx *integrationTestContext) desmaBestCostShouldBeAtLeastPercentBetterThanStandardMA(percent float64) error {
 	if ctx.standardResult == nil || ctx.desmaResult == nil {
-		return fmt.Errorf("both standard and DESMA results required")
+		return errors.New("both standard and DESMA results required")
 	}
 
 	improvement := (ctx.standardResult.GlobalBest.Cost - ctx.desmaResult.GlobalBest.Cost) / ctx.standardResult.GlobalBest.Cost * 100
@@ -192,7 +193,7 @@ func (ctx *integrationTestContext) allMalePositionsShouldBeWithinBounds() error 
 	// This requires access to internal state during optimization
 	// For now, we'll validate that the best position (which is from males) is within bounds
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	for i, val := range ctx.result.GlobalBest.Position {
@@ -209,7 +210,7 @@ func (ctx *integrationTestContext) allFemalePositionsShouldBeWithinBounds() erro
 	// Similar to males, we need internal state access
 	// For now, this is a placeholder that passes if optimization succeeds
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	return nil
@@ -218,7 +219,7 @@ func (ctx *integrationTestContext) allFemalePositionsShouldBeWithinBounds() erro
 func (ctx *integrationTestContext) allOffspringPositionsShouldBeWithinBoundsAfterCrossover() error {
 	// Placeholder - requires instrumentation of the algorithm
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	return nil
@@ -227,7 +228,7 @@ func (ctx *integrationTestContext) allOffspringPositionsShouldBeWithinBoundsAfte
 func (ctx *integrationTestContext) allOffspringPositionsShouldBeWithinBoundsAfterMutation() error {
 	// Placeholder - requires instrumentation of the algorithm
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	return nil
@@ -236,7 +237,7 @@ func (ctx *integrationTestContext) allOffspringPositionsShouldBeWithinBoundsAfte
 func (ctx *integrationTestContext) allVelocitiesShouldBeWithinCalculatedVelocityBounds() error {
 	// Placeholder - requires instrumentation of the algorithm
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	return nil
@@ -245,7 +246,7 @@ func (ctx *integrationTestContext) allVelocitiesShouldBeWithinCalculatedVelocity
 func (ctx *integrationTestContext) allEliteSolutionsShouldBeWithinBounds() error {
 	// Placeholder - requires instrumentation of the algorithm
 	if ctx.result == nil {
-		return fmt.Errorf("no result available")
+		return errors.New("no result available")
 	}
 
 	return nil
@@ -260,7 +261,7 @@ func (ctx *integrationTestContext) aNewConfigInstance() error {
 
 func (ctx *integrationTestContext) iSetProblemSizeTo(size int) error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.config.ProblemSize = size
@@ -271,7 +272,7 @@ func (ctx *integrationTestContext) iSetProblemSizeTo(size int) error {
 
 func (ctx *integrationTestContext) iSetLowerBoundTo(bound float64) error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.config.LowerBound = bound
@@ -282,7 +283,7 @@ func (ctx *integrationTestContext) iSetLowerBoundTo(bound float64) error {
 
 func (ctx *integrationTestContext) iSetUpperBoundTo(bound float64) error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.config.UpperBound = bound
@@ -293,7 +294,7 @@ func (ctx *integrationTestContext) iSetUpperBoundTo(bound float64) error {
 
 func (ctx *integrationTestContext) iCallOptimizeWithoutSettingObjectiveFunc() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.result, ctx.err = Optimize(ctx.config)
@@ -315,7 +316,7 @@ func (ctx *integrationTestContext) itShouldReturnAnErrorContaining(expectedError
 
 func (ctx *integrationTestContext) iSetObjectiveFuncToSphere() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.config.ObjectiveFunc = Sphere
@@ -325,7 +326,7 @@ func (ctx *integrationTestContext) iSetObjectiveFuncToSphere() error {
 
 func (ctx *integrationTestContext) iCallOptimizeWithoutSettingProblemSize() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.result, ctx.err = Optimize(ctx.config)
@@ -351,7 +352,7 @@ func (ctx *integrationTestContext) iDoNotSetNMManually() error {
 
 func (ctx *integrationTestContext) iRunOptimization() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.result, ctx.err = Optimize(ctx.config)
@@ -455,7 +456,7 @@ func (ctx *integrationTestContext) aStandardMAConfig() error {
 
 func (ctx *integrationTestContext) iRunOptimizationForIterations(iterations int) error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.config.MaxIterations = iterations
@@ -466,11 +467,11 @@ func (ctx *integrationTestContext) iRunOptimizationForIterations(iterations int)
 
 func (ctx *integrationTestContext) eliteGenerationShouldNotBeCalled() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	if ctx.config.UseDESMA {
-		return fmt.Errorf("UseDESMA is true, but should be false for Standard MA")
+		return errors.New("UseDESMA is true, but should be false for Standard MA")
 	}
 
 	return nil
@@ -483,11 +484,11 @@ func (ctx *integrationTestContext) searchRangeShouldNotBeTracked() error {
 
 func (ctx *integrationTestContext) useDESMAFlagShouldBeFalse() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	if ctx.config.UseDESMA {
-		return fmt.Errorf("UseDESMA should be false")
+		return errors.New("UseDESMA should be false")
 	}
 
 	return nil
@@ -506,11 +507,11 @@ func (ctx *integrationTestContext) aDESMAConfigWithEliteCountSetTo(eliteCount in
 
 func (ctx *integrationTestContext) eliteSolutionsShouldBeGeneratedAfterSelection() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	if !ctx.config.UseDESMA {
-		return fmt.Errorf("UseDESMA should be true for DESMA config")
+		return errors.New("UseDESMA should be true for DESMA config")
 	}
 
 	return nil
@@ -523,11 +524,11 @@ func (ctx *integrationTestContext) searchRangeShouldBeInitialized() error {
 
 func (ctx *integrationTestContext) useDESMAFlagShouldBeTrue() error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	if !ctx.config.UseDESMA {
-		return fmt.Errorf("UseDESMA should be true")
+		return errors.New("UseDESMA should be true")
 	}
 
 	return nil
@@ -545,7 +546,7 @@ func (ctx *integrationTestContext) aDESMAConfigForSphereFunction() error {
 
 func (ctx *integrationTestContext) initialSearchRangeOf(searchRange float64) error {
 	if ctx.config == nil {
-		return fmt.Errorf("config not initialized")
+		return errors.New("config not initialized")
 	}
 
 	ctx.config.SearchRange = searchRange

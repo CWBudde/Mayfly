@@ -129,7 +129,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 			}
 
 			// Check that Best is synced with Position/Cost
-			for i := 0; i < tt.problemSize; i++ {
+			for i := range tt.problemSize {
 				if elite.Best.Position[i] != elite.Position[i] {
 					t.Errorf("generateEliteMayflies() elite.Best.Position[%d] != elite.Position[%d]",
 						i, i)
@@ -144,7 +144,7 @@ func TestGenerateEliteMayflies(t *testing.T) {
 			// Note: may be clamped to bounds, so this is a soft check
 			nearbyCount := 0
 
-			for i := 0; i < tt.problemSize; i++ {
+			for i := range tt.problemSize {
 				distance := math.Abs(elite.Position[i] - tt.currentBest.Position[i])
 				if distance <= tt.searchRange {
 					nearbyCount++
@@ -247,7 +247,7 @@ func TestGenerateEliteMayfliesDeterministic(t *testing.T) {
 	}
 
 	// Check elite position matches
-	for i := 0; i < problemSize; i++ {
+	for i := range problemSize {
 		if elite1.Position[i] != elite2.Position[i] {
 			t.Errorf("generateEliteMayflies() elite.Position[%d] not deterministic: %v vs %v",
 				i, elite1.Position[i], elite2.Position[i])
@@ -292,8 +292,8 @@ func TestGenerateEliteMayfliesSearchRange(t *testing.T) {
 			// Larger search ranges should potentially explore more diverse solutions
 			t.Logf("SearchRange=%v: Elite cost=%v, distance from best=%v",
 				tt.searchRange, elite.Cost,
-				math.Sqrt(math.Pow(elite.Position[0]-currentBest.Position[0], 2)+
-					math.Pow(elite.Position[1]-currentBest.Position[1], 2)))
+				math.Sqrt((elite.Position[0]-currentBest.Position[0])*(elite.Position[0]-currentBest.Position[0])+
+					(elite.Position[1]-currentBest.Position[1])*(elite.Position[1]-currentBest.Position[1])))
 		})
 	}
 }

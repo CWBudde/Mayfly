@@ -73,7 +73,7 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 	currentIter, maxIter int, config *Config,
 ) {
 	// Update males with AOBLMOA
-	for i := 0; i < len(males); i++ {
+	for i := range males {
 		newPos := applyAOBLMOA(males[i], globalBest, males, true, currentIter, maxIter, config)
 
 		if newPos != nil {
@@ -97,7 +97,7 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 	}
 
 	// Update females with AOBLMOA
-	for i := 0; i < len(females); i++ {
+	for i := range females {
 		newPos := applyAOBLMOA(females[i], globalBest, females, false, currentIter, maxIter, config)
 
 		if newPos != nil {

@@ -30,12 +30,12 @@ func generateEliteMayflies(currentBest Best, searchRange float64, eliteCount, pr
 	funcEvals := 0
 
 	// Generate elite mayflies around current best
-	for i := 0; i < eliteCount; i++ {
+	for range eliteCount {
 		elite := newMayfly(problemSize)
 
 		// Generate elite position: egbest = cgbest + r1 * R
 		// where r1 is random vector in [-1, 1]
-		for j := 0; j < problemSize; j++ {
+		for j := range problemSize {
 			r1 := unifrnd(-1, 1, rng)
 			elite.Position[j] = currentBest.Position[j] + r1*searchRange
 		}

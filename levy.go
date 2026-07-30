@@ -59,7 +59,7 @@ func levyFlight(alpha, beta float64, rng *rand.Rand) float64 {
 // rng must not be nil (ensured by caller).
 func levyFlightVec(size int, alpha, beta float64, rng *rand.Rand) []float64 {
 	vec := make([]float64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		vec[i] = levyFlight(alpha, beta, rng)
 	}
 

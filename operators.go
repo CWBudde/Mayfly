@@ -11,7 +11,7 @@ func Crossover(x1, x2 []float64, lowerBound, upperBound float64, rng *rand.Rand)
 	off1 := make([]float64, size)
 	off2 := make([]float64, size)
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		L := unifrnd(0, 1, rng)
 		off1[i] = L*x1[i] + (1-L)*x2[i]
 		off2[i] = L*x2[i] + (1-L)*x1[i]

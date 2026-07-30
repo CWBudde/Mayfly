@@ -403,7 +403,7 @@ func TestBenchmarkFunctionsMonotonicity(t *testing.T) {
 	cost2 := Sphere(point2)
 
 	if !(cost0 < cost1 && cost1 < cost2) {
-		t.Errorf("Sphere not monotonic: f(%v)=%v, f(%v)=%v, f(%v)=%v",
+		t.Errorf("Sphere not monotonic: f(%v)=%v, f(%v)=%v",
 			origin, cost0, point1, cost1, point2, cost2)
 	}
 }
@@ -477,7 +477,7 @@ func BenchmarkSphere(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Sphere(x)
 	}
 }
@@ -491,7 +491,7 @@ func BenchmarkRastrigin(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Rastrigin(x)
 	}
 }
@@ -505,7 +505,7 @@ func BenchmarkRosenbrock(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Rosenbrock(x)
 	}
 }
@@ -519,7 +519,7 @@ func BenchmarkAckley(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Ackley(x)
 	}
 }
@@ -533,7 +533,7 @@ func BenchmarkGriewank(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Griewank(x)
 	}
 }
@@ -820,7 +820,7 @@ func BenchmarkSchwefel(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Schwefel(x)
 	}
 }
@@ -834,7 +834,7 @@ func BenchmarkLevy(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Levy(x)
 	}
 }
@@ -848,7 +848,7 @@ func BenchmarkWeierstrass(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = Weierstrass(x)
 	}
 }

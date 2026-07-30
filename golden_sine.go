@@ -1,4 +1,4 @@
-// Package mayfly - Golden Sine Algorithm Implementation
+// Golden Sine Algorithm Implementation.
 //
 // Implements the Golden Sine Algorithm for convergence acceleration in GSASMA.
 //
@@ -10,6 +10,7 @@
 //
 // The algorithm combines the golden ratio (φ ≈ 1.618) and sine function
 // to balance exploration and exploitation through oscillatory movement.
+
 package mayfly
 
 import (
@@ -71,14 +72,7 @@ func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest [
 	goldenFactor float64, currentIter, maxIter int, lowerBound, upperBound float64,
 	objectiveFunc ObjectiveFunction, rng *rand.Rand,
 ) int {
-	numElite := int(float64(len(mayflies)) * eliteRatio)
-	if numElite < 1 {
-		numElite = 1
-	}
-
-	if numElite > len(mayflies) {
-		numElite = len(mayflies)
-	}
+	numElite := min(max(int(float64(len(mayflies))*eliteRatio), 1), len(mayflies))
 
 	funcEvals := 0
 

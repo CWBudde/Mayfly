@@ -25,7 +25,7 @@ func TestLevyFlight(t *testing.T) {
 			// Generate multiple samples
 			samples := 1000
 
-			var values []float64
+			values := make([]float64, 0, samples)
 
 			for range samples {
 				val := levyFlight(tt.alpha, tt.beta, tt.rng)

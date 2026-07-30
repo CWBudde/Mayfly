@@ -1,18 +1,5 @@
-// Package mayfly implements the Mayfly Optimization Algorithm (MA).
-//
-// Developers: K. Zervoudakis & S. Tsafarakis
-//
-// Contact Info: kzervoudakis@isc.tuc.gr
-//
-//	School of Production Engineering and Management,
-//	Technical University of Crete, Chania, Greece
-//
-// Please cite as:
-// Zervoudakis, K., & Tsafarakis, S. (2020). A mayfly optimization algorithm.
-// Computers & Industrial Engineering, 145, 106559.
-// https://doi.org/10.1016/j.cie.2020.106559
-//
-// Go implementation by [Your Name]
+// Core type definitions for the Mayfly Optimization Algorithm.
+
 package mayfly
 
 import (

@@ -1,4 +1,4 @@
-// Package mayfly - Simulated Annealing Implementation
+// Simulated Annealing Implementation.
 //
 // Implements Simulated Annealing cooling schedules and acceptance criteria
 // for the GSASMA variant.
@@ -12,6 +12,7 @@
 // where controlled cooling allows atoms to settle into a low-energy state.
 // The Metropolis criterion allows probabilistic acceptance of worse solutions
 // to escape local optima.
+
 package mayfly
 
 import (

@@ -1,4 +1,4 @@
-// Package mayfly - Cauchy Distribution Implementation
+// Cauchy Distribution Implementation.
 //
 // Implements Cauchy distribution for heavy-tailed mutation in GSASMA variant.
 //
@@ -8,6 +8,7 @@
 // Reference:
 // Standard inverse CDF method for Cauchy distribution.
 // Used in evolutionary computation for exploration (see GSASMA variant).
+
 package mayfly
 
 import (

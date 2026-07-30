@@ -1,4 +1,4 @@
-// Package mayfly - Lévy Flight Implementation
+// Lévy Flight Implementation.
 //
 // Implements Lévy flights using Mantegna's algorithm for heavy-tailed exploration.
 //
@@ -9,6 +9,7 @@
 //
 // Used in EOBBMA and AOBLMOA variants for occasional large jumps to escape
 // local optima. The stability parameter α ∈ (0, 2] controls tail heaviness.
+
 package mayfly
 
 import (

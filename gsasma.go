@@ -21,14 +21,7 @@ func applyGSASMAToEliteMales(males []*Mayfly, eliteRatio float64, globalBest []f
 	lowerBound, upperBound float64, scheduler *AnnealingScheduler,
 	objectiveFunc ObjectiveFunction, rng *rand.Rand,
 ) ([]float64, float64, int) {
-	numElite := int(float64(len(males)) * eliteRatio)
-	if numElite < 1 {
-		numElite = 1
-	}
-
-	if numElite > len(males) {
-		numElite = len(males)
-	}
+	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
 
 	funcEvals := 0
 	updatedGlobalBest := globalBest

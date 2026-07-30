@@ -2,6 +2,7 @@ package mayfly
 
 import (
 	"math"
+	"slices"
 	"testing"
 )
 
@@ -101,17 +102,9 @@ func TestNewMPMAConfig(t *testing.T) {
 	}
 
 	// Verify default gravity type
-	validTypes := []string{"linear", "exponential", "sigmoid"}
-	found := false
+	validTypes := []string{GravityLinear, GravityExponential, GravitySigmoid}
 
-	for _, validType := range validTypes {
-		if config.GravityType == validType {
-			found = true
-			break
-		}
-	}
-
-	if !found {
+	if !slices.Contains(validTypes, config.GravityType) {
 		t.Errorf("expected GravityType to be one of %v, got %s", validTypes, config.GravityType)
 	}
 

@@ -64,6 +64,8 @@ min-complexity = 6
 [linters.settings.goconst]
 min-len = 3
 min-occurrences = 3
+# Table-driven tests spell out variant and function names on purpose.
+ignore-tests = true
 # Benchmark function names are spelled out on purpose in switches and tables.
 ignore-string-values = [
   'Sphere',

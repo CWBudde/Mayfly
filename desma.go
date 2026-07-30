@@ -1,4 +1,4 @@
-// Package mayfly - DESMA (Dynamic Elite Strategy Mayfly Algorithm)
+// DESMA (Dynamic Elite Strategy Mayfly Algorithm).
 //
 // Implements the DESMA variant with adaptive elite generation around global best.
 //
@@ -12,6 +12,7 @@
 // - Elite solution generation within adaptive search range
 // - Dynamic range adjustment based on improvement (enlarge if improving, reduce if stagnating)
 // - 70%+ improvement on multimodal functions with ~8% overhead
+
 package mayfly
 
 import "math/rand"

@@ -2,6 +2,7 @@ package mayfly
 
 import "math"
 
+// Sphere is the Sphere benchmark function: a smooth, convex, unimodal bowl.
 // Global minimum is at f(0, ..., 0) = 0.
 func Sphere(x []float64) float64 {
 	sum := 0.0
@@ -12,6 +13,7 @@ func Sphere(x []float64) float64 {
 	return sum
 }
 
+// Rastrigin is the Rastrigin benchmark function: highly multimodal with a regular lattice of local minima.
 // Global minimum is at f(0, ..., 0) = 0.
 func Rastrigin(x []float64) float64 {
 	n := len(x)
@@ -25,6 +27,7 @@ func Rastrigin(x []float64) float64 {
 	return float64(n)*A + sum
 }
 
+// Rosenbrock is the Rosenbrock benchmark function (the "banana" function): a narrow, curved valley.
 // Global minimum is at f(1, ..., 1) = 0.
 func Rosenbrock(x []float64) float64 {
 	sum := 0.0
@@ -38,6 +41,7 @@ func Rosenbrock(x []float64) float64 {
 	return sum
 }
 
+// Ackley is the Ackley benchmark function: a nearly flat outer region with a deep central basin.
 // Global minimum is at f(0, ..., 0) = 0.
 func Ackley(x []float64) float64 {
 	n := float64(len(x))
@@ -52,6 +56,7 @@ func Ackley(x []float64) float64 {
 	return -20*math.Exp(-0.2*math.Sqrt(sum1/n)) - math.Exp(sum2/n) + 20 + math.E
 }
 
+// Griewank is the Griewank benchmark function: a product term creates many regularly spaced local minima.
 // Global minimum is at f(0, ..., 0) = 0.
 func Griewank(x []float64) float64 {
 	sum := 0.0
@@ -65,6 +70,7 @@ func Griewank(x []float64) float64 {
 	return sum/4000 - prod + 1
 }
 
+// Schwefel is the Schwefel benchmark function: deceptive, with the global minimum far from the next best local minima.
 // Typical bounds: [-500, 500].
 func Schwefel(x []float64) float64 {
 	n := float64(len(x))
@@ -77,6 +83,7 @@ func Schwefel(x []float64) float64 {
 	return 418.9829*n - sum
 }
 
+// Levy is the Levy benchmark function: multimodal with a strongly oscillating surface.
 // Typical bounds: [-10, 10].
 func Levy(x []float64) float64 {
 	n := len(x)
@@ -105,6 +112,7 @@ func Levy(x []float64) float64 {
 	return term1 + sum + term3
 }
 
+// Zakharov is the Zakharov benchmark function: unimodal, with no local minima besides the global one.
 // Typical bounds: [-5, 10] or [-10, 10].
 func Zakharov(x []float64) float64 {
 	sum1 := 0.0
@@ -120,6 +128,7 @@ func Zakharov(x []float64) float64 {
 	return sum1 + sum2Sq + sum2Sq*sum2Sq
 }
 
+// Michalewicz is the Michalewicz benchmark function: steep valleys and ridges controlled by a steepness parameter.
 // Typical bounds: [0, pi].
 func Michalewicz(x []float64) float64 {
 	m := 10.0
@@ -132,6 +141,7 @@ func Michalewicz(x []float64) float64 {
 	return -sum
 }
 
+// DixonPrice is the Dixon-Price benchmark function: a valley-shaped, unimodal landscape.
 // Typical bounds: [-10, 10].
 func DixonPrice(x []float64) float64 {
 	n := len(x)
@@ -152,6 +162,7 @@ func DixonPrice(x []float64) float64 {
 	return term1 + sum
 }
 
+// BentCigar is the Bent Cigar benchmark function: unimodal and severely ill-conditioned.
 // Typical bounds: [-100, 100].
 func BentCigar(x []float64) float64 {
 	if len(x) == 0 {
@@ -166,6 +177,7 @@ func BentCigar(x []float64) float64 {
 	return sum
 }
 
+// Discus is the Discus benchmark function: unimodal and ill-conditioned along a single direction.
 // Typical bounds: [-100, 100].
 func Discus(x []float64) float64 {
 	if len(x) == 0 {
@@ -180,6 +192,7 @@ func Discus(x []float64) float64 {
 	return sum
 }
 
+// Weierstrass is the Weierstrass benchmark function: continuous everywhere but differentiable nowhere.
 // Typical bounds: [-0.5, 0.5].
 func Weierstrass(x []float64) float64 {
 	n := len(x)
@@ -213,6 +226,7 @@ func Weierstrass(x []float64) float64 {
 	return sum - float64(n)*constantSum
 }
 
+// HappyCat is the HappyCat benchmark function: multimodal with a curved, thin optimal region.
 // Typical bounds: [-2, 2].
 func HappyCat(x []float64) float64 {
 	n := float64(len(x))
@@ -229,6 +243,7 @@ func HappyCat(x []float64) float64 {
 	return math.Pow(math.Abs(sumSquares-n), 2*alpha) + (0.5*sumSquares+sumValues)/n + 0.5
 }
 
+// ExpandedSchafferF6 is the Expanded Schaffer F6 benchmark function: multimodal with concentric ripples.
 // Typical bounds: [-100, 100].
 func ExpandedSchafferF6(x []float64) float64 {
 	n := len(x)

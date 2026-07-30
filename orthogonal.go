@@ -1,4 +1,4 @@
-// Package mayfly - Orthogonal Learning Implementation
+// Orthogonal Learning Implementation.
 //
 // Implements Orthogonal Experimental Design for systematic parameter exploration.
 //
@@ -15,6 +15,7 @@
 // Orthogonal learning uses orthogonal arrays (e.g., L4) to systematically
 // explore combinations of position, personal best, and global best.
 // Increases diversity and reduces oscillatory movement in OLCE-MA variant.
+
 package mayfly
 
 import (
@@ -142,14 +143,7 @@ func ApplyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	objFunc func([]float64) float64, rng *rand.Rand,
 ) {
 	// Calculate number of elite males to improve
-	numElite := int(float64(len(males)) * topPercent)
-	if numElite < 1 {
-		numElite = 1
-	}
-
-	if numElite > len(males) {
-		numElite = len(males)
-	}
+	numElite := min(max(int(float64(len(males))*topPercent), 1), len(males))
 
 	// Apply orthogonal learning to elite males
 	for i := range numElite {

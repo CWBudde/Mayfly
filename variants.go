@@ -583,6 +583,9 @@ type VariantBuilder struct {
 	config  *Config
 }
 
+// NewBuilder creates a new builder for the specified variant.
+// Returns nil if the variant name is not recognized.
+//
 // Example: NewBuilder("desma").ForProblem(fn, 10, -5, 5).WithIterations(500).Build().
 func NewBuilder(variantName string) *VariantBuilder {
 	variant := NewVariant(variantName)
@@ -641,6 +644,8 @@ func (b *VariantBuilder) WithPopulation(males, females int) *VariantBuilder {
 	return b
 }
 
+// WithConfig applies a custom configuration function to the builder.
+//
 // Example: WithConfig(func(c *Config) { c.A1 = 2.0; c.Beta = 3.0 }).
 func (b *VariantBuilder) WithConfig(fn func(*Config)) *VariantBuilder {
 	if b == nil {

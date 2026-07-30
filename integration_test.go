@@ -363,10 +363,7 @@ func (ctx *integrationTestContext) iRunOptimization() error {
 func (ctx *integrationTestContext) nmShouldBeAutoCalculatedTo(expected int) error {
 	// Need to check the actual NM used in optimization
 	// For now, we verify the calculation logic
-	actual := ctx.config.NPop / 20
-	if actual < 1 {
-		actual = 1
-	}
+	actual := max(ctx.config.NPop/20, 1)
 
 	if actual != expected {
 		return fmt.Errorf("expected NM=%d, got NM=%d", expected, actual)

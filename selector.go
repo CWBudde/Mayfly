@@ -152,17 +152,7 @@ func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteris
 		return fmt.Sprintf("Score: %.2f - %s", score, variant.Description())
 	}
 
-	summary := ""
-
-	for i, reason := range reasons {
-		if i > 0 {
-			summary += "; "
-		}
-
-		summary += reason
-	}
-
-	return summary
+	return strings.Join(reasons, "; ")
 }
 
 // ClassifyProblem analyzes an objective function to determine its characteristics.

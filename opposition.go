@@ -1,4 +1,4 @@
-// Package mayfly - Opposition-Based Learning (OBL) Implementation
+// Opposition-Based Learning (OBL) Implementation.
 //
 // Implements Opposition-Based Learning for enhanced search space coverage.
 //
@@ -15,6 +15,7 @@
 // OBL simultaneously considers a candidate solution and its opposition point
 // (x_opp = a + b - x) to accelerate convergence and expand search coverage.
 // Used in EOBBMA, GSASMA, and AOBLMOA variants.
+
 package mayfly
 
 import (

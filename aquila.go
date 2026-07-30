@@ -1,4 +1,4 @@
-// Package mayfly - Aquila Optimizer Implementation
+// Aquila Optimizer Implementation.
 //
 // Implements the Aquila Optimizer (AO) hunting strategies for AOBLMOA variant.
 //
@@ -15,6 +15,7 @@
 // 4. X4 - Narrowed exploitation: Walk and grab prey
 //
 // Strategy selection adapts over iterations (2/3 exploration, 1/3 exploitation).
+
 package mayfly
 
 import (

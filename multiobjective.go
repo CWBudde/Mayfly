@@ -42,6 +42,11 @@ func dominates(a, b []float64) bool {
 	return strictlyBetter
 }
 
+// fastNonDominatedSort performs fast non-dominated sorting on a population.
+// This is a key component of NSGA-II and other multi-objective algorithms.
+//
+// Returns a list of Pareto fronts, where fronts[0] is the first (best) front.
+//
 // Algorithm complexity: O(MN²) where M is number of objectives, N is population size.
 func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 	n := len(solutions)
@@ -50,33 +55,33 @@ func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 	}
 
 	// Initialize domination data
-	for i := range n {
-		solutions[i].DominationCount = 0
-		solutions[i].DominatedSolutions = make([]int, 0)
+	for _, sol := range solutions {
+		sol.DominationCount = 0
+		sol.DominatedSolutions = make([]int, 0)
 	}
 
 	// First front (non-dominated solutions)
 	firstFront := make([]int, 0)
 
 	// Compare all pairs of solutions
-	for i := range n {
-		for j := range n {
+	for i, sol := range solutions {
+		for j, other := range solutions {
 			if i == j {
 				continue
 			}
 
-			if dominates(solutions[i].ObjectiveValues, solutions[j].ObjectiveValues) {
+			if dominates(sol.ObjectiveValues, other.ObjectiveValues) {
 				// i dominates j
-				solutions[i].DominatedSolutions = append(solutions[i].DominatedSolutions, j)
-			} else if dominates(solutions[j].ObjectiveValues, solutions[i].ObjectiveValues) {
+				sol.DominatedSolutions = append(sol.DominatedSolutions, j)
+			} else if dominates(other.ObjectiveValues, sol.ObjectiveValues) {
 				// j dominates i
-				solutions[i].DominationCount++
+				sol.DominationCount++
 			}
 		}
 
 		// If no one dominates this solution, it's in the first front
-		if solutions[i].DominationCount == 0 {
-			solutions[i].Rank = 1
+		if sol.DominationCount == 0 {
+			sol.Rank = 1
 
 			firstFront = append(firstFront, i)
 		}

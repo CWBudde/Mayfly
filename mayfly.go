@@ -494,10 +494,7 @@ func Optimize(config *Config) (*Result, error) {
 
 			// Count function evaluations from orthogonal learning
 			// Each elite male generates 4 candidates (L4 array)
-			numElite := int(float64(len(males)) * 0.2)
-			if numElite < 1 {
-				numElite = 1
-			}
+			numElite := max(int(float64(len(males))*0.2), 1)
 
 			funcCount += numElite * 4
 
@@ -516,10 +513,7 @@ func Optimize(config *Config) (*Result, error) {
 		// EOBBMA: Apply elite opposition-based learning
 		if config.UseEOBBMA {
 			// Apply opposition to top elite solutions with probability OppositionRate
-			numEliteOpposition := config.EliteOppositionCount
-			if numEliteOpposition > len(males) {
-				numEliteOpposition = len(males)
-			}
+			numEliteOpposition := min(config.EliteOppositionCount, len(males))
 
 			for i := range numEliteOpposition {
 				if rng.Float64() < config.OppositionRate {

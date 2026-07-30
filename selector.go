@@ -70,7 +70,9 @@ func (s *AlgorithmSelector) RecommendBest(characteristics ProblemCharacteristics
 }
 
 // calculateConfidence estimates how confident we are in the recommendation.
-func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacteristics, variant AlgorithmVariant) float64 {
+func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacteristics,
+	variant AlgorithmVariant,
+) float64 {
 	confidence := 0.7 // Base confidence
 
 	// Higher confidence for specific characteristics
@@ -103,7 +105,9 @@ func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacter
 }
 
 // generateReasoning creates a human-readable explanation for the recommendation.
-func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteristics, variant AlgorithmVariant, score float64) string {
+func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteristics,
+	variant AlgorithmVariant, score float64,
+) string {
 	reasons := make([]string, 0, 3)
 
 	// Analyze key characteristics

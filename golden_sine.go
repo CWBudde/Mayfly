@@ -25,7 +25,9 @@ const (
 // goldenSineUpdate applies the Golden Sine Algorithm update rule.
 // rng must not be nil (ensured by caller).
 // Returns: updated position vector.
-func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) []float64 {
 	size := len(position)
 	newPos := make([]float64, size)
 
@@ -119,7 +121,9 @@ func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest [
 // Returns: updated position vector.
 //
 //nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
-func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) []float64 {
 	size := len(position)
 	newPos := make([]float64, size)
 

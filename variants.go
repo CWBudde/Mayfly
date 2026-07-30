@@ -230,7 +230,8 @@ func (v *DESMAVariant) FullName() string {
 }
 
 func (v *DESMAVariant) Description() string {
-	return "Enhanced with dynamic elite generation for better local optima escape. 70%+ improvement on multimodal problems."
+	return "Enhanced with dynamic elite generation for better local optima escape. " +
+		"70%+ improvement on multimodal problems."
 }
 
 func (v *DESMAVariant) GetConfig() *Config {

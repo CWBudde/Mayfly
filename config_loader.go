@@ -173,7 +173,8 @@ func ValidateConfig(config *Config) error {
 
 		validSchedules := map[string]bool{CoolingExponential: true, CoolingLinear: true, CoolingLogarithmic: true}
 		if !validSchedules[config.CoolingSchedule] {
-			return fmt.Errorf("cooling_schedule must be 'exponential', 'linear', or 'logarithmic' (got '%s')", config.CoolingSchedule)
+			return fmt.Errorf("cooling_schedule must be 'exponential', 'linear', or 'logarithmic' (got '%s')",
+				config.CoolingSchedule)
 		}
 	}
 

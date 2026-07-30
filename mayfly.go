@@ -774,10 +774,12 @@ func Optimize(config *Config) (*Result, error) {
 			}
 		}
 
-		// Merge offspring into populations
+		// Merge offspring into populations. Both slices are full-length
+		// populations here; the append deliberately grows them before the
+		// selection step trims back to NPop/NPopF.
 		split := len(offspring) / 2
-		males = append(males, offspring[:split]...)
-		females = append(females, offspring[split:]...)
+		males = append(males, offspring[:split]...)     //nolint:makezero // intentional growth, trimmed below
+		females = append(females, offspring[split:]...) //nolint:makezero // intentional growth, trimmed below
 
 		// Sort and keep best
 		sortMayflies(males)

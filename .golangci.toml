@@ -65,7 +65,14 @@ min-complexity = 6
 min-len = 3
 min-occurrences = 3
 # Benchmark function names are spelled out on purpose in switches and tables.
-ignore-string-values = ['Sphere', 'Rastrigin', 'Rosenbrock', 'Ackley', 'Griewank', 'Schwefel']
+ignore-string-values = [
+  'Sphere',
+  'Rastrigin',
+  'Rosenbrock',
+  'Ackley',
+  'Griewank',
+  'Schwefel',
+]
 
 [linters.settings.gocritic]
 enabled-tags = [
@@ -157,11 +164,11 @@ linters = ['forbidigo']
 # validation/reporting routines. Tracked for refactoring in PLAN.md.
 [[linters.exclusions.rules]]
 path = 'mayfly\.go'
-linters = ['cyclop', 'gocognit', 'gocyclo', 'nestif']
+linters = ['cyclop', 'funlen', 'gocognit', 'gocyclo', 'maintidx', 'nestif']
 
 [[linters.exclusions.rules]]
 path = 'config_loader\.go'
-linters = ['cyclop', 'gocognit', 'gocyclo']
+linters = ['cyclop', 'funlen', 'gocognit', 'gocyclo', 'maintidx']
 
 [[linters.exclusions.rules]]
 path = 'comparison\.go'

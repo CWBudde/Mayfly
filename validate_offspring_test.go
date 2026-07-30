@@ -118,7 +118,8 @@ func TestOptimizeAllowsNoOffspringWithoutMutants(t *testing.T) {
 // TestOptimizeRejectsNegativeOffspringCount keeps NC/2 from being negative,
 // which would silently skip mating rather than fail.
 func TestOptimizeRejectsNegativeOffspringCount(t *testing.T) {
-	if _, err := Optimize(smallConfig(10, 10, -2, 1)); err == nil {
+	_, err := Optimize(smallConfig(10, 10, -2, 1))
+	if err == nil {
 		t.Fatal("Optimize accepted a negative NC")
 	}
 }

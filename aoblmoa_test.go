@@ -62,7 +62,6 @@ func TestAquilaNarrowedExploration(t *testing.T) {
 		{Position: []float64{2.0, 2.0}, Cost: 3.0},
 	}
 
-	problemSize := 2
 	lowerBound := -5.0
 	upperBound := 5.0
 
@@ -118,7 +117,6 @@ func TestAquilaNarrowedExploitation(t *testing.T) {
 
 	currentIter := 95
 	maxIter := 100
-	problemSize := 2
 	lowerBound := -5.0
 	upperBound := 5.0
 

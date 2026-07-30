@@ -190,12 +190,13 @@ func TestGenerateEliteMayfliesImprovement(t *testing.T) {
 	}
 
 	// Log whether improvement was found
-	if elite.Cost < currentBest.Cost {
+	switch {
+	case elite.Cost < currentBest.Cost:
 		t.Logf("generateEliteMayflies() found improvement: %v -> %v",
 			currentBest.Cost, elite.Cost)
-	} else if elite.Cost == currentBest.Cost {
+	case elite.Cost == currentBest.Cost:
 		t.Logf("generateEliteMayflies() maintained best: %v", elite.Cost)
-	} else {
+	default:
 		t.Logf("generateEliteMayflies() no improvement found: %v (best: %v)",
 			elite.Cost, currentBest.Cost)
 	}

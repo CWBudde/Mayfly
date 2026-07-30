@@ -254,7 +254,8 @@ func Optimize(config *Config) (*Result, error) {
 	// Main loop
 	for it := range config.MaxIterations {
 		// AOBLMOA: Use hybrid Mayfly-Aquila updates with opposition-based learning
-		if config.UseAOBLMOA {
+		switch {
+		case config.UseAOBLMOA:
 			// Apply AOBLMOA to populations
 			applyAOBLMOAToPopulation(males, females, globalBest, it, config.MaxIterations, config)
 
@@ -272,7 +273,7 @@ func Optimize(config *Config) (*Result, error) {
 					copy(globalBest.Position, males[i].Position)
 				}
 			}
-		} else if config.UseEOBBMA {
+		case config.UseEOBBMA:
 			// Update females with Gaussian sampling around best males
 			for i := range config.NPopF {
 				// Decide whether to use Lévy flight or Gaussian update
@@ -326,7 +327,7 @@ func Optimize(config *Config) (*Result, error) {
 					}
 				}
 			}
-		} else {
+		default:
 			// Standard velocity-based updates
 			// Update females
 			for i := range config.NPopF {

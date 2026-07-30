@@ -279,11 +279,12 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 
 	// High gradient variance suggests rugged landscape
 	// This is a heuristic classification
-	if gradientVariance > 100 {
+	switch {
+	case gradientVariance > 100:
 		return Deceptive
-	} else if gradientVariance > 10 {
+	case gradientVariance > 10:
 		return Rugged
-	} else if gradientVariance < 0.01 {
+	case gradientVariance < 0.01:
 		return NarrowValley
 	}
 

@@ -97,16 +97,19 @@ Complete API reference:
 ### By User Type
 
 **Beginner Users:**
+
 1. [Getting Started](getting-started.md)
 2. [Benchmark Functions](benchmarks.md)
 3. [Standard MA](algorithms/standard-ma.md)
 
 **Intermediate Users:**
+
 1. [Algorithm Documentation](algorithms/)
 2. [Configuration Guide](api/configuration.md)
 3. [Unified Framework](api/unified-framework.md)
 
 **Advanced Users:**
+
 1. [Comparison Framework](api/comparison-framework.md)
 2. [Research References](research.md)
 3. All algorithm variants
@@ -114,47 +117,53 @@ Complete API reference:
 ### By Task
 
 **Optimize a function:**
+
 - [Getting Started](getting-started.md#basic-usage)
 - [Configuration Guide](api/configuration.md)
 
 **Choose an algorithm:**
+
 - [Algorithm comparison table](../README.md#algorithm-variants)
 - [Unified Framework - Algorithm Selection](api/unified-framework.md#algorithm-selection)
 
 **Compare algorithms statistically:**
+
 - [Comparison Framework](api/comparison-framework.md)
 
 **Tune parameters:**
+
 - [Configuration Guide](api/configuration.md)
 - Individual algorithm docs (parameter tuning sections)
 
 **Understand research:**
+
 - [Research References](research.md)
 - Algorithm-specific papers in each variant doc
 
 ## Document Sizes
 
-| Document | Lines | Focus |
-|----------|-------|-------|
-| getting-started.md | ~340 | Tutorial and examples |
-| benchmarks.md | ~350 | Function reference |
-| research.md | ~280 | Academic citations |
-| configuration.md | ~250 | Parameter reference |
-| unified-framework.md | ~230 | Advanced API |
-| comparison-framework.md | ~290 | Statistical testing |
-| standard-ma.md | ~170 | Algorithm guide |
-| desma.md | ~170 | Algorithm guide |
-| olce-ma.md | ~180 | Algorithm guide |
-| eobbma.md | ~230 | Algorithm guide |
-| gsasma.md | ~250 | Algorithm guide |
-| mpma.md | ~200 | Algorithm guide |
-| aoblmoa.md | ~260 | Algorithm guide |
+| Document                | Lines | Focus                 |
+| ----------------------- | ----- | --------------------- |
+| getting-started.md      | ~340  | Tutorial and examples |
+| benchmarks.md           | ~350  | Function reference    |
+| research.md             | ~280  | Academic citations    |
+| configuration.md        | ~250  | Parameter reference   |
+| unified-framework.md    | ~230  | Advanced API          |
+| comparison-framework.md | ~290  | Statistical testing   |
+| standard-ma.md          | ~170  | Algorithm guide       |
+| desma.md                | ~170  | Algorithm guide       |
+| olce-ma.md              | ~180  | Algorithm guide       |
+| eobbma.md               | ~230  | Algorithm guide       |
+| gsasma.md               | ~250  | Algorithm guide       |
+| mpma.md                 | ~200  | Algorithm guide       |
+| aoblmoa.md              | ~260  | Algorithm guide       |
 
 **Total:** ~3,700 lines of documentation (was 1,314 lines in README.md alone)
 
 ## Contributing to Documentation
 
 When updating documentation:
+
 1. Keep examples concise and runnable
 2. Include line references to source code where appropriate
 3. Update this README.md if adding new documents

@@ -96,7 +96,19 @@ type Config struct {
 
 // Result holds the results of the optimization.
 type Result struct {
-	BestSolution   []float64
+	// ConvergenceCurve holds the best cost known at the end of each iteration,
+	// so it has MaxIterations entries and is non-increasing. It is a history of
+	// costs, not a point in the search space.
+	//
+	// The solution itself is GlobalBest.Position.
+	//
+	// It replaces the former BestSolution, whose name was the defect: the field
+	// has always held this cost history, but reads as a position vector and is
+	// a []float64 exactly like one, so using it as a solution compiled, ran and
+	// produced nonsense. The rename is deliberately breaking — an alias would
+	// have left the misleading name in place.
+	ConvergenceCurve []float64
+
 	GlobalBest     Best
 	FuncEvalCount  int
 	IterationCount int
@@ -153,16 +165,19 @@ func sanitizeCost(cost float64) float64 {
 	if math.IsNaN(cost) || math.IsInf(cost, 1) {
 		return 1e100 // Very large but finite penalty
 	}
+
 	if math.IsInf(cost, -1) {
 		return -1e100 // Very small but finite (for maximization if ever needed)
 	}
+
 	return cost
 }
 
 // evaluateWithSanitization evaluates the objective function after sanitizing the position.
 // This ensures all heavy-tailed operators (Lévy, Cauchy) don't pass invalid values.
 func evaluateWithSanitization(objFunc ObjectiveFunction, position []float64,
-	lowerBound, upperBound float64, rng *rand.Rand) float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) float64 {
 	sanitizeVec(position, lowerBound, upperBound, rng)
 	return sanitizeCost(objFunc(position))
 }

@@ -144,7 +144,7 @@ func (cr *ComparisonRunner) Compare(
 			fmt.Printf("Running %s (%d runs)...\n", variant.Name(), cr.Runs)
 		}
 
-		for run := 0; run < cr.Runs; run++ {
+		for run := range cr.Runs {
 			config := variant.GetConfig()
 			config.ObjectiveFunc = fn
 			config.ProblemSize = problemSize
@@ -172,7 +172,7 @@ func (cr *ComparisonRunner) Compare(
 			convergenceAt := 0
 
 			if cr.TargetCost > 0 {
-				for iter, cost := range result.BestSolution {
+				for iter, cost := range result.ConvergenceCurve {
 					if cost <= cr.TargetCost {
 						convergenceAt = iter + 1
 						break
@@ -354,7 +354,7 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 	absDifferences := make([]float64, 0, n)
 
 	// Calculate differences
-	for i := 0; i < n; i++ {
+	for i := range n {
 		diff := runs1[i].BestCost - runs2[i].BestCost
 		if math.Abs(diff) > 1e-10 { // Ignore ties
 			differences = append(differences, diff)
@@ -429,9 +429,9 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 	// Rank algorithms for each run
 	ranks := make([][]float64, n)
 
-	for run := 0; run < n; run++ {
+	for run := range n {
 		costs := make([]float64, k)
-		for alg := 0; alg < k; alg++ {
+		for alg := range k {
 			costs[alg] = runResults[alg][run].BestCost
 		}
 
@@ -441,8 +441,8 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 	// Calculate sum of ranks for each algorithm
 	rankSums := make([]float64, k)
 
-	for alg := 0; alg < k; alg++ {
-		for run := 0; run < n; run++ {
+	for alg := range k {
+		for run := range n {
 			rankSums[alg] += ranks[run][alg]
 		}
 	}

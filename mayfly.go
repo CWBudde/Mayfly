@@ -16,6 +16,7 @@
 package mayfly
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -26,11 +27,11 @@ import (
 func Optimize(config *Config) (*Result, error) {
 	// Validate required parameters
 	if config == nil {
-		return nil, fmt.Errorf("config cannot be nil")
+		return nil, errors.New("config cannot be nil")
 	}
 
 	if config.ObjectiveFunc == nil {
-		return nil, fmt.Errorf("ObjectiveFunc is required")
+		return nil, errors.New("ObjectiveFunc is required")
 	}
 
 	if config.ProblemSize <= 0 {
@@ -64,17 +65,25 @@ func Optimize(config *Config) (*Result, error) {
 		return nil, fmt.Errorf("NPopF (female population) must be positive, got %d", config.NPopF)
 	}
 
+	err := validateOffspring(config)
+	if err != nil {
+		return nil, err
+	}
+
 	// Validate variant-specific parameters
 	if config.UseDESMA {
 		if config.SearchRange < 0 {
 			return nil, fmt.Errorf("DESMA SearchRange must be non-negative, got %v", config.SearchRange)
 		}
+
 		if config.EliteCount < 0 {
 			return nil, fmt.Errorf("DESMA EliteCount must be non-negative, got %d", config.EliteCount)
 		}
+
 		if config.EnlargeFactor <= 0 {
 			return nil, fmt.Errorf("DESMA EnlargeFactor must be positive, got %v", config.EnlargeFactor)
 		}
+
 		if config.ReductionFactor <= 0 {
 			return nil, fmt.Errorf("DESMA ReductionFactor must be positive, got %v", config.ReductionFactor)
 		}
@@ -84,9 +93,11 @@ func Optimize(config *Config) (*Result, error) {
 		if config.LevyAlpha <= 0 || config.LevyAlpha > 2 {
 			return nil, fmt.Errorf("EOBBMA LevyAlpha must be in (0, 2], got %v", config.LevyAlpha)
 		}
+
 		if config.LevyBeta <= 0 {
 			return nil, fmt.Errorf("EOBBMA LevyBeta must be positive, got %v", config.LevyBeta)
 		}
+
 		if config.OppositionRate < 0 || config.OppositionRate > 1 {
 			return nil, fmt.Errorf("EOBBMA OppositionRate must be in [0, 1], got %v", config.OppositionRate)
 		}
@@ -96,6 +107,7 @@ func Optimize(config *Config) (*Result, error) {
 		if config.OrthogonalFactor < 0 || config.OrthogonalFactor > 1 {
 			return nil, fmt.Errorf("OLCE OrthogonalFactor must be in [0, 1], got %v", config.OrthogonalFactor)
 		}
+
 		if config.ChaosFactor < 0 {
 			return nil, fmt.Errorf("OLCE ChaosFactor must be non-negative, got %v", config.ChaosFactor)
 		}
@@ -105,9 +117,11 @@ func Optimize(config *Config) (*Result, error) {
 		if config.InitialTemperature <= 0 {
 			return nil, fmt.Errorf("GSASMA InitialTemperature must be positive, got %v", config.InitialTemperature)
 		}
+
 		if config.CoolingRate <= 0 || config.CoolingRate >= 1 {
 			return nil, fmt.Errorf("GSASMA CoolingRate must be in (0, 1), got %v", config.CoolingRate)
 		}
+
 		if config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1 {
 			return nil, fmt.Errorf("GSASMA CauchyMutationRate must be in [0, 1], got %v", config.CauchyMutationRate)
 		}
@@ -123,6 +137,7 @@ func Optimize(config *Config) (*Result, error) {
 		if config.AquilaWeight < 0 || config.AquilaWeight > 1 {
 			return nil, fmt.Errorf("AOBLMOA AquilaWeight must be in [0, 1], got %v", config.AquilaWeight)
 		}
+
 		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
 			return nil, fmt.Errorf("AOBLMOA OppositionProbability must be in [0, 1], got %v", config.OppositionProbability)
 		}
@@ -140,14 +155,12 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize random number generator if not provided
 	rng := config.Rand
-	seed := int64(0)
+	// The seed is only tracked for reporting; a caller-provided *rand.Rand does
+	// not expose its seed, so we record the time-based fallback in that case.
+	seed := time.Now().UnixNano()
+
 	if rng == nil {
-		seed = time.Now().UnixNano()
 		rng = rand.New(rand.NewSource(seed))
-	} else {
-		// Try to extract seed from the random source if possible
-		// This is a best-effort attempt for reproducibility tracking
-		seed = time.Now().UnixNano() // Fallback if we can't determine
 	}
 
 	// Initialize populations
@@ -162,7 +175,7 @@ func Optimize(config *Config) (*Result, error) {
 	funcCount := 0
 
 	// Initialize male population
-	for i := 0; i < config.NPop; i++ {
+	for i := range config.NPop {
 		males[i] = newMayfly(config.ProblemSize)
 		males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
 		males[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, males[i].Position,
@@ -182,7 +195,7 @@ func Optimize(config *Config) (*Result, error) {
 	}
 
 	// Initialize female population
-	for i := 0; i < config.NPopF; i++ {
+	for i := range config.NPopF {
 		females[i] = newMayfly(config.ProblemSize)
 		females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
 		females[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, females[i].Position,
@@ -239,9 +252,10 @@ func Optimize(config *Config) (*Result, error) {
 	}
 
 	// Main loop
-	for it := 0; it < config.MaxIterations; it++ {
+	for it := range config.MaxIterations {
 		// AOBLMOA: Use hybrid Mayfly-Aquila updates with opposition-based learning
-		if config.UseAOBLMOA {
+		switch {
+		case config.UseAOBLMOA:
 			// Apply AOBLMOA to populations
 			applyAOBLMOAToPopulation(males, females, globalBest, it, config.MaxIterations, config)
 
@@ -253,15 +267,15 @@ func Optimize(config *Config) (*Result, error) {
 			funcCount += aoblmoaEvals + oppositionEvals
 
 			// Update global best from updated populations
-			for i := 0; i < config.NPop; i++ {
+			for i := range config.NPop {
 				if males[i].Cost < globalBest.Cost {
 					globalBest.Cost = males[i].Cost
 					copy(globalBest.Position, males[i].Position)
 				}
 			}
-		} else if config.UseEOBBMA {
+		case config.UseEOBBMA:
 			// Update females with Gaussian sampling around best males
-			for i := 0; i < config.NPopF; i++ {
+			for i := range config.NPopF {
 				// Decide whether to use Lévy flight or Gaussian update
 				if rng.Float64() < 0.5 {
 					// Use Gaussian update toward best male
@@ -271,7 +285,7 @@ func Optimize(config *Config) (*Result, error) {
 				} else {
 					// Use Lévy flight for exploration
 					levyStep := levyFlightVec(config.ProblemSize, config.LevyAlpha, config.LevyBeta, rng)
-					for j := 0; j < config.ProblemSize; j++ {
+					for j := range config.ProblemSize {
 						females[i].Position[j] += levyStep[j] * (config.UpperBound - config.LowerBound) * 0.01
 					}
 
@@ -284,7 +298,7 @@ func Optimize(config *Config) (*Result, error) {
 			}
 
 			// Update males with Gaussian sampling around personal and global best
-			for i := 0; i < config.NPop; i++ {
+			for i := range config.NPop {
 				// Decide whether to use Gaussian toward personal best or global best
 				if rng.Float64() < 0.5 {
 					// Gaussian toward personal best
@@ -313,22 +327,22 @@ func Optimize(config *Config) (*Result, error) {
 					}
 				}
 			}
-		} else {
+		default:
 			// Standard velocity-based updates
 			// Update females
-			for i := 0; i < config.NPopF; i++ {
+			for i := range config.NPopF {
 				e := unifrndVec(-1, 1, config.ProblemSize, rng)
 
 				if females[i].Cost > males[i].Cost {
 					// Attracted to male
-					for j := 0; j < config.ProblemSize; j++ {
+					for j := range config.ProblemSize {
 						rmf := males[i].Position[j] - females[i].Position[j]
 						females[i].Velocity[j] = g*females[i].Velocity[j] +
 							config.A3*math.Exp(-config.Beta*rmf*rmf)*(males[i].Position[j]-females[i].Position[j])
 					}
 				} else {
 					// Random flight
-					for j := 0; j < config.ProblemSize; j++ {
+					for j := range config.ProblemSize {
 						females[i].Velocity[j] = g*females[i].Velocity[j] + fl*e[j]
 					}
 				}
@@ -338,7 +352,7 @@ func Optimize(config *Config) (*Result, error) {
 				minVec(females[i].Velocity, config.VelMax)
 
 				// Update position
-				for j := 0; j < config.ProblemSize; j++ {
+				for j := range config.ProblemSize {
 					females[i].Position[j] += females[i].Velocity[j]
 				}
 
@@ -381,14 +395,14 @@ func Optimize(config *Config) (*Result, error) {
 			}
 
 			// Update males
-			for i := 0; i < config.NPop; i++ {
+			for i := range config.NPop {
 				e := unifrndVec(-1, 1, config.ProblemSize, rng)
 
 				if males[i].Cost > globalBest.Cost {
 					// Update velocity with personal and global best
 					if config.UseMPMA {
 						// MPMA: Include median position in velocity update
-						for j := 0; j < config.ProblemSize; j++ {
+						for j := range config.ProblemSize {
 							rpbest := males[i].Best.Position[j] - males[i].Position[j]
 							rgbest := globalBest.Position[j] - males[i].Position[j]
 							rmedian := medianPos[j] - males[i].Position[j]
@@ -401,7 +415,7 @@ func Optimize(config *Config) (*Result, error) {
 						}
 					} else {
 						// Standard velocity update
-						for j := 0; j < config.ProblemSize; j++ {
+						for j := range config.ProblemSize {
 							rpbest := males[i].Best.Position[j] - males[i].Position[j]
 							rgbest := globalBest.Position[j] - males[i].Position[j]
 							males[i].Velocity[j] = g*males[i].Velocity[j] +
@@ -416,7 +430,7 @@ func Optimize(config *Config) (*Result, error) {
 						gVal = mpmaG // Use MPMA gravity for dance too
 					}
 
-					for j := 0; j < config.ProblemSize; j++ {
+					for j := range config.ProblemSize {
 						males[i].Velocity[j] = gVal*males[i].Velocity[j] + dance*e[j]
 					}
 				}
@@ -426,7 +440,7 @@ func Optimize(config *Config) (*Result, error) {
 				minVec(males[i].Velocity, config.VelMax)
 
 				// Update position
-				for j := 0; j < config.ProblemSize; j++ {
+				for j := range config.ProblemSize {
 					males[i].Position[j] += males[i].Velocity[j]
 				}
 
@@ -462,7 +476,7 @@ func Optimize(config *Config) (*Result, error) {
 			lb := make([]float64, config.ProblemSize)
 			ub := make([]float64, config.ProblemSize)
 
-			for j := 0; j < config.ProblemSize; j++ {
+			for j := range config.ProblemSize {
 				lb[j] = config.LowerBound
 				ub[j] = config.UpperBound
 			}
@@ -488,7 +502,7 @@ func Optimize(config *Config) (*Result, error) {
 			funcCount += numElite * 4
 
 			// Update global best if orthogonal learning found better solution
-			for i := 0; i < numElite; i++ {
+			for i := range numElite {
 				if males[i].Cost < globalBest.Cost {
 					globalBest.Cost = males[i].Cost
 					copy(globalBest.Position, males[i].Position)
@@ -507,7 +521,7 @@ func Optimize(config *Config) (*Result, error) {
 				numEliteOpposition = len(males)
 			}
 
-			for i := 0; i < numEliteOpposition; i++ {
+			for i := range numEliteOpposition {
 				if rng.Float64() < config.OppositionRate {
 					// Generate opposition point
 					oppPos := oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
@@ -572,7 +586,7 @@ func Optimize(config *Config) (*Result, error) {
 		// Mating - Create offspring
 		offspring := make([]*Mayfly, 0, config.NC)
 
-		for k := 0; k < config.NC/2; k++ {
+		for k := range config.NC / 2 {
 			// Select parents (best males and females)
 			p1 := males[k]
 			p2 := females[k]
@@ -586,7 +600,7 @@ func Optimize(config *Config) (*Result, error) {
 
 			// OLCE-MA: Apply chaotic exploitation to offspring
 			if config.UseOLCE {
-				for j := 0; j < config.ProblemSize; j++ {
+				for j := range config.ProblemSize {
 					chaosValue := chaosMap.Next()
 					perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
 					off1.Position[j] += perturbation
@@ -619,7 +633,7 @@ func Optimize(config *Config) (*Result, error) {
 
 			// OLCE-MA: Apply chaotic exploitation to offspring
 			if config.UseOLCE {
-				for j := 0; j < config.ProblemSize; j++ {
+				for j := range config.ProblemSize {
 					chaosValue := chaosMap.Next()
 					perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
 					off2.Position[j] += perturbation
@@ -653,7 +667,7 @@ func Optimize(config *Config) (*Result, error) {
 		// GSASMA: Use hybrid Cauchy-Gaussian mutation
 		if config.UseGSASMA {
 			// Apply hybrid mutation with adaptive Cauchy probability
-			for k := 0; k < config.NM; k++ {
+			for range config.NM {
 				// Select parent from offspring
 				i := rng.Intn(len(offspring))
 				p := offspring[i]
@@ -665,11 +679,12 @@ func Optimize(config *Config) (*Result, error) {
 
 				var cauchyProb float64
 
-				if iterRatio < 0.33 {
+				switch {
+				case iterRatio < 0.33:
 					cauchyProb = 0.7 // Early: high exploration
-				} else if iterRatio < 0.66 {
+				case iterRatio < 0.66:
 					cauchyProb = 0.5 // Middle: balanced
-				} else {
+				default:
 					cauchyProb = config.CauchyMutationRate // Late: configured rate (default 0.3)
 				}
 
@@ -685,7 +700,7 @@ func Optimize(config *Config) (*Result, error) {
 
 				// OLCE-MA: Apply chaotic exploitation to mutated offspring if OLCE is also enabled
 				if config.UseOLCE {
-					for j := 0; j < config.ProblemSize; j++ {
+					for j := range config.ProblemSize {
 						// Apply chaotic perturbation
 						chaosValue := chaosMap.Next()
 						perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
@@ -717,7 +732,7 @@ func Optimize(config *Config) (*Result, error) {
 			}
 		} else {
 			// Standard mutation
-			for k := 0; k < config.NM; k++ {
+			for range config.NM {
 				// Select parent from offspring
 				i := rng.Intn(len(offspring))
 				p := offspring[i]
@@ -727,7 +742,7 @@ func Optimize(config *Config) (*Result, error) {
 
 				// OLCE-MA: Apply chaotic exploitation to mutated offspring
 				if config.UseOLCE {
-					for j := 0; j < config.ProblemSize; j++ {
+					for j := range config.ProblemSize {
 						// Apply chaotic perturbation
 						chaosValue := chaosMap.Next()
 						perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
@@ -759,10 +774,12 @@ func Optimize(config *Config) (*Result, error) {
 			}
 		}
 
-		// Merge offspring into populations
+		// Merge offspring into populations. Both slices are full-length
+		// populations here; the append deliberately grows them before the
+		// selection step trims back to NPop/NPopF.
 		split := len(offspring) / 2
-		males = append(males, offspring[:split]...)
-		females = append(females, offspring[split:]...)
+		males = append(males, offspring[:split]...)     //nolint:makezero // intentional growth, trimmed below
+		females = append(females, offspring[split:]...) //nolint:makezero // intentional growth, trimmed below
 
 		// Sort and keep best
 		sortMayflies(males)
@@ -814,15 +831,14 @@ func Optimize(config *Config) (*Result, error) {
 		if config.UseGSASMA && config.ApplyOBLToGlobalBest {
 			// Apply OBL every 10 iterations to avoid excessive function evaluations
 			if it%10 == 0 {
-				updatedGlobalBest, updatedGlobalBestCost, oblFuncEvals, improved := applyOBLToGlobalBest(
+				updatedGlobalBest, updatedGlobalBestCost, improved := applyOBLToGlobalBest(
 					globalBest.Position,
 					globalBest.Cost,
 					config.LowerBound,
 					config.UpperBound,
 					config.ObjectiveFunc,
-					rng,
 				)
-				funcCount += oblFuncEvals
+				funcCount++ // the opposition point evaluation
 
 				if improved {
 					globalBest.Cost = updatedGlobalBestCost
@@ -850,11 +866,10 @@ func Optimize(config *Config) (*Result, error) {
 	}
 
 	return &Result{
-		GlobalBest:     globalBest,
-		BestSolution:   bestSolution,
-		FuncEvalCount:  funcCount,
-		IterationCount: config.MaxIterations,
-		Seed:           seed,
+		GlobalBest:       globalBest,
+		ConvergenceCurve: bestSolution,
+		FuncEvalCount:    funcCount,
+		IterationCount:   config.MaxIterations,
+		Seed:             seed,
 	}, nil
 }
-

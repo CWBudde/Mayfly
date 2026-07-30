@@ -27,7 +27,7 @@ func TestLevyFlight(t *testing.T) {
 
 			var values []float64
 
-			for i := 0; i < samples; i++ {
+			for range samples {
 				val := levyFlight(tt.alpha, tt.beta, tt.rng)
 				values = append(values, val)
 
@@ -64,7 +64,7 @@ func TestLevyFlightDeterministic(t *testing.T) {
 	rng1 := rand.New(rand.NewSource(seed))
 	rng2 := rand.New(rand.NewSource(seed))
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		val1 := levyFlight(alpha, beta, rng1)
 		val2 := levyFlight(alpha, beta, rng2)
 
@@ -154,7 +154,7 @@ func TestOppositionLearning(t *testing.T) {
 				t.Errorf("oppositionPoint() length = %v, want %v", len(result), len(tt.expected))
 			}
 
-			for i := 0; i < len(result); i++ {
+			for i := range result {
 				if math.Abs(result[i]-tt.expected[i]) > 1e-10 {
 					t.Errorf("oppositionPoint()[%d] = %v, want %v", i, result[i], tt.expected[i])
 				}
@@ -239,7 +239,7 @@ func TestGaussianUpdateDeterministic(t *testing.T) {
 	result1 := gaussianUpdate(current, best, lowerBound, upperBound, rng1)
 	result2 := gaussianUpdate(current, best, lowerBound, upperBound, rng2)
 
-	for i := 0; i < len(result1); i++ {
+	for i := range result1 {
 		if result1[i] != result2[i] {
 			t.Errorf("gaussianUpdate()[%d] with same seed produced different values: %v vs %v",
 				i, result1[i], result2[i])

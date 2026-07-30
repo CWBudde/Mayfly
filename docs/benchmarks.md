@@ -7,6 +7,7 @@ The library includes 15+ standard benchmark functions for testing and comparing 
 ### Classic Benchmark Functions (5)
 
 Standard test functions from optimization literature:
+
 - **Sphere** - Unimodal, convex
 - **Rastrigin** - Highly multimodal
 - **Rosenbrock** - Unimodal, narrow valley
@@ -16,6 +17,7 @@ Standard test functions from optimization literature:
 ### CEC-Style Benchmark Functions (10)
 
 Additional challenging functions from CEC competitions:
+
 - **Schwefel** - Highly multimodal, deceptive
 - **Levy** - Multimodal
 - **Zakharov** - Unimodal, polynomial
@@ -100,6 +102,7 @@ mayfly.Ackley(x []float64) float64
 - **Expected performance** (500 iter): 0.5-3
 
 **Formula**:
+
 ```
 f(x) = -20exp(-0.2√(Σxi²/n)) - exp(Σcos(2πxi)/n) + 20 + e
 ```
@@ -209,7 +212,7 @@ mayfly.DixonPrice(x []float64) float64
 mayfly.Michalewicz(x []float64) float64
 ```
 
-- **Global minimum**: f(x*) ≈ -9.66 (10D)
+- **Global minimum**: f(x\*) ≈ -9.66 (10D)
 - **Typical bounds**: [0, π]
 - **Type**: Multimodal, steep valleys
 - **Characteristics**: Deep valleys, dimension-dependent minimum
@@ -317,23 +320,23 @@ mayfly.ExpandedSchafferF6(x []float64) float64
 
 ## Quick Reference Table
 
-| Function | Type | Dimensionality | Best Variant | Difficulty |
-|----------|------|----------------|--------------|------------|
-| Sphere | Unimodal | Any | MA | ⭐ Easy |
-| Zakharov | Unimodal | Any | MA | ⭐ Easy |
-| Rosenbrock | Unimodal Valley | Any | MPMA | ⭐⭐ Medium |
-| DixonPrice | Unimodal Valley | Any | MPMA | ⭐⭐ Medium |
-| BentCigar | Ill-conditioned | Any | MPMA | ⭐⭐⭐ Hard |
-| Discus | Ill-conditioned | Any | MPMA | ⭐⭐⭐ Hard |
-| Griewank | Multimodal | Any | DESMA | ⭐⭐ Medium |
-| Ackley | Multimodal | Any | OLCE | ⭐⭐⭐ Hard |
-| Rastrigin | Highly Multimodal | Any | OLCE | ⭐⭐⭐⭐ Very Hard |
-| Levy | Multimodal | Any | OLCE | ⭐⭐⭐ Hard |
-| Schwefel | Deceptive | Any | EOBBMA | ⭐⭐⭐⭐⭐ Extreme |
-| Michalewicz | Steep Valleys | Low-Medium | EOBBMA | ⭐⭐⭐⭐ Very Hard |
-| Weierstrass | Non-differentiable | Any | EOBBMA | ⭐⭐⭐⭐ Very Hard |
-| HappyCat | Plateau | Any | GSASMA | ⭐⭐⭐ Hard |
-| ExpandedSchafferF6 | Composite | Any | AOBLMOA | ⭐⭐⭐⭐ Very Hard |
+| Function           | Type               | Dimensionality | Best Variant | Difficulty         |
+| ------------------ | ------------------ | -------------- | ------------ | ------------------ |
+| Sphere             | Unimodal           | Any            | MA           | ⭐ Easy            |
+| Zakharov           | Unimodal           | Any            | MA           | ⭐ Easy            |
+| Rosenbrock         | Unimodal Valley    | Any            | MPMA         | ⭐⭐ Medium        |
+| DixonPrice         | Unimodal Valley    | Any            | MPMA         | ⭐⭐ Medium        |
+| BentCigar          | Ill-conditioned    | Any            | MPMA         | ⭐⭐⭐ Hard        |
+| Discus             | Ill-conditioned    | Any            | MPMA         | ⭐⭐⭐ Hard        |
+| Griewank           | Multimodal         | Any            | DESMA        | ⭐⭐ Medium        |
+| Ackley             | Multimodal         | Any            | OLCE         | ⭐⭐⭐ Hard        |
+| Rastrigin          | Highly Multimodal  | Any            | OLCE         | ⭐⭐⭐⭐ Very Hard |
+| Levy               | Multimodal         | Any            | OLCE         | ⭐⭐⭐ Hard        |
+| Schwefel           | Deceptive          | Any            | EOBBMA       | ⭐⭐⭐⭐⭐ Extreme |
+| Michalewicz        | Steep Valleys      | Low-Medium     | EOBBMA       | ⭐⭐⭐⭐ Very Hard |
+| Weierstrass        | Non-differentiable | Any            | EOBBMA       | ⭐⭐⭐⭐ Very Hard |
+| HappyCat           | Plateau            | Any            | GSASMA       | ⭐⭐⭐ Hard        |
+| ExpandedSchafferF6 | Composite          | Any            | AOBLMOA      | ⭐⭐⭐⭐ Very Hard |
 
 ## Usage Example
 
@@ -379,6 +382,7 @@ Test your implementation on functions in order of difficulty:
 ### Dimensionality Testing
 
 Start with low dimensions and scale up:
+
 - **D=2**: Visualize the landscape
 - **D=10**: Standard testing dimension
 - **D=30**: Higher complexity
@@ -388,12 +392,12 @@ Start with low dimensions and scale up:
 
 Expected results for D=30, 500 iterations:
 
-| Function | MA | DESMA | OLCE | EOBBMA | GSASMA | MPMA |
-|----------|-------|-------|------|--------|--------|------|
-| Sphere | 1e-6 | 1e-8 | 1e-7 | 1e-6 | 1e-7 | 1e-6 |
-| Rastrigin | 55 | 40 | 30 | 38 | 36 | 48 |
-| Rosenbrock | 25 | 15 | 12 | 18 | 20 | 8 |
-| Schwefel | 850 | 650 | 600 | 350 | 550 | 700 |
+| Function   | MA   | DESMA | OLCE | EOBBMA | GSASMA | MPMA |
+| ---------- | ---- | ----- | ---- | ------ | ------ | ---- |
+| Sphere     | 1e-6 | 1e-8  | 1e-7 | 1e-6   | 1e-7   | 1e-6 |
+| Rastrigin  | 55   | 40    | 30   | 38     | 36     | 48   |
+| Rosenbrock | 25   | 15    | 12   | 18     | 20     | 8    |
+| Schwefel   | 850  | 650   | 600  | 350    | 550    | 700  |
 
 ## Related Documentation
 

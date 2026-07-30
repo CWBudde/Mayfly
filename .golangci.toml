@@ -1,0 +1,212 @@
+# golangci-lint v2 configuration for the Mayfly Optimization Algorithm library.
+# https://golangci-lint.run/usage/configuration/
+
+version = '2'
+
+[run]
+tests = true
+modules-download-mode = 'readonly'
+allow-parallel-runners = true
+
+[linters]
+default = 'all'
+disable = [
+  # Numeric research code: literals are the algorithm, not magic constants.
+  'mnd',
+  # Short math identifiers (x, v, g, a1, r) mirror the papers.
+  'varnamelen',
+  # Validation and benchmark errors are dynamic by design (they quote the
+  # offending value); sentinel errors would add no value here.
+  'err113',
+  # Deterministic, seed-driven numeric tests must not run in parallel.
+  'paralleltest',
+  # Tests are white-box: they exercise unexported helpers.
+  'testpackage',
+  # Not applicable / too opinionated for this library.
+  'depguard',
+  'exhaustive',
+  'exhaustruct',
+  'gochecknoglobals',
+  'gomodguard',
+  'ireturn',
+  'musttag',
+  'nlreturn',
+  'sqlclosecheck',
+  'wrapcheck',
+  'wsl',
+  # TODO/FIXME are tracked, not fatal (kept at info severity below).
+  'godox',
+]
+enable = ['wsl_v5']
+
+[linters.settings]
+
+[linters.settings.errcheck]
+check-type-assertions = true
+
+[linters.settings.cyclop]
+max-complexity = 20
+
+[linters.settings.gocognit]
+min-complexity = 30
+
+[linters.settings.gocyclo]
+min-complexity = 20
+
+[linters.settings.funlen]
+lines = 120
+statements = 60
+ignore-comments = true
+
+[linters.settings.nestif]
+min-complexity = 6
+
+[linters.settings.goconst]
+min-len = 3
+min-occurrences = 3
+# Benchmark function names are spelled out on purpose in switches and tables.
+ignore-string-values = [
+  'Sphere',
+  'Rastrigin',
+  'Rosenbrock',
+  'Ackley',
+  'Griewank',
+  'Schwefel',
+]
+
+[linters.settings.gocritic]
+enabled-tags = [
+  'diagnostic',
+  'experimental',
+  'opinionated',
+  'performance',
+  'style',
+]
+disabled-checks = [
+  'hugeParam',
+  'rangeValCopy',
+  'whyNoLint',
+  'singleCaseSwitch',
+  # Algorithm formulas are quoted as comments, e.g. "X1(t+1) = Xbest(t) * ...".
+  'commentedOutCode',
+  # Contradicts nonamedreturns, which we follow.
+  'unnamedResult',
+]
+
+[linters.settings.gosec]
+excludes = [
+  'G104', # covered by errcheck
+  'G404', # math/rand is the point of a metaheuristic
+]
+
+[linters.settings.govet]
+enable-all = true
+
+[linters.settings.govet.settings.shadow]
+strict = false
+
+[linters.settings.misspell]
+locale = 'US'
+ignore-rules = ['Modelling'] # part of a cited conference name
+
+[linters.settings.nakedret]
+max-func-lines = 30
+
+[linters.settings.nolintlint]
+allow-unused = false
+require-explanation = true
+require-specific = true
+
+[linters.settings.revive]
+confidence = 0.8
+
+[linters.settings.tagliatelle.case.rules]
+json = 'snake'
+
+[linters.settings.wsl_v5]
+allow-first-in-block = true
+allow-whole-block = false
+branch-max-lines = 2
+
+[linters.exclusions]
+generated = 'lax'
+presets = ['comments', 'common-false-positives', 'legacy', 'std-error-handling']
+paths = ['third_party$', 'builtin$']
+
+# Tests may be long, table-driven and repetitive.
+[[linters.exclusions.rules]]
+path = '_test\.go'
+linters = [
+  'cyclop',
+  'dupl',
+  'errcheck',
+  'funlen',
+  'goconst',
+  'gocognit',
+  'gocyclo',
+  'gosec',
+  'lll',
+  'maintidx',
+]
+
+# Field ordering in table-driven test structs follows the test, not the layout.
+[[linters.exclusions.rules]]
+path = '_test\.go'
+linters = ['govet']
+text = 'fieldalignment'
+
+# The comparison, selector and config helpers print human-readable reports.
+[[linters.exclusions.rules]]
+path = '(comparison|config_loader|selector)\.go'
+linters = ['forbidigo']
+
+# Known complexity hotspots: the monolithic Optimize() loop and the flat
+# validation/reporting routines. Tracked for refactoring in PLAN.md.
+[[linters.exclusions.rules]]
+path = 'mayfly\.go'
+linters = ['cyclop', 'funlen', 'gocognit', 'gocyclo', 'maintidx', 'nestif']
+
+[[linters.exclusions.rules]]
+path = 'config_loader\.go'
+linters = ['cyclop', 'funlen', 'gocognit', 'gocyclo', 'maintidx']
+
+[[linters.exclusions.rules]]
+path = 'comparison\.go'
+linters = ['gocognit']
+
+[[linters.exclusions.rules]]
+path = 'selector\.go'
+linters = ['gocyclo', 'cyclop']
+
+# Examples are teaching material, not production code.
+[[linters.exclusions.rules]]
+path = 'examples/'
+linters = [
+  'forbidigo',
+  'lll',
+  'funlen',
+  'gocognit',
+  'gocyclo',
+  'cyclop',
+  'err113',
+]
+
+[severity]
+default = 'error'
+
+[[severity.rules]]
+linters = ['godox']
+severity = 'info'
+
+[formatters]
+enable = ['gci', 'gofumpt', 'goimports']
+
+[formatters.settings.gci]
+sections = ['standard', 'default', 'prefix(github.com/cwbudde/mayfly)']
+
+[formatters.settings.goimports]
+local-prefixes = ['github.com/cwbudde/mayfly']
+
+[formatters.exclusions]
+generated = 'lax'
+paths = ['third_party$', 'builtin$']

@@ -2,6 +2,20 @@ package mayfly
 
 // NewDefaultConfig creates a default configuration for the Mayfly Algorithm.
 // You must set ObjectiveFunc, ProblemSize, LowerBound, and UpperBound.
+// Gravity coefficient decay schedules for MPMA (Config.GravityType).
+const (
+	GravityLinear      = "linear"
+	GravityExponential = "exponential"
+	GravitySigmoid     = "sigmoid"
+)
+
+// Cooling schedules for the simulated annealing component (Config.CoolingSchedule).
+const (
+	CoolingExponential = "exponential"
+	CoolingLinear      = "linear"
+	CoolingLogarithmic = "logarithmic"
+)
+
 func NewDefaultConfig() *Config {
 	return &Config{
 		MaxIterations: 2000,
@@ -73,9 +87,9 @@ func NewEOBBMAConfig() *Config {
 func NewMPMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseMPMA = true
-	config.MedianWeight = 0.5        // Balanced influence of median vs global best
-	config.GravityType = "linear"    // Linear decay by default (simplest)
-	config.UseWeightedMedian = false // Standard median by default
+	config.MedianWeight = 0.5          // Balanced influence of median vs global best
+	config.GravityType = GravityLinear // Linear decay by default (simplest)
+	config.UseWeightedMedian = false   // Standard median by default
 
 	return config
 }
@@ -84,12 +98,12 @@ func NewMPMAConfig() *Config {
 func NewGSASMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseGSASMA = true
-	config.InitialTemperature = 100.0      // High initial temp for early exploration
-	config.CoolingRate = 0.95              // Gradual cooling (95% per iteration)
-	config.CauchyMutationRate = 0.3        // 30% Cauchy, 70% Gaussian by late phase
-	config.GoldenFactor = 1.0              // Standard golden sine influence
-	config.CoolingSchedule = "exponential" // Fast early cooling, slow late cooling
-	config.ApplyOBLToGlobalBest = true     // Enable OBL for better coverage
+	config.InitialTemperature = 100.0           // High initial temp for early exploration
+	config.CoolingRate = 0.95                   // Gradual cooling (95% per iteration)
+	config.CauchyMutationRate = 0.3             // 30% Cauchy, 70% Gaussian by late phase
+	config.GoldenFactor = 1.0                   // Standard golden sine influence
+	config.CoolingSchedule = CoolingExponential // Fast early cooling, slow late cooling
+	config.ApplyOBLToGlobalBest = true          // Enable OBL for better coverage
 
 	return config
 }

@@ -17,7 +17,7 @@ func calculateMedianPosition(population []*Mayfly) []float64 {
 	median := make([]float64, size)
 
 	// For each dimension, calculate the median
-	for dim := 0; dim < size; dim++ {
+	for dim := range size {
 		// Collect values for this dimension
 		values := make([]float64, len(population))
 		for i, mayfly := range population {
@@ -52,7 +52,7 @@ func calculateWeightedMedianPosition(population []*Mayfly, weights []float64) []
 	median := make([]float64, size)
 
 	// For each dimension, calculate the weighted median
-	for dim := 0; dim < size; dim++ {
+	for dim := range size {
 		// Create pairs of (value, weight) and sort by value
 		type valueWeight struct {
 			value  float64
@@ -99,19 +99,17 @@ func calculateGravityCoefficient(gravityType string, iteration, maxIterations in
 	t := float64(iteration) / float64(maxIterations)
 
 	switch gravityType {
-	case "exponential":
+	case GravityExponential:
 		// Exponential decay: g = e^(-4t)
 		// Decays faster than linear, good for quick convergence
 		return math.Exp(-4.0 * t)
 
-	case "sigmoid":
+	case GravitySigmoid:
 		// Sigmoid decay: g = 1 / (1 + e^(10(t-0.5)))
 		// S-curve: slow decay at start, rapid in middle, slow at end
 		return 1.0 / (1.0 + math.Exp(10.0*(t-0.5)))
 
-	case "linear":
-		fallthrough
-	default:
+	default: // GravityLinear
 		// Linear decay: g = 1 - t
 		// Simple linear decrease from 1 to 0
 		return 1.0 - t

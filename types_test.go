@@ -60,7 +60,7 @@ func TestNewMayfly(t *testing.T) {
 			}
 
 			// Check that slices are zero-initialized
-			for i := 0; i < tt.size; i++ {
+			for i := range tt.size {
 				if m.Position[i] != 0.0 {
 					t.Errorf("newMayfly() Position[%d] = %v, want 0.0", i, m.Position[i])
 				}
@@ -101,21 +101,21 @@ func TestMayflyClone(t *testing.T) {
 	}
 
 	// Check Position values
-	for i := 0; i < len(original.Position); i++ {
+	for i := range len(original.Position) {
 		if clone.Position[i] != original.Position[i] {
 			t.Errorf("clone() Position[%d] = %v, want %v", i, clone.Position[i], original.Position[i])
 		}
 	}
 
 	// Check Velocity values
-	for i := 0; i < len(original.Velocity); i++ {
+	for i := range len(original.Velocity) {
 		if clone.Velocity[i] != original.Velocity[i] {
 			t.Errorf("clone() Velocity[%d] = %v, want %v", i, clone.Velocity[i], original.Velocity[i])
 		}
 	}
 
 	// Check Best.Position values
-	for i := 0; i < len(original.Best.Position); i++ {
+	for i := range len(original.Best.Position) {
 		if clone.Best.Position[i] != original.Best.Position[i] {
 			t.Errorf("clone() Best.Position[%d] = %v, want %v", i, clone.Best.Position[i], original.Best.Position[i])
 		}
@@ -381,9 +381,9 @@ func TestResultStruct(t *testing.T) {
 			Position: []float64{1.0, 2.0},
 			Cost:     3.5,
 		},
-		BestSolution:   []float64{10.0, 5.0, 2.0, 1.0},
-		FuncEvalCount:  1000,
-		IterationCount: 100,
+		ConvergenceCurve: []float64{10.0, 5.0, 2.0, 1.0},
+		FuncEvalCount:    1000,
+		IterationCount:   100,
 	}
 
 	// Check GlobalBest
@@ -395,9 +395,9 @@ func TestResultStruct(t *testing.T) {
 		t.Errorf("Result.GlobalBest.Cost = %v, want 3.5", result.GlobalBest.Cost)
 	}
 
-	// Check BestSolution convergence history
-	if len(result.BestSolution) != 4 {
-		t.Errorf("Result.BestSolution length = %v, want 4", len(result.BestSolution))
+	// Check the convergence history
+	if len(result.ConvergenceCurve) != 4 {
+		t.Errorf("Result.ConvergenceCurve length = %v, want 4", len(result.ConvergenceCurve))
 	}
 
 	// Check counts
@@ -410,10 +410,10 @@ func TestResultStruct(t *testing.T) {
 	}
 
 	// Check that convergence values are decreasing (typical for minimization)
-	for i := 1; i < len(result.BestSolution); i++ {
-		if result.BestSolution[i] > result.BestSolution[i-1] {
-			t.Logf("Result.BestSolution[%d]=%v > BestSolution[%d]=%v (not monotonically decreasing)",
-				i, result.BestSolution[i], i-1, result.BestSolution[i-1])
+	for i := 1; i < len(result.ConvergenceCurve); i++ {
+		if result.ConvergenceCurve[i] > result.ConvergenceCurve[i-1] {
+			t.Logf("Result.ConvergenceCurve[%d]=%v > ConvergenceCurve[%d]=%v (not monotonically decreasing)",
+				i, result.ConvergenceCurve[i], i-1, result.ConvergenceCurve[i-1])
 		}
 	}
 }
@@ -426,6 +426,7 @@ func TestObjectiveFunctionType(t *testing.T) {
 		for _, val := range x {
 			sum += val * val
 		}
+
 		return sum
 	}
 

@@ -364,7 +364,7 @@ func TestLoadInvalidConfigFile(t *testing.T) {
 	tmpFile := filepath.Join(os.TempDir(), "test_invalid_config.json")
 	defer os.Remove(tmpFile)
 
-	err = os.WriteFile(tmpFile, []byte("invalid json {{{"), 0644)
+	err = os.WriteFile(tmpFile, []byte("invalid json {{{"), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}

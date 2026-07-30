@@ -5,6 +5,7 @@ Statistical comparison tools for evaluating and comparing algorithm variants.
 ## Overview
 
 The comparison framework provides tools to:
+
 - Run multiple algorithms on the same problem
 - Collect statistical data across multiple runs
 - Perform statistical significance tests
@@ -41,14 +42,14 @@ runner := mayfly.NewComparisonRunner()
 
 ### Configuration Methods
 
-| Method | Parameters | Description |
-|--------|------------|-------------|
-| `WithVariantNames(...string)` | variant names | Set algorithms to compare |
-| `WithVariants(...AlgorithmVariant)` | variant objects | Set algorithms using variant objects |
-| `WithRuns(n int)` | number of runs | Set number of independent runs (default: 30) |
-| `WithIterations(n int)` | max iterations | Set iterations per run (default: 500) |
-| `WithVerbose(v bool)` | verbose flag | Enable/disable progress output |
-| `WithSeed(s int64)` | random seed | Set seed for reproducibility |
+| Method                              | Parameters      | Description                                  |
+| ----------------------------------- | --------------- | -------------------------------------------- |
+| `WithVariantNames(...string)`       | variant names   | Set algorithms to compare                    |
+| `WithVariants(...AlgorithmVariant)` | variant objects | Set algorithms using variant objects         |
+| `WithRuns(n int)`                   | number of runs  | Set number of independent runs (default: 30) |
+| `WithIterations(n int)`             | max iterations  | Set iterations per run (default: 500)        |
+| `WithVerbose(v bool)`               | verbose flag    | Enable/disable progress output               |
+| `WithSeed(s int64)`                 | random seed     | Set seed for reproducibility                 |
 
 ### Comparison Methods
 
@@ -140,6 +141,7 @@ result.PrintStatisticalTests()
 ```
 
 **Output**:
+
 ```
 Wilcoxon Signed-Rank Tests (p-values):
   DESMA vs MA:     0.0023 ** (significant)
@@ -148,9 +150,10 @@ Wilcoxon Signed-Rank Tests (p-values):
 ```
 
 **Interpretation**:
-- p < 0.01: Highly significant difference (***)
-- p < 0.05: Significant difference (**)
-- p < 0.10: Marginally significant (*)
+
+- p < 0.01: Highly significant difference (\*\*\*)
+- p < 0.05: Significant difference (\*\*)
+- p < 0.10: Marginally significant (\*)
 - p ≥ 0.10: Not significant
 
 ### Friedman Test
@@ -164,6 +167,7 @@ fmt.Printf("Friedman Test: χ² = %.2f, p = %.4f\n",
 ```
 
 **Interpretation**:
+
 - p < 0.05: At least one algorithm is significantly different
 - p ≥ 0.05: No significant differences detected
 
@@ -572,21 +576,22 @@ func main() {
 
 The framework tracks multiple performance metrics:
 
-| Metric | Description | Use Case |
-|--------|-------------|----------|
-| **Mean** | Average final cost | Overall quality |
-| **Median** | Middle value | Robust central tendency |
-| **Std Dev** | Variance | Algorithm stability |
-| **Best** | Best run result | Peak performance |
-| **Worst** | Worst run result | Worst-case behavior |
-| **Success Rate** | % below threshold | Reliability |
-| **Convergence** | Iterations to target | Speed |
+| Metric           | Description          | Use Case                |
+| ---------------- | -------------------- | ----------------------- |
+| **Mean**         | Average final cost   | Overall quality         |
+| **Median**       | Middle value         | Robust central tendency |
+| **Std Dev**      | Variance             | Algorithm stability     |
+| **Best**         | Best run result      | Peak performance        |
+| **Worst**        | Worst run result     | Worst-case behavior     |
+| **Success Rate** | % below threshold    | Reliability             |
+| **Convergence**  | Iterations to target | Speed                   |
 
 ## Statistical Significance
 
 ### Choosing Sample Size
 
 For statistical validity:
+
 - **Minimum**: 20 runs
 - **Recommended**: 30 runs (standard)
 - **High confidence**: 50+ runs
@@ -602,6 +607,7 @@ For statistical validity:
 ### Effect Size
 
 Consider practical significance:
+
 - Small difference but p < 0.05: Statistically significant but may not matter
 - Large difference but p > 0.05: Practically important but needs more data
 

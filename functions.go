@@ -28,8 +28,11 @@ func Rastrigin(x []float64) float64 {
 // Global minimum is at f(1, ..., 1) = 0.
 func Rosenbrock(x []float64) float64 {
 	sum := 0.0
-	for i := 0; i < len(x)-1; i++ {
-		sum += 100*math.Pow(x[i+1]-x[i]*x[i], 2) + math.Pow(1-x[i], 2)
+
+	for i := range len(x) - 1 {
+		valley := x[i+1] - x[i]*x[i]
+		offset := 1 - x[i]
+		sum += 100*valley*valley + offset*offset
 	}
 
 	return sum
@@ -79,18 +82,24 @@ func Levy(x []float64) float64 {
 	n := len(x)
 	w := make([]float64, n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		w[i] = 1 + (x[i]-1)/4
 	}
 
-	term1 := math.Pow(math.Sin(math.Pi*w[0]), 2)
-	term3 := math.Pow(w[n-1]-1, 2) * (1 + math.Pow(math.Sin(2*math.Pi*w[n-1]), 2))
+	sinFirst := math.Sin(math.Pi * w[0])
+	term1 := sinFirst * sinFirst
+
+	lastOffset := w[n-1] - 1
+	sinLast := math.Sin(2 * math.Pi * w[n-1])
+	term3 := lastOffset * lastOffset * (1 + sinLast*sinLast)
 
 	sum := 0.0
 
-	for i := 0; i < n-1; i++ {
+	for i := range n - 1 {
 		wi := w[i]
-		sum += math.Pow(wi-1, 2) * (1 + 10*math.Pow(math.Sin(math.Pi*wi+1), 2))
+		offset := wi - 1
+		sinTerm := math.Sin(math.Pi*wi + 1)
+		sum += offset * offset * (1 + 10*sinTerm*sinTerm)
 	}
 
 	return term1 + sum + term3
@@ -106,7 +115,9 @@ func Zakharov(x []float64) float64 {
 		sum2 += 0.5 * float64(i+1) * val
 	}
 
-	return sum1 + math.Pow(sum2, 2) + math.Pow(sum2, 4)
+	sum2Sq := sum2 * sum2
+
+	return sum1 + sum2Sq + sum2Sq*sum2Sq
 }
 
 // Typical bounds: [0, pi].
@@ -128,11 +139,14 @@ func DixonPrice(x []float64) float64 {
 		return 0
 	}
 
-	term1 := math.Pow(x[0]-1, 2)
+	firstOffset := x[0] - 1
+	term1 := firstOffset * firstOffset
 
 	sum := 0.0
+
 	for i := 1; i < n; i++ {
-		sum += float64(i+1) * math.Pow(2*x[i]*x[i]-x[i-1], 2)
+		inner := 2*x[i]*x[i] - x[i-1]
+		sum += float64(i+1) * inner * inner
 	}
 
 	return term1 + sum
@@ -225,13 +239,13 @@ func ExpandedSchafferF6(x []float64) float64 {
 	schafferF6 := func(x, y float64) float64 {
 		sum := x*x + y*y
 		numerator := math.Pow(math.Sin(math.Sqrt(sum)), 2) - 0.5
-		denominator := math.Pow(1+0.001*sum, 2)
+		denominator := (1 + 0.001*sum) * (1 + 0.001*sum)
 
 		return 0.5 + numerator/denominator
 	}
 
 	sum := 0.0
-	for i := 0; i < n-1; i++ {
+	for i := range n - 1 {
 		sum += schafferF6(x[i], x[i+1])
 	}
 	// Close the loop

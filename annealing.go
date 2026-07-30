@@ -35,7 +35,7 @@ type AnnealingScheduler struct {
 //   - scheduleType: type of cooling schedule ("exponential", "linear", "logarithmic")
 func NewAnnealingScheduler(initialTemp, coolingRate float64, scheduleType string) *AnnealingScheduler {
 	if scheduleType == "" {
-		scheduleType = "exponential"
+		scheduleType = CoolingExponential
 	}
 
 	return &AnnealingScheduler{
@@ -53,12 +53,12 @@ func (as *AnnealingScheduler) Update() {
 	as.Iteration++
 
 	switch as.ScheduleType {
-	case "exponential":
+	case CoolingExponential:
 		// T(k) = T₀ * α^k
 		// Most common schedule, provides fast early cooling and slow late cooling
 		as.CurrentTemperature *= as.CoolingRate
 
-	case "linear":
+	case CoolingLinear:
 		// T(k) = T₀ - k * α
 		// Linear decrease, simpler but less effective
 		as.CurrentTemperature = as.InitialTemperature - float64(as.Iteration)*as.CoolingRate
@@ -111,7 +111,6 @@ func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 // rng must not be nil (ensured by caller).
 // Returns: true if the new solution should be accepted.
 func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
-
 	// Calculate acceptance probability
 	prob := acceptanceProbability(oldCost, newCost, temperature)
 
@@ -120,8 +119,11 @@ func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 }
 
 // Returns: (accepted bool, funcEvals int).
+//
+//nolint:unused,unparam // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
 func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
-	objectiveFunc ObjectiveFunction, rng *rand.Rand) (bool, int) {
+	objectiveFunc ObjectiveFunction, rng *rand.Rand,
+) (bool, int) {
 	// Evaluate candidate
 	candidateCost := objectiveFunc(candidatePos)
 	funcEvals := 1
@@ -161,6 +163,8 @@ func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 //   - maxRate: maximum desired acceptance rate (e.g., 0.9)
 //
 // This helps prevent premature convergence or excessive wandering.
+//
+//nolint:unused // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
 func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, minRate, maxRate float64) {
 	if acceptanceRate < minRate {
 		// Too few acceptances: reheat to increase exploration
@@ -176,6 +180,8 @@ func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, m
 }
 
 // Returns: true if candidate should be accepted.
+//
+//nolint:unused // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
 func simulatedAnnealingAcceptance(oldCost, newCost float64, scheduler *AnnealingScheduler, rng *rand.Rand) bool {
 	return shouldAccept(oldCost, newCost, scheduler.GetTemperature(), rng)
 }

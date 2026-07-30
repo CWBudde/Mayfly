@@ -65,11 +65,12 @@ func selectAquilaStrategy(currentIter, maxIter int, rng *rand.Rand) AquilaStrate
 //   - t is current iteration, T is max iterations
 //   - rand is a random number in [0, 1]
 func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIter int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
-	for i := 0; i < len(current); i++ {
+	for i := range current {
 		// X1(t+1) = Xbest(t) * (1 - t/T) + (XM(t) - Xbest(t) * rand)
 		result[i] = best[i]*(1.0-t) + (mean[i] - best[i]*rng.Float64())
 
@@ -95,18 +96,19 @@ func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIt
 //   - XR is a random solution from the population
 //   - y, x are random position components
 //   - D is the problem dimension
-func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, problemSize int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+func aquilaNarrowedExploration(current, best []float64, population []*Mayfly,
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 
 	// Generate Lévy flight multiplier
-	levyD := generateLevyFlight(problemSize, 1.5, rng)
+	levyD := generateLevyFlight(1.5, rng)
 
 	// Select a random solution from population
 	randomIdx := rng.Intn(len(population))
 	xr := population[randomIdx].Position
 
-	for i := 0; i < len(current); i++ {
+	for i := range current {
 		// Generate random position components
 		y := rng.Float64()*(upperBound-lowerBound) + lowerBound
 		x := rng.Float64()*(upperBound-lowerBound) + lowerBound
@@ -137,7 +139,8 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly, pr
 //   - XM is the mean position
 //   - UB, LB are upper and lower bounds
 func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxIter int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -147,7 +150,7 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 	// δ is a small value for fine-tuning
 	delta := 0.1
 
-	for i := 0; i < len(current); i++ {
+	for i := range current {
 		// X3(t+1) = (Xbest(t) - XM(t)) * α - rand + ((UB - LB) * rand + LB) * δ
 		exploration := ((upperBound-lowerBound)*rng.Float64() + lowerBound) * delta
 		result[i] = (best[i]-mean[i])*alpha - rng.Float64() + exploration
@@ -173,8 +176,9 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 //   - QF is a quality function that increases over time
 //   - G1, G2 are control parameters
 //   - Levy(D) provides small random walks
-func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, problemSize int,
-	lowerBound, upperBound float64, rng *rand.Rand) []float64 {
+func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter int,
+	lowerBound, upperBound float64, rng *rand.Rand,
+) []float64 {
 	result := make([]float64, len(current))
 	t := float64(currentIter) / float64(maxIter)
 
@@ -188,9 +192,9 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, p
 	g2 := 2.0 * (1.0 - t)
 
 	// Generate Lévy flight
-	levyD := generateLevyFlight(problemSize, 1.5, rng)
+	levyD := generateLevyFlight(1.5, rng)
 
-	for i := 0; i < len(current); i++ {
+	for i := range current {
 		// X4(t+1) = QF * Xbest(t) - (G1 * X(t) * rand) - G2 * Levy(D) + rand * G1
 		result[i] = qf*best[i] - (g1 * current[i] * rng.Float64()) - g2*levyD + rng.Float64()*g1
 
@@ -221,17 +225,18 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter, p
 // Returns:
 //   - New position for the mayfly
 func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
-	strategy AquilaStrategy, currentIter, maxIter int, config *Config) []float64 {
+	strategy AquilaStrategy, currentIter, maxIter int, config *Config,
+) []float64 {
 	// Calculate mean position of population
 	mean := make([]float64, config.ProblemSize)
 
 	for _, m := range population {
-		for i := 0; i < config.ProblemSize; i++ {
+		for i := range config.ProblemSize {
 			mean[i] += m.Position[i]
 		}
 	}
 
-	for i := 0; i < config.ProblemSize; i++ {
+	for i := range config.ProblemSize {
 		mean[i] /= float64(len(population))
 	}
 
@@ -243,7 +248,7 @@ func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 
 	case NarrowedExploration:
 		return aquilaNarrowedExploration(mayfly.Position, globalBest.Position, population,
-			config.ProblemSize, config.LowerBound, config.UpperBound, config.Rand)
+			config.LowerBound, config.UpperBound, config.Rand)
 
 	case ExpandedExploitation:
 		return aquilaExpandedExploitation(mayfly.Position, globalBest.Position, mean,
@@ -251,7 +256,7 @@ func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 
 	case NarrowedExploitation:
 		return aquilaNarrowedExploitation(mayfly.Position, globalBest.Position,
-			currentIter, maxIter, config.ProblemSize, config.LowerBound, config.UpperBound, config.Rand)
+			currentIter, maxIter, config.LowerBound, config.UpperBound, config.Rand)
 
 	default:
 		// Should never happen, but return current position as fallback
@@ -264,7 +269,7 @@ func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 
 // generateLevyFlight generates a Lévy flight step using Mantegna's algorithm.
 // This is a simplified version used by Aquila Optimizer.
-func generateLevyFlight(dim int, alpha float64, rng *rand.Rand) float64 {
+func generateLevyFlight(alpha float64, rng *rand.Rand) float64 {
 	// Mantegna's algorithm for Lévy flight
 	sigma := math.Pow(
 		math.Gamma(1.0+alpha)*math.Sin(math.Pi*alpha/2.0)/

@@ -1,7 +1,7 @@
 package mayfly
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 )
 
@@ -74,6 +74,17 @@ const (
 	Rugged                        // Many local features
 	Deceptive                     // Misleading gradients
 	NarrowValley                  // Ill-conditioned
+)
+
+// Canonical variant names, as returned by AlgorithmVariant.Name().
+const (
+	nameStandardMA = "MA"
+	nameDESMA      = "DESMA"
+	nameOLCEMA     = "OLCE-MA"
+	nameEOBBMA     = "EOBBMA"
+	nameGSASMA     = "GSASMA"
+	nameMPMA       = "MPMA"
+	nameAOBLMOA    = "AOBLMOA"
 )
 
 // variantRegistry holds all available algorithm variants.
@@ -151,7 +162,7 @@ func GetAllVariants() []AlgorithmVariant {
 type StandardMAVariant struct{}
 
 func (v *StandardMAVariant) Name() string {
-	return "MA"
+	return nameStandardMA
 }
 
 func (v *StandardMAVariant) FullName() string {
@@ -211,7 +222,7 @@ func (v *StandardMAVariant) RecommendedFor() []string {
 type DESMAVariant struct{}
 
 func (v *DESMAVariant) Name() string {
-	return "DESMA"
+	return nameDESMA
 }
 
 func (v *DESMAVariant) FullName() string {
@@ -219,7 +230,8 @@ func (v *DESMAVariant) FullName() string {
 }
 
 func (v *DESMAVariant) Description() string {
-	return "Enhanced with dynamic elite generation for better local optima escape. 70%+ improvement on multimodal problems."
+	return "Enhanced with dynamic elite generation for better local optima escape. " +
+		"70%+ improvement on multimodal problems."
 }
 
 func (v *DESMAVariant) GetConfig() *Config {
@@ -271,7 +283,7 @@ func (v *DESMAVariant) RecommendedFor() []string {
 type OLCEVariant struct{}
 
 func (v *OLCEVariant) Name() string {
-	return "OLCE-MA"
+	return nameOLCEMA
 }
 
 func (v *OLCEVariant) FullName() string {
@@ -295,9 +307,10 @@ func (v *OLCEVariant) ApplicableTo(characteristics ProblemCharacteristics) float
 	score := 0.5
 
 	// Best for highly multimodal problems
-	if characteristics.Modality == HighlyMultimodal {
+	switch characteristics.Modality {
+	case HighlyMultimodal:
 		score += 0.4
-	} else if characteristics.Modality == Multimodal {
+	case Multimodal:
 		score += 0.2
 	}
 
@@ -333,7 +346,7 @@ func (v *OLCEVariant) RecommendedFor() []string {
 type EOBBMAVariant struct{}
 
 func (v *EOBBMAVariant) Name() string {
-	return "EOBBMA"
+	return nameEOBBMA
 }
 
 func (v *EOBBMAVariant) FullName() string {
@@ -393,7 +406,7 @@ func (v *EOBBMAVariant) RecommendedFor() []string {
 type GSASMAVariant struct{}
 
 func (v *GSASMAVariant) Name() string {
-	return "GSASMA"
+	return nameGSASMA
 }
 
 func (v *GSASMAVariant) FullName() string {
@@ -453,7 +466,7 @@ func (v *GSASMAVariant) RecommendedFor() []string {
 type MPMAVariant struct{}
 
 func (v *MPMAVariant) Name() string {
-	return "MPMA"
+	return nameMPMA
 }
 
 func (v *MPMAVariant) FullName() string {
@@ -513,7 +526,7 @@ func (v *MPMAVariant) RecommendedFor() []string {
 type AOBLMOAVariant struct{}
 
 func (v *AOBLMOAVariant) Name() string {
-	return "AOBLMOA"
+	return nameAOBLMOA
 }
 
 func (v *AOBLMOAVariant) FullName() string {
@@ -642,15 +655,15 @@ func (b *VariantBuilder) WithConfig(fn func(*Config)) *VariantBuilder {
 // Build returns the configured Config ready for optimization.
 func (b *VariantBuilder) Build() (*Config, error) {
 	if b == nil {
-		return nil, fmt.Errorf("builder is nil (unknown variant?)")
+		return nil, errors.New("builder is nil (unknown variant?)")
 	}
 
 	if b.config.ObjectiveFunc == nil {
-		return nil, fmt.Errorf("objective function not set")
+		return nil, errors.New("objective function not set")
 	}
 
 	if b.config.ProblemSize <= 0 {
-		return nil, fmt.Errorf("problem size must be positive")
+		return nil, errors.New("problem size must be positive")
 	}
 
 	return b.config, nil
@@ -673,13 +686,4 @@ func (b *VariantBuilder) GetVariant() AlgorithmVariant {
 	}
 
 	return b.variant
-}
-
-// min returns the minimum of two float64 values.
-func min(a, b float64) float64 {
-	if a < b {
-		return a
-	}
-
-	return b
 }

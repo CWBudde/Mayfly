@@ -27,7 +27,7 @@ func dominates(a, b []float64) bool {
 
 	strictlyBetter := false
 
-	for i := 0; i < len(a); i++ {
+	for i := range a {
 		if a[i] > b[i] {
 			// a is worse in this objective
 			return false
@@ -50,7 +50,7 @@ func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 	}
 
 	// Initialize domination data
-	for i := 0; i < n; i++ {
+	for i := range n {
 		solutions[i].DominationCount = 0
 		solutions[i].DominatedSolutions = make([]int, 0)
 	}
@@ -59,8 +59,8 @@ func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 	firstFront := make([]int, 0)
 
 	// Compare all pairs of solutions
-	for i := 0; i < n; i++ {
-		for j := 0; j < n; j++ {
+	for i := range n {
+		for j := range n {
 			if i == j {
 				continue
 			}
@@ -145,7 +145,7 @@ func calculateCrowdingDistance(solutions []*ParetoSolution, frontIndices []int) 
 	numObjectives := len(solutions[frontIndices[0]].ObjectiveValues)
 
 	// For each objective
-	for m := 0; m < numObjectives; m++ {
+	for m := range numObjectives {
 		// Sort front by this objective
 		sortedIndices := make([]int, frontSize)
 		copy(sortedIndices, frontIndices)
@@ -280,7 +280,7 @@ func calculateIGD(obtainedFront, trueFront []*ParetoSolution) float64 {
 			// Calculate Euclidean distance in objective space
 			distance := 0.0
 
-			for i := 0; i < len(truePoint.ObjectiveValues); i++ {
+			for i := range len(truePoint.ObjectiveValues) {
 				diff := truePoint.ObjectiveValues[i] - obtainedPoint.ObjectiveValues[i]
 				distance += diff * diff
 			}
@@ -345,7 +345,7 @@ func selectByNSGA2(solutions []*ParetoSolution, n int) []*ParetoSolution {
 			})
 
 			// Add most diverse solutions
-			for i := 0; i < remaining; i++ {
+			for i := range remaining {
 				selected = append(selected, sortedFront[i])
 			}
 

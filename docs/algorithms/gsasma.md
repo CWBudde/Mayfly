@@ -15,6 +15,7 @@ GSASMA combines four powerful optimization techniques to achieve faster converge
 Uses the **golden ratio** (φ ≈ 1.618) and sine function for adaptive position updates:
 
 **Mathematical Formula**:
+
 ```
 X_new(i) = X_old(i) + r1 * sin(r2) * |r3 * X_best(i) - X_old(i)|
 
@@ -25,6 +26,7 @@ where:
 ```
 
 **Properties**:
+
 - Golden ratio provides optimal step sizing
 - Sine oscillation creates wave-like search patterns
 - Adaptive scaling decreases over iterations for smooth convergence
@@ -42,25 +44,31 @@ Adds **probabilistic acceptance** of worse solutions to escape local optima:
 **Three cooling schedules available**:
 
 #### Exponential (default)
+
 ```
 T(k) = T₀ * α^k
 ```
+
 - Fast early cooling, slow late cooling
 - Best for: Most problems, balanced approach
 - Recommended α: 0.95
 
 #### Linear
+
 ```
 T(k) = T₀ - k * α
 ```
+
 - Constant cooling rate
 - Best for: Problems requiring steady temperature decrease
 - Simpler but less effective than exponential
 
 #### Logarithmic
+
 ```
 T(k) = T₀ / (1 + α * log(1 + k))
 ```
+
 - Slowest cooling, maintains exploration longer
 - Best for: Highly multimodal problems with deceptive local optima
 - Recommended for complex landscapes
@@ -72,14 +80,17 @@ T(k) = T₀ / (1 + α * log(1 + k))
 Combines two distributions for **adaptive exploration/exploitation**:
 
 **Cauchy Distribution** (exploration):
+
 - Heavy-tailed: Higher probability of large jumps
 - Best for: Early exploration when searching globally
 
 **Gaussian Distribution** (exploitation):
+
 - Light-tailed: Smaller, controlled perturbations
 - Best for: Late exploitation when refining solutions
 
 **Adaptive Strategy**:
+
 ```
 Iteration Progress     Cauchy Probability    Gaussian Probability
 ─────────────────────────────────────────────────────────────────
@@ -305,6 +316,7 @@ func main() {
 ## Performance
 
 **Rastrigin (D=30, complex multimodal)**:
+
 - Standard MA: 45.23 (~30,540 evals)
 - GSASMA: 36.18 (~35,121 evals)
 - **Improvement: 20.00%**
@@ -323,6 +335,7 @@ func main() {
 ### Temperature Settings
 
 **For Fast Convergence** (default):
+
 ```go
 config.InitialTemperature = 100.0
 config.CoolingRate = 0.95
@@ -330,6 +343,7 @@ config.CoolingSchedule = "exponential"
 ```
 
 **For Thorough Exploration**:
+
 ```go
 config.InitialTemperature = 500.0      // Higher initial temp
 config.CoolingRate = 0.98              // Slower cooling
@@ -337,6 +351,7 @@ config.CoolingSchedule = "logarithmic" // Slowest schedule
 ```
 
 **For Quick Problems** (few iterations):
+
 ```go
 config.InitialTemperature = 50.0  // Lower initial temp
 config.CoolingRate = 0.90         // Faster cooling
@@ -346,11 +361,13 @@ config.CoolingSchedule = "exponential"
 ### Mutation Balance
 
 **More Exploration**:
+
 ```go
 config.CauchyMutationRate = 0.5  // 50% Cauchy even in late phase
 ```
 
 **More Exploitation**:
+
 ```go
 config.CauchyMutationRate = 0.1  // Only 10% Cauchy in late phase
 ```
@@ -358,11 +375,13 @@ config.CauchyMutationRate = 0.1  // Only 10% Cauchy in late phase
 ### Golden Sine Scaling
 
 **Larger Search Steps**:
+
 ```go
 config.GoldenFactor = 2.0  // More aggressive updates
 ```
 
 **Smaller, Safer Steps**:
+
 ```go
 config.GoldenFactor = 0.5  // More conservative updates
 ```
@@ -370,35 +389,39 @@ config.GoldenFactor = 0.5  // More conservative updates
 ## GSASMA vs Other Variants
 
 **Choose GSASMA when**:
+
 - You need results quickly (fewer iterations available)
 - Problem has moderate-to-high multimodality
 - Previous algorithms plateau too early
 - You want automatic exploration-exploitation balance
 
 **Choose OLCE-MA instead when**:
+
 - Problem is highly multimodal (Rastrigin-like)
 - High dimensionality (20D+)
 - You prioritize solution quality over convergence speed
 
 **Choose EOBBMA instead when**:
+
 - Problem is highly deceptive (Schwefel-like)
 - You want simplest parameter tuning
 - Heavy-tailed jumps are beneficial
 
 **Choose MPMA instead when**:
+
 - Need stable, predictable convergence
 - Working on control system optimization
 - Oscillatory behavior is a problem
 
 ## Features Summary
 
-| Feature | Purpose | When Applied |
-|---------|---------|--------------|
-| **Golden Sine** | Adaptive exploration using golden ratio | Elite males (top 20%) |
-| **Simulated Annealing** | Escape local optima via probabilistic acceptance | After GSA updates |
-| **Cauchy Mutation** | Heavy-tailed jumps for exploration | Early iterations (70%) |
-| **Gaussian Mutation** | Fine-grained search for exploitation | Late iterations (70%) |
-| **Opposition Learning** | Expand search coverage | Global best (every 10 iters) |
+| Feature                 | Purpose                                          | When Applied                 |
+| ----------------------- | ------------------------------------------------ | ---------------------------- |
+| **Golden Sine**         | Adaptive exploration using golden ratio          | Elite males (top 20%)        |
+| **Simulated Annealing** | Escape local optima via probabilistic acceptance | After GSA updates            |
+| **Cauchy Mutation**     | Heavy-tailed jumps for exploration               | Early iterations (70%)       |
+| **Gaussian Mutation**   | Fine-grained search for exploitation             | Late iterations (70%)        |
+| **Opposition Learning** | Expand search coverage                           | Global best (every 10 iters) |
 
 ## Related Documentation
 

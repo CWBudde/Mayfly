@@ -76,7 +76,7 @@ func TestCrossover(t *testing.T) {
 			diff1 := false
 			diff2 := false
 
-			for i := 0; i < len(tt.x1); i++ {
+			for i := range len(tt.x1) {
 				if math.Abs(off1[i]-tt.x1[i]) > 1e-10 {
 					diff1 = true
 				}
@@ -108,14 +108,14 @@ func TestCrossoverDeterministic(t *testing.T) {
 	off1b, off2b := Crossover(x1, x2, lowerBound, upperBound, rng2)
 
 	// Check offspring 1 matches
-	for i := 0; i < len(off1a); i++ {
+	for i := range off1a {
 		if off1a[i] != off1b[i] {
 			t.Errorf("Crossover() off1[%d] not deterministic: %v vs %v", i, off1a[i], off1b[i])
 		}
 	}
 
 	// Check offspring 2 matches
-	for i := 0; i < len(off2a); i++ {
+	for i := range off2a {
 		if off2a[i] != off2b[i] {
 			t.Errorf("Crossover() off2[%d] not deterministic: %v vs %v", i, off2a[i], off2b[i])
 		}
@@ -134,7 +134,7 @@ func TestCrossoverBoundaryViolations(t *testing.T) {
 	off1, off2 := Crossover(x1, x2, lowerBound, upperBound, rng)
 
 	// Check that all values are clamped to bounds
-	for i := 0; i < len(off1); i++ {
+	for i := range off1 {
 		if off1[i] < lowerBound || off1[i] > upperBound {
 			t.Errorf("Crossover() off1[%d] = %v, expected to be clamped to [%v, %v]",
 				i, off1[i], lowerBound, upperBound)
@@ -164,7 +164,7 @@ func TestCrossoverSymmetry(t *testing.T) {
 	off1b, off2b := Crossover(x2, x1, lowerBound, upperBound, rng2)
 
 	// The offspring should be swapped
-	for i := 0; i < len(x1); i++ {
+	for i := range x1 {
 		if math.Abs(off1a[i]-off2b[i]) > 1e-10 {
 			t.Errorf("Crossover() symmetry: off1a[%d]=%v should equal off2b[%d]=%v",
 				i, off1a[i], i, off2b[i])
@@ -250,7 +250,7 @@ func TestMutate(t *testing.T) {
 			expectedMutations := int(math.Ceil(tt.mu * float64(len(tt.x))))
 			actualMutations := 0
 
-			for i := 0; i < len(tt.x); i++ {
+			for i := range len(tt.x) {
 				if math.Abs(y[i]-tt.x[i]) > 1e-10 {
 					actualMutations++
 				}
@@ -279,7 +279,7 @@ func TestMutateDeterministic(t *testing.T) {
 	rng2 := rand.New(rand.NewSource(seed))
 	y2 := Mutate(x, mu, lowerBound, upperBound, rng2)
 
-	for i := 0; i < len(y1); i++ {
+	for i := range y1 {
 		if y1[i] != y2[i] {
 			t.Errorf("Mutate() y[%d] not deterministic: %v vs %v", i, y1[i], y2[i])
 		}
@@ -297,7 +297,7 @@ func TestMutateZeroRate(t *testing.T) {
 	y := Mutate(x, mu, lowerBound, upperBound, rng)
 
 	// With mutation rate 0, output should equal input
-	for i := 0; i < len(x); i++ {
+	for i := range x {
 		if y[i] != x[i] {
 			t.Errorf("Mutate() with mu=0: y[%d] = %v, want %v (no mutation expected)", i, y[i], x[i])
 		}
@@ -316,7 +316,7 @@ func TestMutateBoundaryViolations(t *testing.T) {
 	y := Mutate(x, mu, lowerBound, upperBound, rng)
 
 	// Check that all values are within bounds
-	for i := 0; i < len(y); i++ {
+	for i := range y {
 		if y[i] < lowerBound || y[i] > upperBound {
 			t.Errorf("Mutate() y[%d] = %v, expected to be clamped to [%v, %v]",
 				i, y[i], lowerBound, upperBound)
@@ -338,7 +338,7 @@ func TestMutateDoesNotModifyInput(t *testing.T) {
 	_ = Mutate(x, mu, lowerBound, upperBound, rng)
 
 	// Check that input wasn't modified
-	for i := 0; i < len(x); i++ {
+	for i := range x {
 		if x[i] != xCopy[i] {
 			t.Errorf("Mutate() modified input: x[%d] = %v, want %v", i, x[i], xCopy[i])
 		}
@@ -359,7 +359,7 @@ func TestMutateSigmaCalculation(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 	y := Mutate(x, mu, lowerBound, upperBound, rng)
 
-	for i := 0; i < len(y); i++ {
+	for i := range y {
 		// Check that mutation applied (should be different with high probability)
 		if math.Abs(y[i]-x[i]) < 1e-10 {
 			t.Logf("Mutate() y[%d] unchanged (statistically rare but possible)", i)

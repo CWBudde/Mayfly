@@ -160,14 +160,14 @@ func main() {
 
 	// Show convergence progress
 	fmt.Println("Convergence Progress (every 50 iterations):")
-	for i := 0; i < len(result.BestSolution); i += 50 {
-		if i < len(result.BestSolution) {
-			fmt.Printf("  Iteration %3d: %.6f\n", i, result.BestSolution[i])
+	for i := 0; i < len(result.ConvergenceCurve); i += 50 {
+		if i < len(result.ConvergenceCurve) {
+			fmt.Printf("  Iteration %3d: %.6f\n", i, result.ConvergenceCurve[i])
 		}
 	}
-	if len(result.BestSolution) > 0 {
+	if len(result.ConvergenceCurve) > 0 {
 		fmt.Printf("  Iteration %3d: %.6f (final)\n",
-			len(result.BestSolution)-1, result.BestSolution[len(result.BestSolution)-1])
+			len(result.ConvergenceCurve)-1, result.ConvergenceCurve[len(result.ConvergenceCurve)-1])
 	}
 	fmt.Println()
 

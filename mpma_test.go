@@ -151,8 +151,8 @@ func TestMPMAOptimization(t *testing.T) {
 		t.Errorf("expected position length %d, got %d", config.ProblemSize, len(result.GlobalBest.Position))
 	}
 
-	if len(result.BestSolution) != config.MaxIterations {
-		t.Errorf("expected solution history length %d, got %d", config.MaxIterations, len(result.BestSolution))
+	if len(result.ConvergenceCurve) != config.MaxIterations {
+		t.Errorf("expected solution history length %d, got %d", config.MaxIterations, len(result.ConvergenceCurve))
 	}
 }
 

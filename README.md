@@ -10,6 +10,7 @@ A Go implementation of the Mayfly Optimization Algorithm (MA), a nature-inspired
 The Mayfly Algorithm is a swarm intelligence optimization algorithm inspired by the flight behavior and mating process of mayflies. This implementation includes the standard algorithm and 6 enhanced variants for different optimization scenarios.
 
 **Key Features:**
+
 - Clean, idiomatic Go implementation
 - 7 algorithm variants for different problem types
 - 15+ benchmark functions included
@@ -76,15 +77,15 @@ config.UpperBound = 5
 
 ## Algorithm Variants
 
-| Variant | Best For | Improvement | Key Features |
-|---------|----------|-------------|--------------|
-| **[Standard MA](docs/algorithms/standard-ma.md)** | General problems | Baseline | Balanced, well-tested |
-| **[DESMA](docs/algorithms/desma.md)** | Multimodal | +70% | Adaptive elite search |
-| **[OLCE-MA](docs/algorithms/olce-ma.md)** | Highly multimodal | +15-30% | Orthogonal learning + chaos |
-| **[EOBBMA](docs/algorithms/eobbma.md)** | Deceptive landscapes | +55% | Lévy flights, Bare Bones |
-| **[GSASMA](docs/algorithms/gsasma.md)** | Fast convergence | +10-20% | Golden Sine + Simulated Annealing |
-| **[MPMA](docs/algorithms/mpma.md)** | Stable convergence | +10-30% | Median guidance, robust |
-| **[AOBLMOA](docs/algorithms/aoblmoa.md)** | Adaptive/Multi-objective | Variable | 4 hunting strategies |
+| Variant                                           | Best For                 | Improvement | Key Features                      |
+| ------------------------------------------------- | ------------------------ | ----------- | --------------------------------- |
+| **[Standard MA](docs/algorithms/standard-ma.md)** | General problems         | Baseline    | Balanced, well-tested             |
+| **[DESMA](docs/algorithms/desma.md)**             | Multimodal               | +70%        | Adaptive elite search             |
+| **[OLCE-MA](docs/algorithms/olce-ma.md)**         | Highly multimodal        | +15-30%     | Orthogonal learning + chaos       |
+| **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes     | +55%        | Lévy flights, Bare Bones          |
+| **[GSASMA](docs/algorithms/gsasma.md)**           | Fast convergence         | +10-20%     | Golden Sine + Simulated Annealing |
+| **[MPMA](docs/algorithms/mpma.md)**               | Stable convergence       | +10-30%     | Median guidance, robust           |
+| **[AOBLMOA](docs/algorithms/aoblmoa.md)**         | Adaptive/Multi-objective | Variable    | 4 hunting strategies              |
 
 ### Using Variants
 
@@ -177,11 +178,13 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 ## Documentation
 
 ### Getting Started
+
 - **[Getting Started Guide](docs/getting-started.md)** - Tutorial and examples
 - **[Configuration Guide](docs/api/configuration.md)** - Complete parameter reference
 - **[Benchmark Functions](docs/benchmarks.md)** - Test functions and expected results
 
 ### Algorithms
+
 - **[Standard MA](docs/algorithms/standard-ma.md)** - Original Mayfly Algorithm
 - **[DESMA](docs/algorithms/desma.md)** - Dynamic Elite Strategy
 - **[OLCE-MA](docs/algorithms/olce-ma.md)** - Orthogonal Learning & Chaotic Exploitation
@@ -191,11 +194,13 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 - **[AOBLMOA](docs/algorithms/aoblmoa.md)** - Aquila Optimizer-Based Learning
 
 ### API Reference
+
 - **[Unified Framework](docs/api/unified-framework.md)** - Builder API, algorithm selection, presets
 - **[Comparison Framework](docs/api/comparison-framework.md)** - Statistical testing and analysis
 - **[Configuration Guide](docs/api/configuration.md)** - All parameters explained
 
 ### Research
+
 - **[Research References](docs/research.md)** - Academic papers and citations
 
 ## Running Examples
@@ -251,17 +256,18 @@ go test -bench=. -benchmem
 Based on the following research:
 
 **Original Mayfly Algorithm:**
-Zervoudakis, K., & Tsafarakis, S. (2020). A mayfly optimization algorithm. *Computers & Industrial Engineering*, 145, 106559. [DOI: 10.1016/j.cie.2020.106559](https://doi.org/10.1016/j.cie.2020.106559)
+Zervoudakis, K., & Tsafarakis, S. (2020). A mayfly optimization algorithm. _Computers & Industrial Engineering_, 145, 106559. [DOI: 10.1016/j.cie.2020.106559](https://doi.org/10.1016/j.cie.2020.106559)
 
 **OLCE-MA Variant:**
-Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orthogonal learning and chaotic exploitation strategy. *International Journal of Machine Learning and Cybernetics*, 13, 3625–3643. [DOI: 10.1007/s13042-022-01617-4](https://doi.org/10.1007/s13042-022-01617-4)
+Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orthogonal learning and chaotic exploitation strategy. _International Journal of Machine Learning and Cybernetics_, 13, 3625–3643. [DOI: 10.1007/s13042-022-01617-4](https://doi.org/10.1007/s13042-022-01617-4)
 
 **Other Variants:**
-- DESMA: *PLOS One*, 2022
-- EOBBMA: *Arabian Journal for Science and Engineering*, 2024
-- GSASMA: *Electronics Letters / IEEE*, 2022
-- MPMA: *IEEE Access*, 2022
-- AOBLMOA: *PubMed / Various journals*, 2023
+
+- DESMA: _PLOS One_, 2022
+- EOBBMA: _Arabian Journal for Science and Engineering_, 2024
+- GSASMA: _Electronics Letters / IEEE_, 2022
+- MPMA: _IEEE Access_, 2022
+- AOBLMOA: _PubMed / Various journals_, 2023
 
 See [Research References](docs/research.md) for complete citations.
 
@@ -269,21 +275,22 @@ See [Research References](docs/research.md) for complete citations.
 
 Each algorithm and operator is implemented in dedicated files with proper citations:
 
-| File | Algorithm/Operator | Reference |
-|------|-------------------|-----------|
-| `mayfly.go` | Standard Mayfly Algorithm | Zervoudakis & Tsafarakis (2020) |
-| `desma.go` | Dynamic Elite Strategy (DESMA) | Du et al. (2022), PLOS One |
-| `levy.go` | Lévy Flights (Mantegna) | Mantegna (1994), Phys. Rev. E |
-| `cauchy.go` | Cauchy Distribution | Standard inverse CDF method |
-| `opposition.go` | Opposition-Based Learning | Tizhoosh (2005), IEEE |
-| `orthogonal.go` | Orthogonal Learning (L4 array) | Zhan et al. (2010), IEEE TEVC |
-| `aquila.go` | Aquila Optimizer (4 strategies) | Abualigah et al. (2021) |
-| `golden_sine.go` | Golden Sine Algorithm | Tanyildizi & Demir (2017) |
-| `annealing.go` | Simulated Annealing | Kirkpatrick et al. (1983) |
-| `operators.go` | Crossover & Mutation | Standard genetic operators |
-| `functions.go` | 15 benchmark functions | CEC/standard test suites |
+| File             | Algorithm/Operator              | Reference                       |
+| ---------------- | ------------------------------- | ------------------------------- |
+| `mayfly.go`      | Standard Mayfly Algorithm       | Zervoudakis & Tsafarakis (2020) |
+| `desma.go`       | Dynamic Elite Strategy (DESMA)  | Du et al. (2022), PLOS One      |
+| `levy.go`        | Lévy Flights (Mantegna)         | Mantegna (1994), Phys. Rev. E   |
+| `cauchy.go`      | Cauchy Distribution             | Standard inverse CDF method     |
+| `opposition.go`  | Opposition-Based Learning       | Tizhoosh (2005), IEEE           |
+| `orthogonal.go`  | Orthogonal Learning (L4 array)  | Zhan et al. (2010), IEEE TEVC   |
+| `aquila.go`      | Aquila Optimizer (4 strategies) | Abualigah et al. (2021)         |
+| `golden_sine.go` | Golden Sine Algorithm           | Tanyildizi & Demir (2017)       |
+| `annealing.go`   | Simulated Annealing             | Kirkpatrick et al. (1983)       |
+| `operators.go`   | Crossover & Mutation            | Standard genetic operators      |
+| `functions.go`   | 15 benchmark functions          | CEC/standard test suites        |
 
 **Variant compositions:**
+
 - **OLCE-MA** = Standard MA + `orthogonal.go` + chaos maps
 - **EOBBMA** = Standard MA + `levy.go` + `opposition.go` + Bare Bones framework
 - **GSASMA** = Standard MA + `golden_sine.go` + `annealing.go` + `cauchy.go` + `opposition.go`
@@ -294,23 +301,23 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 
 ### Expected Results (D=30, 500 iterations)
 
-| Function | Standard MA | DESMA | OLCE-MA | EOBBMA | Best Variant |
-|----------|-------------|-------|---------|--------|--------------|
-| Sphere | 1e-6 | 1e-8 | 1e-7 | 1e-6 | DESMA |
-| Rastrigin | 55 | 40 | **30** | 38 | **OLCE-MA** |
-| Rosenbrock | 25 | 15 | 12 | 18 | **MPMA (8)** |
-| Schwefel | 850 | 650 | 600 | **350** | **EOBBMA** |
+| Function   | Standard MA | DESMA | OLCE-MA | EOBBMA  | Best Variant |
+| ---------- | ----------- | ----- | ------- | ------- | ------------ |
+| Sphere     | 1e-6        | 1e-8  | 1e-7    | 1e-6    | DESMA        |
+| Rastrigin  | 55          | 40    | **30**  | 38      | **OLCE-MA**  |
+| Rosenbrock | 25          | 15    | 12      | 18      | **MPMA (8)** |
+| Schwefel   | 850         | 650   | 600     | **350** | **EOBBMA**   |
 
 ### Algorithm Overhead
 
-| Variant | Additional Evaluations | When Worth It |
-|---------|------------------------|---------------|
-| DESMA | +8% | Multimodal problems |
-| OLCE-MA | +12% | Highly multimodal |
-| EOBBMA | +1.5% | Deceptive landscapes |
-| GSASMA | +15% | Need fast convergence |
-| MPMA | 0% (baseline) | Need stability |
-| AOBLMOA | +20-30% | Complex/adaptive needs |
+| Variant | Additional Evaluations | When Worth It          |
+| ------- | ---------------------- | ---------------------- |
+| DESMA   | +8%                    | Multimodal problems    |
+| OLCE-MA | +12%                   | Highly multimodal      |
+| EOBBMA  | +1.5%                  | Deceptive landscapes   |
+| GSASMA  | +15%                   | Need fast convergence  |
+| MPMA    | 0% (baseline)          | Need stability         |
+| AOBLMOA | +20-30%                | Complex/adaptive needs |
 
 ## Development Status
 
@@ -321,6 +328,7 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 ## Contributing
 
 Contributions welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality

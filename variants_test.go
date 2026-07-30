@@ -167,7 +167,6 @@ func TestVariantBuilder(t *testing.T) {
 		WithIterations(100).
 		WithPopulation(20, 20).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Builder failed: %v", err)
 	}
@@ -192,6 +191,7 @@ func TestVariantBuilder(t *testing.T) {
 func TestVariantBuilderWithConfig(t *testing.T) {
 	// Test custom config modification
 	builder := NewBuilder("gsasma")
+
 	config, err := builder.
 		ForProblem(Rastrigin, 20, -5.12, 5.12).
 		WithIterations(200).
@@ -200,7 +200,6 @@ func TestVariantBuilderWithConfig(t *testing.T) {
 			c.InitialTemperature = 150.0
 		}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Builder with custom config failed: %v", err)
 	}
@@ -255,7 +254,6 @@ func TestNewBuilderFromVariant(t *testing.T) {
 		ForProblem(Sphere, 15, -10, 10).
 		WithIterations(300).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}

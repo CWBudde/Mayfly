@@ -224,13 +224,13 @@ func calculateStatistics(values []float64) Statistics {
 }
 
 // runBenchmarkSuite runs a benchmark problem multiple times and returns statistics.
-func runBenchmarkSuite(problem BenchmarkProblem, useDESMA bool, runs int, iterations int) BenchmarkResult {
+func runBenchmarkSuite(problem BenchmarkProblem, useDESMA bool, runs, iterations int) BenchmarkResult {
 	costs := make([]float64, runs)
 	funcEvals := 0
 	successCount := 0
 	threshold := 1e-2 // Consider success if within 0.01 of global optimum
 
-	for i := 0; i < runs; i++ {
+	for i := range runs {
 		var config *Config
 		if useDESMA {
 			config = NewDESMAConfig()
@@ -296,7 +296,7 @@ func BenchmarkOptimizeSphere_StandardMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -313,7 +313,7 @@ func BenchmarkOptimizeSphere_DESMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -330,7 +330,7 @@ func BenchmarkOptimizeRastrigin_StandardMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -347,7 +347,7 @@ func BenchmarkOptimizeRastrigin_DESMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -364,7 +364,7 @@ func BenchmarkOptimizeRosenbrock_StandardMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -381,7 +381,7 @@ func BenchmarkOptimizeRosenbrock_DESMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -398,7 +398,7 @@ func BenchmarkOptimizeAckley_StandardMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -415,7 +415,7 @@ func BenchmarkOptimizeAckley_DESMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -432,7 +432,7 @@ func BenchmarkOptimizeGriewank_StandardMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -449,7 +449,7 @@ func BenchmarkOptimizeGriewank_DESMA(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = Optimize(config)
 	}
 }
@@ -470,7 +470,7 @@ func BenchmarkDimensionScaling(b *testing.B) {
 
 			b.ResetTimer()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				_, _ = Optimize(config)
 			}
 		})
@@ -496,7 +496,7 @@ func BenchmarkPopulationSize(b *testing.B) {
 
 			b.ResetTimer()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				_, _ = Optimize(config)
 			}
 		})
@@ -649,10 +649,10 @@ func TestBenchmarkConvergence(t *testing.T) {
 	}
 
 	// Verify convergence: best solution should improve or stay same
-	for i := 1; i < len(result.BestSolution); i++ {
-		if result.BestSolution[i] > result.BestSolution[i-1]+1e-10 {
+	for i := 1; i < len(result.ConvergenceCurve); i++ {
+		if result.ConvergenceCurve[i] > result.ConvergenceCurve[i-1]+1e-10 {
 			t.Errorf("Convergence violated at iteration %d: %.6e > %.6e",
-				i, result.BestSolution[i], result.BestSolution[i-1])
+				i, result.ConvergenceCurve[i], result.ConvergenceCurve[i-1])
 		}
 	}
 

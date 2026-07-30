@@ -183,7 +183,7 @@ func TestRegressionSuite(t *testing.T) {
 			successCount := 0
 
 			// Run multiple times for statistical significance
-			for i := 0; i < runs; i++ {
+			for i := range runs {
 				var config *Config
 				if baseline.UseDESMA {
 					config = NewDESMAConfig()
@@ -356,7 +356,7 @@ func TestRegressionNoRegression(t *testing.T) {
 			maCosts := make([]float64, runs)
 			desmaCosts := make([]float64, runs)
 
-			for i := 0; i < runs; i++ {
+			for i := range runs {
 				seed := int64(i + 1)
 
 				// Standard MA

@@ -46,9 +46,11 @@ func cauchyRand(x0, gamma float64, rng *rand.Rand) float64 {
 
 // cauchyRandVec generates a vector of Cauchy-distributed random numbers.
 // Each element is independently sampled from Cauchy(x0, gamma).
+//
+//nolint:unused // reserved for vectorised Cauchy mutation; not wired into Optimize() yet.
 func cauchyRandVec(size int, x0, gamma float64, rng *rand.Rand) []float64 {
 	vec := make([]float64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		vec[i] = cauchyRand(x0, gamma, rng)
 	}
 

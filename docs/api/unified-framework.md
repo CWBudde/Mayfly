@@ -47,19 +47,20 @@ result, err := mayfly.NewBuilder("gsasma").
 
 ### Builder Methods
 
-| Method | Parameters | Description |
-|--------|------------|-------------|
-| `NewBuilder(variant string)` | variant name | Create builder for specific variant |
-| `NewBuilderFromVariant(v AlgorithmVariant)` | variant instance | Create builder from variant object |
-| `ForProblem(f, size, lower, upper)` | func, int, float64, float64 | Set problem definition |
-| `WithIterations(n)` | int | Set max iterations |
-| `WithPopulation(males, females)` | int, int | Set population sizes |
-| `WithConfig(fn)` | func(*Config) | Modify config with custom function |
-| `Optimize()` | - | Run optimization and return result |
+| Method                                      | Parameters                  | Description                         |
+| ------------------------------------------- | --------------------------- | ----------------------------------- |
+| `NewBuilder(variant string)`                | variant name                | Create builder for specific variant |
+| `NewBuilderFromVariant(v AlgorithmVariant)` | variant instance            | Create builder from variant object  |
+| `ForProblem(f, size, lower, upper)`         | func, int, float64, float64 | Set problem definition              |
+| `WithIterations(n)`                         | int                         | Set max iterations                  |
+| `WithPopulation(males, females)`            | int, int                    | Set population sizes                |
+| `WithConfig(fn)`                            | func(\*Config)              | Modify config with custom function  |
+| `Optimize()`                                | -                           | Run optimization and return result  |
 
 ### Examples
 
 **Basic usage**:
+
 ```go
 result, err := mayfly.NewBuilder("desma").
     ForProblem(myFunction, 10, -5, 5).
@@ -68,6 +69,7 @@ result, err := mayfly.NewBuilder("desma").
 ```
 
 **With custom configuration**:
+
 ```go
 result, err := mayfly.NewBuilder("olce").
     ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
@@ -101,11 +103,13 @@ characteristics := mayfly.ProblemCharacteristics{
 ### Characteristic Enums
 
 **Modality**:
+
 - `mayfly.Unimodal` - Single optimum
 - `mayfly.Multimodal` - Multiple local optima
 - `mayfly.HighlyMultimodal` - Many local optima
 
 **Landscape**:
+
 - `mayfly.Smooth` - Well-behaved gradients
 - `mayfly.Rugged` - Complex, irregular landscape
 - `mayfly.Deceptive` - Misleading gradients (Schwefel-like)
@@ -163,6 +167,7 @@ best := selector.RecommendBest(characteristics)
 ```
 
 **Classification Process**:
+
 1. Samples function at random points
 2. Analyzes gradient behavior
 3. Detects modality through local optimization
@@ -185,17 +190,17 @@ result, err := mayfly.Optimize(config)
 
 ### Available Presets
 
-| Preset | Algorithm | Best For |
-|--------|-----------|----------|
-| `PresetUnimodal` | Standard MA | Single-optimum problems |
-| `PresetMultimodal` | DESMA | Multi-modal problems |
-| `PresetHighlyMultimodal` | OLCE-MA | Many local optima |
-| `PresetDeceptive` | EOBBMA | Deceptive landscapes |
-| `PresetNarrowValley` | MPMA | Ill-conditioned problems |
-| `PresetHighDimensional` | OLCE-MA | High-D problems (larger population) |
-| `PresetFastConvergence` | GSASMA | Quick results needed |
-| `PresetStableConvergence` | MPMA | Robust optimization |
-| `PresetMultiObjective` | AOBLMOA | Multi-objective problems |
+| Preset                    | Algorithm   | Best For                            |
+| ------------------------- | ----------- | ----------------------------------- |
+| `PresetUnimodal`          | Standard MA | Single-optimum problems             |
+| `PresetMultimodal`        | DESMA       | Multi-modal problems                |
+| `PresetHighlyMultimodal`  | OLCE-MA     | Many local optima                   |
+| `PresetDeceptive`         | EOBBMA      | Deceptive landscapes                |
+| `PresetNarrowValley`      | MPMA        | Ill-conditioned problems            |
+| `PresetHighDimensional`   | OLCE-MA     | High-D problems (larger population) |
+| `PresetFastConvergence`   | GSASMA      | Quick results needed                |
+| `PresetStableConvergence` | MPMA        | Robust optimization                 |
+| `PresetMultiObjective`    | AOBLMOA     | Multi-objective problems            |
 
 ## Configuration Files
 
@@ -258,6 +263,7 @@ mayfly.AutoTuneConfig(config, characteristics)
 ```
 
 **Auto-tuning adjustments**:
+
 - **Dimensionality**: Scales population size
 - **Modality**: Adjusts exploration parameters
 - **Fast convergence**: Optimizes for speed
@@ -539,6 +545,7 @@ cd examples/selector && go run main.go
 ```
 
 Shows:
+
 - Automatic problem classification
 - Algorithm recommendations with scores
 - Performance comparison

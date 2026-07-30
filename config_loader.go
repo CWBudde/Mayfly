@@ -2,6 +2,7 @@ package mayfly
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -31,12 +32,15 @@ func LoadConfigFromFile(path string) (*Config, error) {
 	}
 
 	config := &Config{}
-	if err := json.Unmarshal(data, config); err != nil {
+
+	err = json.Unmarshal(data, config)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	// Validate the loaded config
-	if err := ValidateConfig(config); err != nil {
+	err = ValidateConfig(config)
+	if err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
@@ -51,7 +55,8 @@ func SaveConfigToFile(config *Config, path string) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	err = os.WriteFile(path, data, 0o600)
+	if err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
@@ -61,7 +66,7 @@ func SaveConfigToFile(config *Config, path string) error {
 // ValidateConfig checks if a configuration is valid and provides helpful error messages.
 func ValidateConfig(config *Config) error {
 	if config == nil {
-		return fmt.Errorf("config is nil")
+		return errors.New("config is nil")
 	}
 
 	// Check required fields (note: ObjectiveFunc can be nil if loaded from file)
@@ -96,7 +101,7 @@ func ValidateConfig(config *Config) error {
 	}
 
 	if config.A1 < 0 || config.A2 < 0 || config.A3 < 0 {
-		return fmt.Errorf("learning coefficients (a1, a2, a3) must be non-negative")
+		return errors.New("learning coefficients (a1, a2, a3) must be non-negative")
 	}
 
 	if config.Beta <= 0 {
@@ -114,7 +119,7 @@ func ValidateConfig(config *Config) error {
 		}
 
 		if config.EnlargeFactor <= 0 || config.ReductionFactor <= 0 {
-			return fmt.Errorf("enlarge_factor and reduction_factor must be positive")
+			return errors.New("enlarge_factor and reduction_factor must be positive")
 		}
 	}
 
@@ -147,7 +152,7 @@ func ValidateConfig(config *Config) error {
 			return fmt.Errorf("median_weight should be in [0,1] (got %f)", config.MedianWeight)
 		}
 
-		validGravityTypes := map[string]bool{"linear": true, "exponential": true, "sigmoid": true}
+		validGravityTypes := map[string]bool{GravityLinear: true, GravityExponential: true, GravitySigmoid: true}
 		if !validGravityTypes[config.GravityType] {
 			return fmt.Errorf("gravity_type must be 'linear', 'exponential', or 'sigmoid' (got '%s')", config.GravityType)
 		}
@@ -166,9 +171,10 @@ func ValidateConfig(config *Config) error {
 			return fmt.Errorf("cauchy_mutation_rate should be in [0,1] (got %f)", config.CauchyMutationRate)
 		}
 
-		validSchedules := map[string]bool{"exponential": true, "linear": true, "logarithmic": true}
+		validSchedules := map[string]bool{CoolingExponential: true, CoolingLinear: true, CoolingLogarithmic: true}
 		if !validSchedules[config.CoolingSchedule] {
-			return fmt.Errorf("cooling_schedule must be 'exponential', 'linear', or 'logarithmic' (got '%s')", config.CoolingSchedule)
+			return fmt.Errorf("cooling_schedule must be 'exponential', 'linear', or 'logarithmic' (got '%s')",
+				config.CoolingSchedule)
 		}
 	}
 
@@ -213,7 +219,7 @@ func ValidateConfig(config *Config) error {
 	}
 
 	if activeVariants > 1 {
-		return fmt.Errorf("multiple algorithm variants enabled (only one can be active at a time)")
+		return errors.New("multiple algorithm variants enabled (only one can be active at a time)")
 	}
 
 	return nil
@@ -330,9 +336,9 @@ func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
 
 	if config.UseMPMA {
 		if characteristics.Landscape == NarrowValley {
-			config.GravityType = "sigmoid" // Smooth transition
+			config.GravityType = GravitySigmoid // Smooth transition
 		} else {
-			config.GravityType = "exponential" // Faster exploitation
+			config.GravityType = GravityExponential // Faster exploitation
 		}
 	}
 
@@ -349,17 +355,8 @@ func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
 	}
 }
 
-// max returns the maximum of two integers.
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-
-	return b
-}
-
 // ExportConfigTemplate creates a template JSON configuration file with all parameters and comments.
-func ExportConfigTemplate(path string, variant string) error {
+func ExportConfigTemplate(path, variant string) error {
 	var config *Config
 
 	// Create config based on variant

@@ -70,27 +70,29 @@ func (s *AlgorithmSelector) RecommendBest(characteristics ProblemCharacteristics
 }
 
 // calculateConfidence estimates how confident we are in the recommendation.
-func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacteristics, variant AlgorithmVariant) float64 {
+func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacteristics,
+	variant AlgorithmVariant,
+) float64 {
 	confidence := 0.7 // Base confidence
 
 	// Higher confidence for specific characteristics
 	if characteristics.MultiObjective {
-		if variant.Name() == "AOBLMOA" {
+		if variant.Name() == nameAOBLMOA {
 			confidence = 0.95 // Very confident for multi-objective
 		} else {
 			confidence = 0.3 // Low confidence for non-MO algorithms on MO problems
 		}
 	}
 
-	if characteristics.Landscape == Deceptive && variant.Name() == "EOBBMA" {
+	if characteristics.Landscape == Deceptive && variant.Name() == nameEOBBMA {
 		confidence = 0.9 // EOBBMA is proven on deceptive functions
 	}
 
-	if characteristics.RequiresFastConvergence && variant.Name() == "GSASMA" {
+	if characteristics.RequiresFastConvergence && variant.Name() == nameGSASMA {
 		confidence = 0.85 // GSASMA is designed for fast convergence
 	}
 
-	if characteristics.RequiresStableConvergence && variant.Name() == "MPMA" {
+	if characteristics.RequiresStableConvergence && variant.Name() == nameMPMA {
 		confidence = 0.85 // MPMA is designed for stability
 	}
 
@@ -103,35 +105,37 @@ func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacter
 }
 
 // generateReasoning creates a human-readable explanation for the recommendation.
-func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteristics, variant AlgorithmVariant, score float64) string {
+func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteristics,
+	variant AlgorithmVariant, score float64,
+) string {
 	reasons := make([]string, 0, 3)
 
 	// Analyze key characteristics
-	if characteristics.MultiObjective && variant.Name() == "AOBLMOA" {
+	if characteristics.MultiObjective && variant.Name() == nameAOBLMOA {
 		reasons = append(reasons, "Multi-objective support required")
 	}
 
 	if characteristics.Modality == HighlyMultimodal {
-		if variant.Name() == "OLCE-MA" {
+		if variant.Name() == nameOLCEMA {
 			reasons = append(reasons, "Highly multimodal problem benefits from orthogonal learning")
-		} else if variant.Name() == "DESMA" {
+		} else if variant.Name() == nameDESMA {
 			reasons = append(reasons, "Multimodal problem benefits from elite strategy")
 		}
 	}
 
-	if characteristics.Landscape == Deceptive && variant.Name() == "EOBBMA" {
+	if characteristics.Landscape == Deceptive && variant.Name() == nameEOBBMA {
 		reasons = append(reasons, "Lévy flight effective on deceptive landscapes")
 	}
 
-	if characteristics.Landscape == NarrowValley && variant.Name() == "MPMA" {
+	if characteristics.Landscape == NarrowValley && variant.Name() == nameMPMA {
 		reasons = append(reasons, "Median guidance handles ill-conditioned problems well")
 	}
 
-	if characteristics.RequiresFastConvergence && variant.Name() == "GSASMA" {
+	if characteristics.RequiresFastConvergence && variant.Name() == nameGSASMA {
 		reasons = append(reasons, "Fast convergence via simulated annealing")
 	}
 
-	if characteristics.RequiresStableConvergence && variant.Name() == "MPMA" {
+	if characteristics.RequiresStableConvergence && variant.Name() == nameMPMA {
 		reasons = append(reasons, "Stable convergence via robust median guidance")
 	}
 
@@ -139,7 +143,7 @@ func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteris
 		reasons = append(reasons, "Low overhead suitable for expensive evaluations")
 	}
 
-	if characteristics.Dimensionality >= 20 && variant.Name() == "OLCE-MA" {
+	if characteristics.Dimensionality >= 20 && variant.Name() == nameOLCEMA {
 		reasons = append(reasons, "High dimensionality benefits from diversity")
 	}
 
@@ -171,9 +175,9 @@ func ClassifyProblem(fn ObjectiveFunction, size int, lower, upper float64) Probl
 	// Sample random points to analyze landscape
 	samples := make([]float64, sampleSize)
 
-	for i := 0; i < sampleSize; i++ {
+	for i := range sampleSize {
 		point := make([]float64, size)
-		for j := 0; j < size; j++ {
+		for j := range size {
 			point[j] = unifrnd(lower, upper, nil)
 		}
 
@@ -247,9 +251,9 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 	gradientVariance := 0.0
 	epsilon := (upper - lower) * 0.001 // Small step
 
-	for i := 0; i < samples/2; i++ {
+	for range samples / 2 {
 		point := make([]float64, size)
-		for j := 0; j < size; j++ {
+		for j := range size {
 			point[j] = unifrnd(lower, upper, nil)
 		}
 
@@ -257,7 +261,7 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 		f0 := fn(point)
 		gradients := make([]float64, size)
 
-		for j := 0; j < size; j++ {
+		for j := range size {
 			point[j] += epsilon
 			f1 := fn(point)
 			point[j] -= epsilon // Restore
@@ -279,11 +283,12 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 
 	// High gradient variance suggests rugged landscape
 	// This is a heuristic classification
-	if gradientVariance > 100 {
+	switch {
+	case gradientVariance > 100:
 		return Deceptive
-	} else if gradientVariance > 10 {
+	case gradientVariance > 10:
 		return Rugged
-	} else if gradientVariance < 0.01 {
+	case gradientVariance < 0.01:
 		return NarrowValley
 	}
 
@@ -294,9 +299,10 @@ func estimateLandscape(fn ObjectiveFunction, size int, lower, upper float64, sam
 func testConvergenceStability(fn ObjectiveFunction, size int, lower, upper float64, iterations int) float64 {
 	// Run multiple short optimizations
 	const runs = 3
+
 	results := make([]float64, runs)
 
-	for i := 0; i < runs; i++ {
+	for i := range runs {
 		config := NewDefaultConfig()
 		config.ObjectiveFunc = fn
 		config.ProblemSize = size
@@ -347,7 +353,7 @@ func testConvergenceStability(fn ObjectiveFunction, size int, lower, upper float
 func RecommendForBenchmark(benchmarkName string) AlgorithmRecommendation {
 	selector := NewAlgorithmSelector()
 
-	characteristics := ProblemCharacteristics{}
+	var characteristics ProblemCharacteristics
 
 	switch benchmarkName {
 	case "Sphere":

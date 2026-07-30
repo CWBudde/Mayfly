@@ -92,12 +92,13 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
-      - name: Run unit tests
-        # -race on a 2-core runner puts the suite close to the 10m default.
-        run: go test -v -race -timeout 25m -coverprofile=coverage.out -covermode=atomic ./...
+      # -race costs roughly 10x, so pair it with -short: that skips the long
+      # statistical benchmark suite, which the full run below still covers.
+      - name: Run tests with race detection
+        run: go test -v -race -short -timeout 15m ./...
 
-      - name: Run regression tests
-        run: go test -v -timeout 15m -run TestRegression ./...
+      - name: Run full test suite with coverage
+        run: go test -v -timeout 20m -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Generate coverage report
         run: go tool cover -html=coverage.out -o coverage.html

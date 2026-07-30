@@ -33,7 +33,7 @@ package mayfly
 // Returns:
 //   - Updated position for the mayfly
 func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
-	isMale bool, currentIter, maxIter int, config *Config,
+	currentIter, maxIter int, config *Config,
 ) []float64 {
 	// Determine if we should apply Aquila strategy or standard Mayfly update
 	useAquilaStrategy := config.Rand.Float64() < config.AquilaWeight
@@ -74,7 +74,7 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 ) {
 	// Update males with AOBLMOA
 	for i := range males {
-		newPos := applyAOBLMOA(males[i], globalBest, males, true, currentIter, maxIter, config)
+		newPos := applyAOBLMOA(males[i], globalBest, males, currentIter, maxIter, config)
 
 		if newPos != nil {
 			// AOBLMOA provided a new position, use it
@@ -98,7 +98,7 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 
 	// Update females with AOBLMOA
 	for i := range females {
-		newPos := applyAOBLMOA(females[i], globalBest, females, false, currentIter, maxIter, config)
+		newPos := applyAOBLMOA(females[i], globalBest, females, currentIter, maxIter, config)
 
 		if newPos != nil {
 			// AOBLMOA provided a new position, use it

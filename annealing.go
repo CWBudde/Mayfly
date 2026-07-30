@@ -120,7 +120,7 @@ func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 
 // Returns: (accepted bool, funcEvals int).
 //
-//nolint:unused // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
+//nolint:unused,unparam // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
 func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 	objectiveFunc ObjectiveFunction, rng *rand.Rand,
 ) (bool, int) {

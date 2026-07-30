@@ -66,7 +66,7 @@ func TestAquilaNarrowedExploration(t *testing.T) {
 	lowerBound := -5.0
 	upperBound := 5.0
 
-	result := aquilaNarrowedExploration(current, best, population, problemSize, lowerBound, upperBound, rng)
+	result := aquilaNarrowedExploration(current, best, population, lowerBound, upperBound, rng)
 
 	// Check that result has correct length
 	if len(result) != len(current) {
@@ -122,7 +122,7 @@ func TestAquilaNarrowedExploitation(t *testing.T) {
 	lowerBound := -5.0
 	upperBound := 5.0
 
-	result := aquilaNarrowedExploitation(current, best, currentIter, maxIter, problemSize, lowerBound, upperBound, rng)
+	result := aquilaNarrowedExploitation(current, best, currentIter, maxIter, lowerBound, upperBound, rng)
 
 	// Check that result has correct length
 	if len(result) != len(current) {
@@ -182,13 +182,12 @@ func TestSelectAquilaStrategy(t *testing.T) {
 func TestGenerateLevyFlight(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
-	dim := 10
 	alpha := 1.5
 
 	// Generate multiple Lévy flights to check they're different
 	flights := make([]float64, 10)
 	for i := range 10 {
-		flights[i] = generateLevyFlight(dim, alpha, rng)
+		flights[i] = generateLevyFlight(alpha, rng)
 	}
 
 	// Check that flights are not all the same (should be random)

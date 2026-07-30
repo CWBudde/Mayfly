@@ -73,7 +73,8 @@ func TestOptimizeRejectsMoreParentPairsThanPopulation(t *testing.T) {
 // TestOptimizeAcceptsExactlyEnoughParents pins the boundary: NC/2 equal to the
 // population is the largest legal offspring count, and must not be rejected.
 func TestOptimizeAcceptsExactlyEnoughParents(t *testing.T) {
-	if _, err := Optimize(smallConfig(10, 10, 20, 1)); err != nil {
+	_, err := Optimize(smallConfig(10, 10, 20, 1))
+	if err != nil {
 		t.Fatalf("Optimize rejected NC=20 with populations of 10: %v", err)
 	}
 }
@@ -97,7 +98,8 @@ func TestOptimizeRejectsMutantsWithoutOffspring(t *testing.T) {
 // TestOptimizeAllowsNoOffspringWithoutMutants is the same configuration with
 // nothing to draw, which is degenerate but not broken.
 func TestOptimizeAllowsNoOffspringWithoutMutants(t *testing.T) {
-	if _, err := Optimize(smallConfig(10, 10, 0, -1)); err == nil {
+	_, err := Optimize(smallConfig(10, 10, 0, -1))
+	if err == nil {
 		t.Fatal("Optimize accepted a negative NM")
 	}
 
@@ -107,7 +109,8 @@ func TestOptimizeAllowsNoOffspringWithoutMutants(t *testing.T) {
 	config.NPop = 4
 	config.NPopF = 4
 
-	if _, err := Optimize(config); err != nil {
+	_, err = Optimize(config)
+	if err != nil {
 		t.Fatalf("Optimize rejected NC=0 with no mutants to draw: %v", err)
 	}
 }

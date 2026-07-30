@@ -191,7 +191,7 @@ func TestMaxVec(t *testing.T) {
 			copy(vec, tt.input)
 			maxVec(vec, tt.bound)
 
-			for i := range len(vec) {
+			for i := range vec {
 				if vec[i] != tt.expected[i] {
 					t.Errorf("maxVec()[%d] = %v, want %v", i, vec[i], tt.expected[i])
 				}
@@ -240,7 +240,7 @@ func TestMinVec(t *testing.T) {
 			copy(vec, tt.input)
 			minVec(vec, tt.bound)
 
-			for i := range len(vec) {
+			for i := range vec {
 				if vec[i] != tt.expected[i] {
 					t.Errorf("minVec()[%d] = %v, want %v", i, vec[i], tt.expected[i])
 				}
@@ -263,7 +263,7 @@ func TestMaxMinVecChaining(t *testing.T) {
 	maxVec(vec, lowerBound)
 	minVec(vec, upperBound)
 
-	for i := range len(vec) {
+	for i := range vec {
 		if vec[i] != expected[i] {
 			t.Errorf("After maxVec+minVec: vec[%d] = %v, want %v", i, vec[i], expected[i])
 		}

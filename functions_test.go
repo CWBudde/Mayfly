@@ -403,7 +403,8 @@ func TestBenchmarkFunctionsMonotonicity(t *testing.T) {
 	cost2 := Sphere(point2)
 
 	if !(cost0 < cost1 && cost1 < cost2) {
-		t.Errorf("Sphere not monotonic: f(%v)=%v, f(%v)=%v",
+		//nolint:dupword // repeated format verbs, not repeated words
+		t.Errorf("Sphere not monotonic: f(%v)=%v, f(%v)=%v, f(%v)=%v",
 			origin, cost0, point1, cost1, point2, cost2)
 	}
 }

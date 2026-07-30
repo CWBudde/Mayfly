@@ -64,6 +64,8 @@ min-complexity = 6
 [linters.settings.goconst]
 min-len = 3
 min-occurrences = 3
+# Benchmark function names are spelled out on purpose in switches and tables.
+ignore-string-values = ['Sphere', 'Rastrigin', 'Rosenbrock', 'Ackley', 'Griewank', 'Schwefel']
 
 [linters.settings.gocritic]
 enabled-tags = [
@@ -80,6 +82,8 @@ disabled-checks = [
   'singleCaseSwitch',
   # Algorithm formulas are quoted as comments, e.g. "X1(t+1) = Xbest(t) * ...".
   'commentedOutCode',
+  # Contradicts nonamedreturns, which we follow.
+  'unnamedResult',
 ]
 
 [linters.settings.gosec]
@@ -153,11 +157,11 @@ linters = ['forbidigo']
 # validation/reporting routines. Tracked for refactoring in PLAN.md.
 [[linters.exclusions.rules]]
 path = 'mayfly\.go'
-linters = ['gocognit', 'gocyclo', 'nestif']
+linters = ['cyclop', 'gocognit', 'gocyclo', 'nestif']
 
 [[linters.exclusions.rules]]
 path = 'config_loader\.go'
-linters = ['gocognit', 'gocyclo']
+linters = ['cyclop', 'gocognit', 'gocyclo']
 
 [[linters.exclusions.rules]]
 path = 'comparison\.go'

@@ -829,15 +829,14 @@ func Optimize(config *Config) (*Result, error) {
 		if config.UseGSASMA && config.ApplyOBLToGlobalBest {
 			// Apply OBL every 10 iterations to avoid excessive function evaluations
 			if it%10 == 0 {
-				updatedGlobalBest, updatedGlobalBestCost, oblFuncEvals, improved := applyOBLToGlobalBest(
+				updatedGlobalBest, updatedGlobalBestCost, improved := applyOBLToGlobalBest(
 					globalBest.Position,
 					globalBest.Cost,
 					config.LowerBound,
 					config.UpperBound,
 					config.ObjectiveFunc,
-					rng,
 				)
-				funcCount += oblFuncEvals
+				funcCount++ // the opposition point evaluation
 
 				if improved {
 					globalBest.Cost = updatedGlobalBestCost

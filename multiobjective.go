@@ -27,7 +27,7 @@ func dominates(a, b []float64) bool {
 
 	strictlyBetter := false
 
-	for i := range len(a) {
+	for i := range a {
 		if a[i] > b[i] {
 			// a is worse in this objective
 			return false

@@ -130,28 +130,27 @@ func applyHybridMutationGSASMA(offspring []*Mayfly, nMutants int, mutationRate f
 	return offspring
 }
 
-// Returns: (updatedGlobalBest, updatedGlobalBestCost, funcEvals, improved).
+// Returns: (updatedGlobalBest, updatedGlobalBestCost, improved).
+// The caller must account for the single evaluation of the opposition point.
 func applyOBLToGlobalBest(globalBest []float64, globalBestCost float64,
 	lowerBound, upperBound float64, objectiveFunc ObjectiveFunction,
-	rng *rand.Rand,
-) ([]float64, float64, int, bool) {
+) ([]float64, float64, bool) {
 	// Generate opposition point
 	oppPos := oppositionPoint(globalBest, lowerBound, upperBound)
 
 	// Evaluate opposition point
 	oppCost := objectiveFunc(oppPos)
-	funcEvals := 1
 
 	// If opposition is better, update global best
 	if oppCost < globalBestCost {
 		updatedGlobalBest := make([]float64, len(oppPos))
 		copy(updatedGlobalBest, oppPos)
 
-		return updatedGlobalBest, oppCost, funcEvals, true
+		return updatedGlobalBest, oppCost, true
 	}
 
 	// No improvement
-	return globalBest, globalBestCost, funcEvals, false
+	return globalBest, globalBestCost, false
 }
 
 // Returns: adaptive Cauchy rate.

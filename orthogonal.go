@@ -62,7 +62,7 @@ func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 	candidates := make([]*Mayfly, len(L4Array))
 
 	// Generate candidates using orthogonal array
-	for i := range len(L4Array) {
+	for i := range L4Array {
 		candidate := newMayfly(dim)
 
 		// For each dimension

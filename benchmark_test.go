@@ -224,7 +224,7 @@ func calculateStatistics(values []float64) Statistics {
 }
 
 // runBenchmarkSuite runs a benchmark problem multiple times and returns statistics.
-func runBenchmarkSuite(problem BenchmarkProblem, useDESMA bool, runs int, iterations int) BenchmarkResult {
+func runBenchmarkSuite(problem BenchmarkProblem, useDESMA bool, runs, iterations int) BenchmarkResult {
 	costs := make([]float64, runs)
 	funcEvals := 0
 	successCount := 0

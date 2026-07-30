@@ -12,7 +12,7 @@
 // Computers & Industrial Engineering, 145, 106559.
 // https://doi.org/10.1016/j.cie.2020.106559
 //
-// Go implementation by [Your Name]
+// Go implementation by Christian-W. Budde.
 package mayfly
 
 import (

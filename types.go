@@ -96,7 +96,19 @@ type Config struct {
 
 // Result holds the results of the optimization.
 type Result struct {
-	BestSolution   []float64
+	// ConvergenceCurve holds the best cost known at the end of each iteration,
+	// so it has MaxIterations entries and is non-increasing. It is a history of
+	// costs, not a point in the search space.
+	//
+	// The solution itself is GlobalBest.Position.
+	//
+	// It replaces the former BestSolution, whose name was the defect: the field
+	// has always held this cost history, but reads as a position vector and is
+	// a []float64 exactly like one, so using it as a solution compiled, ran and
+	// produced nonsense. The rename is deliberately breaking — an alias would
+	// have left the misleading name in place.
+	ConvergenceCurve []float64
+
 	GlobalBest     Best
 	FuncEvalCount  int
 	IterationCount int

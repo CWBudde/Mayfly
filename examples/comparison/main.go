@@ -66,7 +66,7 @@ func compareAlgorithms(name string, fn mayfly.ObjectiveFunction, lower, upper fl
 }
 
 func showComparison(resultMA, resultDESMA *mayfly.Result) {
-	n := len(resultMA.BestSolution)
+	n := len(resultMA.ConvergenceCurve)
 	iterations := []int{n / 4, n / 2, 3 * n / 4, n}
 
 	fmt.Printf("\nIteration | Standard MA      | DESMA            | Winner\n")
@@ -74,8 +74,8 @@ func showComparison(resultMA, resultDESMA *mayfly.Result) {
 
 	for _, it := range iterations {
 		idx := it - 1
-		maVal := resultMA.BestSolution[idx]
-		desmaVal := resultDESMA.BestSolution[idx]
+		maVal := resultMA.ConvergenceCurve[idx]
+		desmaVal := resultDESMA.ConvergenceCurve[idx]
 
 		winner := "MA"
 		if desmaVal < maVal {
@@ -87,8 +87,8 @@ func showComparison(resultMA, resultDESMA *mayfly.Result) {
 	}
 
 	// Calculate convergence rate
-	maConvergence := calculateConvergenceRate(resultMA.BestSolution)
-	desmaConvergence := calculateConvergenceRate(resultDESMA.BestSolution)
+	maConvergence := calculateConvergenceRate(resultMA.ConvergenceCurve)
+	desmaConvergence := calculateConvergenceRate(resultDESMA.ConvergenceCurve)
 
 	fmt.Printf("\nConvergence Rate (per 100 iter):\n")
 	fmt.Printf("  Standard MA: %.6f\n", maConvergence)

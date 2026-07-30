@@ -381,9 +381,9 @@ func TestResultStruct(t *testing.T) {
 			Position: []float64{1.0, 2.0},
 			Cost:     3.5,
 		},
-		BestSolution:   []float64{10.0, 5.0, 2.0, 1.0},
-		FuncEvalCount:  1000,
-		IterationCount: 100,
+		ConvergenceCurve: []float64{10.0, 5.0, 2.0, 1.0},
+		FuncEvalCount:    1000,
+		IterationCount:   100,
 	}
 
 	// Check GlobalBest
@@ -395,9 +395,9 @@ func TestResultStruct(t *testing.T) {
 		t.Errorf("Result.GlobalBest.Cost = %v, want 3.5", result.GlobalBest.Cost)
 	}
 
-	// Check BestSolution convergence history
-	if len(result.BestSolution) != 4 {
-		t.Errorf("Result.BestSolution length = %v, want 4", len(result.BestSolution))
+	// Check the convergence history
+	if len(result.ConvergenceCurve) != 4 {
+		t.Errorf("Result.ConvergenceCurve length = %v, want 4", len(result.ConvergenceCurve))
 	}
 
 	// Check counts
@@ -410,10 +410,10 @@ func TestResultStruct(t *testing.T) {
 	}
 
 	// Check that convergence values are decreasing (typical for minimization)
-	for i := 1; i < len(result.BestSolution); i++ {
-		if result.BestSolution[i] > result.BestSolution[i-1] {
-			t.Logf("Result.BestSolution[%d]=%v > BestSolution[%d]=%v (not monotonically decreasing)",
-				i, result.BestSolution[i], i-1, result.BestSolution[i-1])
+	for i := 1; i < len(result.ConvergenceCurve); i++ {
+		if result.ConvergenceCurve[i] > result.ConvergenceCurve[i-1] {
+			t.Logf("Result.ConvergenceCurve[%d]=%v > ConvergenceCurve[%d]=%v (not monotonically decreasing)",
+				i, result.ConvergenceCurve[i], i-1, result.ConvergenceCurve[i-1])
 		}
 	}
 }

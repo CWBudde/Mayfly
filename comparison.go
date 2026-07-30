@@ -172,7 +172,7 @@ func (cr *ComparisonRunner) Compare(
 			convergenceAt := 0
 
 			if cr.TargetCost > 0 {
-				for iter, cost := range result.BestSolution {
+				for iter, cost := range result.ConvergenceCurve {
 					if cost <= cr.TargetCost {
 						convergenceAt = iter + 1
 						break

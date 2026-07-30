@@ -71,17 +71,17 @@ func runOptimization(name string, fn mayfly.ObjectiveFunction, lower, upper floa
 
 func showConvergence(result *mayfly.Result) {
 	// Show improvement over iterations
-	n := len(result.BestSolution)
+	n := len(result.ConvergenceCurve)
 	fmt.Printf("Convergence:\n")
-	fmt.Printf("  Iteration 1: %.6f\n", result.BestSolution[0])
-	fmt.Printf("  Iteration %d: %.6f\n", n/4, result.BestSolution[n/4-1])
-	fmt.Printf("  Iteration %d: %.6f\n", n/2, result.BestSolution[n/2-1])
-	fmt.Printf("  Iteration %d: %.6f\n", 3*n/4, result.BestSolution[3*n/4-1])
-	fmt.Printf("  Iteration %d: %.6f\n", n, result.BestSolution[n-1])
+	fmt.Printf("  Iteration 1: %.6f\n", result.ConvergenceCurve[0])
+	fmt.Printf("  Iteration %d: %.6f\n", n/4, result.ConvergenceCurve[n/4-1])
+	fmt.Printf("  Iteration %d: %.6f\n", n/2, result.ConvergenceCurve[n/2-1])
+	fmt.Printf("  Iteration %d: %.6f\n", 3*n/4, result.ConvergenceCurve[3*n/4-1])
+	fmt.Printf("  Iteration %d: %.6f\n", n, result.ConvergenceCurve[n-1])
 
 	// Calculate improvement rate
-	initial := result.BestSolution[0]
-	final := result.BestSolution[n-1]
+	initial := result.ConvergenceCurve[0]
+	final := result.ConvergenceCurve[n-1]
 	if initial != 0 {
 		improvement := (initial - final) / math.Abs(initial) * 100
 		fmt.Printf("  Improvement: %.2f%%\n", improvement)

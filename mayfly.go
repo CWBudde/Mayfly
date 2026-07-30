@@ -64,6 +64,10 @@ func Optimize(config *Config) (*Result, error) {
 		return nil, fmt.Errorf("NPopF (female population) must be positive, got %d", config.NPopF)
 	}
 
+	if err := validateOffspring(config); err != nil {
+		return nil, err
+	}
+
 	// Validate variant-specific parameters
 	if config.UseDESMA {
 		if config.SearchRange < 0 {
@@ -850,11 +854,10 @@ func Optimize(config *Config) (*Result, error) {
 	}
 
 	return &Result{
-		GlobalBest:     globalBest,
-		BestSolution:   bestSolution,
-		FuncEvalCount:  funcCount,
-		IterationCount: config.MaxIterations,
-		Seed:           seed,
+		GlobalBest:       globalBest,
+		ConvergenceCurve: bestSolution,
+		FuncEvalCount:    funcCount,
+		IterationCount:   config.MaxIterations,
+		Seed:             seed,
 	}, nil
 }
-

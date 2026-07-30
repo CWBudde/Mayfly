@@ -649,10 +649,10 @@ func TestBenchmarkConvergence(t *testing.T) {
 	}
 
 	// Verify convergence: best solution should improve or stay same
-	for i := 1; i < len(result.BestSolution); i++ {
-		if result.BestSolution[i] > result.BestSolution[i-1]+1e-10 {
+	for i := 1; i < len(result.ConvergenceCurve); i++ {
+		if result.ConvergenceCurve[i] > result.ConvergenceCurve[i-1]+1e-10 {
 			t.Errorf("Convergence violated at iteration %d: %.6e > %.6e",
-				i, result.BestSolution[i], result.BestSolution[i-1])
+				i, result.ConvergenceCurve[i], result.ConvergenceCurve[i-1])
 		}
 	}
 

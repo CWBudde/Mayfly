@@ -36,13 +36,19 @@ just run
 # Run algorithm comparison
 cd examples/comparison && go run main.go
 
-# Format code
+# Install the formatters/linters used below
+just setup-deps
+
+# Format every file with treefmt (gofumpt, gci, prettier, taplo, shfmt)
 just fmt
 
-# Lint (requires golangci-lint)
+# Lint (golangci-lint v2, configured in .golangci.toml)
 just lint
 
-# Run full CI pipeline (format, lint, test)
+# Lint with autofix (runs the formatters first)
+just lint-fix
+
+# Run full CI pipeline (format check, tidy check, lint, test)
 just ci
 
 # Clean build artifacts

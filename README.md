@@ -198,6 +198,7 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 - **[Unified Framework](docs/api/unified-framework.md)** - Builder API, algorithm selection, presets
 - **[Comparison Framework](docs/api/comparison-framework.md)** - Statistical testing and analysis
 - **[Configuration Guide](docs/api/configuration.md)** - All parameters explained
+- **[Run Lifecycle](docs/api/run-lifecycle.md)** - Cancellation, progress, and initial populations
 
 ### Research
 

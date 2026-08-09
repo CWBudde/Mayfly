@@ -16,6 +16,7 @@
 package mayfly
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -25,6 +26,17 @@ import (
 
 // Optimize runs the Mayfly Optimization Algorithm with the given configuration.
 func Optimize(config *Config) (*Result, error) {
+	return OptimizeContext(context.Background(), config)
+}
+
+// OptimizeContext runs the Mayfly Optimization Algorithm with cancellation,
+// optional initial populations, and progress reporting. Cancellation is
+// checked between initialization evaluations and at iteration boundaries.
+func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) (*Result, error) {
+	if ctx == nil {
+		return nil, errNilContext
+	}
+
 	// Validate required parameters
 	if config == nil {
 		return nil, errors.New("config cannot be nil")
@@ -143,6 +155,15 @@ func Optimize(config *Config) (*Result, error) {
 		}
 	}
 
+	run, err := resolveRunOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validateInitialPopulation(config, run); err != nil {
+		return nil, err
+	}
+
 	// Initialize parameters
 	if config.NM == 0 {
 		config.NM = int(math.Round(0.05 * float64(config.NPop)))
@@ -176,8 +197,16 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize male population
 	for i := range config.NPop {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		males[i] = newMayfly(config.ProblemSize)
-		males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+		if i < len(run.initialMales) {
+			copy(males[i].Position, run.initialMales[i])
+		} else {
+			males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+		}
 		males[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, males[i].Position,
 			config.LowerBound, config.UpperBound, rng)
 		funcCount++
@@ -196,8 +225,16 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Initialize female population
 	for i := range config.NPopF {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		females[i] = newMayfly(config.ProblemSize)
-		females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+		if i < len(run.initialFemales) {
+			copy(females[i].Position, run.initialFemales[i])
+		} else {
+			females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+		}
 		females[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, females[i].Position,
 			config.LowerBound, config.UpperBound, rng)
 		funcCount++
@@ -253,6 +290,10 @@ func Optimize(config *Config) (*Result, error) {
 
 	// Main loop
 	for it := range config.MaxIterations {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		// AOBLMOA: Use hybrid Mayfly-Aquila updates with opposition-based learning
 		switch {
 		case config.UseAOBLMOA:
@@ -857,6 +898,12 @@ func Optimize(config *Config) (*Result, error) {
 		g *= config.GDamp
 		dance *= config.DanceDamp
 		fl *= config.FLDamp
+
+		notifyProgress(run.observer, it+1, funcCount, globalBest)
+
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 	}
 
 	return &Result{

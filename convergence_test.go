@@ -55,7 +55,8 @@ func TestValidateConvergenceConfig(t *testing.T) {
 		})
 	}
 
-	if err := validateConvergenceConfig(nil, 10); err != nil {
+	err := validateConvergenceConfig(nil, 10)
+	if err != nil {
 		t.Fatalf("nil convergence config: %v", err)
 	}
 
@@ -67,7 +68,9 @@ func TestValidateConvergenceConfig(t *testing.T) {
 		MinIterations:        2,
 		StagnationIterations: 4,
 	}
-	if err := validateConvergenceConfig(valid, 10); err != nil {
+
+	err = validateConvergenceConfig(valid, 10)
+	if err != nil {
 		t.Fatalf("valid convergence config: %v", err)
 	}
 }

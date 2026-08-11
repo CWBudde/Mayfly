@@ -300,6 +300,11 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 
 ## Performance
 
+Objective-function batches can be evaluated concurrently when individual
+evaluations are expensive enough to offset scheduling overhead. See the
+[parallel evaluation guidance](docs/api/configuration.md#when-parallel-evaluation-helps)
+for worker-count selection and the cheap-versus-expensive benchmark command.
+
 ### Expected Results (D=30, 500 iterations)
 
 | Function   | Standard MA | DESMA | OLCE-MA | EOBBMA  | Best Variant |

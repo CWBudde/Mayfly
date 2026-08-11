@@ -141,10 +141,10 @@ Control genetic operators:
 
 ### Parallel Fitness Evaluation
 
-| Parameter        | Type   | Default            | Description                                 |
-| ---------------- | ------ | ------------------ | ------------------------------------------- |
+| Parameter        | Type   | Default            | Description                                     |
+| ---------------- | ------ | ------------------ | ----------------------------------------------- |
 | `EnableParallel` | `bool` | false              | Evaluate objective-function batches in parallel |
-| `MaxWorkers`     | `int`  | `runtime.NumCPU()` | Maximum concurrent objective-function calls |
+| `MaxWorkers`     | `int`  | `runtime.NumCPU()` | Maximum concurrent objective-function calls     |
 
 Parallel evaluation is opt-in so existing configurations retain their current
 sequential behavior. A `MaxWorkers` value of zero also resolves to
@@ -178,6 +178,37 @@ bounded workers before evaluating them. MPMA computes independent position
 dimensions concurrently, including weighted medians. Both use at most
 `MaxWorkers`; they do not overlap objective-evaluation batches. All population,
 personal-best, global-best, annealing, and archive updates remain serialized.
+
+#### When parallel evaluation helps
+
+Parallel evaluation is most useful when each objective call performs enough
+CPU work to outweigh goroutine scheduling and synchronization, and when the
+population or candidate batch contains several independent evaluations. Leave
+it disabled for very cheap objectives, small populations, or workloads already
+parallelized internally; in those cases the coordination overhead can make a
+parallel run slower.
+
+For CPU-bound objectives, start with `MaxWorkers` set to the smaller of
+`runtime.NumCPU()` and the largest typical evaluation batch. More workers than
+the current batch cannot improve throughput. Reduce the limit if each call uses
+substantial memory or other constrained resources. Measure the complete
+optimization workload because the profitable worker count depends on objective
+cost, population sizes, and the selected variant.
+
+Comparison-run parallelism and fitness-evaluation parallelism are separate
+layers. Usually enable one layer at a time. If both are enabled, keep their
+combined concurrency within the machine's capacity to avoid oversubscription.
+
+The repository includes a benchmark matrix for cheap and CPU-expensive
+objectives across the available worker counts:
+
+```sh
+go test -run '^$' -bench '^BenchmarkParallelFitnessEvaluation$' -benchmem -count=3 ./...
+```
+
+Compare `ns/op` within each objective group. Multiple runs help distinguish a
+consistent speedup from ordinary timing noise; benchmark the real objective
+before choosing a production worker limit.
 
 ### Random Number Generation
 

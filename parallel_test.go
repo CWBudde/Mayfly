@@ -446,12 +446,13 @@ func TestParallelVariantEvaluationUsesVariantBatchCapacity(t *testing.T) {
 	}
 }
 
-func TestParallelVariantEvaluationIsSchedulingIndependent(t *testing.T) {
+func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 	testCases := []struct {
 		newConfig func() *Config
 		configure func(*Config)
 		name      string
 	}{
+		{name: "standard", newConfig: NewDefaultConfig, configure: func(*Config) {}},
 		{name: "DESMA", newConfig: NewDESMAConfig, configure: func(*Config) {}},
 		{name: "OLCE", newConfig: NewOLCEConfig, configure: func(*Config) {}},
 		{name: "EOBBMA", newConfig: NewEOBBMAConfig, configure: func(config *Config) {
@@ -471,7 +472,9 @@ func TestParallelVariantEvaluationIsSchedulingIndependent(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			run := func(maxWorkers int) *Result {
+			run := func(name string, maxWorkers int) *Result {
+				t.Helper()
+
 				config := testCase.newConfig()
 				config.ObjectiveFunc = sphere
 				config.ProblemSize = 4
@@ -489,28 +492,28 @@ func TestParallelVariantEvaluationIsSchedulingIndependent(t *testing.T) {
 
 				result, err := Optimize(config)
 				if err != nil {
-					t.Fatalf("Optimize with MaxWorkers=%d: %v", maxWorkers, err)
+					t.Fatalf("Optimize %s: %v", name, err)
 				}
 
 				return result
 			}
 
-			oneWorker := run(1)
-			fourWorkers := run(4)
-
-			if !reflect.DeepEqual(oneWorker.GlobalBest, fourWorkers.GlobalBest) {
-				t.Errorf("GlobalBest differs by worker count: one=%+v four=%+v",
-					oneWorker.GlobalBest, fourWorkers.GlobalBest)
-			}
-
-			if !reflect.DeepEqual(oneWorker.ConvergenceCurve, fourWorkers.ConvergenceCurve) {
-				t.Errorf("ConvergenceCurve differs by worker count: one=%v four=%v",
-					oneWorker.ConvergenceCurve, fourWorkers.ConvergenceCurve)
-			}
-
-			if oneWorker.FuncEvalCount != fourWorkers.FuncEvalCount {
-				t.Errorf("FuncEvalCount differs by worker count: one=%d four=%d",
-					oneWorker.FuncEvalCount, fourWorkers.FuncEvalCount)
+			baseline := run("parallel/baseline", 1)
+			for _, parallelRun := range []struct {
+				name       string
+				maxWorkers int
+			}{
+				{name: "parallel/1_worker_repeat", maxWorkers: 1},
+				{name: "parallel/4_workers", maxWorkers: 4},
+			} {
+				result := run(parallelRun.name, parallelRun.maxWorkers)
+				if !reflect.DeepEqual(result.GlobalBest, baseline.GlobalBest) ||
+					!reflect.DeepEqual(result.ConvergenceCurve, baseline.ConvergenceCurve) ||
+					result.FuncEvalCount != baseline.FuncEvalCount ||
+					result.IterationCount != baseline.IterationCount {
+					t.Errorf("%s result differs from seeded baseline:\nresult:   %+v\nbaseline: %+v",
+						parallelRun.name, result, baseline)
+				}
 			}
 		})
 	}
@@ -688,6 +691,47 @@ func TestEvaluationPoolBestUsesStableIndexAndCopiesPosition(t *testing.T) {
 	population[0].Position[0] = 99
 	if !reflect.DeepEqual(best.Position, []float64{1}) {
 		t.Errorf("best position changed after population mutation: %v", best.Position)
+	}
+}
+
+func TestEvaluationPoolEvaluatesEveryCandidateExactlyOnce(t *testing.T) {
+	const populationSize = 37
+
+	callCounts := make([]atomic.Int64, populationSize)
+
+	var totalCalls atomic.Int64
+
+	pool := newEvaluationPool(func(position []float64) float64 {
+		index := int(position[0])
+		callCounts[index].Add(1)
+		totalCalls.Add(1)
+
+		return float64(index)
+	}, 4)
+	defer pool.close()
+
+	population := make([]*Mayfly, populationSize)
+	for i := range population {
+		population[i] = newMayfly(1)
+		population[i].Position[0] = float64(i)
+	}
+
+	if _, err := pool.evaluate(context.Background(), population, false, false); err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	if got := totalCalls.Load(); got != populationSize {
+		t.Errorf("objective calls = %d, want %d", got, populationSize)
+	}
+
+	for i := range population {
+		if got := callCounts[i].Load(); got != 1 {
+			t.Errorf("candidate %d objective calls = %d, want 1", i, got)
+		}
+
+		if population[i].Cost != float64(i) {
+			t.Errorf("candidate %d cost = %v, want %d", i, population[i].Cost, i)
+		}
 	}
 }
 

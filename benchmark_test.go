@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -503,9 +505,8 @@ func BenchmarkPopulationSize(b *testing.B) {
 	}
 }
 
-// BenchmarkParallelFitnessEvaluation compares opt-in parallel population
-// evaluation with the backward-compatible sequential path for an expensive
-// CPU-bound objective.
+// BenchmarkParallelFitnessEvaluation compares the sequential evaluator with
+// increasing parallel worker counts for cheap and CPU-bound objectives.
 func BenchmarkParallelFitnessEvaluation(b *testing.B) {
 	expensiveObjective := func(position []float64) float64 {
 		cost := 0.0
@@ -519,34 +520,75 @@ func BenchmarkParallelFitnessEvaluation(b *testing.B) {
 		return cost
 	}
 
-	for _, parallel := range []bool{false, true} {
-		name := "sequential"
-		if parallel {
-			name = "parallel"
+	const populationSize = 8
+
+	workerCounts := make([]int, 0, 4)
+	for _, workers := range []int{1, 2, 4, min(runtime.NumCPU(), populationSize)} {
+		if workers > runtime.NumCPU() || slices.Contains(workerCounts, workers) {
+			continue
 		}
 
-		b.Run(name, func(b *testing.B) {
-			b.ReportAllocs()
+		workerCounts = append(workerCounts, workers)
+	}
 
-			for i := range b.N {
-				config := NewDefaultConfig()
-				config.ObjectiveFunc = expensiveObjective
-				config.ProblemSize = 10
-				config.LowerBound = -10
-				config.UpperBound = 10
-				config.MaxIterations = 10
-				config.NPop = 8
-				config.NPopF = 8
-				config.NC = 0
-				config.NM = 0
-				config.Rand = rand.New(rand.NewSource(int64(i)))
-				config.EnableParallel = parallel
-				config.MaxWorkers = 4
+	objectives := []struct {
+		objective ObjectiveFunction
+		name      string
+	}{
+		{name: "cheap", objective: Sphere},
+		{name: "expensive", objective: expensiveObjective},
+	}
 
-				_, optimizeErr := Optimize(config)
-				if optimizeErr != nil {
-					b.Fatal(optimizeErr)
-				}
+	for _, objective := range objectives {
+		b.Run(objective.name, func(b *testing.B) {
+			type benchmarkMode struct {
+				name       string
+				parallel   bool
+				maxWorkers int
+			}
+
+			modes := make([]benchmarkMode, 0, 1+len(workerCounts))
+			modes = append(modes, benchmarkMode{name: "sequential", parallel: false, maxWorkers: 1})
+
+			for _, workers := range workerCounts {
+				modes = append(modes, benchmarkMode{
+					name:       fmt.Sprintf("parallel_%d_workers", workers),
+					parallel:   true,
+					maxWorkers: workers,
+				})
+			}
+
+			for _, mode := range modes {
+				b.Run(mode.name, func(b *testing.B) {
+					b.ReportAllocs()
+
+					var evaluations int
+
+					for i := range b.N {
+						config := NewDefaultConfig()
+						config.ObjectiveFunc = objective.objective
+						config.ProblemSize = 10
+						config.LowerBound = -10
+						config.UpperBound = 10
+						config.MaxIterations = 10
+						config.NPop = populationSize
+						config.NPopF = populationSize
+						config.NC = 0
+						config.NM = 0
+						config.Rand = rand.New(rand.NewSource(int64(i)))
+						config.EnableParallel = mode.parallel
+						config.MaxWorkers = mode.maxWorkers
+
+						result, optimizeErr := Optimize(config)
+						if optimizeErr != nil {
+							b.Fatal(optimizeErr)
+						}
+
+						evaluations = result.FuncEvalCount
+					}
+
+					b.ReportMetric(float64(evaluations), "evals/op")
+				})
 			}
 		})
 	}

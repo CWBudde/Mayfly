@@ -144,9 +144,10 @@ func TestEffectiveNMResolvesTheDefault(t *testing.T) {
 }
 
 // TestConvergenceCurveIsACostHistory pins what the field actually holds, which
-// the name it used to carry did not: it has MaxIterations entries rather than
-// ProblemSize, and it is non-increasing. Read as the position vector the old
-// name advertised, it is nonsense of exactly the plausible-looking kind.
+// the name it used to carry did not: it has one entry per completed iteration
+// rather than ProblemSize entries, and it is non-increasing. Read as the
+// position vector the old name advertised, it is nonsense of exactly the
+// plausible-looking kind.
 func TestConvergenceCurveIsACostHistory(t *testing.T) {
 	config := smallConfig(10, 10, 20, 1)
 	config.MaxIterations = 12
@@ -157,9 +158,9 @@ func TestConvergenceCurveIsACostHistory(t *testing.T) {
 		t.Fatalf("Optimize: %v", err)
 	}
 
-	if len(result.ConvergenceCurve) != config.MaxIterations {
-		t.Fatalf("ConvergenceCurve has %d entries, want MaxIterations=%d",
-			len(result.ConvergenceCurve), config.MaxIterations)
+	if len(result.ConvergenceCurve) != result.IterationCount {
+		t.Fatalf("ConvergenceCurve has %d entries, want IterationCount=%d",
+			len(result.ConvergenceCurve), result.IterationCount)
 	}
 
 	for i := 1; i < len(result.ConvergenceCurve); i++ {

@@ -158,6 +158,10 @@ func TestNewDefaultConfig(t *testing.T) {
 		t.Errorf("NewDefaultConfig() MaxIterations = %v, want 2000", config.MaxIterations)
 	}
 
+	if config.Convergence != nil {
+		t.Errorf("NewDefaultConfig() Convergence = %+v, want nil", config.Convergence)
+	}
+
 	if config.NPop != 20 {
 		t.Errorf("NewDefaultConfig() NPop = %v, want 20", config.NPop)
 	}
@@ -389,9 +393,10 @@ func TestResultStruct(t *testing.T) {
 			Position: []float64{1.0, 2.0},
 			Cost:     3.5,
 		},
-		ConvergenceCurve: []float64{10.0, 5.0, 2.0, 1.0},
-		FuncEvalCount:    1000,
-		IterationCount:   100,
+		ConvergenceCurve:  []float64{10.0, 5.0, 2.0, 1.0},
+		TerminationReason: TerminationStagnation,
+		FuncEvalCount:     1000,
+		IterationCount:    100,
 	}
 
 	// Check GlobalBest
@@ -415,6 +420,11 @@ func TestResultStruct(t *testing.T) {
 
 	if result.IterationCount != 100 {
 		t.Errorf("Result.IterationCount = %v, want 100", result.IterationCount)
+	}
+
+	if result.TerminationReason != TerminationStagnation {
+		t.Errorf("Result.TerminationReason = %q, want %q",
+			result.TerminationReason, TerminationStagnation)
 	}
 
 	// Check that convergence values are decreasing (typical for minimization)

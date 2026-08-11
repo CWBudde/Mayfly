@@ -69,6 +69,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, fmt.Errorf("MaxIterations must be positive, got %d", config.MaxIterations)
 	}
 
+	convergenceErr := validateConvergenceConfig(config.Convergence, config.MaxIterations)
+	if convergenceErr != nil {
+		return nil, fmt.Errorf("invalid convergence config: %w", convergenceErr)
+	}
+
 	// Validate population sizes
 	if config.NPop <= 0 {
 		return nil, fmt.Errorf("NPop (male population) must be positive, got %d", config.NPop)
@@ -313,6 +318,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	bestSolution := make([]float64, config.MaxIterations)
+	convergence := newConvergenceTracker(config.Convergence, globalBest.Cost)
+	iterationCount := 0
+	terminationReason := TerminationMaxIterations
 	g := config.G
 	dance := config.Dance
 	fl := config.FL
@@ -1131,6 +1139,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		}
 
 		bestSolution[it] = globalBest.Cost
+		iterationCount = it + 1
 
 		// GSASMA: Update temperature schedule
 		if config.UseGSASMA {
@@ -1148,13 +1157,20 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		if iterationErr != nil {
 			return nil, iterationErr
 		}
+
+		if reason, stop := convergence.observe(iterationCount, globalBest.Cost); stop {
+			terminationReason = reason
+
+			break
+		}
 	}
 
 	return &Result{
-		GlobalBest:       globalBest,
-		ConvergenceCurve: bestSolution,
-		FuncEvalCount:    funcCount,
-		IterationCount:   config.MaxIterations,
-		Seed:             seed,
+		GlobalBest:        globalBest,
+		ConvergenceCurve:  bestSolution[:iterationCount],
+		TerminationReason: terminationReason,
+		FuncEvalCount:     funcCount,
+		IterationCount:    iterationCount,
+		Seed:              seed,
 	}, nil
 }

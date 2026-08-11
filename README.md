@@ -16,6 +16,7 @@ The Mayfly Algorithm is a swarm intelligence optimization algorithm inspired by 
 - 15+ benchmark functions included
 - Unified API with intelligent algorithm selection
 - Statistical comparison framework
+- Optional target-cost and stagnation-based early stopping
 - Thread-safe with proper configuration
 
 ## Quick Start

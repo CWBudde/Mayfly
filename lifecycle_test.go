@@ -221,6 +221,132 @@ func TestProgressObserverReceivesIndependentSnapshots(t *testing.T) {
 	}
 }
 
+func TestOptimizeStopsAtTargetCost(t *testing.T) {
+	target := 1.0
+	config := lifecycleConfig(func([]float64) float64 { return target })
+	config.MaxIterations = 20
+	config.Convergence = &ConvergenceConfig{TargetCost: &target}
+
+	var progress []Progress
+	result, err := OptimizeContext(
+		context.Background(),
+		config,
+		WithProgressObserver(func(update Progress) { progress = append(progress, update) }),
+	)
+	if err != nil {
+		t.Fatalf("OptimizeContext: %v", err)
+	}
+
+	if result.TerminationReason != TerminationTargetCost {
+		t.Errorf("TerminationReason = %q, want %q",
+			result.TerminationReason, TerminationTargetCost)
+	}
+
+	if result.IterationCount != 1 {
+		t.Errorf("IterationCount = %d, want 1", result.IterationCount)
+	}
+
+	if len(result.ConvergenceCurve) != result.IterationCount {
+		t.Errorf("ConvergenceCurve length = %d, want IterationCount=%d",
+			len(result.ConvergenceCurve), result.IterationCount)
+	}
+
+	if len(progress) != result.IterationCount {
+		t.Errorf("observer calls = %d, want IterationCount=%d", len(progress), result.IterationCount)
+	}
+}
+
+func TestOptimizeStopsAfterStagnationAndMinimumIterations(t *testing.T) {
+	config := lifecycleConfig(func([]float64) float64 { return 1 })
+	config.MaxIterations = 20
+	config.Convergence = &ConvergenceConfig{
+		StagnationIterations: 3,
+		MinIterations:        5,
+	}
+
+	result, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("Optimize: %v", err)
+	}
+
+	if result.TerminationReason != TerminationStagnation {
+		t.Errorf("TerminationReason = %q, want %q",
+			result.TerminationReason, TerminationStagnation)
+	}
+
+	if result.IterationCount != config.Convergence.MinIterations {
+		t.Errorf("IterationCount = %d, want minimum %d",
+			result.IterationCount, config.Convergence.MinIterations)
+	}
+
+	if len(result.ConvergenceCurve) != result.IterationCount {
+		t.Errorf("ConvergenceCurve length = %d, want IterationCount=%d",
+			len(result.ConvergenceCurve), result.IterationCount)
+	}
+}
+
+func TestOptimizeWithoutConvergencePolicyUsesMaximumIterations(t *testing.T) {
+	config := lifecycleConfig(func([]float64) float64 { return 1 })
+
+	result, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("Optimize: %v", err)
+	}
+
+	if result.TerminationReason != TerminationMaxIterations {
+		t.Errorf("TerminationReason = %q, want %q",
+			result.TerminationReason, TerminationMaxIterations)
+	}
+
+	if result.IterationCount != config.MaxIterations {
+		t.Errorf("IterationCount = %d, want MaxIterations=%d",
+			result.IterationCount, config.MaxIterations)
+	}
+}
+
+func TestConvergenceDetectionAppliesToEveryVariant(t *testing.T) {
+	target := 1.0
+	factories := []struct {
+		name string
+		new  func() *Config
+	}{
+		{name: "standard", new: NewDefaultConfig},
+		{name: "DESMA", new: NewDESMAConfig},
+		{name: "OLCE", new: NewOLCEConfig},
+		{name: "EOBBMA", new: NewEOBBMAConfig},
+		{name: "GSASMA", new: NewGSASMAConfig},
+		{name: "MPMA", new: NewMPMAConfig},
+		{name: "AOBLMOA", new: NewAOBLMOAConfig},
+	}
+
+	for _, factory := range factories {
+		t.Run(factory.name, func(t *testing.T) {
+			config := factory.new()
+			config.ObjectiveFunc = func([]float64) float64 { return target }
+			config.ProblemSize = 2
+			config.LowerBound = -1
+			config.UpperBound = 1
+			config.MaxIterations = 10
+			config.NPop = 6
+			config.NPopF = 6
+			config.NC = 0
+			config.NM = 0
+			config.Rand = rand.New(rand.NewSource(17))
+			config.Convergence = &ConvergenceConfig{TargetCost: &target}
+
+			result, err := Optimize(config)
+			if err != nil {
+				t.Fatalf("Optimize: %v", err)
+			}
+
+			if result.TerminationReason != TerminationTargetCost || result.IterationCount != 1 {
+				t.Errorf("termination = (%q, %d), want (%q, 1)",
+					result.TerminationReason, result.IterationCount, TerminationTargetCost)
+			}
+		})
+	}
+}
+
 func TestOptimizeContextCancellation(t *testing.T) {
 	t.Run("already canceled", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())

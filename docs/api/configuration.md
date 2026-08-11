@@ -139,6 +139,46 @@ Control genetic operators:
 
 ## Advanced Parameters
 
+### Convergence Detection
+
+`Config.Convergence` is optional. When it is `nil` (the default), every run
+executes exactly `MaxIterations`. When configured, `MaxIterations` remains a
+hard upper bound while convergence criteria adapt the actual run length.
+
+| Parameter              | Type       | Default   | Description                                                  |
+| ---------------------- | ---------- | --------- | ------------------------------------------------------------ |
+| `TargetCost`           | `*float64` | nil       | Stop when the best cost is at most this value                |
+| `StagnationIterations` | `int`      | 0         | Stop after this many iterations without sufficient progress  |
+| `MinImprovement`       | `float64`  | 0         | Absolute cost reduction required to reset stagnation         |
+| `MinIterations`        | `int`      | 0 (one\*) | Lower bound on completed iterations before convergence stops |
+
+\*Convergence checks happen after completed iterations, so zero permits the
+first check after iteration one. `MinIterations` cannot exceed
+`MaxIterations`.
+
+```go
+targetCost := 1e-8
+config.Convergence = &mayfly.ConvergenceConfig{
+    TargetCost:           &targetCost,
+    StagnationIterations: 100,
+    MinImprovement:       1e-10,
+    MinIterations:        200,
+}
+```
+
+Target and stagnation checks can be used independently or together. A target
+pointer is used so zero and negative target costs remain valid. Stagnation is
+measured against the last improvement larger than `MinImprovement`; smaller
+improvements accumulate and can eventually reset the counter once their total
+passes that threshold.
+
+`Result.IterationCount` and the length of `Result.ConvergenceCurve` report the
+actual number of completed iterations. `Result.TerminationReason` is one of
+`TerminationMaxIterations`, `TerminationTargetCost`, or
+`TerminationStagnation`. Progress observers receive exactly one update for
+each completed iteration, including the final iteration of an early-stopped
+run. The policy applies uniformly to the standard algorithm and all variants.
+
 ### Parallel Fitness Evaluation
 
 | Parameter        | Type   | Default            | Description                                     |

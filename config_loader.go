@@ -83,6 +83,11 @@ func ValidateConfig(config *Config) error {
 		return fmt.Errorf("max_iterations must be positive (got %d)", config.MaxIterations)
 	}
 
+	convergenceErr := validateConvergenceConfig(config.Convergence, config.MaxIterations)
+	if convergenceErr != nil {
+		return fmt.Errorf("invalid convergence config: %w", convergenceErr)
+	}
+
 	if config.NPop <= 0 {
 		return fmt.Errorf("npop must be positive (got %d)", config.NPop)
 	}

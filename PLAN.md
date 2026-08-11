@@ -60,9 +60,9 @@
 
 #### 1.6 Convergence Detection
 
-- [ ] Early stopping criteria
-- [ ] Stagnation detection
-- [ ] Adaptive iteration limits
+- [x] Early stopping criteria
+- [x] Stagnation detection
+- [x] Adaptive iteration limits
 
 #### 1.7 Constraint Handling
 

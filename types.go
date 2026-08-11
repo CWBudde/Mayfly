@@ -25,70 +25,108 @@ type Mayfly struct {
 	Cost     float64
 }
 
+// ConvergenceConfig controls optional early termination. MaxIterations remains
+// the hard upper bound; successful target or stagnation checks may shorten a
+// run after MinIterations completed iterations.
+type ConvergenceConfig struct {
+	// TargetCost stops the run when the best cost is less than or equal to the
+	// pointed-to value. A pointer distinguishes a disabled target from a target
+	// of zero.
+	TargetCost *float64 `json:"target_cost,omitempty"`
+
+	// MinImprovement is the absolute cost reduction required to reset the
+	// stagnation counter. It must be non-negative.
+	MinImprovement float64 `json:"min_improvement"`
+
+	// StagnationIterations stops the run after this many consecutive iterations
+	// without a sufficient improvement. Zero disables stagnation detection.
+	StagnationIterations int `json:"stagnation_iterations"`
+
+	// MinIterations is the minimum number of iterations completed before either
+	// stopping criterion can terminate the run. Zero behaves as one because
+	// convergence is checked at iteration boundaries.
+	MinIterations int `json:"min_iterations"`
+}
+
 // Config holds the configuration parameters for the Mayfly Algorithm.
 // When EnableParallel is true, ObjectiveFunc may be called concurrently with
 // distinct position vectors and must be safe for concurrent use.
 type Config struct {
-	ObjectiveFunc         ObjectiveFunction `json:"-"`
-	Rand                  *rand.Rand        `json:"-"`
-	CoolingSchedule       string            `json:"cooling_schedule"`
-	GravityType           string            `json:"gravity_type"`
-	ReductionFactor       float64           `json:"reduction_factor"`
-	Dance                 float64           `json:"dance"`
-	NPop                  int               `json:"npop"`
-	NPopF                 int               `json:"npopf"`
-	G                     float64           `json:"g"`
-	GDamp                 float64           `json:"g_damp"`
-	A1                    float64           `json:"a1"`
-	A2                    float64           `json:"a2"`
-	A3                    float64           `json:"a3"`
-	ChaosFactor           float64           `json:"chaos_factor"`
-	OrthogonalFactor      float64           `json:"orthogonal_factor"`
-	FL                    float64           `json:"fl"`
-	DanceDamp             float64           `json:"dance_damp"`
-	FLDamp                float64           `json:"fl_damp"`
-	NC                    int               `json:"nc"`
-	NM                    int               `json:"nm"`
-	Mu                    float64           `json:"mu"`
-	VelMax                float64           `json:"vel_max"`
-	VelMin                float64           `json:"vel_min"`
-	EliteCount            int               `json:"elite_count"`
-	SearchRange           float64           `json:"search_range"`
-	EnlargeFactor         float64           `json:"enlarge_factor"`
-	MaxIterations         int               `json:"max_iterations"`
-	UpperBound            float64           `json:"upper_bound"`
-	Beta                  float64           `json:"beta"`
-	LevyAlpha             float64           `json:"levy_alpha"`
-	StrategySwitch        int               `json:"strategy_switch"`
-	ArchiveSize           int               `json:"archive_size"`
-	LevyBeta              float64           `json:"levy_beta"`
-	OppositionRate        float64           `json:"opposition_rate"`
-	EliteOppositionCount  int               `json:"elite_opposition_count"`
-	OppositionProbability float64           `json:"opposition_probability"`
-	AquilaWeight          float64           `json:"aquila_weight"`
-	MedianWeight          float64           `json:"median_weight"`
-	LowerBound            float64           `json:"lower_bound"`
-	ProblemSize           int               `json:"problem_size"`
-	MaxWorkers            int               `json:"max_workers"`
-	GoldenFactor          float64           `json:"golden_factor"`
-	InitialTemperature    float64           `json:"initial_temperature"`
-	CoolingRate           float64           `json:"cooling_rate"`
-	CauchyMutationRate    float64           `json:"cauchy_mutation_rate"`
-	UseGSASMA             bool              `json:"use_gsasma"`
-	UseWeightedMedian     bool              `json:"use_weighted_median"`
-	ApplyOBLToGlobalBest  bool              `json:"apply_obl_to_global_best"`
-	UseAOBLMOA            bool              `json:"use_aoblmoa"`
-	UseMPMA               bool              `json:"use_mpma"`
-	UseEOBBMA             bool              `json:"use_eobbma"`
-	UseOLCE               bool              `json:"use_olce"`
-	UseDESMA              bool              `json:"use_desma"`
-	EnableParallel        bool              `json:"enable_parallel"`
+	ObjectiveFunc         ObjectiveFunction  `json:"-"`
+	Rand                  *rand.Rand         `json:"-"`
+	Convergence           *ConvergenceConfig `json:"convergence,omitempty"`
+	CoolingSchedule       string             `json:"cooling_schedule"`
+	GravityType           string             `json:"gravity_type"`
+	ReductionFactor       float64            `json:"reduction_factor"`
+	Dance                 float64            `json:"dance"`
+	NPop                  int                `json:"npop"`
+	NPopF                 int                `json:"npopf"`
+	G                     float64            `json:"g"`
+	GDamp                 float64            `json:"g_damp"`
+	A1                    float64            `json:"a1"`
+	A2                    float64            `json:"a2"`
+	A3                    float64            `json:"a3"`
+	ChaosFactor           float64            `json:"chaos_factor"`
+	OrthogonalFactor      float64            `json:"orthogonal_factor"`
+	FL                    float64            `json:"fl"`
+	DanceDamp             float64            `json:"dance_damp"`
+	FLDamp                float64            `json:"fl_damp"`
+	NC                    int                `json:"nc"`
+	NM                    int                `json:"nm"`
+	Mu                    float64            `json:"mu"`
+	VelMax                float64            `json:"vel_max"`
+	VelMin                float64            `json:"vel_min"`
+	EliteCount            int                `json:"elite_count"`
+	SearchRange           float64            `json:"search_range"`
+	EnlargeFactor         float64            `json:"enlarge_factor"`
+	MaxIterations         int                `json:"max_iterations"`
+	UpperBound            float64            `json:"upper_bound"`
+	Beta                  float64            `json:"beta"`
+	LevyAlpha             float64            `json:"levy_alpha"`
+	StrategySwitch        int                `json:"strategy_switch"`
+	ArchiveSize           int                `json:"archive_size"`
+	LevyBeta              float64            `json:"levy_beta"`
+	OppositionRate        float64            `json:"opposition_rate"`
+	EliteOppositionCount  int                `json:"elite_opposition_count"`
+	OppositionProbability float64            `json:"opposition_probability"`
+	AquilaWeight          float64            `json:"aquila_weight"`
+	MedianWeight          float64            `json:"median_weight"`
+	LowerBound            float64            `json:"lower_bound"`
+	ProblemSize           int                `json:"problem_size"`
+	MaxWorkers            int                `json:"max_workers"`
+	GoldenFactor          float64            `json:"golden_factor"`
+	InitialTemperature    float64            `json:"initial_temperature"`
+	CoolingRate           float64            `json:"cooling_rate"`
+	CauchyMutationRate    float64            `json:"cauchy_mutation_rate"`
+	UseGSASMA             bool               `json:"use_gsasma"`
+	UseWeightedMedian     bool               `json:"use_weighted_median"`
+	ApplyOBLToGlobalBest  bool               `json:"apply_obl_to_global_best"`
+	UseAOBLMOA            bool               `json:"use_aoblmoa"`
+	UseMPMA               bool               `json:"use_mpma"`
+	UseEOBBMA             bool               `json:"use_eobbma"`
+	UseOLCE               bool               `json:"use_olce"`
+	UseDESMA              bool               `json:"use_desma"`
+	EnableParallel        bool               `json:"enable_parallel"`
 }
+
+// TerminationReason describes why an optimization run ended.
+type TerminationReason string
+
+const (
+	// TerminationMaxIterations means the configured iteration cap was reached.
+	TerminationMaxIterations TerminationReason = "maximum_iterations"
+	// TerminationTargetCost means the configured target cost was reached.
+	TerminationTargetCost TerminationReason = "target_cost"
+	// TerminationStagnation means the best cost did not improve sufficiently
+	// within the configured stagnation window.
+	TerminationStagnation TerminationReason = "stagnation"
+)
 
 // Result holds the results of the optimization.
 type Result struct {
-	// ConvergenceCurve holds the best cost known at the end of each iteration,
-	// so it has MaxIterations entries and is non-increasing. It is a history of
+	// ConvergenceCurve holds the best cost known at the end of each completed
+	// iteration, so it has IterationCount entries and is non-increasing. Without
+	// early stopping, IterationCount equals MaxIterations. It is a history of
 	// costs, not a point in the search space.
 	//
 	// The solution itself is GlobalBest.Position.
@@ -100,10 +138,11 @@ type Result struct {
 	// have left the misleading name in place.
 	ConvergenceCurve []float64
 
-	GlobalBest     Best
-	FuncEvalCount  int
-	IterationCount int
-	Seed           int64 // Random seed used for reproducibility
+	TerminationReason TerminationReason
+	GlobalBest        Best
+	FuncEvalCount     int
+	IterationCount    int
+	Seed              int64 // Random seed used for reproducibility
 }
 
 // newMayfly creates an empty mayfly with allocated slices.

@@ -20,6 +20,13 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	config.EliteCount = 7
 	config.EnableParallel = true
 	config.MaxWorkers = 3
+	target := 1e-6
+	config.Convergence = &ConvergenceConfig{
+		TargetCost:           &target,
+		MinImprovement:       1e-9,
+		StagnationIterations: 25,
+		MinIterations:        50,
+	}
 
 	// Save to temp file
 	tmpFile := filepath.Join(os.TempDir(), "test_mayfly_config.json")
@@ -67,6 +74,19 @@ func TestSaveAndLoadConfig(t *testing.T) {
 
 	if loadedConfig.MaxWorkers != 3 {
 		t.Errorf("Expected MaxWorkers 3, got %d", loadedConfig.MaxWorkers)
+	}
+
+	if loadedConfig.Convergence == nil {
+		t.Fatal("Expected convergence configuration to be loaded")
+	}
+
+	if loadedConfig.Convergence.TargetCost == nil || *loadedConfig.Convergence.TargetCost != target {
+		t.Errorf("Expected TargetCost %v, got %v", target, loadedConfig.Convergence.TargetCost)
+	}
+
+	if loadedConfig.Convergence.StagnationIterations != 25 ||
+		loadedConfig.Convergence.MinIterations != 50 {
+		t.Errorf("Unexpected loaded convergence config: %+v", loadedConfig.Convergence)
 	}
 }
 

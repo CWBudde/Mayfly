@@ -139,6 +139,46 @@ Control genetic operators:
 
 ## Advanced Parameters
 
+### Parallel Fitness Evaluation
+
+| Parameter        | Type   | Default            | Description                                 |
+| ---------------- | ------ | ------------------ | ------------------------------------------- |
+| `EnableParallel` | `bool` | false              | Evaluate objective-function batches in parallel |
+| `MaxWorkers`     | `int`  | `runtime.NumCPU()` | Maximum concurrent objective-function calls |
+
+Parallel evaluation is opt-in so existing configurations retain their current
+sequential behavior. A `MaxWorkers` value of zero also resolves to
+`runtime.NumCPU()`; negative values are invalid. The optimizer caps its worker
+pool at the largest configured core, offspring, or variant-specific batch, and
+active objective calls never exceed either the current batch size or
+`MaxWorkers`.
+
+Custom objective functions must be safe for concurrent calls when parallel
+evaluation is enabled and must treat the supplied position as read-only. Avoid
+shared mutable state, or protect it with your own synchronization. Random
+movement, candidate coefficients, selection decisions, and result commits stay
+on the optimizer goroutine, so pure, deterministic objective functions produce
+scheduling-independent batch results.
+
+```go
+config := mayfly.NewDefaultConfig()
+config.EnableParallel = true
+config.MaxWorkers = 4
+```
+
+Objective calls for initialization, male/female population updates, crossover
+offspring, and mutation offspring are parallelized. Variant-specific batches
+are covered too: DESMA elites, OLCE orthogonal-learning candidates, EOBBMA
+opposition points, GSASMA Golden Sine candidates, and AOBLMOA Aquila and
+opposition candidates. OLCE chaos and GSASMA hybrid mutation are applied before
+their offspring batches are dispatched.
+
+DESMA pre-draws random offsets and constructs independent elite positions with
+bounded workers before evaluating them. MPMA computes independent position
+dimensions concurrently, including weighted medians. Both use at most
+`MaxWorkers`; they do not overlap objective-evaluation batches. All population,
+personal-best, global-best, annealing, and archive updates remain serialized.
+
 ### Random Number Generation
 
 | Parameter | Type         | Default | Description                                        |
@@ -200,6 +240,7 @@ The `Optimize()` function validates configuration:
 - `VelMin` = -VelMax
 - `NM` = max(1, int(0.05 \* NPop))
 - `SearchRange` (DESMA) = 0.1 \* (UpperBound - LowerBound)
+- `MaxWorkers` = runtime.NumCPU()
 
 **Validation errors**:
 
@@ -238,8 +279,10 @@ config.MaxIterations = 2000
 
 ```go
 config := mayfly.NewDESMAConfig()
-config.EliteCount = 3  // Reduce elite count
-config.NPop = 15  // Smaller population
+config.EnableParallel = true
+config.MaxWorkers = 4
+config.EliteCount = 3       // Reduce elite count
+config.NPop = 15            // Smaller population
 config.MaxIterations = 500  // Fewer iterations
 ```
 

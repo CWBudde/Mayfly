@@ -8,7 +8,7 @@ import (
 )
 
 // ObjectiveFunction represents a function to be optimized.
-// It takes a position vector and returns a fitness cost.
+// It takes a read-only position vector and returns a fitness cost.
 type ObjectiveFunction func([]float64) float64
 
 // Best represents the best position and cost found.
@@ -26,6 +26,8 @@ type Mayfly struct {
 }
 
 // Config holds the configuration parameters for the Mayfly Algorithm.
+// When EnableParallel is true, ObjectiveFunc may be called concurrently with
+// distinct position vectors and must be safe for concurrent use.
 type Config struct {
 	ObjectiveFunc         ObjectiveFunction `json:"-"`
 	Rand                  *rand.Rand        `json:"-"`
@@ -67,6 +69,7 @@ type Config struct {
 	MedianWeight          float64           `json:"median_weight"`
 	LowerBound            float64           `json:"lower_bound"`
 	ProblemSize           int               `json:"problem_size"`
+	MaxWorkers            int               `json:"max_workers"`
 	GoldenFactor          float64           `json:"golden_factor"`
 	InitialTemperature    float64           `json:"initial_temperature"`
 	CoolingRate           float64           `json:"cooling_rate"`
@@ -79,6 +82,7 @@ type Config struct {
 	UseEOBBMA             bool              `json:"use_eobbma"`
 	UseOLCE               bool              `json:"use_olce"`
 	UseDESMA              bool              `json:"use_desma"`
+	EnableParallel        bool              `json:"enable_parallel"`
 }
 
 // Result holds the results of the optimization.

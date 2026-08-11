@@ -1,5 +1,7 @@
 package mayfly
 
+import "runtime"
+
 // Gravity coefficient decay schedules for MPMA (Config.GravityType).
 const (
 	GravityLinear      = "linear"
@@ -34,6 +36,7 @@ func NewDefaultConfig() *Config {
 		NC:            20,
 		NM:            0, // Will be calculated as 5% of NPop
 		Mu:            0.01,
+		MaxWorkers:    defaultMaxWorkers(),
 		// DESMA defaults
 		UseDESMA:        false,
 		EliteCount:      5,
@@ -41,6 +44,10 @@ func NewDefaultConfig() *Config {
 		EnlargeFactor:   1.05,
 		ReductionFactor: 0.95,
 	}
+}
+
+func defaultMaxWorkers() int {
+	return runtime.NumCPU()
 }
 
 // NewDESMAConfig creates a default configuration for the DESMA variant.

@@ -24,11 +24,13 @@ result, err := mayfly.OptimizeContext(
 )
 ```
 
-The context is checked before every initialization evaluation and at both ends
-of each iteration. An objective function that is already running is not
-interrupted; cancellation takes effect at the next check. The observer runs
-synchronously after every completed iteration. `Progress.Iteration` is
-one-based.
+The context is checked while initialization, population, crossover, mutation,
+and variant-specific evaluation batches are dispatched, during parallel DESMA
+candidate construction and MPMA median calculation, and at iteration
+boundaries. An objective function that is already running is not interrupted;
+the optimizer waits for in-flight calls before returning the cancellation
+error. The observer runs synchronously after every completed iteration.
+`Progress.Iteration` is one-based.
 
 Each progress value owns its `Best.Position` slice. It is safe for an observer
 to retain or modify the snapshot without changing the optimizer.

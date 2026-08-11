@@ -503,6 +503,55 @@ func BenchmarkPopulationSize(b *testing.B) {
 	}
 }
 
+// BenchmarkParallelFitnessEvaluation compares opt-in parallel population
+// evaluation with the backward-compatible sequential path for an expensive
+// CPU-bound objective.
+func BenchmarkParallelFitnessEvaluation(b *testing.B) {
+	expensiveObjective := func(position []float64) float64 {
+		cost := 0.0
+
+		for repeat := range 1000 {
+			for _, value := range position {
+				cost += math.Sin(value+float64(repeat)) * math.Sin(value+float64(repeat))
+			}
+		}
+
+		return cost
+	}
+
+	for _, parallel := range []bool{false, true} {
+		name := "sequential"
+		if parallel {
+			name = "parallel"
+		}
+
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+
+			for i := range b.N {
+				config := NewDefaultConfig()
+				config.ObjectiveFunc = expensiveObjective
+				config.ProblemSize = 10
+				config.LowerBound = -10
+				config.UpperBound = 10
+				config.MaxIterations = 10
+				config.NPop = 8
+				config.NPopF = 8
+				config.NC = 0
+				config.NM = 0
+				config.Rand = rand.New(rand.NewSource(int64(i)))
+				config.EnableParallel = parallel
+				config.MaxWorkers = 4
+
+				_, optimizeErr := Optimize(config)
+				if optimizeErr != nil {
+					b.Fatal(optimizeErr)
+				}
+			}
+		})
+	}
+}
+
 // TestBenchmarkSuite runs comprehensive benchmark suite with statistical analysis.
 // This is a test function that generates a performance report.
 func TestBenchmarkSuite(t *testing.T) {

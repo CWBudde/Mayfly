@@ -91,6 +91,10 @@ func ValidateConfig(config *Config) error {
 		return fmt.Errorf("npopf must be positive (got %d)", config.NPopF)
 	}
 
+	if config.MaxWorkers < 0 {
+		return fmt.Errorf("max_workers must be non-negative (got %d)", config.MaxWorkers)
+	}
+
 	// Validate coefficient ranges
 	if config.G < 0 || config.G > 1 {
 		return fmt.Errorf("g (inertia weight) should be in [0,1] (got %f)", config.G)
@@ -402,6 +406,10 @@ func ExportConfigTemplate(path, variant string) error {
 	fmt.Fprintf(file, "  \"nc\": %d,\n", config.NC)
 	fmt.Fprintf(file, "  \"nm\": %d,\n", config.NM)
 	fmt.Fprintf(file, "  \"mu\": %f,\n", config.Mu)
+	fmt.Fprintf(file, "\n")
+	fmt.Fprintf(file, "  // Parallel objective evaluation\n")
+	fmt.Fprintf(file, "  \"enable_parallel\": %t,\n", config.EnableParallel)
+	fmt.Fprintf(file, "  \"max_workers\": %d,\n", config.MaxWorkers)
 	fmt.Fprintf(file, "\n")
 	fmt.Fprintf(file, "  // Velocity limits (0 = auto-calculated)\n")
 	fmt.Fprintf(file, "  \"vel_max\": %f,\n", config.VelMax)

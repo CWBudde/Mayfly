@@ -227,6 +227,14 @@ func TestNewDefaultConfig(t *testing.T) {
 		t.Errorf("NewDefaultConfig() ReductionFactor = %v, want 0.95", config.ReductionFactor)
 	}
 
+	if config.EnableParallel {
+		t.Error("NewDefaultConfig() EnableParallel = true, want false")
+	}
+
+	if config.MaxWorkers != defaultMaxWorkers() {
+		t.Errorf("NewDefaultConfig() MaxWorkers = %v, want %v", config.MaxWorkers, defaultMaxWorkers())
+	}
+
 	// Check zero-initialized values
 	if config.NM != 0 {
 		t.Errorf("NewDefaultConfig() NM = %v, want 0 (auto-calculated)", config.NM)

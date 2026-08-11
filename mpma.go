@@ -1,6 +1,7 @@
 package mayfly
 
 import (
+	"context"
 	"math"
 	"sort"
 )
@@ -89,6 +90,92 @@ func calculateWeightedMedianPosition(population []*Mayfly, weights []float64) []
 	}
 
 	return median
+}
+
+func calculateMedianPositionParallel(
+	ctx context.Context,
+	population []*Mayfly,
+	maxWorkers int,
+) ([]float64, error) {
+	if len(population) == 0 {
+		return nil, nil
+	}
+
+	size := len(population[0].Position)
+	median := make([]float64, size)
+
+	err := parallelFor(ctx, size, maxWorkers, func(dimension int) {
+		values := make([]float64, len(population))
+		for i, mayfly := range population {
+			values[i] = mayfly.Position[dimension]
+		}
+
+		sort.Float64s(values)
+
+		middle := len(values) / 2
+		if len(values)%2 == 1 {
+			median[dimension] = values[middle]
+
+			return
+		}
+
+		median[dimension] = (values[middle-1] + values[middle]) / 2
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return median, nil
+}
+
+func calculateWeightedMedianPositionParallel(
+	ctx context.Context,
+	population []*Mayfly,
+	weights []float64,
+	maxWorkers int,
+) ([]float64, error) {
+	if len(population) == 0 || len(weights) != len(population) {
+		return nil, nil
+	}
+
+	type valueWeight struct {
+		value  float64
+		weight float64
+	}
+
+	size := len(population[0].Position)
+	median := make([]float64, size)
+
+	err := parallelFor(ctx, size, maxWorkers, func(dimension int) {
+		pairs := make([]valueWeight, len(population))
+		totalWeight := 0.0
+
+		for i, mayfly := range population {
+			pairs[i] = valueWeight{value: mayfly.Position[dimension], weight: weights[i]}
+			totalWeight += weights[i]
+		}
+
+		sort.Slice(pairs, func(i, j int) bool {
+			return pairs[i].value < pairs[j].value
+		})
+
+		halfWeight := totalWeight / 2
+		cumulativeWeight := 0.0
+
+		for _, pair := range pairs {
+			cumulativeWeight += pair.weight
+			if cumulativeWeight >= halfWeight {
+				median[dimension] = pair.value
+
+				return
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return median, nil
 }
 
 // calculateGravityCoefficient computes a time-varying gravity coefficient

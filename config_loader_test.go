@@ -18,6 +18,8 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	config.UpperBound = 5
 	config.MaxIterations = 300
 	config.EliteCount = 7
+	config.EnableParallel = true
+	config.MaxWorkers = 3
 
 	// Save to temp file
 	tmpFile := filepath.Join(os.TempDir(), "test_mayfly_config.json")
@@ -57,6 +59,27 @@ func TestSaveAndLoadConfig(t *testing.T) {
 
 	if !loadedConfig.UseDESMA {
 		t.Error("Expected UseDESMA to be true")
+	}
+
+	if !loadedConfig.EnableParallel {
+		t.Error("Expected EnableParallel to be true")
+	}
+
+	if loadedConfig.MaxWorkers != 3 {
+		t.Errorf("Expected MaxWorkers 3, got %d", loadedConfig.MaxWorkers)
+	}
+}
+
+func TestValidateConfigRejectsNegativeMaxWorkers(t *testing.T) {
+	config := NewDefaultConfig()
+	config.ProblemSize = 10
+	config.LowerBound = -10
+	config.UpperBound = 10
+	config.MaxWorkers = -1
+
+	err := ValidateConfig(config)
+	if err == nil {
+		t.Fatal("ValidateConfig accepted negative MaxWorkers")
 	}
 }
 
@@ -202,6 +225,14 @@ func TestPresetConfigs(t *testing.T) {
 
 			if config == nil {
 				t.Fatal("Config should not be nil")
+			}
+
+			if config.EnableParallel {
+				t.Error("preset should leave parallel evaluation disabled")
+			}
+
+			if config.MaxWorkers != defaultMaxWorkers() {
+				t.Errorf("MaxWorkers = %d, want %d", config.MaxWorkers, defaultMaxWorkers())
 			}
 
 			// Set required fields for validation

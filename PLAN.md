@@ -6,33 +6,33 @@
 
 #### 1.1 Parallel Fitness Evaluation (Core)
 
-- [ ] Implement worker pool for bounded concurrency
-- [ ] Parallelize male population fitness evaluation
-- [ ] Parallelize female population fitness evaluation
-- [ ] Thread-safe global best update mechanism (mutex/atomic)
-- [ ] Configuration: `Config.MaxWorkers` (default: runtime.NumCPU())
-- [ ] Configuration: `Config.EnableParallel` flag for backward compatibility
-- [ ] Benchmarks comparing sequential vs parallel performance
+- [x] Implement worker pool for bounded concurrency
+- [x] Parallelize male population fitness evaluation
+- [x] Parallelize female population fitness evaluation
+- [x] Thread-safe global best update mechanism (mutex/atomic)
+- [x] Configuration: `Config.MaxWorkers` (default: runtime.NumCPU())
+- [x] Configuration: `Config.EnableParallel` flag for backward compatibility
+- [x] Benchmarks comparing sequential vs parallel performance
 
 **Rationale**: For expensive objective functions (simulations, ML training), this provides 10-20x speedup on multi-core systems. Core populations have 20+ individuals evaluated per iteration.
 
 #### 1.2 Parallel Genetic Operators
 
-- [ ] Parallel crossover offspring evaluation
-- [ ] Parallel mutation offspring evaluation
-- [ ] Thread-safe offspring slice management
-- [ ] Race detector tests (`go test -race`)
+- [x] Parallel crossover offspring evaluation
+- [x] Parallel mutation offspring evaluation
+- [x] Thread-safe offspring slice management
+- [x] Race detector tests (`go test -race`)
 
 **Rationale**: Offspring generation (NC + NM individuals) happens every iteration. Parallelization reduces iteration time significantly.
 
 #### 1.3 Parallel Variant-Specific Enhancements
 
-- [ ] DESMA: Parallel elite candidate generation and evaluation
-- [ ] OLCE-MA: Parallel orthogonal learning candidate evaluation (4 per elite)
-- [ ] EOBBMA: Parallel opposition point evaluation
-- [ ] GSASMA: Parallel Golden Sine candidate evaluation
-- [ ] AOBLMOA: Parallel Aquila strategy evaluation
-- [ ] MPMA: Thread-safe median position calculation
+- [x] DESMA: Parallel elite candidate generation and evaluation
+- [x] OLCE-MA: Parallel orthogonal learning candidate evaluation (4 per elite)
+- [x] EOBBMA: Parallel opposition point evaluation
+- [x] GSASMA: Parallel Golden Sine candidate evaluation
+- [x] AOBLMOA: Parallel Aquila strategy evaluation
+- [x] MPMA: Thread-safe median position calculation
 
 **Rationale**: Variant-specific operations add significant computational overhead. OLCE generates 4 candidates per elite (top 20%), DESMA generates 5+ elite candidates. These are natural parallelization targets.
 

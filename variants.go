@@ -141,17 +141,15 @@ func ListVariants() []string {
 
 // GetAllVariants returns all available algorithm variants.
 func GetAllVariants() []AlgorithmVariant {
-	variants := make([]AlgorithmVariant, 0, 7)
-	seen := make(map[AlgorithmVariant]bool)
-
-	for _, variant := range variantRegistry {
-		if !seen[variant] {
-			variants = append(variants, variant)
-			seen[variant] = true
-		}
+	return []AlgorithmVariant{
+		variantRegistry["ma"],
+		variantRegistry["desma"],
+		variantRegistry["olce"],
+		variantRegistry["eobbma"],
+		variantRegistry["gsasma"],
+		variantRegistry["mpma"],
+		variantRegistry["aoblmoa"],
 	}
-
-	return variants
 }
 
 // =============================================================================

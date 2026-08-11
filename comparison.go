@@ -1,12 +1,24 @@
 package mayfly
 
 import (
+	"context"
+	"encoding/csv"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"math"
+	"math/rand"
+	"os"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+const wilcoxonTie = "Tie"
 
 // ComparisonResult holds the results of comparing multiple algorithms.
 type ComparisonResult struct {
@@ -18,15 +30,18 @@ type ComparisonResult struct {
 	Rankings       []int
 	WilcoxonTests  [][]WilcoxonResult
 	BestAlgorithm  int
+	BaseSeed       int64
 }
 
 // RunResult holds the result of a single optimization run.
 type RunResult struct {
+	Error         string
 	BestCost      float64
+	ExecutionTime float64 // Seconds
+	Seed          int64
 	FuncEvals     int
 	Iterations    int
-	ConvergenceAt int     // Iteration where target was reached (0 if not reached)
-	ExecutionTime float64 // Seconds
+	ConvergenceAt int // Iteration where target was reached (0 if not reached)
 }
 
 // AlgorithmStatistics holds statistical measures for an algorithm's performance.
@@ -59,13 +74,19 @@ type FriedmanTestResult struct {
 	DegreesOfFreedom int
 }
 
-// ComparisonRunner orchestrates multi-algorithm comparisons.
+// ComparisonRunner orchestrates multi-algorithm comparisons. When Parallel is
+// true, the objective function must be safe for concurrent use. MaxWorkers
+// limits concurrent optimization runs; any Config-level parallel evaluation is
+// an independent inner limit.
 type ComparisonRunner struct {
 	Variants      []AlgorithmVariant
 	Runs          int     // Number of runs per algorithm
 	TargetCost    float64 // Success threshold (optional, 0 = unused)
 	MaxIterations int     // Max iterations per run
 	Verbose       bool    // Print progress
+	Parallel      bool    // Run independent algorithm trials concurrently
+	MaxWorkers    int     // Maximum concurrent optimization runs
+	Seed          int64   // Base seed used to derive paired run seeds
 }
 
 // NewComparisonRunner creates a new comparison runner.
@@ -76,6 +97,9 @@ func NewComparisonRunner() *ComparisonRunner {
 		TargetCost:    0,
 		MaxIterations: 500,
 		Verbose:       false,
+		Parallel:      false,
+		MaxWorkers:    runtime.NumCPU(),
+		Seed:          time.Now().UnixNano(),
 	}
 }
 
@@ -125,6 +149,28 @@ func (cr *ComparisonRunner) WithVerbose(verbose bool) *ComparisonRunner {
 	return cr
 }
 
+// WithParallel enables or disables concurrent comparison runs.
+func (cr *ComparisonRunner) WithParallel(parallel bool) *ComparisonRunner {
+	cr.Parallel = parallel
+
+	return cr
+}
+
+// WithMaxWorkers sets the maximum number of concurrent optimization runs.
+// Zero uses runtime.NumCPU().
+func (cr *ComparisonRunner) WithMaxWorkers(workers int) *ComparisonRunner {
+	cr.MaxWorkers = workers
+
+	return cr
+}
+
+// WithSeed sets the base seed used to derive one paired seed per run index.
+func (cr *ComparisonRunner) WithSeed(seed int64) *ComparisonRunner {
+	cr.Seed = seed
+
+	return cr
+}
+
 // Compare runs all algorithms on the given problem and returns comparison results.
 func (cr *ComparisonRunner) Compare(
 	benchmarkName string,
@@ -132,68 +178,296 @@ func (cr *ComparisonRunner) Compare(
 	problemSize int,
 	lower, upper float64,
 ) *ComparisonResult {
+	result, _ := cr.compare(context.Background(), benchmarkName, fn, problemSize, lower, upper, true)
+
+	return result
+}
+
+// CompareContext runs all configured algorithms with cancellation and explicit
+// error reporting. It returns no partial aggregate when any run fails.
+func (cr *ComparisonRunner) CompareContext(
+	ctx context.Context,
+	benchmarkName string,
+	fn ObjectiveFunction,
+	problemSize int,
+	lower, upper float64,
+) (*ComparisonResult, error) {
+	return cr.compare(ctx, benchmarkName, fn, problemSize, lower, upper, false)
+}
+
+type comparisonJob struct {
+	config       *Config
+	variantIndex int
+	runIndex     int
+	seed         int64
+}
+
+type comparisonJobResult struct {
+	err          error
+	run          RunResult
+	variantIndex int
+	runIndex     int
+}
+
+func (cr *ComparisonRunner) compare(
+	ctx context.Context,
+	benchmarkName string,
+	fn ObjectiveFunction,
+	problemSize int,
+	lower, upper float64,
+	continueOnError bool,
+) (*ComparisonResult, error) {
+	err := cr.validate(ctx, fn, problemSize, lower, upper)
+	if err != nil {
+		return &ComparisonResult{BenchmarkName: benchmarkName, BestAlgorithm: -1, BaseSeed: cr.Seed}, err
+	}
+
+	algorithmNames, runResults, jobs, err := cr.prepareJobs(fn, problemSize, lower, upper)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cr.runJobs(ctx, jobs, algorithmNames, runResults, continueOnError)
+	if err != nil {
+		return nil, err
+	}
+
+	return cr.aggregate(benchmarkName, algorithmNames, runResults), nil
+}
+
+func (cr *ComparisonRunner) prepareJobs(
+	fn ObjectiveFunction,
+	problemSize int,
+	lower, upper float64,
+) ([]string, [][]RunResult, []comparisonJob, error) {
 	algorithmNames := make([]string, len(cr.Variants))
 	runResults := make([][]RunResult, len(cr.Variants))
 
-	// Run each algorithm
 	for i, variant := range cr.Variants {
 		algorithmNames[i] = variant.Name()
 		runResults[i] = make([]RunResult, cr.Runs)
+	}
 
-		if cr.Verbose {
-			fmt.Printf("Running %s (%d runs)...\n", variant.Name(), cr.Runs)
-		}
+	jobs := make([]comparisonJob, 0, len(cr.Variants)*cr.Runs)
+	for run := range cr.Runs {
+		seed := cr.Seed + int64(run)
 
-		for run := range cr.Runs {
+		for variantIndex, variant := range cr.Variants {
 			config := variant.GetConfig()
+			if config == nil {
+				return nil, nil, nil, fmt.Errorf("variant %s returned a nil config", variant.Name())
+			}
+
 			config.ObjectiveFunc = fn
 			config.ProblemSize = problemSize
 			config.LowerBound = lower
 			config.UpperBound = upper
 			config.MaxIterations = cr.MaxIterations
+			config.Rand = rand.New(rand.NewSource(seed))
+			jobs = append(jobs, comparisonJob{
+				config: config, variantIndex: variantIndex, runIndex: run, seed: seed,
+			})
+		}
+	}
 
-			start := time.Now()
-			result, err := Optimize(config)
-			elapsed := time.Since(start).Seconds()
+	return algorithmNames, runResults, jobs, nil
+}
 
-			if err != nil {
-				runResults[i][run] = RunResult{
-					BestCost:      math.Inf(1),
-					FuncEvals:     0,
-					Iterations:    0,
-					ConvergenceAt: 0,
-					ExecutionTime: elapsed,
-				}
+func (cr *ComparisonRunner) runJobs(
+	ctx context.Context,
+	jobs []comparisonJob,
+	algorithmNames []string,
+	runResults [][]RunResult,
+	continueOnError bool,
+) error {
+	workerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-				continue
+	jobCh := make(chan comparisonJob, len(jobs))
+	resultCh := make(chan comparisonJobResult, len(jobs))
+
+	for _, job := range jobs {
+		jobCh <- job
+	}
+
+	close(jobCh)
+
+	var workers sync.WaitGroup
+	workers.Add(cr.comparisonWorkerCount(len(jobs)))
+
+	for range cr.comparisonWorkerCount(len(jobs)) {
+		go cr.comparisonWorker(workerCtx, jobCh, resultCh, &workers)
+	}
+
+	go func() {
+		workers.Wait()
+		close(resultCh)
+	}()
+
+	firstErr := cr.collectJobResults(resultCh, algorithmNames, runResults, len(jobs), continueOnError, cancel)
+	if firstErr != nil && !continueOnError {
+		return firstErr
+	}
+
+	contextErr := ctx.Err()
+	if contextErr != nil && !continueOnError {
+		return contextErr
+	}
+
+	return nil
+}
+
+func (cr *ComparisonRunner) comparisonWorkerCount(jobCount int) int {
+	if !cr.Parallel {
+		return 1
+	}
+
+	workerCount := cr.MaxWorkers
+	if workerCount == 0 {
+		workerCount = runtime.NumCPU()
+	}
+
+	return min(workerCount, jobCount)
+}
+
+func (cr *ComparisonRunner) comparisonWorker(
+	ctx context.Context,
+	jobs <-chan comparisonJob,
+	results chan<- comparisonJobResult,
+	workers *sync.WaitGroup,
+) {
+	defer workers.Done()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case job, ok := <-jobs:
+			if !ok {
+				return
 			}
 
-			// Find convergence iteration
-			convergenceAt := 0
+			results <- cr.executeJob(ctx, job)
+		}
+	}
+}
 
-			if cr.TargetCost > 0 {
-				for iter, cost := range result.ConvergenceCurve {
-					if cost <= cr.TargetCost {
-						convergenceAt = iter + 1
-						break
-					}
-				}
+func (cr *ComparisonRunner) collectJobResults(
+	results <-chan comparisonJobResult,
+	algorithmNames []string,
+	runResults [][]RunResult,
+	jobCount int,
+	continueOnError bool,
+	cancel context.CancelFunc,
+) error {
+	var firstErr error
+
+	completed := 0
+
+	for jobResult := range results {
+		completed++
+
+		if jobResult.err != nil && firstErr == nil {
+			name := algorithmNames[jobResult.variantIndex]
+			firstErr = fmt.Errorf("compare %s run %d: %w", name, jobResult.runIndex+1, jobResult.err)
+
+			if !continueOnError {
+				cancel()
 			}
+		}
 
-			runResults[i][run] = RunResult{
-				BestCost:      result.GlobalBest.Cost,
-				FuncEvals:     result.FuncEvalCount,
-				Iterations:    result.IterationCount,
-				ConvergenceAt: convergenceAt,
-				ExecutionTime: elapsed,
-			}
+		runResults[jobResult.variantIndex][jobResult.runIndex] = jobResult.run
 
-			if cr.Verbose && (run+1)%10 == 0 {
-				fmt.Printf("  Completed %d/%d runs\n", run+1, cr.Runs)
+		if cr.Verbose {
+			fmt.Printf("Completed %d/%d comparison runs\n", completed, jobCount)
+		}
+	}
+
+	return firstErr
+}
+
+func (cr *ComparisonRunner) validate(
+	ctx context.Context,
+	fn ObjectiveFunction,
+	problemSize int,
+	lower, upper float64,
+) error {
+	if ctx == nil {
+		return errNilContext
+	}
+
+	if len(cr.Variants) == 0 {
+		return errors.New("at least one comparison variant is required")
+	}
+
+	for i, variant := range cr.Variants {
+		if variant == nil {
+			return fmt.Errorf("comparison variant %d is nil", i)
+		}
+	}
+
+	if cr.Runs <= 0 {
+		return fmt.Errorf("comparison runs must be positive, got %d", cr.Runs)
+	}
+
+	if cr.MaxIterations <= 0 {
+		return fmt.Errorf("comparison iterations must be positive, got %d", cr.MaxIterations)
+	}
+
+	if cr.MaxWorkers < 0 {
+		return fmt.Errorf("comparison MaxWorkers must be non-negative, got %d", cr.MaxWorkers)
+	}
+
+	if fn == nil {
+		return errors.New("comparison objective function is required")
+	}
+
+	if problemSize <= 0 {
+		return fmt.Errorf("comparison problem size must be positive, got %d", problemSize)
+	}
+
+	if math.IsNaN(lower) || math.IsInf(lower, 0) || math.IsNaN(upper) || math.IsInf(upper, 0) {
+		return errors.New("comparison bounds must be finite")
+	}
+
+	if lower >= upper {
+		return fmt.Errorf("comparison lower bound %v must be less than upper bound %v", lower, upper)
+	}
+
+	return ctx.Err()
+}
+
+func (cr *ComparisonRunner) executeJob(ctx context.Context, job comparisonJob) comparisonJobResult {
+	start := time.Now()
+	result, err := OptimizeContext(ctx, job.config)
+
+	run := RunResult{BestCost: math.Inf(1), ExecutionTime: time.Since(start).Seconds(), Seed: job.seed}
+	if err != nil {
+		run.Error = err.Error()
+		return comparisonJobResult{run: run, variantIndex: job.variantIndex, runIndex: job.runIndex, err: err}
+	}
+
+	if cr.TargetCost > 0 {
+		for iter, cost := range result.ConvergenceCurve {
+			if cost <= cr.TargetCost {
+				run.ConvergenceAt = iter + 1
+				break
 			}
 		}
 	}
 
+	run.BestCost = result.GlobalBest.Cost
+	run.FuncEvals = result.FuncEvalCount
+	run.Iterations = result.IterationCount
+
+	return comparisonJobResult{run: run, variantIndex: job.variantIndex, runIndex: job.runIndex}
+}
+
+func (cr *ComparisonRunner) aggregate(
+	benchmarkName string,
+	algorithmNames []string,
+	runResults [][]RunResult,
+) *ComparisonResult {
 	// Calculate statistics
 	statistics := make([]AlgorithmStatistics, len(cr.Variants))
 	for i := range cr.Variants {
@@ -240,6 +514,7 @@ func (cr *ComparisonRunner) Compare(
 		WilcoxonTests:  wilcoxonTests,
 		FriedmanResult: friedmanResult,
 		BestAlgorithm:  bestAlgorithm,
+		BaseSeed:       cr.Seed,
 	}
 }
 
@@ -366,7 +641,7 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 		return WilcoxonResult{
 			Algorithm1: name1,
 			Algorithm2: name2,
-			Winner:     "Tie",
+			Winner:     wilcoxonTie,
 		}
 	}
 
@@ -397,7 +672,7 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 
 	significant := pValue < 0.05
 
-	winner := "Tie"
+	winner := wilcoxonTie
 
 	if significant {
 		if wPlus < wMinus {
@@ -536,34 +811,59 @@ func chiSquareCDF(x float64, df int) float64 {
 	return math.Min(math.Exp(-x/2.0)*math.Pow(x/2.0, float64(df)/2.0), 1.0)
 }
 
-// PrintComparisonResults prints a formatted comparison report.
+// PrintComparisonResults prints a formatted comparison report to stdout.
 func (cr *ComparisonResult) PrintComparisonResults() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Printf("Benchmark Comparison: %s\n", cr.BenchmarkName)
-	fmt.Println(strings.Repeat("=", 80))
+	_ = cr.WriteComparisonResults(os.Stdout)
+}
 
-	// Statistics table
-	fmt.Println("\nStatistical Summary:")
-	fmt.Println(strings.Repeat("-", 80))
-	fmt.Printf("%-10s | %8s | %8s | %8s | %8s | %8s | %5s\n",
+// WriteComparisonResults writes a formatted statistical report and relative
+// quality chart. Longer bars indicate better (lower) finite mean costs.
+func (cr *ComparisonResult) WriteComparisonResults(w io.Writer) error {
+	if w == nil {
+		return errors.New("comparison report writer cannot be nil")
+	}
+
+	err := cr.validateShape()
+	if err != nil {
+		return err
+	}
+
+	var writeErr error
+
+	writef := func(format string, args ...any) {
+		if writeErr != nil {
+			return
+		}
+
+		_, writeErr = fmt.Fprintf(w, format, args...)
+	}
+
+	line := strings.Repeat("=", 80)
+	writef("\n%s\nBenchmark Comparison: %s\n%s\n", line, cr.BenchmarkName, line)
+	writef("\nStatistical Summary:\n%s\n", strings.Repeat("-", 80))
+	writef("%-10s | %8s | %8s | %8s | %8s | %8s | %5s\n",
 		"Algorithm", "Mean", "Median", "StdDev", "Best", "Worst", "Rank")
-	fmt.Println(strings.Repeat("-", 80))
+	writef("%s\n", strings.Repeat("-", 80))
 
 	for i, name := range cr.AlgorithmNames {
 		stats := cr.Statistics[i]
-		rank := cr.Rankings[i]
-		fmt.Printf("%-10s | %8.2e | %8.2e | %8.2e | %8.2e | %8.2e | %5d\n",
-			name, stats.Mean, stats.Median, stats.StdDev, stats.Best, stats.Worst, rank)
+		writef("%-10s | %8.2e | %8.2e | %8.2e | %8.2e | %8.2e | %5d\n",
+			name, stats.Mean, stats.Median, stats.StdDev, stats.Best, stats.Worst, cr.Rankings[i])
 	}
 
-	fmt.Println(strings.Repeat("-", 80))
+	writef("%s\n", strings.Repeat("-", 80))
+	writef("\nBest Algorithm: %s (Rank 1)\n", cr.AlgorithmNames[cr.BestAlgorithm])
 
-	// Best algorithm
-	fmt.Printf("\n🏆 Best Algorithm: %s (Rank 1)\n", cr.AlgorithmNames[cr.BestAlgorithm])
+	writef("\nRelative Quality (lower mean cost is better):\n")
 
-	// Wilcoxon tests (only significant results)
-	fmt.Println("\nSignificant Pairwise Differences (Wilcoxon signed-rank test, α=0.05):")
-	fmt.Println(strings.Repeat("-", 80))
+	for _, index := range cr.rankedIndices() {
+		mean := cr.Statistics[index].Mean
+		bar, label := cr.qualityBar(mean, 24)
+		writef("%2d. %-10s |%-24s| %s\n", cr.Rankings[index], cr.AlgorithmNames[index], bar, label)
+	}
+
+	writef("\nSignificant Pairwise Differences (Wilcoxon signed-rank test, alpha=0.05):\n")
+	writef("%s\n", strings.Repeat("-", 80))
 
 	foundSignificant := false
 
@@ -573,30 +873,193 @@ func (cr *ComparisonResult) PrintComparisonResults() {
 			if test.Significant {
 				foundSignificant = true
 
-				fmt.Printf("%s vs %s: p=%.4f, Winner: %s\n",
+				writef("%s vs %s: p=%.4f, Winner: %s\n",
 					test.Algorithm1, test.Algorithm2, test.PValue, test.Winner)
 			}
 		}
 	}
 
 	if !foundSignificant {
-		fmt.Println("No significant differences found.")
+		writef("No significant differences found.\n")
 	}
 
-	// Friedman test
 	if cr.FriedmanResult != nil {
-		fmt.Println("\nFriedman Test (overall difference):")
-		fmt.Printf("  χ² = %.4f, df = %d, p = %.4f",
+		significance := "Not significant"
+		if cr.FriedmanResult.Significant {
+			significance = "Significant at alpha=0.05"
+		}
+
+		writef("\nFriedman Test (overall difference):\n")
+		writef("  chi-square = %.4f, df = %d, p = %.4f (%s)\n",
 			cr.FriedmanResult.ChiSquare,
 			cr.FriedmanResult.DegreesOfFreedom,
-			cr.FriedmanResult.PValue)
+			cr.FriedmanResult.PValue,
+			significance)
+	}
 
-		if cr.FriedmanResult.Significant {
-			fmt.Println(" (Significant at α=0.05)")
-		} else {
-			fmt.Println(" (Not significant)")
+	writef("%s\n", line)
+
+	return writeErr
+}
+
+// ExportToCSV writes one deterministic row per algorithm run, including the
+// corresponding aggregate statistics.
+func (cr *ComparisonResult) ExportToCSV(path string) (returnErr error) {
+	err := cr.validateShape()
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create comparison CSV: %w", err)
+	}
+
+	defer func() {
+		closeErr := file.Close()
+		if returnErr == nil && closeErr != nil {
+			returnErr = fmt.Errorf("close comparison CSV: %w", closeErr)
+		}
+	}()
+
+	w := csv.NewWriter(file)
+	header := []string{
+		"benchmark", "algorithm", "rank", "run", "seed", "best_cost", "function_evaluations",
+		"iterations", "convergence_at", "execution_seconds", "error", "mean", "median", "stddev",
+		"best", "worst", "success_rate", "avg_function_evaluations", "avg_execution_seconds",
+	}
+
+	err = w.Write(header)
+	if err != nil {
+		return fmt.Errorf("write comparison CSV header: %w", err)
+	}
+
+	for algorithm, name := range cr.AlgorithmNames {
+		stats := cr.Statistics[algorithm]
+		for runIndex, run := range cr.RunResults[algorithm] {
+			record := []string{
+				cr.BenchmarkName, name, strconv.Itoa(cr.Rankings[algorithm]), strconv.Itoa(runIndex + 1),
+				strconv.FormatInt(run.Seed, 10), strconv.FormatFloat(run.BestCost, 'g', -1, 64),
+				strconv.Itoa(run.FuncEvals), strconv.Itoa(run.Iterations), strconv.Itoa(run.ConvergenceAt),
+				strconv.FormatFloat(run.ExecutionTime, 'g', -1, 64), run.Error,
+				strconv.FormatFloat(stats.Mean, 'g', -1, 64), strconv.FormatFloat(stats.Median, 'g', -1, 64),
+				strconv.FormatFloat(stats.StdDev, 'g', -1, 64), strconv.FormatFloat(stats.Best, 'g', -1, 64),
+				strconv.FormatFloat(stats.Worst, 'g', -1, 64), strconv.FormatFloat(stats.SuccessRate, 'g', -1, 64),
+				strconv.FormatFloat(stats.AvgFuncEvals, 'g', -1, 64), strconv.FormatFloat(stats.AvgTime, 'g', -1, 64),
+			}
+
+			err = w.Write(record)
+			if err != nil {
+				return fmt.Errorf("write comparison CSV row: %w", err)
+			}
 		}
 	}
 
-	fmt.Println(strings.Repeat("=", 80))
+	w.Flush()
+
+	err = w.Error()
+	if err != nil {
+		return fmt.Errorf("flush comparison CSV: %w", err)
+	}
+
+	return nil
+}
+
+// ExportToJSON writes the complete comparison result as indented JSON.
+func (cr *ComparisonResult) ExportToJSON(path string) (returnErr error) {
+	err := cr.validateShape()
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create comparison JSON: %w", err)
+	}
+
+	defer func() {
+		closeErr := file.Close()
+		if returnErr == nil && closeErr != nil {
+			returnErr = fmt.Errorf("close comparison JSON: %w", closeErr)
+		}
+	}()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+
+	err = encoder.Encode(cr)
+	if err != nil {
+		return fmt.Errorf("encode comparison JSON: %w", err)
+	}
+
+	return nil
+}
+
+func (cr *ComparisonResult) rankedIndices() []int {
+	indices := make([]int, len(cr.AlgorithmNames))
+
+	for i := range indices {
+		indices[i] = i
+	}
+
+	sort.SliceStable(indices, func(i, j int) bool {
+		return cr.Rankings[indices[i]] < cr.Rankings[indices[j]]
+	})
+
+	return indices
+}
+
+func (cr *ComparisonResult) qualityBar(mean float64, width int) (string, string) {
+	if math.IsNaN(mean) || math.IsInf(mean, 0) {
+		return strings.Repeat(" ", width), "failed/unavailable"
+	}
+
+	best, worst := math.Inf(1), math.Inf(-1)
+
+	for _, stats := range cr.Statistics {
+		if math.IsNaN(stats.Mean) || math.IsInf(stats.Mean, 0) {
+			continue
+		}
+
+		best = min(best, stats.Mean)
+		worst = max(worst, stats.Mean)
+	}
+
+	quality := 1.0
+	if worst > best {
+		quality = (worst - mean) / (worst - best)
+	}
+
+	quality = max(0, min(1, quality))
+	filled := int(math.Round(quality * float64(width)))
+
+	return strings.Repeat("#", filled) + strings.Repeat(" ", width-filled), fmt.Sprintf("mean=%g", mean)
+}
+
+func (cr *ComparisonResult) validateShape() error {
+	if cr == nil {
+		return errors.New("comparison result cannot be nil")
+	}
+
+	count := len(cr.AlgorithmNames)
+	if count == 0 {
+		return errors.New("comparison result has no algorithms")
+	}
+
+	if len(cr.RunResults) != count || len(cr.Statistics) != count || len(cr.Rankings) != count ||
+		len(cr.WilcoxonTests) != count {
+		return errors.New("comparison result fields have inconsistent algorithm counts")
+	}
+
+	if cr.BestAlgorithm < 0 || cr.BestAlgorithm >= count {
+		return fmt.Errorf("comparison best algorithm index %d is out of range", cr.BestAlgorithm)
+	}
+
+	for i := range count {
+		if len(cr.WilcoxonTests[i]) != count {
+			return fmt.Errorf("comparison Wilcoxon row %d has inconsistent length", i)
+		}
+	}
+
+	return nil
 }

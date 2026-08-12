@@ -7,6 +7,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-12
+
 ### Added
 
 - Structured optimization lifecycle logging compatible with `log/slog`.
@@ -63,7 +65,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Benchmark functions, algorithm selection, comparison utilities, examples,
   JSON configuration, and algorithm documentation.
 
-[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/CWBudde/Mayfly/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/CWBudde/Mayfly/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/CWBudde/Mayfly/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/CWBudde/Mayfly/compare/v0.1.0...v0.2.0

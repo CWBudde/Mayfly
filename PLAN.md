@@ -101,7 +101,7 @@
 - [x] Add a release checklist and validation workflow
 - [x] Create `CHANGELOG.md` from the existing release history
 - [x] Verify package metadata and documentation for pkg.go.dev
-- [ ] Tag a release and verify publication on pkg.go.dev
+- [x] Tag a release and verify publication on pkg.go.dev
 
 ---
 

@@ -125,9 +125,9 @@
 
 #### 4.1 API Documentation
 
-- [ ] Add code examples to docs
-- [ ] Create quick reference guide
-- [ ] Document all parameters
+- [x] Add code examples to docs
+- [x] Create quick reference guide
+- [x] Document all parameters
 
 #### 4.2 Tutorials
 

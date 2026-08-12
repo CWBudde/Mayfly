@@ -160,7 +160,7 @@ selector := mayfly.NewAlgorithmSelector()
 best := selector.RecommendBest(chars)
 
 // Use recommended variant
-result, err := mayfly.NewBuilderFromVariant(best).
+result, err := mayfly.NewBuilderFromVariant(best.Variant).
     ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
     WithIterations(500).
     Optimize()
@@ -226,10 +226,11 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 
 ### API Reference
 
+- **[API Quick Reference](docs/api/quick-reference.md)** - Common entry points, options, and result fields
 - **[Unified Framework](docs/api/unified-framework.md)** - Builder API, algorithm selection, presets
 - **[Comparison Framework](docs/api/comparison-framework.md)** - Statistical testing and analysis
 - **[Configuration Guide](docs/api/configuration.md)** - All parameters explained
-- **[Run Lifecycle](docs/api/run-lifecycle.md)** - Cancellation, progress, and initial populations
+- **[Run Lifecycle](docs/api/run-lifecycle.md)** - Cancellation, monitoring, and initial populations
 
 ### Research
 

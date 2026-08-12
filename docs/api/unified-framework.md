@@ -124,7 +124,7 @@ recommendations := selector.RecommendAlgorithms(characteristics)
 // recommendations is a slice sorted by score (best first)
 for _, rec := range recommendations {
     fmt.Printf("%s: %.1f%% match\n", rec.Variant.Name(), rec.Score*100)
-    fmt.Printf("Reason: %s\n", rec.Reason)
+    fmt.Printf("Reason: %s\n", rec.Reasoning)
 }
 
 // Use the best recommendation
@@ -301,7 +301,7 @@ func main() {
     for i, rec := range recommendations[:3] {  // Show top 3
         fmt.Printf("%d. %s (%.1f%% match)\n",
             i+1, rec.Variant.FullName(), rec.Score*100)
-        fmt.Printf("   Reason: %s\n\n", rec.Reason)
+        fmt.Printf("   Reason: %s\n\n", rec.Reasoning)
     }
 
     // Use the best recommendation

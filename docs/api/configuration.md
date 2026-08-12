@@ -1,6 +1,33 @@
 # Configuration Guide
 
-Complete reference for all configuration parameters in the Mayfly optimization library.
+Complete reference for every field in `mayfly.Config` and its nested
+configuration types. Defaults in this guide come from the matching
+`New...Config` factory. Fields described as automatic start at zero and are
+resolved when optimization begins.
+
+## Complete field index
+
+Every top-level `Config` field is covered in the sections below:
+
+| Group                 | Fields                                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Problem               | `ObjectiveFunc`, `ProblemSize`, `LowerBound`, `UpperBound`                                                                        |
+| Population and budget | `NPop`, `NPopF`, `MaxIterations`                                                                                                  |
+| Movement              | `G`, `GDamp`, `A1`, `A2`, `A3`, `Beta`, `Dance`, `FL`, `DanceDamp`, `FLDamp`, `VelMax`, `VelMin`                                  |
+| Genetic operators     | `NC`, `NM`, `Mu`                                                                                                                  |
+| DESMA                 | `UseDESMA`, `EliteCount`, `SearchRange`, `EnlargeFactor`, `ReductionFactor`                                                       |
+| OLCE-MA               | `UseOLCE`, `OrthogonalFactor`, `ChaosFactor`                                                                                      |
+| EOBBMA                | `UseEOBBMA`, `LevyAlpha`, `LevyBeta`, `OppositionRate`, `EliteOppositionCount`                                                    |
+| GSASMA                | `UseGSASMA`, `InitialTemperature`, `CoolingRate`, `CoolingSchedule`, `CauchyMutationRate`, `GoldenFactor`, `ApplyOBLToGlobalBest` |
+| MPMA                  | `UseMPMA`, `MedianWeight`, `GravityType`, `UseWeightedMedian`                                                                     |
+| AOBLMOA               | `UseAOBLMOA`, `AquilaWeight`, `OppositionProbability`, `ArchiveSize`, `StrategySwitch`                                            |
+| Run behavior          | `Convergence`, `Constraints`, `EnableParallel`, `MaxWorkers`, `Rand`                                                              |
+
+`ObjectiveFunc`, `Rand`, and the function slices inside `Constraints` are not
+JSON-serializable. Assign them after `LoadConfigFromFile`.
+
+For common entry points and return types, see the
+[API quick reference](quick-reference.md).
 
 ## Problem Parameters
 
@@ -12,6 +39,10 @@ These parameters define the optimization problem:
 | `ProblemSize`   | `int`                     | **Yes**  | Number of decision variables (dimensions) |
 | `LowerBound`    | `float64`                 | **Yes**  | Lower bound for all decision variables    |
 | `UpperBound`    | `float64`                 | **Yes**  | Upper bound for all decision variables    |
+
+Bounds are shared by all dimensions, must be finite, and must satisfy
+`LowerBound < UpperBound`. The objective is minimized and must be safe for
+concurrent calls when `EnableParallel` is true.
 
 ### Example
 
@@ -66,11 +97,14 @@ Control genetic operators:
 
 | Parameter | Type      | Default | Description                          |
 | --------- | --------- | ------- | ------------------------------------ |
-| `NC`      | `int`     | 20      | Number of offspring per iteration    |
+| `NC`      | `int`     | 20      | Requested crossover offspring count  |
 | `NM`      | `int`     | Auto\*  | Number of mutants (auto: 5% of NPop) |
-| `Mu`      | `float64` | 0.01    | Mutation rate                        |
+| `Mu`      | `float64` | 0.01    | Mutation probability in `[0, 1]`     |
 
-\*Auto-calculated if left at 0
+\*`NM == 0` resolves to `round(0.05 * NPop)` and therefore does not disable
+mutation. Crossover creates pairs, so use an even `NC`; `NC/2` may not exceed
+either population size. If the effective mutant count is positive, `NC` must
+be at least 2 because mutants are sampled from crossover offspring.
 
 ## Variant-Specific Parameters
 
@@ -138,6 +172,9 @@ Control genetic operators:
 \*Auto: 2/3 of MaxIterations
 
 ## Advanced Parameters
+
+`Config.Convergence` and `Config.Constraints` are nil by default. A nil pointer
+disables that feature; a non-nil pointer uses the fields documented below.
 
 ### Constraint Handling
 
@@ -301,9 +338,9 @@ before choosing a production worker limit.
 
 ### Random Number Generation
 
-| Parameter | Type         | Default | Description                                        |
-| --------- | ------------ | ------- | -------------------------------------------------- |
-| `Rand`    | `*rand.Rand` | nil     | Custom random number generator for reproducibility |
+| Parameter | Type         | Default | Description                                                   |
+| --------- | ------------ | ------- | ------------------------------------------------------------- |
+| `Rand`    | `*rand.Rand` | nil     | Custom run-owned random generator; nil uses a time-based seed |
 
 **Example for reproducible results**:
 
@@ -311,8 +348,12 @@ before choosing a production worker limit.
 import "math/rand"
 
 config := mayfly.NewDefaultConfig()
-config.Rand = rand.New(rand.NewSource(42))  // Fixed seed
+config.Rand = rand.New(rand.NewSource(42)) // Fixed seed
 ```
+
+Do not share a `*rand.Rand` between concurrent optimization runs. The standard
+generator is not safe for concurrent use. `Result.Seed` records the generated
+seed for a nil `Rand`; Go's `rand.Rand` does not expose a caller-provided seed.
 
 ## Factory Functions
 
@@ -347,12 +388,12 @@ All factory functions set sensible defaults. You only need to set the required p
 
 The `Optimize()` function validates configuration:
 
-**Required fields** (must be non-zero):
+**Required fields**:
 
 - `ObjectiveFunc`
 - `ProblemSize`
-- `LowerBound` (can be negative)
-- `UpperBound`
+- finite `LowerBound` and `UpperBound` with `LowerBound < UpperBound`
+- positive `MaxIterations`, `NPop`, and `NPopF` (set by all factories)
 
 **Auto-calculated fields** (if zero):
 

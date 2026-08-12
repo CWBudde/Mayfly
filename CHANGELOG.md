@@ -21,6 +21,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Added compile-checked package examples, an API quick reference, and a
+  complete configuration field index.
 - Documented when parallel evaluation offsets its scheduling overhead.
 - Expanded race, determinism, evaluation-accounting, convergence, and
   constraint-handling tests.

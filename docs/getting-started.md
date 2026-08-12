@@ -326,7 +326,7 @@ selector := mayfly.NewAlgorithmSelector()
 best := selector.RecommendBest(chars)
 
 // Use recommended variant
-result, err := mayfly.NewBuilderFromVariant(best).
+result, err := mayfly.NewBuilderFromVariant(best.Variant).
     ForProblem(myFunction, 30, -10, 10).
     WithIterations(500).
     Optimize()

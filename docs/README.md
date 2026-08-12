@@ -6,7 +6,7 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 
 - **New to Mayfly?** Start with [Getting Started](getting-started.md)
 - **Want to understand algorithms?** Check [Algorithm Documentation](#algorithm-documentation)
-- **Need API reference?** See [API Documentation](#api-documentation)
+- **Need an API summary?** Open the [API Quick Reference](api/quick-reference.md)
 - **Looking for benchmarks?** Visit [Benchmark Functions](benchmarks.md)
 - **Interested in research?** Read [Research References](research.md)
 
@@ -56,6 +56,12 @@ Detailed guides for each algorithm variant:
 ### API Documentation
 
 Complete API reference:
+
+- **[API Quick Reference](api/quick-reference.md)** - Task-oriented API map
+  - Optimization entry points and factories
+  - Run options and result fields
+  - Builder, selection, and comparison APIs
+  - Configuration files, presets, and utilities
 
 - **[Configuration Guide](api/configuration.md)** - All parameters explained
   - Problem parameters
@@ -116,9 +122,9 @@ Complete API reference:
 
 **Intermediate Users:**
 
-1. [Algorithm Documentation](algorithms/)
-2. [Configuration Guide](api/configuration.md)
-3. [Unified Framework](api/unified-framework.md)
+1. [API Quick Reference](api/quick-reference.md)
+2. [Algorithm Documentation](algorithms/)
+3. [Configuration Guide](api/configuration.md)
 
 **Advanced Users:**
 
@@ -131,6 +137,7 @@ Complete API reference:
 **Optimize a function:**
 
 - [Getting Started](getting-started.md#basic-usage)
+- [API Quick Reference](api/quick-reference.md#minimal-optimization)
 - [Configuration Guide](api/configuration.md)
 
 **Choose an algorithm:**
@@ -156,21 +163,22 @@ Complete API reference:
 
 | Document                | Lines | Focus                 |
 | ----------------------- | ----- | --------------------- |
-| getting-started.md      | ~340  | Tutorial and examples |
-| benchmarks.md           | ~350  | Function reference    |
-| research.md             | ~280  | Academic citations    |
-| configuration.md        | ~250  | Parameter reference   |
-| unified-framework.md    | ~230  | Advanced API          |
-| comparison-framework.md | ~290  | Statistical testing   |
+| quick-reference.md      | ~230  | Compact API map       |
+| getting-started.md      | ~440  | Tutorial and examples |
+| benchmarks.md           | ~410  | Function reference    |
+| research.md             | ~350  | Academic citations    |
+| configuration.md        | ~470  | Parameter reference   |
+| unified-framework.md    | ~570  | Advanced API          |
+| comparison-framework.md | ~180  | Statistical testing   |
 | standard-ma.md          | ~170  | Algorithm guide       |
-| desma.md                | ~170  | Algorithm guide       |
-| olce-ma.md              | ~180  | Algorithm guide       |
-| eobbma.md               | ~230  | Algorithm guide       |
-| gsasma.md               | ~250  | Algorithm guide       |
-| mpma.md                 | ~200  | Algorithm guide       |
-| aoblmoa.md              | ~260  | Algorithm guide       |
+| desma.md                | ~220  | Algorithm guide       |
+| olce-ma.md              | ~360  | Algorithm guide       |
+| eobbma.md               | ~480  | Algorithm guide       |
+| gsasma.md               | ~430  | Algorithm guide       |
+| mpma.md                 | ~440  | Algorithm guide       |
+| aoblmoa.md              | ~490  | Algorithm guide       |
 
-**Total:** ~3,700 lines of documentation (was 1,314 lines in README.md alone)
+**Total:** more than 5,000 lines across these reference documents.
 
 ## Contributing to Documentation
 

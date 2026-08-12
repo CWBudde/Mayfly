@@ -5,6 +5,9 @@ needs cancellation, progress snapshots, structured logging, or a partially
 supplied initial population. Completed results can export their convergence
 curves for later analysis.
 
+For a compact map of all application-level APIs, see the
+[API quick reference](quick-reference.md).
+
 ## Cancellation and progress
 
 ```go

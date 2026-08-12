@@ -78,6 +78,11 @@ Complete API reference:
   - Convergence analysis
   - Result export (CSV, JSON)
 
+- **[Run Lifecycle](api/run-lifecycle.md)** - Runtime control and monitoring
+  - Context cancellation and initial populations
+  - Progress callbacks and structured logging
+  - Convergence curve export (CSV, JSON)
+
 ### Reference Documentation
 
 - **[Benchmark Functions](benchmarks.md)** - Test function reference

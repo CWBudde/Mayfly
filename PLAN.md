@@ -111,9 +111,9 @@
 
 #### 3.1 Logging & Monitoring
 
-- [ ] Structured logging interface
-- [ ] Progress callbacks
-- [ ] Convergence curve export
+- [x] Structured logging interface
+- [x] Progress callbacks
+- [x] Convergence curve export
 
 #### 3.2 Advanced Benchmarks
 

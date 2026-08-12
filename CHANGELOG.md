@@ -9,6 +9,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Structured optimization lifecycle logging compatible with `log/slog`.
+- CSV and JSON convergence-curve export on optimization results.
 - Optional bounded parallel evaluation across the core optimizer, genetic
   operators, and all algorithm-specific enhancement phases.
 - Parallel multi-algorithm comparison with statistical aggregation and result

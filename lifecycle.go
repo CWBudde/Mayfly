@@ -1,8 +1,10 @@
 package mayfly
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 )
 
@@ -19,15 +21,23 @@ type Progress struct { //nolint:govet // Preserve public field order for unkeyed
 // OptimizeContext invokes observers synchronously on the calling goroutine.
 type ProgressObserver func(Progress)
 
+// Logger receives structured optimization lifecycle events. *slog.Logger
+// implements Logger. OptimizeContext invokes loggers synchronously on the
+// calling goroutine.
+type Logger interface {
+	Log(ctx context.Context, level slog.Level, message string, args ...any)
+}
+
 // RunOption customizes one optimization run. Its fields are intentionally
-// private; construct options with WithInitialPopulation and
-// WithProgressObserver.
+// private; construct options with WithInitialPopulation,
+// WithProgressObserver, and WithLogger.
 type RunOption struct {
 	apply func(*runOptions) error
 }
 
 type runOptions struct {
 	observer       ProgressObserver
+	logger         Logger
 	initialMales   [][]float64
 	initialFemales [][]float64
 }
@@ -53,6 +63,17 @@ func WithInitialPopulation(males, females [][]float64) RunOption {
 func WithProgressObserver(observer ProgressObserver) RunOption {
 	return RunOption{apply: func(options *runOptions) error {
 		options.observer = observer
+
+		return nil
+	}}
+}
+
+// WithLogger registers a structured logger for run lifecycle events. Passing
+// nil disables logging. The logger receives optimization_started,
+// iteration_completed, and optimization_completed events.
+func WithLogger(logger Logger) RunOption {
+	return RunOption{apply: func(options *runOptions) error {
+		options.logger = logger
 
 		return nil
 	}}

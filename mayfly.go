@@ -180,6 +180,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, initialPopulationErr
 	}
 
+	logOptimizationStarted(ctx, run.logger, config)
+
 	// Initialize parameters
 	if config.NM == 0 {
 		config.NM = int(math.Round(0.05 * float64(config.NPop)))
@@ -1188,6 +1190,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		fl *= config.FLDamp
 
 		notifyProgress(run.observer, it+1, funcCount, globalBest)
+		logIterationCompleted(ctx, run.logger, it+1, funcCount, globalBest)
 
 		iterationErr = ctx.Err()
 		if iterationErr != nil {
@@ -1201,12 +1204,16 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		}
 	}
 
-	return &Result{
+	result := &Result{
 		GlobalBest:        globalBest,
 		ConvergenceCurve:  bestSolution[:iterationCount],
 		TerminationReason: terminationReason,
 		FuncEvalCount:     funcCount,
 		IterationCount:    iterationCount,
 		Seed:              seed,
-	}, nil
+	}
+
+	logOptimizationCompleted(ctx, run.logger, result)
+
+	return result, nil
 }

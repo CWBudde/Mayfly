@@ -330,7 +330,7 @@ func TestSortMayflies(t *testing.T) {
 			for i, expectedOrigIdx := range tt.expectedOrder {
 				actualOrigIdx := int(mayflies[i].Position[0])
 				if actualOrigIdx != expectedOrigIdx {
-					t.Logf("sortMayflies() order note: position %d has original index %d, expected %d",
+					t.Errorf("sortMayflies() order: position %d has original index %d, expected %d",
 						i, actualOrigIdx, expectedOrigIdx)
 				}
 			}

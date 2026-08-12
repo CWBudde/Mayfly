@@ -9,7 +9,7 @@ import (
 // Progress describes the best solution known after a completed iteration.
 // Iteration is one-based. Best and its Position are snapshots: observers may
 // retain or modify them without affecting the optimizer.
-type Progress struct {
+type Progress struct { //nolint:govet // Preserve public field order for unkeyed composite literals.
 	Iteration       int
 	EvaluationCount int
 	Best            Best
@@ -27,9 +27,9 @@ type RunOption struct {
 }
 
 type runOptions struct {
+	observer       ProgressObserver
 	initialMales   [][]float64
 	initialFemales [][]float64
-	observer       ProgressObserver
 }
 
 // WithInitialPopulation seeds the start of the male and female populations.
@@ -66,7 +66,8 @@ func resolveRunOptions(options []RunOption) (runOptions, error) {
 			return runOptions{}, fmt.Errorf("run option %d is invalid", i)
 		}
 
-		if err := option.apply(&resolved); err != nil {
+		err := option.apply(&resolved)
+		if err != nil {
 			return runOptions{}, fmt.Errorf("apply run option %d: %w", i, err)
 		}
 	}
@@ -85,7 +86,8 @@ func validateInitialPopulation(config *Config, options runOptions) error {
 			len(options.initialFemales), config.NPopF)
 	}
 
-	if err := validateInitialPositions("male", options.initialMales, config); err != nil {
+	err := validateInitialPositions("male", options.initialMales, config)
+	if err != nil {
 		return err
 	}
 

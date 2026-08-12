@@ -95,8 +95,6 @@ func (as *AnnealingScheduler) Reset() {
 }
 
 // Returns: acceptance probability in [0, 1].
-//
-//nolint:unused // retained for focused annealing helper compatibility.
 func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 	// If new solution is better, always accept
 	if newCost < oldCost {
@@ -113,8 +111,6 @@ func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 // shouldAccept implements the Metropolis criterion for simulated annealing.
 // rng must not be nil (ensured by caller).
 // Returns: true if the new solution should be accepted.
-//
-//nolint:unused // retained for focused annealing helper compatibility.
 func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 	// Calculate acceptance probability
 	prob := acceptanceProbability(oldCost, newCost, temperature)
@@ -125,7 +121,7 @@ func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 
 // Returns: (accepted bool, funcEvals int).
 //
-//nolint:unused,unparam // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
+//nolint:unparam // reserved API returns evaluation counts for future batched updates.
 func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 	objectiveFunc ObjectiveFunction, rng *rand.Rand,
 ) (bool, int) {
@@ -168,8 +164,6 @@ func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 //   - maxRate: maximum desired acceptance rate (e.g., 0.9)
 //
 // This helps prevent premature convergence or excessive wandering.
-//
-//nolint:unused // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
 func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, minRate, maxRate float64) {
 	if acceptanceRate < minRate {
 		// Too few acceptances: reheat to increase exploration
@@ -185,8 +179,6 @@ func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, m
 }
 
 // Returns: true if candidate should be accepted.
-//
-//nolint:unused // reserved for the GSASMA annealing variant; not wired into Optimize() yet.
 func simulatedAnnealingAcceptance(oldCost, newCost float64, scheduler *AnnealingScheduler, rng *rand.Rand) bool {
 	return shouldAccept(oldCost, newCost, scheduler.GetTemperature(), rng)
 }

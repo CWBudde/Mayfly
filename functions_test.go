@@ -227,6 +227,23 @@ func TestRosenbrockNonOptimal(t *testing.T) {
 	}
 }
 
+func TestMichalewicz(t *testing.T) {
+	if result := Michalewicz(nil); result != 0 {
+		t.Errorf("Michalewicz(nil) = %v, want 0", result)
+	}
+
+	input := []float64{1, 2}
+
+	want := 0.0
+	for i, value := range input {
+		want -= math.Sin(value) * math.Pow(math.Sin(float64(i+1)*value*value/math.Pi), 20)
+	}
+
+	if result := Michalewicz(input); math.Abs(result-want) > epsilon {
+		t.Errorf("Michalewicz(%v) = %v, want %v", input, result, want)
+	}
+}
+
 // TestAckley tests the Ackley benchmark function.
 func TestAckley(t *testing.T) {
 	tests := []struct {

@@ -58,6 +58,7 @@ func TestOptimizeRemainsCompatibleWithOptimizeContext(t *testing.T) {
 
 func TestWithInitialPopulationSeedsAndRandomFillsPopulations(t *testing.T) {
 	var evaluated [][]float64
+
 	objective := func(position []float64) float64 {
 		evaluated = append(evaluated, append([]float64(nil), position...))
 		return sphere(position)
@@ -73,6 +74,7 @@ func TestWithInitialPopulationSeedsAndRandomFillsPopulations(t *testing.T) {
 
 	config := lifecycleConfig(objective)
 	config.MaxIterations = 1
+
 	result, err := OptimizeContext(context.Background(), config, option)
 	if err != nil {
 		t.Fatalf("OptimizeContext: %v", err)
@@ -161,6 +163,7 @@ func TestWithInitialPopulationValidation(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			config := lifecycleConfig(sphere)
+
 			_, err := OptimizeContext(
 				context.Background(),
 				config,
@@ -179,12 +182,14 @@ func TestWithInitialPopulationValidation(t *testing.T) {
 
 func TestProgressObserverReceivesIndependentSnapshots(t *testing.T) {
 	var progress []Progress
+
 	observer := func(update Progress) {
 		progress = append(progress, update)
 		update.Best.Position[0] = 999
 	}
 
 	config := lifecycleConfig(sphere)
+
 	result, err := OptimizeContext(
 		context.Background(),
 		config,
@@ -200,6 +205,7 @@ func TestProgressObserverReceivesIndependentSnapshots(t *testing.T) {
 
 	for i, update := range progress {
 		wantIteration := i + 1
+
 		wantEvaluations := 8 + wantIteration*8
 		if update.Iteration != wantIteration {
 			t.Errorf("progress[%d].Iteration = %d, want %d", i, update.Iteration, wantIteration)
@@ -228,6 +234,7 @@ func TestOptimizeStopsAtTargetCost(t *testing.T) {
 	config.Convergence = &ConvergenceConfig{TargetCost: &target}
 
 	var progress []Progress
+
 	result, err := OptimizeContext(
 		context.Background(),
 		config,
@@ -377,7 +384,9 @@ func TestOptimizeContextCancellation(t *testing.T) {
 		calls := 0
 		config := lifecycleConfig(func(position []float64) float64 {
 			calls++
+
 			cancel()
+
 			return sphere(position)
 		})
 
@@ -425,12 +434,16 @@ func TestOptimizeContextCancellation(t *testing.T) {
 
 func TestOptimizeContextRejectsInvalidLifecycleInputs(t *testing.T) {
 	config := lifecycleConfig(sphere)
-	if _, err := OptimizeContext(nil, config); !errors.Is(err, errNilContext) {
+
+	_, err := OptimizeContext(nil, config) //nolint:staticcheck // Intentionally verify that nil contexts are rejected.
+	if !errors.Is(err, errNilContext) {
 		t.Errorf("nil context error = %v, want %v", err, errNilContext)
 	}
 
 	config = lifecycleConfig(sphere)
-	if _, err := OptimizeContext(context.Background(), config, RunOption{}); err == nil {
+
+	_, err = OptimizeContext(context.Background(), config, RunOption{})
+	if err == nil {
 		t.Fatal("OptimizeContext accepted zero-value RunOption")
 	}
 }

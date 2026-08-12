@@ -59,6 +59,7 @@ func TestParallelEvaluationHonorsWorkerLimit(t *testing.T) {
 
 			config := parallelTestConfig(objective)
 			config.MaxWorkers = maxWorkers
+
 			result, err := Optimize(config)
 			if err != nil {
 				t.Fatalf("Optimize: %v", err)
@@ -112,6 +113,7 @@ func TestParallelPopulationEvaluationPaths(t *testing.T) {
 			variant.configure(config)
 
 			initialMales := [][]float64{{0, 0, 0}}
+
 			result, err := OptimizeContext(
 				context.Background(),
 				config,
@@ -335,6 +337,7 @@ func TestParallelGeneticOffspringAreFullyInitialized(t *testing.T) {
 	}
 
 	savedBestCoordinate := offspring[0].Best.Position[0]
+
 	offspring[0].Position[0]++
 	if offspring[0].Best.Position[0] != savedBestCoordinate {
 		t.Error("offspring personal best position aliases its current position")
@@ -592,6 +595,7 @@ func TestParallelMPMAMedianMatchesSequential(t *testing.T) {
 	}
 
 	weights := []float64{1, 0.8, 0.6, 0.4, 0.2, 0.1}
+
 	weighted, err := calculateWeightedMedianPositionParallel(context.Background(), population, weights, 4)
 	if err != nil {
 		t.Fatalf("calculateWeightedMedianPositionParallel: %v", err)
@@ -716,7 +720,8 @@ func TestEvaluationPoolEvaluatesEveryCandidateExactlyOnce(t *testing.T) {
 		population[i].Position[0] = float64(i)
 	}
 
-	if _, err := pool.evaluate(context.Background(), population, false, false); err != nil {
+	_, err := pool.evaluate(context.Background(), population, false, false)
+	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
 

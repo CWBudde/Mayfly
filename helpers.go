@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 )
 
 // unifrnd generates a random float64 between lower and upper.
@@ -59,15 +60,16 @@ func sortMayflies(mayflies []*Mayfly, evaluators ...*constraintEvaluator) {
 		evaluator = evaluators[0]
 	}
 
-	// Simple bubble sort for small populations
-	n := len(mayflies)
-	for i := range n - 1 {
-		for j := range n - i - 1 {
-			if evaluator.betterMayfly(mayflies[j+1], mayflies[j]) {
-				mayflies[j], mayflies[j+1] = mayflies[j+1], mayflies[j]
-			}
+	slices.SortStableFunc(mayflies, func(left, right *Mayfly) int {
+		switch {
+		case evaluator.betterMayfly(left, right):
+			return -1
+		case evaluator.betterMayfly(right, left):
+			return 1
+		default:
+			return 0
 		}
-	}
+	})
 }
 
 // effectiveNM reports the mutant count Optimize will actually use, resolving

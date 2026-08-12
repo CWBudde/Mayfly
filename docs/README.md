@@ -86,11 +86,18 @@ Complete API reference:
   - Expected performance
   - Usage examples
 
+- **[Performance and Profiling](performance.md)** - Developer performance guide
+  - Reproducible optimizer benchmarks
+  - CPU and memory profiling commands
+  - Recorded optimization results
+
 - **[Research References](research.md)** - Academic papers
   - Original research citations
   - Variant-specific papers
   - BibTeX entries
   - Research trends
+- **[Release Guide](releasing.md)** - Version policy, validation, and
+  publication checklist
 
 ## Navigation Guide
 

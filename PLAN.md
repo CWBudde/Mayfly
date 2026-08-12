@@ -72,17 +72,36 @@
 
 ### Phase 2: Release Preparation
 
-#### 2.1 Code Quality
+#### 2.1 Static Analysis & Lint Remediation
 
-- [ ] Run golangci-lint and fix issues
-- [ ] Verify 80%+ test coverage
-- [ ] Performance profiling and optimization
+- [x] Capture and classify the current `golangci-lint` baseline
+- [x] Resolve production-code layout and alignment findings
+- [x] Resolve inline error-handling findings
+- [x] Resolve whitespace/style findings in tests
+- [x] Verify formatting, module tidiness, `go vet`, and `golangci-lint`
 
-#### 2.2 Release
+#### 2.2 Coverage & Test Quality
 
-- [ ] Setup semantic versioning
-- [ ] Create CHANGELOG.md
-- [ ] Publish to pkg.go.dev
+- [x] Measure package and function-level coverage
+- [x] Add focused tests for the lowest-covered behavior
+- [x] Verify 80%+ statement coverage
+- [x] Run unit, race, and integration test suites
+
+#### 2.3 Performance Profiling & Optimization
+
+- [x] Establish reproducible benchmark baselines
+- [x] Capture CPU and memory profiles for representative workloads
+- [x] Identify and optimize material hot paths
+- [x] Add regression benchmarks for optimized paths
+- [x] Document profiling commands and results
+
+#### 2.4 Release Engineering & Publishing
+
+- [x] Define and document the semantic-versioning policy
+- [x] Add a release checklist and validation workflow
+- [x] Create `CHANGELOG.md` from the existing release history
+- [x] Verify package metadata and documentation for pkg.go.dev
+- [ ] Tag a release and verify publication on pkg.go.dev
 
 ---
 

@@ -284,6 +284,7 @@ func TestConstrainedParallelEvaluationIsDeterministicAcrossWorkerCounts(t *testi
 
 	oneWorker := run(1)
 	fourWorkers := run(4)
+
 	if !reflect.DeepEqual(oneWorker.GlobalBest, fourWorkers.GlobalBest) ||
 		!reflect.DeepEqual(oneWorker.ConvergenceCurve, fourWorkers.ConvergenceCurve) ||
 		oneWorker.FuncEvalCount != fourWorkers.FuncEvalCount {

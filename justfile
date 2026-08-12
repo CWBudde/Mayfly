@@ -127,13 +127,13 @@ ci-race: verify check-race
 
 # Profile CPU performance
 profile-cpu:
-    cd examples && go run -cpuprofile=cpu.prof main.go
-    go tool pprof cpu.prof
+    go test -run '^$' -bench '^BenchmarkOptimizeBaseline$' -benchtime=5s -cpuprofile=cpu.pprof .
+    @echo "CPU profile written to cpu.pprof; inspect it with: go tool pprof -top cpu.pprof"
 
 # Profile memory usage
 profile-mem:
-    cd examples && go run -memprofile=mem.prof main.go
-    go tool pprof mem.prof
+    go test -run '^$' -bench '^BenchmarkOptimizeBaseline$' -benchtime=5s -memprofile=memory.pprof .
+    @echo "Memory profile written to memory.pprof; inspect it with: go tool pprof -top -alloc_space memory.pprof"
 
 # Run optimization with different algorithms for comparison
 compare:
@@ -202,10 +202,42 @@ install-tools: setup-deps
 security:
     go list -json -deps ./... | nancy sleuth
 
-# Release preparation
+# Validate a prospective release without creating a tag
+release-check version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    release_version="{{version}}"
+    release_version="${release_version#version=}"
+    if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+        echo "Invalid semantic version: $release_version" >&2
+        exit 1
+    fi
+    grep -Fq "## [$release_version]" CHANGELOG.md
+    test -s LICENSE
+    test -s README.md
+    test "$(go list -m)" = "github.com/cwbudde/mayfly"
+    just verify
+    just check-formatted
+    just check-tidy
+    just lint
+    go vet ./...
+    go test -timeout 20m ./...
+
+# Validate and create an annotated release tag locally
 release version:
     #!/usr/bin/env bash
-    echo "Preparing release {{version}}"
-    just ci
-    git tag -a v{{version}} -m "Release version {{version}}"
-    echo "Ready to push: git push origin v{{version}}"
+    set -euo pipefail
+    release_version="{{version}}"
+    release_version="${release_version#version=}"
+    release_tag="v$release_version"
+    just release-check "$release_version"
+    if [[ -n "$(git status --porcelain)" ]]; then
+        echo "Release requires a clean worktree" >&2
+        exit 1
+    fi
+    if git rev-parse --verify --quiet "refs/tags/$release_tag" >/dev/null; then
+        echo "Tag already exists: $release_tag" >&2
+        exit 1
+    fi
+    git tag -a "$release_tag" -m "Release $release_tag"
+    echo "Ready to push: git push origin main $release_tag"

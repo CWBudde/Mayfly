@@ -45,11 +45,12 @@ func prepareStandardFemales(
 	g, flight float64,
 	config *Config,
 	rng *rand.Rand,
+	evaluator *constraintEvaluator,
 ) {
 	for i, female := range females {
 		randomFlight := unifrndVec(-1, 1, config.ProblemSize, rng)
 
-		if female.Cost > males[i].Cost {
+		if evaluator.betterMayfly(males[i], female) {
 			for j := range config.ProblemSize {
 				distance := males[i].Position[j] - female.Position[j]
 				female.Velocity[j] = g*female.Velocity[j] +
@@ -80,11 +81,12 @@ func prepareStandardMales(
 	g, dance, mpmaG float64,
 	config *Config,
 	rng *rand.Rand,
+	evaluator *constraintEvaluator,
 ) {
 	for _, male := range males {
 		randomDance := unifrndVec(-1, 1, config.ProblemSize, rng)
 
-		if male.Cost > globalBest.Cost {
+		if evaluator.better(evaluationFromBest(globalBest), evaluationFromMayfly(male)) {
 			prepareAttractedMale(male, globalBest, medianPosition, g, mpmaG, config)
 		} else {
 			gravity := g
@@ -136,13 +138,17 @@ func prepareAttractedMale(
 	}
 }
 
-func updatePersonalBests(males []*Mayfly) {
+func updatePersonalBests(males []*Mayfly, evaluator *constraintEvaluator) {
 	for _, male := range males {
-		if male.Cost >= male.Best.Cost {
+		if !evaluator.better(
+			evaluationFromMayfly(male),
+			evaluationFromBest(male.Best),
+		) {
 			continue
 		}
 
 		copy(male.Best.Position, male.Position)
 		male.Best.Cost = male.Cost
+		male.Best.ConstraintViolation = male.ConstraintViolation
 	}
 }

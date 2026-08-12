@@ -32,8 +32,24 @@ package mayfly
 //
 // Returns:
 //   - Updated position for the mayfly
+//
+//nolint:unused // retained for focused AOBLMOA helper compatibility.
 func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 	currentIter, maxIter int, config *Config,
+) []float64 {
+	return applyAOBLMOAWithEvaluator(
+		mayfly, globalBest, population, currentIter, maxIter, config,
+		newConstraintEvaluator(config.ObjectiveFunc, nil),
+	)
+}
+
+func applyAOBLMOAWithEvaluator(
+	mayfly *Mayfly,
+	globalBest Best,
+	population []*Mayfly,
+	currentIter, maxIter int,
+	config *Config,
+	evaluator *constraintEvaluator,
 ) []float64 {
 	// Determine if we should apply Aquila strategy or standard Mayfly update
 	useAquilaStrategy := config.Rand.Float64() < config.AquilaWeight
@@ -57,10 +73,10 @@ func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 		oppositionPos := oppositionPoint(newPosition, config.LowerBound, config.UpperBound)
 
 		// Evaluate both positions and keep the better one
-		originalCost := config.ObjectiveFunc(newPosition)
-		oppositionCost := config.ObjectiveFunc(oppositionPos)
+		original := evaluator.evaluate(newPosition, false)
+		opposition := evaluator.evaluate(oppositionPos, false)
 
-		if oppositionCost < originalCost {
+		if evaluator.better(opposition, original) {
 			newPosition = oppositionPos
 		}
 	}
@@ -72,9 +88,24 @@ func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 	currentIter, maxIter int, config *Config,
 ) {
+	applyAOBLMOAToPopulationWithEvaluator(
+		males, females, globalBest, currentIter, maxIter, config,
+		newConstraintEvaluator(config.ObjectiveFunc, nil),
+	)
+}
+
+func applyAOBLMOAToPopulationWithEvaluator(
+	males, females []*Mayfly,
+	globalBest Best,
+	currentIter, maxIter int,
+	config *Config,
+	evaluator *constraintEvaluator,
+) {
 	// Update males with AOBLMOA
 	for i := range males {
-		newPos := applyAOBLMOA(males[i], globalBest, males, currentIter, maxIter, config)
+		newPos := applyAOBLMOAWithEvaluator(
+			males[i], globalBest, males, currentIter, maxIter, config, evaluator,
+		)
 
 		if newPos != nil {
 			// AOBLMOA provided a new position, use it
@@ -85,11 +116,12 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 			minVec(males[i].Position, config.UpperBound)
 
 			// Evaluate
-			males[i].Cost = config.ObjectiveFunc(males[i].Position)
+			evaluator.evaluateMayfly(males[i], false)
 
 			// Update personal best
-			if males[i].Cost < males[i].Best.Cost {
+			if evaluator.better(evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best)) {
 				males[i].Best.Cost = males[i].Cost
+				males[i].Best.ConstraintViolation = males[i].ConstraintViolation
 				copy(males[i].Best.Position, males[i].Position)
 			}
 		}
@@ -98,7 +130,9 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 
 	// Update females with AOBLMOA
 	for i := range females {
-		newPos := applyAOBLMOA(females[i], globalBest, females, currentIter, maxIter, config)
+		newPos := applyAOBLMOAWithEvaluator(
+			females[i], globalBest, females, currentIter, maxIter, config, evaluator,
+		)
 
 		if newPos != nil {
 			// AOBLMOA provided a new position, use it
@@ -109,7 +143,7 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 			minVec(females[i].Position, config.UpperBound)
 
 			// Evaluate
-			females[i].Cost = config.ObjectiveFunc(females[i].Position)
+			evaluator.evaluateMayfly(females[i], false)
 		}
 		// If nil, the standard Mayfly update will be used instead
 	}

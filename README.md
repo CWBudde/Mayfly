@@ -17,6 +17,7 @@ The Mayfly Algorithm is a swarm intelligence optimization algorithm inspired by 
 - Unified API with intelligent algorithm selection
 - Statistical comparison framework
 - Optional target-cost and stagnation-based early stopping
+- Inequality and equality constraints with feasibility or penalty ranking
 - Thread-safe with proper configuration
 
 ## Quick Start
@@ -74,6 +75,34 @@ config.ObjectiveFunc = myFunction
 config.ProblemSize = 10
 config.LowerBound = -5
 config.UpperBound = 5
+```
+
+### Constrained Optimization
+
+Constraints are functions of the position. Inequalities use `g(x) <= 0`, while
+equalities use `h(x) = 0` with an optional tolerance. Feasibility rules are the
+default, so a feasible candidate always outranks an infeasible one.
+
+```go
+config.Constraints = &mayfly.ConstraintConfig{
+    Inequalities: []mayfly.ConstraintFunction{
+        func(x []float64) float64 { return x[0] + x[1] - 1 },
+    },
+    Equalities: []mayfly.ConstraintFunction{
+        func(x []float64) float64 { return x[2] - 0.5 },
+    },
+    EqualityTolerance: 1e-6,
+}
+
+result, err := mayfly.Optimize(config)
+if err != nil {
+    panic(err)
+}
+
+fmt.Printf("Cost: %f, violation: %g\n",
+    result.GlobalBest.Cost,
+    result.GlobalBest.ConstraintViolation,
+)
 ```
 
 ## Algorithm Variants

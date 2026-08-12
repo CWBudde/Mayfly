@@ -24,7 +24,8 @@ const (
 )
 
 // LoadConfigFromFile loads a Config from a JSON file.
-// Note: ObjectiveFunc and Rand must be set separately as they cannot be serialized.
+// Note: ObjectiveFunc, constraint functions, and Rand must be set separately as
+// they cannot be serialized.
 func LoadConfigFromFile(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -48,7 +49,8 @@ func LoadConfigFromFile(path string) (*Config, error) {
 }
 
 // SaveConfigToFile saves a Config to a JSON file.
-// Note: ObjectiveFunc and Rand are not saved as they cannot be serialized.
+// Note: ObjectiveFunc, constraint functions, and Rand are not saved because
+// they cannot be serialized.
 func SaveConfigToFile(config *Config, path string) error {
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
@@ -86,6 +88,11 @@ func ValidateConfig(config *Config) error {
 	convergenceErr := validateConvergenceConfig(config.Convergence, config.MaxIterations)
 	if convergenceErr != nil {
 		return fmt.Errorf("invalid convergence config: %w", convergenceErr)
+	}
+
+	constraintErr := validateConstraintConfig(config.Constraints)
+	if constraintErr != nil {
+		return fmt.Errorf("invalid constraint config: %w", constraintErr)
 	}
 
 	if config.NPop <= 0 {

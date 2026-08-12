@@ -19,7 +19,7 @@ func evaluateParallelGeneticOperators(
 	evaluator *evaluationPool,
 	iteration int,
 ) ([]*Mayfly, Best, error) {
-	geneticBest := Best{Cost: math.Inf(1)}
+	geneticBest := Best{Cost: math.Inf(1), ConstraintViolation: math.Inf(1)}
 	offspring := make([]*Mayfly, 0, 2*(config.NC/2)+config.NM)
 
 	for k := range config.NC / 2 {
@@ -58,7 +58,7 @@ func evaluateParallelGeneticOperators(
 
 	initializeOffspringBests(offspring)
 
-	if crossoverBest.Cost < geneticBest.Cost {
+	if evaluator.evaluator.betterBest(crossoverBest, geneticBest) {
 		geneticBest = crossoverBest
 	}
 
@@ -107,7 +107,7 @@ func evaluateParallelGeneticOperators(
 
 	initializeOffspringBests(mutants)
 
-	if mutationBest.Cost < geneticBest.Cost {
+	if evaluator.evaluator.betterBest(mutationBest, geneticBest) {
 		geneticBest = mutationBest
 	}
 
@@ -152,5 +152,6 @@ func initializeOffspringBests(offspring []*Mayfly) {
 	for _, mayfly := range offspring {
 		copy(mayfly.Best.Position, mayfly.Position)
 		mayfly.Best.Cost = mayfly.Cost
+		mayfly.Best.ConstraintViolation = mayfly.ConstraintViolation
 	}
 }

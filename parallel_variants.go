@@ -80,14 +80,17 @@ func evaluateParallelDESMAElites(
 	bestElite := newMayfly(config.ProblemSize)
 	copy(bestElite.Position, currentBest.Position)
 	bestElite.Cost = currentBest.Cost
+	bestElite.ConstraintViolation = currentBest.ConstraintViolation
 	copy(bestElite.Best.Position, currentBest.Position)
 	bestElite.Best.Cost = currentBest.Cost
+	bestElite.Best.ConstraintViolation = currentBest.ConstraintViolation
 
 	for _, elite := range elites {
-		if elite.Cost < bestElite.Cost {
+		if evaluator.evaluator.betterMayfly(elite, bestElite) {
 			bestElite = elite
 			copy(bestElite.Best.Position, elite.Position)
 			bestElite.Best.Cost = elite.Cost
+			bestElite.Best.ConstraintViolation = elite.ConstraintViolation
 		}
 	}
 
@@ -145,20 +148,24 @@ func evaluateParallelOrthogonalLearning(
 		bestCandidate := candidates[start]
 
 		for _, candidate := range candidates[start+1 : start+len(L4Array)] {
-			if candidate.Cost < bestCandidate.Cost {
+			if evaluator.evaluator.betterMayfly(candidate, bestCandidate) {
 				bestCandidate = candidate
 			}
 		}
 
 		male := males[i]
-		if bestCandidate.Cost < male.Cost {
+		if evaluator.evaluator.betterMayfly(bestCandidate, male) {
 			copy(bestCandidate.Velocity, male.Velocity)
 			copy(bestCandidate.Best.Position, male.Best.Position)
 			bestCandidate.Best.Cost = male.Best.Cost
+			bestCandidate.Best.ConstraintViolation = male.Best.ConstraintViolation
 
-			if bestCandidate.Cost < bestCandidate.Best.Cost {
+			if evaluator.evaluator.better(
+				evaluationFromMayfly(bestCandidate), evaluationFromBest(bestCandidate.Best),
+			) {
 				copy(bestCandidate.Best.Position, bestCandidate.Position)
 				bestCandidate.Best.Cost = bestCandidate.Cost
+				bestCandidate.Best.ConstraintViolation = bestCandidate.ConstraintViolation
 			}
 
 			males[i] = bestCandidate
@@ -208,18 +215,21 @@ func evaluateParallelEOBBMAOpposition(
 
 	for _, candidate := range selected {
 		male := males[candidate.eliteIndex]
-		if candidate.mayfly.Cost < male.Cost {
+		if evaluator.evaluator.betterMayfly(candidate.mayfly, male) {
 			copy(male.Position, candidate.mayfly.Position)
 			male.Cost = candidate.mayfly.Cost
+			male.ConstraintViolation = candidate.mayfly.ConstraintViolation
 
-			if male.Cost < male.Best.Cost {
+			if evaluator.evaluator.better(
+				evaluationFromMayfly(male), evaluationFromBest(male.Best),
+			) {
 				copy(male.Best.Position, male.Position)
 				male.Best.Cost = male.Cost
+				male.Best.ConstraintViolation = male.ConstraintViolation
 			}
 
-			if male.Cost < globalBest.Cost {
-				globalBest.Cost = male.Cost
-				copy(globalBest.Position, male.Position)
+			if evaluator.evaluator.betterMayflyThanBest(male, *globalBest) {
+				copyMayflyToBest(globalBest, male)
 			}
 		}
 	}
@@ -283,22 +293,27 @@ func evaluateParallelGoldenSine(
 	for i, candidate := range candidates {
 		male := males[i]
 
-		probability := acceptanceProbability(male.Cost, candidate.mayfly.Cost, temperature)
+		probability := evaluator.evaluator.acceptanceProbability(
+			evaluationFromMayfly(male), evaluationFromMayfly(candidate.mayfly), temperature,
+		)
 		if !(candidate.acceptanceDraw < probability) {
 			continue
 		}
 
 		copy(male.Position, candidate.mayfly.Position)
 		male.Cost = candidate.mayfly.Cost
+		male.ConstraintViolation = candidate.mayfly.ConstraintViolation
 
-		if male.Cost < male.Best.Cost {
+		if evaluator.evaluator.better(
+			evaluationFromMayfly(male), evaluationFromBest(male.Best),
+		) {
 			copy(male.Best.Position, male.Position)
 			male.Best.Cost = male.Cost
+			male.Best.ConstraintViolation = male.ConstraintViolation
 		}
 
-		if male.Cost < globalBest.Cost {
-			globalBest.Cost = male.Cost
-			copy(globalBest.Position, male.Position)
+		if evaluator.evaluator.betterMayflyThanBest(male, *globalBest) {
+			copyMayflyToBest(globalBest, male)
 		}
 	}
 
@@ -385,7 +400,8 @@ func evaluateParallelAOBLMOA(
 	finalBatch := make([]*Mayfly, len(candidates))
 	for i := range candidates {
 		selected := candidates[i].original
-		if candidates[i].opposition != nil && candidates[i].opposition.Cost < selected.Cost {
+		if candidates[i].opposition != nil &&
+			evaluator.evaluator.betterMayfly(candidates[i].opposition, selected) {
 			selected = candidates[i].opposition
 		}
 
@@ -401,15 +417,18 @@ func evaluateParallelAOBLMOA(
 		selected := finalBatch[i]
 		copy(candidate.target.Position, selected.Position)
 		candidate.target.Cost = selected.Cost
+		candidate.target.ConstraintViolation = selected.ConstraintViolation
 
-		if candidate.isMale && candidate.target.Cost < candidate.target.Best.Cost {
+		if candidate.isMale && evaluator.evaluator.better(
+			evaluationFromMayfly(candidate.target), evaluationFromBest(candidate.target.Best),
+		) {
 			copy(candidate.target.Best.Position, candidate.target.Position)
 			candidate.target.Best.Cost = candidate.target.Cost
+			candidate.target.Best.ConstraintViolation = candidate.target.ConstraintViolation
 		}
 
-		if candidate.isMale && candidate.target.Cost < globalBest.Cost {
-			globalBest.Cost = candidate.target.Cost
-			copy(globalBest.Position, candidate.target.Position)
+		if candidate.isMale && evaluator.evaluator.betterMayflyThanBest(candidate.target, *globalBest) {
+			copyMayflyToBest(globalBest, candidate.target)
 		}
 	}
 

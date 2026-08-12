@@ -649,6 +649,54 @@ func containsMiddle(s, substr string) bool {
 	return false
 }
 
+// Constraint Handling Steps
+
+func (ctx *integrationTestContext) aConstrainedOneDimensionalProblem() error {
+	ctx.config = staticConstraintConfig()
+	ctx.config.Constraints = &ConstraintConfig{
+		Inequalities: []ConstraintFunction{
+			func(position []float64) float64 { return 1 - position[0] },
+		},
+	}
+
+	return nil
+}
+
+func (ctx *integrationTestContext) iOptimizeItUsingFeasibilityRules() error {
+	result, err := OptimizeContext(
+		context.Background(),
+		ctx.config,
+		WithInitialPopulation(
+			[][]float64{{0}, {1}},
+			[][]float64{{0}, {1}},
+		),
+	)
+	if err != nil {
+		return err
+	}
+
+	ctx.result = result
+
+	return nil
+}
+
+func (ctx *integrationTestContext) theReturnedSolutionShouldSatisfyAllConfiguredConstraints() error {
+	if ctx.result.GlobalBest.ConstraintViolation != 0 {
+		return fmt.Errorf("constraint violation is %v, want zero", ctx.result.GlobalBest.ConstraintViolation)
+	}
+
+	return nil
+}
+
+func (ctx *integrationTestContext) theReportedCostShouldBeTheRawObjectiveCost() error {
+	want := ctx.config.ObjectiveFunc(ctx.result.GlobalBest.Position)
+	if ctx.result.GlobalBest.Cost != want {
+		return fmt.Errorf("reported cost is %v, want raw objective %v", ctx.result.GlobalBest.Cost, want)
+	}
+
+	return nil
+}
+
 // Initialize godog test suite
 
 func InitializeScenario(sc *godog.ScenarioContext) {
@@ -674,6 +722,12 @@ func InitializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^the best position should be near zero vector within tolerance ([\d.]+)$`, ctx.theBestPositionShouldBeNearZeroVectorWithinTolerance)
 	sc.Step(`^the best position should be near ones vector within tolerance ([\d.]+)$`, ctx.theBestPositionShouldBeNearOnesVectorWithinTolerance)
 	sc.Step(`^DESMA best cost should be at least (\d+) percent better than Standard MA$`, ctx.desmaBestCostShouldBeAtLeastPercentBetterThanStandardMA)
+
+	// Constraint Handling
+	sc.Step(`^a constrained one-dimensional problem$`, ctx.aConstrainedOneDimensionalProblem)
+	sc.Step(`^I optimize it using feasibility rules$`, ctx.iOptimizeItUsingFeasibilityRules)
+	sc.Step(`^the returned solution should satisfy all configured constraints$`, ctx.theReturnedSolutionShouldSatisfyAllConfiguredConstraints)
+	sc.Step(`^the reported cost should be the raw objective cost$`, ctx.theReportedCostShouldBeTheRawObjectiveCost)
 
 	// Boundary Constraints
 	sc.Step(`^I run Standard MA for (\d+) iterations$`, ctx.iRunStandardMAForIterationsCapturingState)

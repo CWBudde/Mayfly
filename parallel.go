@@ -15,14 +15,18 @@ type evaluationJob struct {
 }
 
 type evaluationPool struct {
-	objective ObjectiveFunction
+	evaluator *constraintEvaluator
 	jobs      chan evaluationJob
 	workers   sync.WaitGroup
 }
 
 func newEvaluationPool(objective ObjectiveFunction, maxWorkers int) *evaluationPool {
+	return newConstrainedEvaluationPool(newConstraintEvaluator(objective, nil), maxWorkers)
+}
+
+func newConstrainedEvaluationPool(evaluator *constraintEvaluator, maxWorkers int) *evaluationPool {
 	pool := &evaluationPool{
-		objective: objective,
+		evaluator: evaluator,
 		jobs:      make(chan evaluationJob),
 	}
 
@@ -39,14 +43,10 @@ func (pool *evaluationPool) worker() {
 	defer pool.workers.Done()
 
 	for job := range pool.jobs {
-		cost := pool.objective(job.mayfly.Position)
-		if job.sanitizeCost {
-			cost = sanitizeCost(cost)
-		}
+		pool.evaluator.evaluateMayfly(job.mayfly, job.sanitizeCost)
 
-		job.mayfly.Cost = cost
 		if job.best != nil {
-			job.best.consider(job.index, job.mayfly.Position, cost)
+			job.best.consider(job.index, job.mayfly)
 		}
 
 		job.done.Done()
@@ -61,7 +61,7 @@ func (pool *evaluationPool) evaluate(
 ) (Best, error) {
 	var best *batchBest
 	if trackBest {
-		best = newBatchBest()
+		best = newBatchBest(pool.evaluator)
 	}
 
 	var done sync.WaitGroup
@@ -113,32 +113,44 @@ func (pool *evaluationPool) close() {
 }
 
 type batchBest struct {
-	best  Best
-	mu    sync.Mutex
-	index int
+	evaluator *constraintEvaluator
+	best      Best
+	mu        sync.Mutex
+	index     int
 }
 
-func newBatchBest() *batchBest {
+func newBatchBest(evaluator *constraintEvaluator) *batchBest {
 	return &batchBest{
-		best:  Best{Cost: math.Inf(1)},
-		index: -1,
+		best: Best{
+			Cost:                math.Inf(1),
+			ConstraintViolation: math.Inf(1),
+		},
+		evaluator: evaluator,
+		index:     -1,
 	}
 }
 
-func (best *batchBest) consider(index int, position []float64, cost float64) {
-	if math.IsNaN(cost) {
+func (best *batchBest) consider(index int, candidate *Mayfly) {
+	if math.IsNaN(candidate.Cost) {
 		return
 	}
 
 	best.mu.Lock()
 	defer best.mu.Unlock()
 
-	if cost > best.best.Cost || (cost == best.best.Cost && best.index >= 0 && index >= best.index) {
+	better := best.evaluator.betterMayflyThanBest(candidate, best.best)
+
+	equal := !better && !best.evaluator.better(
+		evaluationFromBest(best.best),
+		evaluationFromMayfly(candidate),
+	)
+	if !better && (!equal || (best.index >= 0 && index >= best.index)) {
 		return
 	}
 
-	best.best.Cost = cost
-	best.best.Position = append(best.best.Position[:0], position...)
+	best.best.Cost = candidate.Cost
+	best.best.ConstraintViolation = candidate.ConstraintViolation
+	best.best.Position = append(best.best.Position[:0], candidate.Position...)
 	best.index = index
 }
 
@@ -147,8 +159,9 @@ func (best *batchBest) snapshot() Best {
 	defer best.mu.Unlock()
 
 	return Best{
-		Position: append([]float64(nil), best.best.Position...),
-		Cost:     best.best.Cost,
+		Position:            append([]float64(nil), best.best.Position...),
+		Cost:                best.best.Cost,
+		ConstraintViolation: best.best.ConstraintViolation,
 	}
 }
 
@@ -160,11 +173,12 @@ func effectiveMaxWorkers(config *Config) int {
 	return defaultMaxWorkers()
 }
 
-func mergeBest(globalBest *Best, candidate Best) {
-	if candidate.Cost >= globalBest.Cost {
+func mergeBest(globalBest *Best, candidate Best, evaluator *constraintEvaluator) {
+	if !evaluator.betterBest(candidate, *globalBest) {
 		return
 	}
 
 	globalBest.Cost = candidate.Cost
+	globalBest.ConstraintViolation = candidate.ConstraintViolation
 	copy(globalBest.Position, candidate.Position)
 }

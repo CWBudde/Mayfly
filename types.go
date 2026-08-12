@@ -11,18 +11,57 @@ import (
 // It takes a read-only position vector and returns a fitness cost.
 type ObjectiveFunction func([]float64) float64
 
+// ConstraintFunction evaluates a constraint at a position. Inequality
+// constraints are satisfied when the returned value is less than or equal to
+// zero. Equality constraints are satisfied when the absolute returned value is
+// within the configured equality tolerance.
+type ConstraintFunction func([]float64) float64
+
+// ConstraintHandlingMethod selects how constrained candidates are ranked.
+type ConstraintHandlingMethod string
+
+const (
+	// ConstraintHandlingFeasibility applies Deb's feasibility rules.
+	ConstraintHandlingFeasibility ConstraintHandlingMethod = "feasibility"
+	// ConstraintHandlingPenalty ranks candidates by their penalized cost.
+	ConstraintHandlingPenalty ConstraintHandlingMethod = "penalty"
+)
+
+// PenaltyMethod selects how aggregate constraint violation is penalized.
+type PenaltyMethod string
+
+const (
+	// PenaltyLinear adds factor * violation to the objective cost.
+	PenaltyLinear PenaltyMethod = "linear"
+	// PenaltyQuadratic adds factor * violation squared to the objective cost.
+	PenaltyQuadratic PenaltyMethod = "quadratic"
+)
+
+// ConstraintConfig configures optional problem constraints. Function fields
+// are not serialized and must be restored after loading a configuration.
+type ConstraintConfig struct {
+	Handling          ConstraintHandlingMethod `json:"handling,omitempty"`
+	PenaltyMethod     PenaltyMethod            `json:"penalty_method,omitempty"`
+	Inequalities      []ConstraintFunction     `json:"-"`
+	Equalities        []ConstraintFunction     `json:"-"`
+	PenaltyFactor     float64                  `json:"penalty_factor,omitempty"`
+	EqualityTolerance float64                  `json:"equality_tolerance,omitempty"`
+}
+
 // Best represents the best position and cost found.
 type Best struct {
-	Position []float64
-	Cost     float64
+	Position            []float64
+	Cost                float64
+	ConstraintViolation float64
 }
 
 // Mayfly represents a single mayfly (male or female) in the population.
 type Mayfly struct {
-	Position []float64
-	Velocity []float64
-	Best     Best
-	Cost     float64
+	Position            []float64
+	Velocity            []float64
+	Best                Best
+	Cost                float64
+	ConstraintViolation float64
 }
 
 // ConvergenceConfig controls optional early termination. MaxIterations remains
@@ -34,8 +73,9 @@ type ConvergenceConfig struct {
 	// of zero.
 	TargetCost *float64 `json:"target_cost,omitempty"`
 
-	// MinImprovement is the absolute cost reduction required to reset the
-	// stagnation counter. It must be non-negative.
+	// MinImprovement is the absolute cost, penalty score, or constraint-
+	// violation reduction required to reset the stagnation counter. It must be
+	// non-negative.
 	MinImprovement float64 `json:"min_improvement"`
 
 	// StagnationIterations stops the run after this many consecutive iterations
@@ -49,12 +89,14 @@ type ConvergenceConfig struct {
 }
 
 // Config holds the configuration parameters for the Mayfly Algorithm.
-// When EnableParallel is true, ObjectiveFunc may be called concurrently with
-// distinct position vectors and must be safe for concurrent use.
+// When EnableParallel is true, ObjectiveFunc and configured constraint
+// functions may be called concurrently with distinct position vectors and
+// must be safe for concurrent use.
 type Config struct {
 	ObjectiveFunc         ObjectiveFunction  `json:"-"`
 	Rand                  *rand.Rand         `json:"-"`
 	Convergence           *ConvergenceConfig `json:"convergence,omitempty"`
+	Constraints           *ConstraintConfig  `json:"constraints,omitempty"`
 	CoolingSchedule       string             `json:"cooling_schedule"`
 	GravityType           string             `json:"gravity_type"`
 	ReductionFactor       float64            `json:"reduction_factor"`
@@ -125,9 +167,11 @@ const (
 // Result holds the results of the optimization.
 type Result struct {
 	// ConvergenceCurve holds the best cost known at the end of each completed
-	// iteration, so it has IterationCount entries and is non-increasing. Without
-	// early stopping, IterationCount equals MaxIterations. It is a history of
-	// costs, not a point in the search space.
+	// iteration, so it has IterationCount entries. It is non-increasing for
+	// unconstrained optimization; a constrained incumbent's raw cost may rise
+	// when feasibility or lower violation takes priority. Without early
+	// stopping, IterationCount equals MaxIterations. It is a history of costs,
+	// not a point in the search space.
 	//
 	// The solution itself is GlobalBest.Position.
 	//
@@ -148,12 +192,14 @@ type Result struct {
 // newMayfly creates an empty mayfly with allocated slices.
 func newMayfly(size int) *Mayfly {
 	return &Mayfly{
-		Position: make([]float64, size),
-		Velocity: make([]float64, size),
-		Cost:     math.Inf(1),
+		Position:            make([]float64, size),
+		Velocity:            make([]float64, size),
+		Cost:                math.Inf(1),
+		ConstraintViolation: math.Inf(1),
 		Best: Best{
-			Position: make([]float64, size),
-			Cost:     math.Inf(1),
+			Position:            make([]float64, size),
+			Cost:                math.Inf(1),
+			ConstraintViolation: math.Inf(1),
 		},
 	}
 }
@@ -161,12 +207,14 @@ func newMayfly(size int) *Mayfly {
 // clone creates a deep copy of a mayfly.
 func (m *Mayfly) clone() *Mayfly {
 	clone := &Mayfly{
-		Position: make([]float64, len(m.Position)),
-		Velocity: make([]float64, len(m.Velocity)),
-		Cost:     m.Cost,
+		Position:            make([]float64, len(m.Position)),
+		Velocity:            make([]float64, len(m.Velocity)),
+		Cost:                m.Cost,
+		ConstraintViolation: m.ConstraintViolation,
 		Best: Best{
-			Position: make([]float64, len(m.Best.Position)),
-			Cost:     m.Best.Cost,
+			Position:            make([]float64, len(m.Best.Position)),
+			Cost:                m.Best.Cost,
+			ConstraintViolation: m.Best.ConstraintViolation,
 		},
 	}
 	copy(clone.Position, m.Position)
@@ -205,6 +253,8 @@ func sanitizeCost(cost float64) float64 {
 
 // evaluateWithSanitization evaluates the objective function after sanitizing the position.
 // This ensures all heavy-tailed operators (Lévy, Cauchy) don't pass invalid values.
+//
+//nolint:unused // retained for package compatibility and focused helper tests.
 func evaluateWithSanitization(objFunc ObjectiveFunction, position []float64,
 	lowerBound, upperBound float64, rng *rand.Rand,
 ) float64 {

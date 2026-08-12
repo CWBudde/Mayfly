@@ -162,6 +162,10 @@ func TestNewDefaultConfig(t *testing.T) {
 		t.Errorf("NewDefaultConfig() Convergence = %+v, want nil", config.Convergence)
 	}
 
+	if config.Constraints != nil {
+		t.Errorf("NewDefaultConfig() Constraints = %+v, want nil", config.Constraints)
+	}
+
 	if config.NPop != 20 {
 		t.Errorf("NewDefaultConfig() NPop = %v, want 20", config.NPop)
 	}

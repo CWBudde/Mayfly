@@ -52,13 +52,18 @@ func minVec(vec []float64, bound float64) {
 	}
 }
 
-// sortMayflies sorts mayflies by cost (ascending).
-func sortMayflies(mayflies []*Mayfly) {
+// sortMayflies sorts mayflies from most to least preferred.
+func sortMayflies(mayflies []*Mayfly, evaluators ...*constraintEvaluator) {
+	evaluator := newConstraintEvaluator(nil, nil)
+	if len(evaluators) > 0 {
+		evaluator = evaluators[0]
+	}
+
 	// Simple bubble sort for small populations
 	n := len(mayflies)
 	for i := range n - 1 {
 		for j := range n - i - 1 {
-			if mayflies[j].Cost > mayflies[j+1].Cost {
+			if evaluator.betterMayfly(mayflies[j+1], mayflies[j]) {
 				mayflies[j], mayflies[j+1] = mayflies[j+1], mayflies[j]
 			}
 		}

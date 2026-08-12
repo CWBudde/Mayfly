@@ -10,21 +10,21 @@ func TestConvergenceTrackerRequiresSignificantImprovement(t *testing.T) {
 	tracker := newConvergenceTracker(&ConvergenceConfig{
 		MinImprovement:       0.5,
 		StagnationIterations: 2,
-	}, 10)
+	}, Best{Cost: 10})
 
-	if reason, stop := tracker.observe(1, 9.8); stop {
+	if reason, stop := tracker.observe(1, Best{Cost: 9.8}); stop {
 		t.Fatalf("small improvement stopped run with reason %q", reason)
 	}
 
-	if reason, stop := tracker.observe(2, 9.4); stop {
+	if reason, stop := tracker.observe(2, Best{Cost: 9.4}); stop {
 		t.Fatalf("cumulative significant improvement stopped run with reason %q", reason)
 	}
 
-	if reason, stop := tracker.observe(3, 9.1); stop {
+	if reason, stop := tracker.observe(3, Best{Cost: 9.1}); stop {
 		t.Fatalf("first stagnant iteration stopped run with reason %q", reason)
 	}
 
-	reason, stop := tracker.observe(4, 9.0)
+	reason, stop := tracker.observe(4, Best{Cost: 9.0})
 	if !stop || reason != TerminationStagnation {
 		t.Fatalf("second stagnant iteration = (%q, %t), want (%q, true)",
 			reason, stop, TerminationStagnation)

@@ -66,9 +66,9 @@
 
 #### 1.7 Constraint Handling
 
-- [ ] Penalty function methods
-- [ ] Feasibility rules
-- [ ] Constraint-handling utilities
+- [x] Penalty function methods
+- [x] Feasibility rules
+- [x] Constraint-handling utilities
 
 ### Phase 2: Release Preparation
 

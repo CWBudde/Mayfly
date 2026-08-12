@@ -59,6 +59,14 @@ var L4Array = [][]int{
 func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float64,
 	lb, ub []float64, objFunc func([]float64) float64, rng *rand.Rand,
 ) *Mayfly {
+	return applyOrthogonalLearning(
+		male, pbest, gbest, factor, lb, ub, newConstraintEvaluator(objFunc, nil), rng,
+	)
+}
+
+func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float64,
+	lb, ub []float64, evaluator *constraintEvaluator, rng *rand.Rand,
+) *Mayfly {
 	dim := len(male.Position)
 	candidates := make([]*Mayfly, len(L4Array))
 
@@ -100,20 +108,20 @@ func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 		}
 
 		// Evaluate candidate
-		candidate.Cost = objFunc(candidate.Position)
+		evaluator.evaluateMayfly(candidate, false)
 		candidates[i] = candidate
 	}
 
 	// Select best candidate
 	best := candidates[0]
 	for i := 1; i < len(candidates); i++ {
-		if candidates[i].Cost < best.Cost {
+		if evaluator.betterMayfly(candidates[i], best) {
 			best = candidates[i]
 		}
 	}
 
 	// Only return improved solution
-	if best.Cost < male.Cost {
+	if evaluator.betterMayfly(best, male) {
 		// Copy velocity from original male (maintain momentum)
 		copy(best.Velocity, male.Velocity)
 		return best
@@ -142,32 +150,45 @@ func ApplyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	gbest []float64, factor float64, lb, ub []float64,
 	objFunc func([]float64) float64, rng *rand.Rand,
 ) {
+	applyOrthogonalLearningToElite(
+		males, topPercent, gbest, factor, lb, ub, newConstraintEvaluator(objFunc, nil), rng,
+	)
+}
+
+func applyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
+	gbest []float64, factor float64, lb, ub []float64,
+	evaluator *constraintEvaluator, rng *rand.Rand,
+) {
 	// Calculate number of elite males to improve
 	numElite := min(max(int(float64(len(males))*topPercent), 1), len(males))
 
 	// Apply orthogonal learning to elite males
 	for i := range numElite {
-		improved := ApplyOrthogonalLearning(
+		improved := applyOrthogonalLearning(
 			males[i],
 			males[i].Best.Position, // Use personal best position
 			gbest,                  // Use global best
 			factor,
 			lb, ub,
-			objFunc,
+			evaluator,
 			rng,
 		)
 
 		// Update male if improved
-		if improved.Cost < males[i].Cost {
+		if evaluator.betterMayfly(improved, males[i]) {
 			// Preserve the personal best history
 			improved.Best.Position = make([]float64, len(males[i].Best.Position))
 			copy(improved.Best.Position, males[i].Best.Position)
 			improved.Best.Cost = males[i].Best.Cost
+			improved.Best.ConstraintViolation = males[i].Best.ConstraintViolation
 
 			// Update personal best if current is better
-			if improved.Cost < improved.Best.Cost {
+			if evaluator.better(
+				evaluationFromMayfly(improved), evaluationFromBest(improved.Best),
+			) {
 				copy(improved.Best.Position, improved.Position)
 				improved.Best.Cost = improved.Cost
+				improved.Best.ConstraintViolation = improved.ConstraintViolation
 			}
 
 			males[i] = improved

@@ -74,6 +74,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, fmt.Errorf("invalid convergence config: %w", convergenceErr)
 	}
 
+	constraintErr := validateConstraintConfig(config.Constraints)
+	if constraintErr != nil {
+		return nil, fmt.Errorf("invalid constraint config: %w", constraintErr)
+	}
+
 	// Validate population sizes
 	if config.NPop <= 0 {
 		return nil, fmt.Errorf("NPop (male population) must be positive, got %d", config.NPop)
@@ -195,13 +200,15 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		rng = rand.New(rand.NewSource(seed))
 	}
 
+	candidateEvaluator := newConstraintEvaluator(config.ObjectiveFunc, config.Constraints)
+
 	var evaluator *evaluationPool
 
 	if config.EnableParallel {
 		largestBatch := largestParallelEvaluationBatch(config)
 		workerCount := min(effectiveMaxWorkers(config), largestBatch)
 
-		evaluator = newEvaluationPool(config.ObjectiveFunc, workerCount)
+		evaluator = newConstrainedEvaluationPool(candidateEvaluator, workerCount)
 		defer evaluator.close()
 	}
 
@@ -210,8 +217,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	females := make([]*Mayfly, config.NPopF)
 
 	globalBest := Best{
-		Position: make([]float64, config.ProblemSize),
-		Cost:     math.Inf(1),
+		Position:            make([]float64, config.ProblemSize),
+		Cost:                math.Inf(1),
+		ConstraintViolation: math.Inf(1),
 	}
 
 	funcCount := 0
@@ -242,9 +250,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		for _, male := range males {
 			copy(male.Best.Position, male.Position)
 			male.Best.Cost = male.Cost
+			male.Best.ConstraintViolation = male.ConstraintViolation
 		}
 
-		mergeBest(&globalBest, initialBest)
+		mergeBest(&globalBest, initialBest, candidateEvaluator)
 
 		for i := range config.NPopF {
 			contextErr := ctx.Err()
@@ -283,17 +292,17 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
 			}
 
-			males[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, males[i].Position,
-				config.LowerBound, config.UpperBound, rng)
+			sanitizeVec(males[i].Position, config.LowerBound, config.UpperBound, rng)
+			candidateEvaluator.evaluateMayfly(males[i], true)
+
 			funcCount++
 
 			copy(males[i].Best.Position, males[i].Position)
 			males[i].Best.Cost = males[i].Cost
+			males[i].Best.ConstraintViolation = males[i].ConstraintViolation
 
-			if males[i].Best.Cost < globalBest.Cost {
-				globalBest.Cost = males[i].Best.Cost
-				globalBest.Position = make([]float64, config.ProblemSize)
-				copy(globalBest.Position, males[i].Best.Position)
+			if candidateEvaluator.better(evaluationFromBest(males[i].Best), evaluationFromBest(globalBest)) {
+				globalBest = cloneBest(males[i].Best)
 			}
 		}
 
@@ -311,14 +320,15 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
 			}
 
-			females[i].Cost = evaluateWithSanitization(config.ObjectiveFunc, females[i].Position,
-				config.LowerBound, config.UpperBound, rng)
+			sanitizeVec(females[i].Position, config.LowerBound, config.UpperBound, rng)
+			candidateEvaluator.evaluateMayfly(females[i], true)
+
 			funcCount++
 		}
 	}
 
 	bestSolution := make([]float64, config.MaxIterations)
-	convergence := newConvergenceTracker(config.Convergence, globalBest.Cost)
+	convergence := newConvergenceTracker(config.Convergence, globalBest, candidateEvaluator)
 	iterationCount := 0
 	terminationReason := TerminationMaxIterations
 	g := config.G
@@ -328,7 +338,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	// Initialize DESMA parameters if enabled
 	var searchRange float64
 
-	var lastGlobalBestCost float64
+	var lastGlobalBest Best
 
 	if config.UseDESMA {
 		if config.SearchRange == 0 {
@@ -338,7 +348,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			searchRange = config.SearchRange
 		}
 
-		lastGlobalBestCost = globalBest.Cost
+		lastGlobalBest = cloneBest(globalBest)
 	}
 
 	// Initialize OLCE-MA parameters if enabled
@@ -397,7 +407,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				funcCount += aoblmoaEvals
 			} else {
 				// Apply AOBLMOA to populations sequentially for backward compatibility.
-				applyAOBLMOAToPopulation(males, females, globalBest, it, config.MaxIterations, config)
+				applyAOBLMOAToPopulationWithEvaluator(
+					males, females, globalBest, it, config.MaxIterations, config, candidateEvaluator,
+				)
 
 				// Count function evaluations (approximation)
 				// Aquila strategies: 1 eval per mayfly
@@ -409,9 +421,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			// Update global best from updated populations
 			for i := range config.NPop {
-				if males[i].Cost < globalBest.Cost {
-					globalBest.Cost = males[i].Cost
-					copy(globalBest.Position, males[i].Position)
+				if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
+					copyMayflyToBest(&globalBest, males[i])
 				}
 			}
 		case config.UseEOBBMA:
@@ -433,8 +444,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				}
 
 				funcCount += len(males)
-				updatePersonalBests(males)
-				mergeBest(&globalBest, maleBest)
+				updatePersonalBests(males, candidateEvaluator)
+				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
 				// Update females with Gaussian sampling around best males.
 				for i := range config.NPopF {
@@ -452,7 +463,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						minVec(females[i].Position, config.UpperBound)
 					}
 
-					females[i].Cost = config.ObjectiveFunc(females[i].Position)
+					candidateEvaluator.evaluateMayfly(females[i], false)
+
 					funcCount++
 				}
 
@@ -468,16 +480,21 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						copy(males[i].Position, newPos)
 					}
 
-					males[i].Cost = config.ObjectiveFunc(males[i].Position)
+					candidateEvaluator.evaluateMayfly(males[i], false)
+
 					funcCount++
 
-					if males[i].Cost < males[i].Best.Cost {
+					if candidateEvaluator.better(
+						evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best),
+					) {
 						copy(males[i].Best.Position, males[i].Position)
 						males[i].Best.Cost = males[i].Cost
+						males[i].Best.ConstraintViolation = males[i].ConstraintViolation
 
-						if males[i].Best.Cost < globalBest.Cost {
-							globalBest.Cost = males[i].Best.Cost
-							copy(globalBest.Position, males[i].Best.Position)
+						if candidateEvaluator.better(
+							evaluationFromBest(males[i].Best), evaluationFromBest(globalBest),
+						) {
+							globalBest = cloneBest(males[i].Best)
 						}
 					}
 				}
@@ -485,7 +502,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		default:
 			// Standard velocity-based updates
 			if evaluator != nil {
-				prepareStandardFemales(females, males, g, fl, config, rng)
+				prepareStandardFemales(females, males, g, fl, config, rng, candidateEvaluator)
 
 				_, femaleEvaluationErr := evaluator.evaluate(ctx, females, false, false)
 				if femaleEvaluationErr != nil {
@@ -498,7 +515,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				for i := range config.NPopF {
 					e := unifrndVec(-1, 1, config.ProblemSize, rng)
 
-					if females[i].Cost > males[i].Cost {
+					if candidateEvaluator.betterMayfly(males[i], females[i]) {
 						for j := range config.ProblemSize {
 							rmf := males[i].Position[j] - females[i].Position[j]
 							females[i].Velocity[j] = g*females[i].Velocity[j] +
@@ -519,7 +536,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 					maxVec(females[i].Position, config.LowerBound)
 					minVec(females[i].Position, config.UpperBound)
-					females[i].Cost = config.ObjectiveFunc(females[i].Position)
+					candidateEvaluator.evaluateMayfly(females[i], false)
+
 					funcCount++
 				}
 			}
@@ -538,9 +556,12 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 					for i := range males {
 						// Normalize and invert (better solutions get higher weight)
-						if maxCost > minCost {
+						switch {
+						case config.Constraints != nil && len(males) > 1:
+							weights[i] = 1.0 - float64(i)/float64(len(males)-1)
+						case maxCost > minCost:
 							weights[i] = 1.0 - (males[i].Cost-minCost)/(maxCost-minCost)
-						} else {
+						default:
 							weights[i] = 1.0 // All equal
 						}
 					}
@@ -582,7 +603,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			if evaluator != nil {
 				phaseBest := cloneBest(globalBest)
-				prepareStandardMales(males, phaseBest, medianPos, g, dance, mpmaG, config, rng)
+				prepareStandardMales(
+					males, phaseBest, medianPos, g, dance, mpmaG, config, rng, candidateEvaluator,
+				)
 
 				maleBest, maleEvaluationErr := evaluator.evaluate(ctx, males, false, true)
 				if maleEvaluationErr != nil {
@@ -590,14 +613,16 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				}
 
 				funcCount += len(males)
-				updatePersonalBests(males)
-				mergeBest(&globalBest, maleBest)
+				updatePersonalBests(males, candidateEvaluator)
+				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
 				// Update males sequentially for backward compatibility.
 				for i := range config.NPop {
 					e := unifrndVec(-1, 1, config.ProblemSize, rng)
 
-					if males[i].Cost > globalBest.Cost {
+					if candidateEvaluator.better(
+						evaluationFromBest(globalBest), evaluationFromMayfly(males[i]),
+					) {
 						// Update velocity with personal and global best
 						if config.UseMPMA {
 							// MPMA: Include median position in velocity update
@@ -648,18 +673,23 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					minVec(males[i].Position, config.UpperBound)
 
 					// Evaluate
-					males[i].Cost = config.ObjectiveFunc(males[i].Position)
+					candidateEvaluator.evaluateMayfly(males[i], false)
+
 					funcCount++
 
 					// Update personal best
-					if males[i].Cost < males[i].Best.Cost {
+					if candidateEvaluator.better(
+						evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best),
+					) {
 						copy(males[i].Best.Position, males[i].Position)
 						males[i].Best.Cost = males[i].Cost
+						males[i].Best.ConstraintViolation = males[i].ConstraintViolation
 
 						// Update global best
-						if males[i].Best.Cost < globalBest.Cost {
-							globalBest.Cost = males[i].Best.Cost
-							copy(globalBest.Position, males[i].Best.Position)
+						if candidateEvaluator.better(
+							evaluationFromBest(males[i].Best), evaluationFromBest(globalBest),
+						) {
+							globalBest = cloneBest(males[i].Best)
 						}
 					}
 				}
@@ -667,8 +697,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		}
 
 		// Sort populations by cost
-		sortMayflies(males)
-		sortMayflies(females)
+		sortMayflies(males, candidateEvaluator)
+		sortMayflies(females, candidateEvaluator)
 
 		// OLCE-MA: Apply orthogonal learning to elite males
 		if config.UseOLCE {
@@ -702,13 +732,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				funcCount += orthogonalEvals
 			} else {
 				// Apply to top 20% of males sequentially for backward compatibility.
-				ApplyOrthogonalLearningToElite(
+				applyOrthogonalLearningToElite(
 					males,
 					0.2, // Top 20%
 					globalBest.Position,
 					config.OrthogonalFactor,
 					lb, ub,
-					config.ObjectiveFunc,
+					candidateEvaluator,
 					rng,
 				)
 
@@ -718,14 +748,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			// Update global best if orthogonal learning found better solution
 			for i := range numElite {
-				if males[i].Cost < globalBest.Cost {
-					globalBest.Cost = males[i].Cost
-					copy(globalBest.Position, males[i].Position)
+				if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
+					copyMayflyToBest(&globalBest, males[i])
 				}
 			}
 
 			// Re-sort after orthogonal learning
-			sortMayflies(males)
+			sortMayflies(males, candidateEvaluator)
 		}
 
 		// EOBBMA: Apply elite opposition-based learning
@@ -749,31 +778,39 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				numEliteOpposition := min(config.EliteOppositionCount, len(males))
 
 				for i := range numEliteOpposition {
-					if rng.Float64() < config.OppositionRate {
-						oppPos := oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
-						oppCost := config.ObjectiveFunc(oppPos)
-						funcCount++
+					if rng.Float64() >= config.OppositionRate {
+						continue
+					}
 
-						if oppCost < males[i].Cost {
-							copy(males[i].Position, oppPos)
-							males[i].Cost = oppCost
+					oppPos := oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
+					opposition := newMayfly(config.ProblemSize)
+					copy(opposition.Position, oppPos)
+					candidateEvaluator.evaluateMayfly(opposition, false)
 
-							if oppCost < males[i].Best.Cost {
-								copy(males[i].Best.Position, oppPos)
-								males[i].Best.Cost = oppCost
-							}
+					funcCount++
 
-							if oppCost < globalBest.Cost {
-								globalBest.Cost = oppCost
-								copy(globalBest.Position, oppPos)
-							}
+					if candidateEvaluator.betterMayfly(opposition, males[i]) {
+						copy(males[i].Position, oppPos)
+						males[i].Cost = opposition.Cost
+						males[i].ConstraintViolation = opposition.ConstraintViolation
+
+						if candidateEvaluator.better(
+							evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best),
+						) {
+							copy(males[i].Best.Position, oppPos)
+							males[i].Best.Cost = opposition.Cost
+							males[i].Best.ConstraintViolation = opposition.ConstraintViolation
+						}
+
+						if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
+							copyMayflyToBest(&globalBest, males[i])
 						}
 					}
 				}
 			}
 
 			// Re-sort after opposition learning
-			sortMayflies(males)
+			sortMayflies(males, candidateEvaluator)
 		}
 
 		// GSASMA: Apply Golden Sine Algorithm with Simulated Annealing to elite males
@@ -800,30 +837,28 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				funcCount += goldenSineEvals
 			} else {
 				// Apply GSA sequentially for backward compatibility.
-				updatedGlobalBest, updatedGlobalBestCost, gsaFuncEvals := applyGSASMAToEliteMales(
+				updatedGlobalBest, gsaFuncEvals := applyGSASMAToEliteMalesWithEvaluator(
 					males,
 					0.2, // Elite ratio: top 20%
-					globalBest.Position,
-					globalBest.Cost,
+					globalBest,
 					config.GoldenFactor,
 					it,
 					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,
-					config.ObjectiveFunc,
+					candidateEvaluator,
 					rng,
 				)
 				funcCount += gsaFuncEvals
 
-				if updatedGlobalBestCost < globalBest.Cost {
-					globalBest.Cost = updatedGlobalBestCost
-					copy(globalBest.Position, updatedGlobalBest)
+				if candidateEvaluator.betterBest(updatedGlobalBest, globalBest) {
+					globalBest = updatedGlobalBest
 				}
 			}
 
 			// Re-sort after Golden Sine updates
-			sortMayflies(males)
+			sortMayflies(males, candidateEvaluator)
 		}
 
 		// Mating - Create offspring
@@ -847,7 +882,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			offspring = parallelOffspring
 			funcCount += len(offspring)
 
-			mergeBest(&globalBest, offspringBest)
+			mergeBest(&globalBest, offspringBest, candidateEvaluator)
 		} else {
 			offspring = make([]*Mayfly, 0, config.NC)
 
@@ -881,16 +916,17 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					}
 				}
 
-				off1.Cost = config.ObjectiveFunc(off1.Position)
+				candidateEvaluator.evaluateMayfly(off1, false)
+
 				funcCount++
 
-				if off1.Cost < globalBest.Cost {
-					globalBest.Cost = off1.Cost
-					copy(globalBest.Position, off1.Position)
+				if candidateEvaluator.betterMayflyThanBest(off1, globalBest) {
+					copyMayflyToBest(&globalBest, off1)
 				}
 
 				copy(off1.Best.Position, off1.Position)
 				off1.Best.Cost = off1.Cost
+				off1.Best.ConstraintViolation = off1.ConstraintViolation
 
 				// Create offspring 2
 				off2 := newMayfly(config.ProblemSize)
@@ -914,16 +950,17 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					}
 				}
 
-				off2.Cost = config.ObjectiveFunc(off2.Position)
+				candidateEvaluator.evaluateMayfly(off2, false)
+
 				funcCount++
 
-				if off2.Cost < globalBest.Cost {
-					globalBest.Cost = off2.Cost
-					copy(globalBest.Position, off2.Position)
+				if candidateEvaluator.betterMayflyThanBest(off2, globalBest) {
+					copyMayflyToBest(&globalBest, off2)
 				}
 
 				copy(off2.Best.Position, off2.Position)
 				off2.Best.Cost = off2.Cost
+				off2.Best.ConstraintViolation = off2.ConstraintViolation
 
 				offspring = append(offspring, off1, off2)
 			}
@@ -982,16 +1019,17 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						}
 					}
 
-					mut.Cost = config.ObjectiveFunc(mut.Position)
+					candidateEvaluator.evaluateMayfly(mut, false)
+
 					funcCount++
 
-					if mut.Cost < globalBest.Cost {
-						globalBest.Cost = mut.Cost
-						copy(globalBest.Position, mut.Position)
+					if candidateEvaluator.betterMayflyThanBest(mut, globalBest) {
+						copyMayflyToBest(&globalBest, mut)
 					}
 
 					copy(mut.Best.Position, mut.Position)
 					mut.Best.Cost = mut.Cost
+					mut.Best.ConstraintViolation = mut.ConstraintViolation
 
 					offspring = append(offspring, mut)
 				}
@@ -1024,16 +1062,17 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						}
 					}
 
-					mut.Cost = config.ObjectiveFunc(mut.Position)
+					candidateEvaluator.evaluateMayfly(mut, false)
+
 					funcCount++
 
-					if mut.Cost < globalBest.Cost {
-						globalBest.Cost = mut.Cost
-						copy(globalBest.Position, mut.Position)
+					if candidateEvaluator.betterMayflyThanBest(mut, globalBest) {
+						copyMayflyToBest(&globalBest, mut)
 					}
 
 					copy(mut.Best.Position, mut.Position)
 					mut.Best.Cost = mut.Cost
+					mut.Best.ConstraintViolation = mut.ConstraintViolation
 
 					offspring = append(offspring, mut)
 				}
@@ -1048,8 +1087,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		females = append(females, offspring[split:]...) //nolint:makezero // intentional growth, trimmed below
 
 		// Sort and keep best
-		sortMayflies(males)
-		sortMayflies(females)
+		sortMayflies(males, candidateEvaluator)
+		sortMayflies(females, candidateEvaluator)
 
 		males = males[:config.NPop]
 		females = females[:config.NPopF]
@@ -1057,7 +1096,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		// DESMA: Apply dynamic elite strategy
 		if config.UseDESMA {
 			// Dynamically adjust search range based on improvement
-			if globalBest.Cost < lastGlobalBestCost {
+			if candidateEvaluator.betterBest(globalBest, lastGlobalBest) {
 				// Improving: enlarge search range
 				searchRange *= config.EnlargeFactor
 			} else {
@@ -1084,14 +1123,14 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					return nil, evaluationErr
 				}
 			} else {
-				eliteMayfly, eliteFuncCount = generateEliteMayflies(
+				eliteMayfly, eliteFuncCount = generateEliteMayfliesWithEvaluator(
 					globalBest,
 					searchRange,
 					config.EliteCount,
 					config.ProblemSize,
 					config.LowerBound,
 					config.UpperBound,
-					config.ObjectiveFunc,
+					candidateEvaluator,
 					rng,
 				)
 			}
@@ -1099,36 +1138,33 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			funcCount += eliteFuncCount
 
 			// Replace worst male if elite is better
-			if eliteMayfly.Cost < males[config.NPop-1].Cost {
+			if candidateEvaluator.betterMayfly(eliteMayfly, males[config.NPop-1]) {
 				males[config.NPop-1] = eliteMayfly
-				sortMayflies(males) // Re-sort after replacement
+				sortMayflies(males, candidateEvaluator) // Re-sort after replacement
 
 				// Update global best if elite is the new best
-				if eliteMayfly.Cost < globalBest.Cost {
-					globalBest.Cost = eliteMayfly.Cost
-					copy(globalBest.Position, eliteMayfly.Position)
+				if candidateEvaluator.betterMayflyThanBest(eliteMayfly, globalBest) {
+					copyMayflyToBest(&globalBest, eliteMayfly)
 				}
 			}
 
-			lastGlobalBestCost = globalBest.Cost
+			lastGlobalBest = cloneBest(globalBest)
 		}
 
 		// GSASMA: Apply Opposition-Based Learning to global best
 		if config.UseGSASMA && config.ApplyOBLToGlobalBest {
 			// Apply OBL every 10 iterations to avoid excessive function evaluations
 			if it%10 == 0 {
-				updatedGlobalBest, updatedGlobalBestCost, improved := applyOBLToGlobalBest(
-					globalBest.Position,
-					globalBest.Cost,
+				updatedGlobalBest, improved := applyOBLToGlobalBestWithEvaluator(
+					globalBest,
 					config.LowerBound,
 					config.UpperBound,
-					config.ObjectiveFunc,
+					candidateEvaluator,
 				)
 				funcCount++ // the opposition point evaluation
 
 				if improved {
-					globalBest.Cost = updatedGlobalBestCost
-					copy(globalBest.Position, updatedGlobalBest)
+					globalBest = updatedGlobalBest
 				}
 			}
 		}
@@ -1158,7 +1194,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			return nil, iterationErr
 		}
 
-		if reason, stop := convergence.observe(iterationCount, globalBest.Cost); stop {
+		if reason, stop := convergence.observe(iterationCount, globalBest); stop {
 			terminationReason = reason
 
 			break

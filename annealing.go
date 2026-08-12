@@ -95,6 +95,8 @@ func (as *AnnealingScheduler) Reset() {
 }
 
 // Returns: acceptance probability in [0, 1].
+//
+//nolint:unused // retained for focused annealing helper compatibility.
 func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 	// If new solution is better, always accept
 	if newCost < oldCost {
@@ -111,6 +113,8 @@ func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
 // shouldAccept implements the Metropolis criterion for simulated annealing.
 // rng must not be nil (ensured by caller).
 // Returns: true if the new solution should be accepted.
+//
+//nolint:unused // retained for focused annealing helper compatibility.
 func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 	// Calculate acceptance probability
 	prob := acceptanceProbability(oldCost, newCost, temperature)

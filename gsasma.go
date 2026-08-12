@@ -16,6 +16,8 @@ import (
 // these components within the main Mayfly optimization loop.
 
 // Returns: (updatedGlobalBest, updatedGlobalBestCost, funcEvals).
+//
+//nolint:unused // retained for focused GSASMA helper compatibility.
 func applyGSASMAToEliteMales(males []*Mayfly, eliteRatio float64, globalBest []float64,
 	globalBestCost float64, goldenFactor float64, currentIter, maxIter int,
 	lowerBound, upperBound float64, scheduler *AnnealingScheduler,
@@ -68,6 +70,75 @@ func applyGSASMAToEliteMales(males []*Mayfly, eliteRatio float64, globalBest []f
 	}
 
 	return updatedGlobalBest, updatedGlobalBestCost, funcEvals
+}
+
+func applyGSASMAToEliteMalesWithEvaluator(
+	males []*Mayfly,
+	eliteRatio float64,
+	globalBest Best,
+	goldenFactor float64,
+	currentIter, maxIter int,
+	lowerBound, upperBound float64,
+	scheduler *AnnealingScheduler,
+	evaluator *constraintEvaluator,
+	rng *rand.Rand,
+) (Best, int) {
+	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
+	updatedGlobalBest := cloneBest(globalBest)
+
+	for i := range numElite {
+		candidate := newMayfly(len(males[i].Position))
+		candidate.Position = goldenSineUpdateAdaptive(
+			males[i].Position,
+			globalBest.Position,
+			goldenFactor,
+			currentIter,
+			maxIter,
+			lowerBound,
+			upperBound,
+			rng,
+		)
+		evaluator.evaluateMayfly(candidate, false)
+
+		probability := evaluator.acceptanceProbability(
+			evaluationFromMayfly(males[i]), evaluationFromMayfly(candidate), scheduler.GetTemperature(),
+		)
+		if rng.Float64() >= probability {
+			continue
+		}
+
+		copy(males[i].Position, candidate.Position)
+		males[i].Cost = candidate.Cost
+		males[i].ConstraintViolation = candidate.ConstraintViolation
+
+		if evaluator.better(evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best)) {
+			copy(males[i].Best.Position, males[i].Position)
+			males[i].Best.Cost = males[i].Cost
+			males[i].Best.ConstraintViolation = males[i].ConstraintViolation
+		}
+
+		if evaluator.betterMayflyThanBest(males[i], updatedGlobalBest) {
+			copyMayflyToBest(&updatedGlobalBest, males[i])
+		}
+	}
+
+	return updatedGlobalBest, numElite
+}
+
+func applyOBLToGlobalBestWithEvaluator(
+	globalBest Best,
+	lowerBound, upperBound float64,
+	evaluator *constraintEvaluator,
+) (Best, bool) {
+	opposition := newMayfly(len(globalBest.Position))
+	opposition.Position = oppositionPoint(globalBest.Position, lowerBound, upperBound)
+	evaluator.evaluateMayfly(opposition, false)
+
+	if !evaluator.betterMayflyThanBest(opposition, globalBest) {
+		return globalBest, false
+	}
+
+	return bestFromMayfly(opposition), true
 }
 
 // Returns: mutated offspring.
@@ -125,6 +196,8 @@ func applyHybridMutationGSASMA(offspring []*Mayfly, nMutants int, mutationRate f
 
 // Returns: (updatedGlobalBest, updatedGlobalBestCost, improved).
 // The caller must account for the single evaluation of the opposition point.
+//
+//nolint:unused // retained for focused GSASMA helper compatibility.
 func applyOBLToGlobalBest(globalBest []float64, globalBestCost float64,
 	lowerBound, upperBound float64, objectiveFunc ObjectiveFunction,
 ) ([]float64, float64, bool) {

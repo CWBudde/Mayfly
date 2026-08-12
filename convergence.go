@@ -7,25 +7,37 @@ import (
 
 type convergenceTracker struct {
 	config             *ConvergenceConfig
-	referenceBest      float64
+	evaluator          *constraintEvaluator
+	referenceBest      CandidateEvaluation
 	stagnantIterations int
 }
 
-func newConvergenceTracker(config *ConvergenceConfig, initialBest float64) *convergenceTracker {
+func newConvergenceTracker(
+	config *ConvergenceConfig,
+	initialBest Best,
+	evaluators ...*constraintEvaluator,
+) *convergenceTracker {
+	evaluator := newConstraintEvaluator(nil, nil)
+	if len(evaluators) > 0 {
+		evaluator = evaluators[0]
+	}
+
 	return &convergenceTracker{
 		config:        config,
-		referenceBest: initialBest,
+		referenceBest: evaluationFromBest(initialBest),
+		evaluator:     evaluator,
 	}
 }
 
-func (tracker *convergenceTracker) observe(iteration int, bestCost float64) (TerminationReason, bool) {
+func (tracker *convergenceTracker) observe(iteration int, best Best) (TerminationReason, bool) {
 	if tracker.config == nil {
 		return "", false
 	}
 
-	improvement := tracker.referenceBest - bestCost
-	if improvement > tracker.config.MinImprovement {
-		tracker.referenceBest = bestCost
+	bestEvaluation := evaluationFromBest(best)
+
+	if tracker.significantlyImproved(bestEvaluation) {
+		tracker.referenceBest = bestEvaluation
 		tracker.stagnantIterations = 0
 	} else {
 		tracker.stagnantIterations++
@@ -36,7 +48,8 @@ func (tracker *convergenceTracker) observe(iteration int, bestCost float64) (Ter
 		return "", false
 	}
 
-	if tracker.config.TargetCost != nil && bestCost <= *tracker.config.TargetCost {
+	if tracker.config.TargetCost != nil && IsFeasible(bestEvaluation.ConstraintViolation) &&
+		bestEvaluation.Cost <= *tracker.config.TargetCost {
 		return TerminationTargetCost, true
 	}
 
@@ -46,6 +59,41 @@ func (tracker *convergenceTracker) observe(iteration int, bestCost float64) (Ter
 	}
 
 	return "", false
+}
+
+func (tracker *convergenceTracker) significantlyImproved(candidate CandidateEvaluation) bool {
+	if !tracker.evaluator.better(candidate, tracker.referenceBest) {
+		return false
+	}
+
+	if tracker.evaluator.constraints != nil &&
+		tracker.evaluator.constraints.Handling == ConstraintHandlingPenalty {
+		config := tracker.evaluator.constraints
+		referenceScore := PenalizedCost(
+			tracker.referenceBest.Cost, tracker.referenceBest.ConstraintViolation,
+			config.PenaltyFactor, config.PenaltyMethod,
+		)
+		candidateScore := PenalizedCost(
+			candidate.Cost, candidate.ConstraintViolation,
+			config.PenaltyFactor, config.PenaltyMethod,
+		)
+
+		return referenceScore-candidateScore > tracker.config.MinImprovement
+	}
+
+	referenceFeasible := IsFeasible(tracker.referenceBest.ConstraintViolation)
+
+	candidateFeasible := IsFeasible(candidate.ConstraintViolation)
+	if referenceFeasible != candidateFeasible {
+		return candidateFeasible
+	}
+
+	if candidateFeasible {
+		return tracker.referenceBest.Cost-candidate.Cost > tracker.config.MinImprovement
+	}
+
+	return tracker.referenceBest.ConstraintViolation-candidate.ConstraintViolation >
+		tracker.config.MinImprovement
 }
 
 func validateConvergenceConfig(config *ConvergenceConfig, maxIterations int) error {

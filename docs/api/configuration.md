@@ -139,6 +139,55 @@ Control genetic operators:
 
 ## Advanced Parameters
 
+### Constraint Handling
+
+`Config.Constraints` enables constrained optimization. Inequality functions
+return `g(x)` and are feasible at `g(x) <= 0`. Equality functions return
+`h(x)` and contribute violation only when `abs(h(x))` exceeds
+`EqualityTolerance`. Violations are summed across all constraints.
+
+| Parameter           | Type                       | Default       | Description                                     |
+| ------------------- | -------------------------- | ------------- | ----------------------------------------------- |
+| `Inequalities`      | `[]ConstraintFunction`     | nil           | Functions defining `g(x) <= 0`                  |
+| `Equalities`        | `[]ConstraintFunction`     | nil           | Functions defining `h(x) = 0`                   |
+| `EqualityTolerance` | `float64`                  | 0             | Allowed absolute equality residual              |
+| `Handling`          | `ConstraintHandlingMethod` | `feasibility` | Candidate ranking strategy                      |
+| `PenaltyMethod`     | `PenaltyMethod`            | `quadratic`   | `linear` or `quadratic` when using penalty mode |
+| `PenaltyFactor`     | `float64`                  | required      | Positive multiplier when using penalty mode     |
+
+Feasibility ranking applies these rules in order: feasible candidates outrank
+infeasible candidates; feasible candidates are ordered by raw objective cost;
+infeasible candidates are ordered by total violation and then raw cost.
+
+```go
+config.Constraints = &mayfly.ConstraintConfig{
+    Inequalities: []mayfly.ConstraintFunction{
+        func(x []float64) float64 { return x[0]*x[0] + x[1]*x[1] - 1 },
+    },
+    Equalities: []mayfly.ConstraintFunction{
+        func(x []float64) float64 { return x[0] - x[1] },
+    },
+    EqualityTolerance: 1e-6,
+}
+```
+
+To rank by a penalty score instead, set `Handling` to
+`ConstraintHandlingPenalty`, select `PenaltyLinear` or `PenaltyQuadratic`, and
+provide a positive `PenaltyFactor`. `Result.GlobalBest.Cost` remains the raw
+objective value in both modes; `ConstraintViolation` reports feasibility.
+
+Constraint function slices are omitted from JSON configuration files, like
+`ObjectiveFunc`, and must be assigned after loading. Serializable constraint
+settings are preserved. When parallel evaluation is enabled, objective and
+constraint functions must be safe for concurrent calls and treat positions as
+read-only.
+
+Target-cost convergence requires a feasible incumbent. While the incumbent is
+infeasible, stagnation measures reductions in constraint violation. A move
+from infeasible to feasible always resets stagnation. Because feasibility can
+take priority over raw cost, `ConvergenceCurve` can rise during a constrained
+run even though the incumbent ranking improves.
+
 ### Convergence Detection
 
 `Config.Convergence` is optional. When it is `nil` (the default), every run

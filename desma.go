@@ -22,11 +22,27 @@ import "math/rand"
 func generateEliteMayflies(currentBest Best, searchRange float64, eliteCount, problemSize int,
 	lowerBound, upperBound float64, objFunc ObjectiveFunction, rng *rand.Rand,
 ) (*Mayfly, int) {
+	return generateEliteMayfliesWithEvaluator(
+		currentBest, searchRange, eliteCount, problemSize, lowerBound, upperBound,
+		newConstraintEvaluator(objFunc, nil), rng,
+	)
+}
+
+func generateEliteMayfliesWithEvaluator(
+	currentBest Best,
+	searchRange float64,
+	eliteCount, problemSize int,
+	lowerBound, upperBound float64,
+	evaluator *constraintEvaluator,
+	rng *rand.Rand,
+) (*Mayfly, int) {
 	bestElite := newMayfly(problemSize)
 	copy(bestElite.Position, currentBest.Position)
 	bestElite.Cost = currentBest.Cost
+	bestElite.ConstraintViolation = currentBest.ConstraintViolation
 	copy(bestElite.Best.Position, currentBest.Position)
 	bestElite.Best.Cost = currentBest.Cost
+	bestElite.Best.ConstraintViolation = currentBest.ConstraintViolation
 
 	funcEvals := 0
 
@@ -46,15 +62,18 @@ func generateEliteMayflies(currentBest Best, searchRange float64, eliteCount, pr
 		minVec(elite.Position, upperBound)
 
 		// Evaluate elite mayfly
-		elite.Cost = objFunc(elite.Position)
+		evaluator.evaluateMayfly(elite, false)
+
 		funcEvals++
 
 		// Update best elite if this one is better
-		if elite.Cost < bestElite.Cost {
+		if evaluator.betterMayfly(elite, bestElite) {
 			copy(bestElite.Position, elite.Position)
 			bestElite.Cost = elite.Cost
+			bestElite.ConstraintViolation = elite.ConstraintViolation
 			copy(bestElite.Best.Position, elite.Position)
 			bestElite.Best.Cost = elite.Cost
+			bestElite.Best.ConstraintViolation = elite.ConstraintViolation
 		}
 	}
 

@@ -132,8 +132,9 @@ func clonePositions(positions [][]float64) [][]float64 {
 
 func cloneBest(best Best) Best {
 	return Best{
-		Position: append([]float64(nil), best.Position...),
-		Cost:     best.Cost,
+		Position:            append([]float64(nil), best.Position...),
+		Cost:                best.Cost,
+		ConstraintViolation: best.ConstraintViolation,
 	}
 }
 

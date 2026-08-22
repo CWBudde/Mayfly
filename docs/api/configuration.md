@@ -95,16 +95,57 @@ Control movement behavior of mayflies:
 
 Control genetic operators:
 
-| Parameter | Type      | Default | Description                          |
-| --------- | --------- | ------- | ------------------------------------ |
-| `NC`      | `int`     | 20      | Requested crossover offspring count  |
-| `NM`      | `int`     | Auto\*  | Number of mutants (auto: 5% of NPop) |
-| `Mu`      | `float64` | 0.01    | Mutation probability in `[0, 1]`     |
+| Parameter        | Type                | Default   | Description                                  |
+| ---------------- | ------------------- | --------- | -------------------------------------------- |
+| `NC`             | `int`               | `NCAuto`  | Crossover offspring count                    |
+| `NCRatio`        | `float64`           | 1.0       | Offspring per population member when `NCAuto` |
+| `NM`             | `int`               | Auto\*     | Number of mutants (auto: 5% of NPop)         |
+| `Mu`             | `float64`           | 0.01      | Mutation probability in `[0, 1]`             |
+| `Selection`      | `SelectionStrategy` | `"rank"`  | Parent selection rule                        |
+| `TournamentSize` | `int`               | 3         | Candidates per tournament draw               |
 
 \*`NM == 0` resolves to `round(0.05 * NPop)` and therefore does not disable
 mutation. Crossover creates pairs, so use an even `NC`; `NC/2` may not exceed
 either population size. If the effective mutant count is positive, `NC` must
 be at least 2 because mutants are sampled from crossover offspring.
+
+### How `NC` is resolved
+
+A written `NC` always wins, including the `0` that disables crossover. Only the
+sentinel `NCAuto` defers to `NCRatio`, which derives the count from `NPop`:
+
+```
+NC == NCAuto  ->  round(NCRatio * NPop), rounded down to an even number
+                  and clamped so NC/2 never exceeds either population
+NC >= 0       ->  exactly NC
+```
+
+`NCAuto` is the default because through v0.4.0 `NC` was an absolute `20` that
+no caller had reason to revisit. Raising `NPop` therefore bought a larger swarm
+and not one additional crossover: at `NPop` 4096 the same ten pairs mated while
+4086 members only followed the global best, which quietly turned the algorithm
+into plain PSO at large populations. `NCRatio` of 1.0 restores `NC == NPop`,
+the ratio the default configuration already expressed at its own `NPop` of 20.
+
+To reproduce a run recorded before v0.5.0, write the count the old default
+carried: `config.NC = 20`.
+
+### Parent selection
+
+| Strategy       | Behaviour                                                  |
+| -------------- | ---------------------------------------------------------- |
+| `"rank"`       | Pairs the k-th best male with the k-th best female          |
+| `"tournament"` | Draws `TournamentSize` candidates uniformly, mates the best |
+
+`"rank"` is the default and is what the algorithm has always done. It is not
+the elitism trap it can look like: with `NC` scaling, it mates the fitter half
+of the population at every size. The trap was `NC` standing still, not the
+pairing.
+
+`"tournament"` is offered for experiments that want lower selection pressure.
+It is not the default because it measurably reduced solution quality on this
+library's own regression suite — Griewank 10D success fell from 70%+ to 60%
+(Standard MA) and 20% (DESMA) at `NPop` 20. Measure before adopting it.
 
 ## Variant-Specific Parameters
 

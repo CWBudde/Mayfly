@@ -210,8 +210,11 @@ func TestNewDefaultConfig(t *testing.T) {
 		t.Errorf("NewDefaultConfig() FLDamp = %v, want 0.99", config.FLDamp)
 	}
 
-	if config.NC != 20 {
-		t.Errorf("NewDefaultConfig() NC = %v, want 20", config.NC)
+	// NCAuto rather than a literal: the count is derived from NPop so that
+	// raising the population raises the recombination with it. At the default
+	// NPop of 20 it still resolves to the 20 this test used to assert.
+	if config.NC != NCAuto {
+		t.Errorf("NewDefaultConfig() NC = %v, want NCAuto", config.NC)
 	}
 
 	if config.Mu != 0.01 {

@@ -30,8 +30,7 @@ func evaluateParallelGeneticOperators(
 
 		// Optimize validates that both populations contain every requested
 		// parent pair before this internal helper is called.
-		male := males[k]     //nolint:gosec // k is bounded by validated NC/2
-		female := females[k] //nolint:gosec // k is bounded by validated NC/2
+		male, female := selectParents(males, females, k, config, rng)
 		off1Pos, off2Pos := Crossover(
 			male.Position,
 			female.Position,

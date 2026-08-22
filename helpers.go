@@ -82,6 +82,90 @@ func effectiveNM(config *Config) int {
 	return int(math.Round(0.05 * float64(config.NPop)))
 }
 
+// effectiveNC reports the offspring count Optimize will actually use.
+//
+// A written NC always wins, including the zero that disables crossover: a
+// caller who states a count gets it, and nothing the defaults carry may
+// silently replace a field someone wrote. Only NCAuto defers to NCRatio.
+//
+// The ratio exists because NC was an absolute constant through v0.4.0, so
+// raising NPop bought a larger swarm and not one extra crossover -- at NPop
+// 4096 the same ten pairs mated while 4086 members only followed the global
+// best. NCAuto with a ratio of 1 restores NC == NPop, which is the ratio the
+// default configuration already expressed at its own NPop of 20.
+//
+// The result is rounded down to an even number because crossover consumes
+// parents in pairs, and clamped so NC/2 never exceeds either population -- the
+// same bound validateOffspring enforces for a written NC, applied here so a
+// ratio can never derive a configuration the library would refuse.
+func effectiveNC(config *Config) int {
+	if config.NC != NCAuto {
+		return config.NC
+	}
+
+	ratio := config.NCRatio
+	if ratio <= 0 {
+		ratio = 1.0
+	}
+
+	count := int(math.Round(ratio * float64(config.NPop)))
+	count -= count % 2
+
+	if pairs := min(config.NPop, config.NPopF); count/2 > pairs {
+		count = 2 * pairs
+	}
+
+	if count < 0 {
+		count = 0
+	}
+
+	return count
+}
+
+// effectiveTournamentSize reports the tournament size Optimize will use,
+// resolving the zero value to the default of 2 -- the smallest tournament that
+// still expresses a preference, and the one that applies the least selection
+// pressure, which is the safer resolution for a caller who never set it.
+func effectiveTournamentSize(config *Config) int {
+	if config.TournamentSize > 0 {
+		return config.TournamentSize
+	}
+
+	return 2
+}
+
+// selectParents chooses the parents for the k-th crossover of an iteration.
+//
+// Both populations arrive sorted best-first, which is what lets a tournament be
+// decided without re-reading any cost: the fittest member of a uniform sample
+// is simply the one with the smallest index. That keeps selection independent
+// of the constraint-aware comparator the sort already applied.
+func selectParents(males, females []*Mayfly, k int, config *Config, rng *rand.Rand) (*Mayfly, *Mayfly) {
+	if config.Selection == SelectionRank {
+		return males[k], females[k]
+	}
+
+	size := effectiveTournamentSize(config)
+
+	return males[tournamentIndex(len(males), size, rng)],
+		females[tournamentIndex(len(females), size, rng)]
+}
+
+// tournamentIndex draws size candidates uniformly from a population of n and
+// returns the index of the fittest, relying on the population being sorted
+// best-first so that fittest means smallest index.
+func tournamentIndex(n, size int, rng *rand.Rand) int {
+	best := rng.Intn(n)
+
+	for range size - 1 {
+		if candidate := rng.Intn(n); candidate < best {
+			best = candidate
+		}
+	}
+
+	return best
+}
+
 // validateOffspring checks NC and NM against the population sizes.
 //
 // NC drives three separate index expressions in the main loop, none of which
@@ -91,8 +175,28 @@ func effectiveNM(config *Config) int {
 // with any NPop below 10, for instance — used to get an out-of-range panic from
 // inside the library rather than an error out of Optimize.
 func validateOffspring(config *Config) error {
-	if config.NC < 0 {
-		return fmt.Errorf("NC (offspring count) must be non-negative, got %d", config.NC)
+	if config.NC < 0 && config.NC != NCAuto {
+		return fmt.Errorf(
+			"NC (offspring count) must be non-negative or NCAuto (%d), got %d",
+			NCAuto, config.NC,
+		)
+	}
+
+	if config.NCRatio < 0 {
+		return fmt.Errorf("NCRatio must be non-negative, got %f", config.NCRatio)
+	}
+
+	if config.TournamentSize < 0 {
+		return fmt.Errorf("TournamentSize must be non-negative, got %d", config.TournamentSize)
+	}
+
+	switch config.Selection {
+	case "", SelectionTournament, SelectionRank:
+	default:
+		return fmt.Errorf(
+			"Selection must be %q or %q, got %q",
+			SelectionTournament, SelectionRank, config.Selection,
+		)
 	}
 
 	if config.NM < 0 {
@@ -101,21 +205,21 @@ func validateOffspring(config *Config) error {
 
 	// Mating pairs the k-th best male with the k-th best female, so neither
 	// population may be shorter than the number of pairs.
-	if pairs := config.NC / 2; pairs > config.NPop || pairs > config.NPopF {
+	if pairs := effectiveNC(config) / 2; pairs > config.NPop || pairs > config.NPopF {
 		return fmt.Errorf(
 			"NC (offspring count) of %d needs %d parent pairs, "+
 				"which exceeds NPop=%d or NPopF=%d; lower NC or raise the populations",
-			config.NC, pairs, config.NPop, config.NPopF,
+			effectiveNC(config), pairs, config.NPop, config.NPopF,
 		)
 	}
 
 	// Mutants are drawn from the offspring, so there must be at least one.
-	if config.NC < 2 && effectiveNM(config) > 0 {
+	if effectiveNC(config) < 2 && effectiveNM(config) > 0 {
 		return fmt.Errorf(
 			"NC (offspring count) of %d produces no offspring for %d mutants to be drawn from; "+
 				"raise NC to at least 2 (note that NM=0 does not disable mutants, "+
 				"it selects the default of 5%% of NPop)",
-			config.NC, effectiveNM(config),
+			effectiveNC(config), effectiveNM(config),
 		)
 	}
 

@@ -7,6 +7,50 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-22
+
+### Fixed
+
+- The crossover offspring count now tracks the population. `NC` was an absolute
+  `20` that no caller had reason to revisit, so raising `NPop` bought a larger
+  swarm and not one additional crossover. At `NPop` 4096 the same ten pairs
+  mated while 4086 members only followed the global best, which quietly reduced
+  the algorithm to plain PSO — and, because every variant configuration derives
+  from `NewDefaultConfig`, did so for DESMA, OLCE-MA, EOBBMA, MPMA, GSASMA and
+  AOBLMOA alike. Any comparison between variants run at a raised population was
+  therefore measuring a handicapped algorithm.
+
+### Added
+
+- `NCAuto`, the default value of `NC`, deriving the offspring count from `NPop`
+  and the new `NCRatio` (default 1.0, giving `NC == NPop`). A written `NC` still
+  wins, including the `0` that disables crossover, so no field a caller sets is
+  silently replaced.
+- `Selection` with `SelectionRank` and `SelectionTournament`, plus
+  `TournamentSize`, making parent selection configurable rather than hardcoded.
+  `SelectionRank` remains the default and the historical behaviour.
+
+### Changed
+
+- **Breaking for callers that raised `NPop`.** A run at any population other
+  than the default 20 now performs a different number of crossovers and will
+  not reproduce a result recorded under v0.4.0. Set `config.NC = 20` to restore
+  the old count exactly. At the default `NPop` of 20, `NCAuto` resolves to 20
+  and results are unchanged.
+- `validateOffspring` judges the resolved offspring count rather than the
+  written `NC`, and rejects an unknown `Selection`, a negative `NCRatio`, and a
+  negative `TournamentSize`.
+
+### Notes
+
+- `SelectionTournament` is implemented and configurable but is **not** the
+  default: at `NPop` 20 it reduced Griewank 10D success from above 70% to 60%
+  (Standard MA) and 20% (DESMA) on this repository's regression suite. Once
+  `NC` scales, rank pairing mates the fitter half of the population at every
+  size, so the elitism it appeared to cause was the `NC` bug rather than the
+  pairing rule.
+
+
 ## [0.4.0] - 2026-08-12
 
 ### Added

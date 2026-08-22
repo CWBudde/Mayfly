@@ -100,7 +100,8 @@ Control genetic operators:
 | `NC`             | `int`               | `NCAuto` | Crossover offspring count                     |
 | `NCRatio`        | `float64`           | 1.0      | Offspring per population member when `NCAuto` |
 | `NM`             | `int`               | Auto\*   | Number of mutants (auto: 5% of NPop)          |
-| `Mu`             | `float64`           | 0.01     | Mutation probability in `[0, 1]`              |
+| `Mu`             | `float64`           | 0.01     | Fraction of dimensions mutated, in `[0, 1]`   |
+| `CrossoverGamma` | `float64`           | 0.4      | Blend-crossover expansion factor              |
 | `Selection`      | `SelectionStrategy` | `"rank"` | Parent selection rule                         |
 | `TournamentSize` | `int`               | 3        | Candidates per tournament draw                |
 
@@ -108,6 +109,30 @@ Control genetic operators:
 mutation. Crossover creates pairs, so use an even `NC`; `NC/2` may not exceed
 either population size. If the effective mutant count is positive, `NC` must
 be at least 2 because mutants are sampled from crossover offspring.
+
+### How `CrossoverGamma` is resolved
+
+Crossover is the blend (BLX-style) operator of the reference implementation: a
+per-dimension coefficient `L` is drawn from `U(-gamma, 1+gamma)` and the
+offspring are `L*x1 + (1-L)*x2` and `L*x2 + (1-L)*x1`, clamped to the problem
+bounds. With `gamma = 0.4` — the reference default, exported as
+`DefaultCrossoverGamma` — an offspring may land up to 40 % of the parental
+interval outside it on either side.
+
+Unlike `NC`, the zero value is *not* honored literally. `gamma = 0` confines
+`L` to `[0, 1]`, which makes every offspring a convex combination of its
+parents; the population's convex hull then shrinks monotonically and mating can
+never restore lost spread. A partially-filled `Config` literal that never
+mentions `CrossoverGamma` must not silently get that, so `0`, negative values,
+`NaN` and `Inf` all resolve to `DefaultCrossoverGamma`. Only a positive finite
+value is taken as written.
+
+### How `Mu` is resolved
+
+`Mu` is a *fraction of dimensions*, not a per-gene probability: `MutateGaussian`
+mutates exactly `ceil(Mu * ProblemSize)` randomly chosen dimensions. At the
+default `0.01` that is a single dimension for any problem of 100 variables or
+fewer.
 
 ### How `NC` is resolved
 

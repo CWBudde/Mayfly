@@ -45,6 +45,9 @@ func NewDefaultConfig() *Config {
 		// SelectionTournament and SelectionRank.
 		Selection:      SelectionRank,
 		TournamentSize: 3,
+		// CrossoverGamma is the blend-crossover expansion factor from the
+		// reference implementation; see DefaultCrossoverGamma.
+		CrossoverGamma: DefaultCrossoverGamma,
 		Mu:             0.01,
 		MaxWorkers:     defaultMaxWorkers(),
 		// DESMA defaults

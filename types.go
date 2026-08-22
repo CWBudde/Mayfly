@@ -141,6 +141,7 @@ type Config struct {
 	NM                    int                `json:"nm"`
 	TournamentSize        int                `json:"tournament_size"`
 	NCRatio               float64            `json:"nc_ratio"`
+	CrossoverGamma        float64            `json:"crossover_gamma"` // blend-crossover expansion; 0 means DefaultCrossoverGamma
 	Mu                    float64            `json:"mu"`
 	VelMax                float64            `json:"vel_max"`
 	VelMin                float64            `json:"vel_min"`

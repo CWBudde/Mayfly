@@ -23,6 +23,8 @@ func evaluateParallelGeneticOperators(
 	nc := effectiveNC(config)
 	offspring := make([]*Mayfly, 0, 2*(nc/2)+config.NM)
 
+	gamma := effectiveCrossoverGamma(config)
+
 	for k := range nc / 2 {
 		contextErr := ctx.Err()
 		if contextErr != nil {
@@ -32,9 +34,10 @@ func evaluateParallelGeneticOperators(
 		// Optimize validates that both populations contain every requested
 		// parent pair before this internal helper is called.
 		male, female := selectParents(males, females, k, config, rng)
-		off1Pos, off2Pos := Crossover(
+		off1Pos, off2Pos := CrossoverBlend(
 			male.Position,
 			female.Position,
+			gamma,
 			config.LowerBound,
 			config.UpperBound,
 			rng,

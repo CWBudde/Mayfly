@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Swarm Lab — mayfly</title>
+    <meta
+      name="description"
+      content="Watch the Mayfly Optimization Algorithm search, in your browser. Go compiled to WebAssembly, no algorithm logic in JavaScript."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+
+    <!--
+      DOM CONTRACT — read this before touching app.js / render.js.
+
+      Ids app.js binds to (must never be removed or renamed):
+        #rack             shell; JS sets data-boot="loading|ready"
+        #status           status readout, gets data-state="ready|error|loading"
+        #swarmRing        .swarm-ring; JS sets --boot-progress (0..1) while
+                          streaming, then data-state="ready" for legend mode
+        #stage            hero canvas — landscape + swarm
+        #convergence      convergence canvas
+        #diversity        diversity canvas
+        #spread           cost-distribution canvas
+
+        #benchmark        <select> of objective functions (populated from info())
+        #variant          <select> of algorithm variants (populated from info())
+        #compareVariant   <select> for the A/B variant; value "" disables A/B
+        #dimensions #npop #npopf #iterations #seed   <input type=number>
+        #lower #upper     <input type=number> bounds
+        #run              primary button
+        #rerun            re-run at the same seed
+        #newSeed          randomize the seed and run
+
+        #play             play/pause toggle, gets aria-pressed
+        #scrub            <input type=range> over iterations
+        #speed            <select> replay speed
+        #frameReadout     "iteration n / N"
+
+        #benchNote        blurb for the selected function
+        #variantNote      description for the selected variant
+
+      Telemetry values, all .v spans:
+        #tBest #tEvals #tIterations #tTermination #tSeed #tDiversity
+    -->
+  </head>
+  <body>
+    <div class="rack" id="rack" data-boot="loading">
+      <div class="rail-top">
+        <span class="brand"><b>mayfly</b> · swarm lab</span>
+        <nav class="site-nav">
+          <a href="index.html" aria-current="page">Swarm Lab</a>
+          <a href="benchmark.html">Variant Shootout</a>
+          <a href="https://github.com/CWBudde/Mayfly">Source</a>
+        </nav>
+        <div class="swarm-ring" id="swarmRing" title="male · female · best">
+          <div class="swarm-ring__track"></div>
+          <div class="swarm-ring__fill"></div>
+        </div>
+      </div>
+
+      <header class="hero">
+        <div class="hero__text">
+          <p class="eyebrow">GO · WEBASSEMBLY · NO JS ALGORITHM</p>
+          <h1>Two populations, one optimum</h1>
+          <p class="lede">
+            The mayfly algorithm keeps males and females apart on purpose. Males
+            chase their own best position and the swarm's; females are drawn to
+            a better male, or fly at random when there isn't one. Mating mixes
+            the two. That asymmetry is the whole algorithm, and it is invisible
+            in a printed convergence curve.
+          </p>
+          <p class="lede">
+            So watch it instead. Every position below is computed by
+            <b>github.com/cwbudde/mayfly</b> compiled to WebAssembly and running
+            in this tab. JavaScript draws the pixels and nothing else.
+          </p>
+        </div>
+
+        <div class="hero__stage">
+          <div class="status" id="status" data-state="loading">
+            Loading WebAssembly…
+          </div>
+          <canvas class="stage-canvas" id="stage"></canvas>
+          <div class="transport">
+            <button id="play" aria-pressed="false" disabled>Play</button>
+            <input
+              type="range"
+              id="scrub"
+              min="0"
+              max="0"
+              value="0"
+              step="1"
+              disabled
+              aria-label="Iteration"
+            />
+            <select id="speed" aria-label="Replay speed">
+              <option value="0.25">0.25×</option>
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+            <span class="frame-readout mono" id="frameReadout">— / —</span>
+          </div>
+          <div class="legend">
+            <span class="male"><i></i>males</span>
+            <span class="female"><i></i>females</span>
+            <span class="best"><i></i>global best + trail</span>
+            <span>dark = low cost</span>
+          </div>
+        </div>
+      </header>
+
+      <dl class="telemetry mono">
+        <div><span class="k">best cost</span><span class="v" id="tBest">—</span></div>
+        <div><span class="k">evaluations</span><span class="v" id="tEvals">—</span></div>
+        <div><span class="k">iterations</span><span class="v" id="tIterations">—</span></div>
+        <div><span class="k">stopped by</span><span class="v" id="tTermination">—</span></div>
+        <div><span class="k">seed</span><span class="v" id="tSeed">—</span></div>
+        <div><span class="k">swarm spread</span><span class="v" id="tDiversity">—</span></div>
+      </dl>
+
+      <section class="controls">
+        <div class="control-group">
+          <span class="corner-label">Problem</span>
+          <div class="field">
+            <label for="benchmark">function</label>
+            <select id="benchmark"></select>
+          </div>
+          <div class="field">
+            <label for="dimensions">dimensions</label>
+            <input type="number" id="dimensions" min="2" max="30" step="1" value="2" />
+          </div>
+          <div class="field">
+            <label for="lower">lower</label>
+            <input type="number" id="lower" step="any" value="-5.12" />
+          </div>
+          <div class="field">
+            <label for="upper">upper</label>
+            <input type="number" id="upper" step="any" value="5.12" />
+          </div>
+          <p class="field-note" id="benchNote">—</p>
+        </div>
+
+        <div class="control-group">
+          <span class="corner-label">Algorithm</span>
+          <div class="field">
+            <label for="variant">variant</label>
+            <select id="variant"></select>
+          </div>
+          <div class="field">
+            <label for="compareVariant">compare to</label>
+            <select id="compareVariant"></select>
+          </div>
+          <div class="field">
+            <label for="iterations">iterations</label>
+            <input type="number" id="iterations" min="1" max="1000" step="10" value="60" />
+          </div>
+          <p class="field-note" id="variantNote">—</p>
+        </div>
+
+        <div class="control-group">
+          <span class="corner-label">Swarm</span>
+          <div class="field">
+            <label for="npop">males</label>
+            <input type="number" id="npop" min="2" max="200" step="1" value="20" />
+          </div>
+          <div class="field">
+            <label for="npopf">females</label>
+            <input type="number" id="npopf" min="2" max="200" step="1" value="20" />
+          </div>
+          <div class="field">
+            <label for="seed">seed</label>
+            <input type="number" id="seed" step="1" value="42" />
+          </div>
+          <div class="button-row">
+            <button id="run" data-primary disabled>Run</button>
+            <button id="rerun" disabled>Same seed</button>
+            <button id="newSeed" disabled>New seed</button>
+          </div>
+          <p class="field-note">
+            <b>Same seed</b> reproduces the run exactly — same trail, same final
+            cost. Reproducibility is a library guarantee, not a demo trick.
+          </p>
+        </div>
+      </section>
+
+      <section class="panels">
+        <div class="panel">
+          <span class="corner-label">Convergence</span>
+          <p class="panel-note">
+            Best cost after each iteration, log scale. The interesting part is
+            the tail: that is where the variants stop agreeing.
+          </p>
+          <canvas id="convergence"></canvas>
+        </div>
+
+        <div class="panel">
+          <span class="corner-label">Swarm spread</span>
+          <p class="panel-note">
+            Mean distance from each mayfly to its population's centre. High is
+            exploration, near-zero is exploitation — and a curve that hits zero
+            early is a swarm that gave up.
+          </p>
+          <canvas id="diversity"></canvas>
+        </div>
+
+        <div class="panel panel--wide">
+          <span class="corner-label">Cost distribution</span>
+          <p class="panel-note">
+            Every mayfly at the current iteration, sorted best to worst. Watch
+            the spread collapse as selection pressure takes hold.
+          </p>
+          <canvas id="spread"></canvas>
+        </div>
+      </section>
+
+      <div class="caveat">
+        <h3>What you are looking at</h3>
+        <p>
+          Above two dimensions the view is a <b>projection</b>: two axes are
+          plotted and the rest of each position is pinned at the known optimum
+          for the heatmap. The optimizer still searches every dimension — the
+          swarm can look motionless while moving fast somewhere you cannot see.
+        </p>
+        <p>
+          A run is computed in full before it is drawn, then replayed on the
+          scrubber's clock. At these sizes a complete run takes a few
+          milliseconds, so there is nothing to wait for and nothing to cancel.
+        </p>
+      </div>
+
+      <footer class="rack-footer mono">
+        <span>github.com/cwbudde/mayfly</span>
+        <span id="buildInfo">—</span>
+        <span>7 variants · 15 benchmark functions</span>
+      </footer>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script src="render.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

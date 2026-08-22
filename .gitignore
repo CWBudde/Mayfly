@@ -86,3 +86,6 @@ scratch/
 
 # Cache
 .cache/
+
+# WebAssembly demo build output
+/dist/

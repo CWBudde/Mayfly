@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Variant Shootout — mayfly</title>
+    <meta
+      name="description"
+      content="Compare all seven Mayfly algorithm variants with paired runs, Wilcoxon signed-rank tests and a Friedman test — computed in Go, in your browser."
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+
+    <!--
+      DOM CONTRACT — read this before touching bench.js / bench-chart.js.
+
+      Ids bench.js binds to (must never be removed or renamed):
+        #rack             shell; JS sets data-boot="loading|ready"
+        #status           status readout, data-state="ready|error|loading"
+        #swarmRing        boot indicator; JS sets --boot-progress then
+                          data-state="ready"
+
+        #effort           <select> quick|standard|thorough
+        #dimensions #runs #iterations #seed   <input type=number>
+        #benchmarkChips   container; JS fills it with .chip buttons
+        #variantChips     container; JS fills it with .chip buttons
+        #start #stop      buttons
+        #estimate         pre-run time estimate text
+        #progressBar      .progress__bar, width set as a percentage
+        #progressText     "n / N benchmarks"
+
+        #chart            grouped bar canvas
+        #chartLegend      container for .chip legend buttons
+        #metric           <select> median|mean|best|successRate
+        #statsTable       <table>; JS owns thead sort state and tbody
+        #matrix           Wilcoxon matrix container
+        #friedman         Friedman verdict container
+        #exportCsv #exportJson   buttons
+        #liveRegion       aria-live announcements
+    -->
+  </head>
+  <body>
+    <div class="rack" id="rack" data-boot="loading">
+      <div class="rail-top">
+        <span class="brand"><b>mayfly</b> · variant shootout</span>
+        <nav class="site-nav">
+          <a href="index.html">Swarm Lab</a>
+          <a href="benchmark.html" aria-current="page">Variant Shootout</a>
+          <a href="https://github.com/CWBudde/Mayfly">Source</a>
+        </nav>
+        <div class="swarm-ring" id="swarmRing">
+          <div class="swarm-ring__track"></div>
+          <div class="swarm-ring__fill"></div>
+        </div>
+      </div>
+
+      <header class="hero">
+        <div class="hero__text">
+          <p class="eyebrow">PAIRED RUNS · WILCOXON · FRIEDMAN</p>
+          <h1>Seven variants, one honest table</h1>
+          <p class="lede">
+            "DESMA beat standard MA" is not a result until you say how many runs,
+            at what seeds, and whether the gap survives a significance test. The
+            library ships a comparison framework that answers all three; this
+            page is that framework, running in your browser.
+          </p>
+          <p class="lede">
+            Every run at index <i>k</i> uses the same seed for every variant, so
+            the samples are genuinely paired — which is the only thing that makes
+            the signed-rank test below legitimate.
+          </p>
+        </div>
+
+        <div class="hero__stage">
+          <div class="status" id="status" data-state="loading">
+            Loading WebAssembly…
+          </div>
+          <div class="panel" style="border: 0">
+            <canvas id="chart" style="aspect-ratio: 16 / 9"></canvas>
+            <div class="chart-legend" id="chartLegend"></div>
+          </div>
+        </div>
+      </header>
+
+      <section class="controls">
+        <div class="control-group">
+          <span class="corner-label">Sweep</span>
+          <div class="field">
+            <label for="effort">effort</label>
+            <select id="effort">
+              <option value="quick" selected>quick</option>
+              <option value="standard">standard</option>
+              <option value="thorough">thorough</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="runs">runs each</label>
+            <input type="number" id="runs" min="1" max="50" step="1" value="5" />
+          </div>
+          <div class="field">
+            <label for="iterations">iterations</label>
+            <input type="number" id="iterations" min="10" max="2000" step="10" value="200" />
+          </div>
+          <div class="field">
+            <label for="dimensions">dimensions</label>
+            <input type="number" id="dimensions" min="2" max="30" step="1" value="10" />
+          </div>
+          <div class="field">
+            <label for="seed">base seed</label>
+            <input type="number" id="seed" step="1" value="42" />
+          </div>
+          <div class="button-row">
+            <button id="start" data-primary disabled>Run sweep</button>
+            <button id="stop" disabled>Stop</button>
+          </div>
+          <p class="field-note" id="estimate">—</p>
+          <div class="progress"><div class="progress__bar" id="progressBar"></div></div>
+          <p class="field-note mono" id="progressText">idle</p>
+        </div>
+
+        <div class="control-group">
+          <span class="corner-label">Functions</span>
+          <div class="chips" id="benchmarkChips"></div>
+          <p class="field-note">
+            Each function is one bounded call into Go. That is also what makes
+            <b>Stop</b> work: the sweep can only be interrupted between calls.
+          </p>
+        </div>
+
+        <div class="control-group">
+          <span class="corner-label">Variants</span>
+          <div class="chips" id="variantChips"></div>
+          <p class="field-note">
+            Deselect a variant to leave it out of the sweep and the statistics
+            entirely.
+          </p>
+        </div>
+      </section>
+
+      <section class="panels">
+        <div class="panel panel--wide">
+          <span class="corner-label">Statistics</span>
+          <p class="panel-note">
+            Sortable. Rank is by mean best cost across runs, computed in Go by
+            the library's own comparison framework.
+            <label for="metric" class="sr-only">Chart metric</label>
+            <select id="metric" style="width: auto; display: inline-block; margin-left: 8px">
+              <option value="median" selected>chart: median</option>
+              <option value="mean">chart: mean</option>
+              <option value="best">chart: best</option>
+              <option value="stdDev">chart: std dev</option>
+            </select>
+          </p>
+          <div class="table-wrap">
+            <table id="statsTable">
+              <thead>
+                <tr>
+                  <th data-key="benchmark">function</th>
+                  <th data-key="algorithm">variant</th>
+                  <th data-key="rank">rank</th>
+                  <th data-key="mean">mean</th>
+                  <th data-key="median">median</th>
+                  <th data-key="stdDev">std dev</th>
+                  <th data-key="best">best</th>
+                  <th data-key="worst">worst</th>
+                  <th data-key="successRate">success %</th>
+                  <th data-key="avgFuncEvals">avg evals</th>
+                  <th data-key="avgTime">avg ms</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="button-row">
+            <button id="exportCsv" disabled>Export CSV</button>
+            <button id="exportJson" disabled>Export JSON</button>
+          </div>
+        </div>
+
+        <div class="panel panel--wide">
+          <span class="corner-label">Significance</span>
+          <p class="panel-note">
+            Pairwise Wilcoxon signed-rank tests over the paired runs, plus the
+            Friedman test across all variants. A cell shows the winner only when
+            p &lt; 0.05; everything else is a tie you should not read into.
+          </p>
+          <div id="friedman" class="verdict">Run a sweep to see the tests.</div>
+          <div class="table-wrap" id="matrix"></div>
+        </div>
+      </section>
+
+      <div class="caveat">
+        <h3>Reading the numbers</h3>
+        <p>
+          <b>Timings are not native Go.</b> Under js/wasm everything runs on one
+          thread with no SIMD, and the library's parallel evaluation is switched
+          off because a goroutine pool buys nothing here. Treat the millisecond
+          column as a relative cost between variants, never as a benchmark of
+          the library.
+        </p>
+        <p>
+          <b>Small sweeps prove little.</b> The quick preset runs 5 trials; the
+          library defaults to 30 for a reason. A Wilcoxon result over 5 paired
+          samples can only detect an enormous effect, so an absence of
+          significance here is an absence of evidence, not evidence of absence.
+        </p>
+        <p>
+          <b>Bounds are per function</b>, taken from each benchmark's usual
+          domain rather than one shared range, which is why costs are not
+          comparable across columns of the chart.
+        </p>
+      </div>
+
+      <footer class="rack-footer mono">
+        <span>github.com/cwbudde/mayfly</span>
+        <span id="buildInfo">—</span>
+        <span>comparison framework · Wilcoxon · Friedman</span>
+      </footer>
+    </div>
+
+    <p class="sr-only" id="liveRegion" role="status" aria-live="polite"></p>
+
+    <script src="render.js"></script>
+    <script src="bench-chart.js"></script>
+    <script src="bench.js"></script>
+  </body>
+</html>

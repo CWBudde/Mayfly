@@ -7,6 +7,36 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `WithPopulationObserver` reports both populations after every completed
+  iteration, as a `PopulationSnapshot` of deep copies. `WithProgressObserver`
+  only ever carried the global best, so there was no way to watch the swarm
+  itself — to animate it, to measure its diversity, or to see how a variant
+  actually moves. The hook is opt-in and separate from `Progress` precisely
+  because copying `NPop+NPopF` position and velocity vectors once per iteration
+  is not free, and most observers only want the best cost.
+- A browser demo of the library in `examples/wasm-demo`, published to
+  <https://cwbudde.github.io/Mayfly/> by the new `wasm-demo-pages` workflow. Two
+  pages — a Swarm Lab that animates both populations over a benchmark landscape,
+  and a Variant Shootout that runs the comparison framework across all seven
+  variants. Everything shown is computed by this library compiled to `js/wasm`;
+  no part of the algorithm is reimplemented in JavaScript. `just run-wasm-demo`
+  builds and serves it locally.
+
+### Fixed
+
+- The Friedman test reported inverted significance. Its p-value came from
+  `chiSquareCDF`, whose small-`df` branch returned
+  `exp(-x/2) * (x/2)^(df/2)` — a curve that is neither a cumulative
+  distribution nor monotonic — and the result was then used as a lower-tail
+  probability. The two errors did not cancel: a strongly significant result
+  read as "no difference" and vice versa. The function is now
+  `chiSquareSurvival`, the true upper-tail probability via the regularized
+  incomplete gamma function. For chi-square 14.207 on 6 degrees of freedom the
+  reported p-value was 0.7053; it is 0.0274. **Any `Significant` verdict from
+  `FriedmanTestResult` recorded before this release should be discarded.**
+
 ## [0.5.1] - 2026-08-22
 
 ### Fixed

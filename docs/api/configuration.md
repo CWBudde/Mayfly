@@ -95,14 +95,14 @@ Control movement behavior of mayflies:
 
 Control genetic operators:
 
-| Parameter        | Type                | Default   | Description                                  |
-| ---------------- | ------------------- | --------- | -------------------------------------------- |
-| `NC`             | `int`               | `NCAuto`  | Crossover offspring count                    |
-| `NCRatio`        | `float64`           | 1.0       | Offspring per population member when `NCAuto` |
-| `NM`             | `int`               | Auto\*     | Number of mutants (auto: 5% of NPop)         |
-| `Mu`             | `float64`           | 0.01      | Mutation probability in `[0, 1]`             |
-| `Selection`      | `SelectionStrategy` | `"rank"`  | Parent selection rule                        |
-| `TournamentSize` | `int`               | 3         | Candidates per tournament draw               |
+| Parameter        | Type                | Default  | Description                                   |
+| ---------------- | ------------------- | -------- | --------------------------------------------- |
+| `NC`             | `int`               | `NCAuto` | Crossover offspring count                     |
+| `NCRatio`        | `float64`           | 1.0      | Offspring per population member when `NCAuto` |
+| `NM`             | `int`               | Auto\*   | Number of mutants (auto: 5% of NPop)          |
+| `Mu`             | `float64`           | 0.01     | Mutation probability in `[0, 1]`              |
+| `Selection`      | `SelectionStrategy` | `"rank"` | Parent selection rule                         |
+| `TournamentSize` | `int`               | 3        | Candidates per tournament draw                |
 
 \*`NM == 0` resolves to `round(0.05 * NPop)` and therefore does not disable
 mutation. Crossover creates pairs, so use an even `NC`; `NC/2` may not exceed
@@ -138,8 +138,8 @@ carried: `config.NC = 20`.
 
 ### Parent selection
 
-| Strategy       | Behaviour                                                  |
-| -------------- | ---------------------------------------------------------- |
+| Strategy       | Behaviour                                                   |
+| -------------- | ----------------------------------------------------------- |
 | `"rank"`       | Pairs the k-th best male with the k-th best female          |
 | `"tournament"` | Draws `TournamentSize` candidates uniformly, mates the best |
 

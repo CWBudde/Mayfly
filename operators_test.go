@@ -445,6 +445,35 @@ func TestCrossoverBlendGammaZeroInterpolatesOnly(t *testing.T) {
 	}
 }
 
+// TestCrossoverBlendRejectsNonFiniteGamma pins the guard on the exported API:
+// a NaN or infinite gamma would make the coefficient draw produce NaN, and the
+// boundary clamps compare against NaN as false, so the NaN would leak into the
+// offspring. Such a gamma is treated as zero instead.
+func TestCrossoverBlendRejectsNonFiniteGamma(t *testing.T) {
+	t.Parallel()
+
+	gammas := []float64{math.NaN(), math.Inf(1), math.Inf(-1), -1}
+
+	x1 := []float64{-1, -1, -1, -1}
+	x2 := []float64{1, 1, 1, 1}
+
+	for _, gamma := range gammas {
+		rng := rand.New(rand.NewSource(3))
+
+		for range 200 {
+			off1, off2 := CrossoverBlend(x1, x2, gamma, -100, 100, rng)
+
+			for _, off := range [][]float64{off1, off2} {
+				for i := range off {
+					if math.IsNaN(off[i]) || off[i] < -1-1e-12 || off[i] > 1+1e-12 {
+						t.Fatalf("gamma=%v produced %v outside [-1, 1]", gamma, off[i])
+					}
+				}
+			}
+		}
+	}
+}
+
 // TestCrossoverBlendRespectsBounds checks that extrapolated offspring are
 // still clamped to the problem bounds.
 func TestCrossoverBlendRespectsBounds(t *testing.T) {

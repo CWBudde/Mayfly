@@ -119,7 +119,7 @@ bounds. With `gamma = 0.4` — the reference default, exported as
 `DefaultCrossoverGamma` — an offspring may land up to 40 % of the parental
 interval outside it on either side.
 
-Unlike `NC`, the zero value is *not* honored literally. `gamma = 0` confines
+Unlike `NC`, the zero value is _not_ honored literally. `gamma = 0` confines
 `L` to `[0, 1]`, which makes every offspring a convex combination of its
 parents; the population's convex hull then shrinks monotonically and mating can
 never restore lost spread. A partially-filled `Config` literal that never
@@ -129,7 +129,7 @@ value is taken as written.
 
 ### How `Mu` is resolved
 
-`Mu` is a *fraction of dimensions*, not a per-gene probability: `MutateGaussian`
+`Mu` is a _fraction of dimensions_, not a per-gene probability: `MutateGaussian`
 mutates exactly `ceil(Mu * ProblemSize)` randomly chosen dimensions. At the
 default `0.01` that is a single dimension for any problem of 100 variables or
 fewer.

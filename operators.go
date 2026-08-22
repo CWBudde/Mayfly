@@ -31,13 +31,15 @@ func Crossover(x1, x2 []float64, lowerBound, upperBound float64, rng *rand.Rand)
 // to gamma times its width on either side. Offspring are clamped to
 // [lowerBound, upperBound] afterwards.
 //
-// A negative gamma is treated as zero.
+// A negative or non-finite gamma is treated as zero; drawing the coefficient
+// with an infinite or NaN gamma would otherwise produce NaN offspring, which
+// the boundary clamps cannot repair.
 func CrossoverBlend(
 	x1, x2 []float64,
 	gamma, lowerBound, upperBound float64,
 	rng *rand.Rand,
 ) ([]float64, []float64) {
-	if math.IsNaN(gamma) || gamma < 0 {
+	if math.IsNaN(gamma) || math.IsInf(gamma, 0) || gamma < 0 {
 		gamma = 0
 	}
 

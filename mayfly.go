@@ -200,6 +200,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 	if rng == nil {
 		rng = rand.New(rand.NewSource(seed))
+		// Share the fallback generator with the helpers that read config.Rand
+		// directly, such as the sequential AOBLMOA path.
+		config.Rand = rng
 	}
 
 	candidateEvaluator := newConstraintEvaluator(config.ObjectiveFunc, config.Constraints)

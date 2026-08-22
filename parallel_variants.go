@@ -438,7 +438,23 @@ func evaluateParallelAOBLMOA(
 		return 0, comparisonErr
 	}
 
-	finalBatch := make([]*Mayfly, len(candidates))
+	finalBatch := selectAquilaWinners(candidates, evaluator)
+
+	_, finalErr := evaluator.evaluate(ctx, finalBatch, false, false)
+	if finalErr != nil {
+		return 0, finalErr
+	}
+
+	commitAquilaCandidates(candidates, finalBatch, globalBest, evaluator)
+
+	return len(comparisonBatch) + len(finalBatch), nil
+}
+
+// selectAquilaWinners picks, for every candidate, the better of the Aquila
+// position and its opposition point, where opposition-based learning fired.
+func selectAquilaWinners(candidates []aquilaCandidate, evaluator *evaluationPool) []*Mayfly {
+	winners := make([]*Mayfly, len(candidates))
+
 	for i := range candidates {
 		selected := candidates[i].original
 		if candidates[i].opposition != nil &&
@@ -446,21 +462,31 @@ func evaluateParallelAOBLMOA(
 			selected = candidates[i].opposition
 		}
 
-		finalBatch[i] = selected
+		winners[i] = selected
 	}
 
-	_, finalErr := evaluator.evaluate(ctx, finalBatch, false, false)
-	if finalErr != nil {
-		return 0, finalErr
-	}
+	return winners
+}
 
+// commitAquilaCandidates writes the evaluated positions back onto the swarm and
+// refreshes the personal and global bests.
+func commitAquilaCandidates(
+	candidates []aquilaCandidate,
+	finalBatch []*Mayfly,
+	globalBest *Best,
+	evaluator *evaluationPool,
+) {
 	for i, candidate := range candidates {
 		selected := finalBatch[i]
 		copy(candidate.target.Position, selected.Position)
 		candidate.target.Cost = selected.Cost
 		candidate.target.ConstraintViolation = selected.ConstraintViolation
 
-		if candidate.isMale && evaluator.evaluator.better(
+		if !candidate.isMale {
+			continue
+		}
+
+		if evaluator.evaluator.better(
 			evaluationFromMayfly(candidate.target), evaluationFromBest(candidate.target.Best),
 		) {
 			copy(candidate.target.Best.Position, candidate.target.Position)
@@ -468,10 +494,8 @@ func evaluateParallelAOBLMOA(
 			candidate.target.Best.ConstraintViolation = candidate.target.ConstraintViolation
 		}
 
-		if candidate.isMale && evaluator.evaluator.betterMayflyThanBest(candidate.target, *globalBest) {
+		if evaluator.evaluator.betterMayflyThanBest(candidate.target, *globalBest) {
 			copyMayflyToBest(globalBest, candidate.target)
 		}
 	}
-
-	return len(comparisonBatch) + len(finalBatch), nil
 }

@@ -101,6 +101,14 @@ func prepareStandardMales(
 	}
 }
 
+// useMedianPosition reports whether the MPMA median term applies to this
+// update. Variant paths that reuse the standard Mayfly update as a fallback —
+// AOBLMOA, for instance — pass no median position, and must fall back to the
+// plain Mayfly formula even when config.UseMPMA is set.
+func useMedianPosition(medianPosition []float64, config *Config) bool {
+	return config.UseMPMA && medianPosition != nil
+}
+
 // prepareStandardMale performs the ordinary Mayfly velocity and position update
 // for a single male, attracted to its personal and the global best when the
 // global best dominates it and dancing randomly otherwise.
@@ -119,7 +127,7 @@ func prepareStandardMale(
 		prepareAttractedMale(male, globalBest, medianPosition, g, mpmaG, config)
 	} else {
 		gravity := g
-		if config.UseMPMA {
+		if useMedianPosition(medianPosition, config) {
 			gravity = mpmaG
 		}
 
@@ -146,11 +154,13 @@ func prepareAttractedMale(
 	g, mpmaG float64,
 	config *Config,
 ) {
+	useMedian := useMedianPosition(medianPosition, config)
+
 	for j := range config.ProblemSize {
 		personalDistance := male.Best.Position[j] - male.Position[j]
 		globalDistance := globalBest.Position[j] - male.Position[j]
 
-		if config.UseMPMA {
+		if useMedian {
 			medianDistance := medianPosition[j] - male.Position[j]
 			male.Velocity[j] = mpmaG*male.Velocity[j] +
 				config.A1*math.Exp(-config.Beta*personalDistance*personalDistance)*personalDistance +

@@ -120,10 +120,13 @@ func applyAOBLMOAToPopulationWithEvaluator(
 			copy(female.Position, newPos)
 			maxVec(female.Position, config.LowerBound)
 			minVec(female.Position, config.UpperBound)
-		} else if i < len(males) {
-			prepareStandardFemale(female, males[i], g, flight, config, config.Rand, evaluator)
 		} else {
-			prepareStandardFemale(female, female, g, flight, config, config.Rand, evaluator)
+			pairedMale := female
+			if i < len(males) {
+				pairedMale = males[i]
+			}
+
+			prepareStandardFemale(female, pairedMale, g, flight, config, config.Rand, evaluator)
 		}
 
 		evaluator.evaluateMayfly(female, false)

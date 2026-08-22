@@ -1177,11 +1177,11 @@ func TestMultiObjectiveArchiveManagement(t *testing.T) {
 
 // aoblmoaTestPopulations builds two small populations with distinct, evaluated
 // positions for the movement regression tests below.
-func aoblmoaTestPopulations(t *testing.T, config *Config, size int) (males, females []*Mayfly) {
+func aoblmoaTestPopulations(t *testing.T, config *Config, size int) ([]*Mayfly, []*Mayfly) {
 	t.Helper()
 
-	males = make([]*Mayfly, size)
-	females = make([]*Mayfly, size)
+	males := make([]*Mayfly, size)
+	females := make([]*Mayfly, size)
 
 	for i := range size {
 		males[i] = newMayfly(config.ProblemSize)
@@ -1363,5 +1363,64 @@ func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestAOBLMOAWithMPMAEnabled guards against a nil median position reaching the
+// standard-Mayfly fallback of the AOBLMOA update. Configuration validation
+// permits UseAOBLMOA and UseMPMA together, and the fallback used to index into
+// the median position that only the MPMA phase computes.
+func TestAOBLMOAWithMPMAEnabled(t *testing.T) {
+	for _, parallel := range []bool{false, true} {
+		t.Run(fmt.Sprintf("parallel_%t", parallel), func(t *testing.T) {
+			config := NewAOBLMOAConfig()
+			config.Rand = rand.New(rand.NewSource(7))
+			config.ObjectiveFunc = Sphere
+			config.ProblemSize = 4
+			config.LowerBound = -5.0
+			config.UpperBound = 5.0
+			config.MaxIterations = 20
+			config.NPop = 10
+			config.NPopF = 10
+			config.AquilaWeight = 0.5
+			config.UseMPMA = true
+			config.MedianWeight = 0.5
+			config.EnableParallel = parallel
+
+			result, err := Optimize(config)
+			if err != nil {
+				t.Fatalf("Optimization failed: %v", err)
+			}
+
+			if len(result.GlobalBest.Position) != config.ProblemSize {
+				t.Errorf("Expected result dimension %d, got %d",
+					config.ProblemSize, len(result.GlobalBest.Position))
+			}
+		})
+	}
+}
+
+// TestAOBLMOAWithoutConfiguredRand makes sure the sequential AOBLMOA path works
+// when the caller leaves Config.Rand unset: the helpers read config.Rand
+// directly, so OptimizeContext has to share its fallback generator.
+func TestAOBLMOAWithoutConfiguredRand(t *testing.T) {
+	config := NewAOBLMOAConfig()
+	config.Rand = nil
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 3
+	config.LowerBound = -5.0
+	config.UpperBound = 5.0
+	config.MaxIterations = 20
+	config.NPop = 8
+	config.NPopF = 8
+
+	result, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("Optimization failed: %v", err)
+	}
+
+	if len(result.GlobalBest.Position) != config.ProblemSize {
+		t.Errorf("Expected result dimension %d, got %d",
+			config.ProblemSize, len(result.GlobalBest.Position))
 	}
 }

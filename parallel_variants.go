@@ -197,6 +197,7 @@ func evaluateParallelEOBBMAOpposition(
 	numElite := max(0, min(config.EliteOppositionCount, len(males)))
 	selected := make([]oppositionCandidate, 0, numElite)
 	evaluationBatch := make([]*Mayfly, 0, numElite)
+	eliteLower, eliteUpper := eliteBounds(males, numElite, config.LowerBound, config.UpperBound)
 
 	for i := range numElite {
 		contextErr := ctx.Err()
@@ -209,7 +210,10 @@ func evaluateParallelEOBBMAOpposition(
 		}
 
 		candidate := newMayfly(config.ProblemSize)
-		candidate.Position = oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
+		candidate.Position = eliteOppositionPoint(
+			males[i].Position, eliteLower, eliteUpper,
+			config.LowerBound, config.UpperBound, rng,
+		)
 		selected = append(selected, oppositionCandidate{eliteIndex: i, mayfly: candidate})
 		evaluationBatch = append(evaluationBatch, candidate)
 	}
@@ -254,13 +258,17 @@ func evaluateParallelGoldenSine(
 	eliteRatio float64,
 	globalBest *Best,
 	goldenFactor float64,
-	currentIteration, maxIterations int,
 	lowerBound, upperBound float64,
 	scheduler *AnnealingScheduler,
+	section *goldenSection,
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
 	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
+	// One snapshot of the section points is shared by the whole batch, because
+	// the candidates are generated before any of them is evaluated. The section
+	// is therefore advanced once per batch, after all results are in.
+	sectionPoints := section.snapshot()
 	candidates := make([]goldenSineCandidate, numElite)
 	evaluationBatch := make([]*Mayfly, numElite)
 
@@ -271,12 +279,11 @@ func evaluateParallelGoldenSine(
 		}
 
 		candidate := newMayfly(len(males[i].Position))
-		candidate.Position = goldenSineUpdateAdaptive(
+		candidate.Position = goldenSineUpdate(
 			males[i].Position,
 			globalBest.Position,
 			goldenFactor,
-			currentIteration,
-			maxIterations,
+			sectionPoints,
 			lowerBound,
 			upperBound,
 			rng,
@@ -296,8 +303,14 @@ func evaluateParallelGoldenSine(
 
 	temperature := scheduler.GetTemperature()
 
+	batchImproved := false
+
 	for i, candidate := range candidates {
 		male := males[i]
+
+		if evaluator.evaluator.betterMayfly(candidate.mayfly, male) {
+			batchImproved = true
+		}
 
 		probability := evaluator.evaluator.acceptanceProbability(
 			evaluationFromMayfly(male), evaluationFromMayfly(candidate.mayfly), temperature,
@@ -323,6 +336,12 @@ func evaluateParallelGoldenSine(
 		}
 	}
 
+	// The whole batch was generated from a single section snapshot, so the
+	// interval is narrowed exactly once for it. Narrowing per candidate would
+	// judge later candidates against section points they were never generated
+	// from.
+	section.update(batchImproved)
+
 	return len(evaluationBatch), nil
 }
 
@@ -333,11 +352,19 @@ type aquilaCandidate struct {
 	isMale     bool
 }
 
+// evaluateParallelAOBLMOA moves and evaluates every male and female exactly
+// once per iteration.
+//
+// An individual either takes an Aquila-Optimizer step (with probability
+// config.AquilaWeight) or the ordinary Mayfly velocity and position update.
+// Both branches move the individual, so the batch handed to the evaluator
+// always covers the whole population.
 func evaluateParallelAOBLMOA(
 	ctx context.Context,
 	males, females []*Mayfly,
 	globalBest *Best,
 	currentIteration, maxIterations int,
+	g, dance, flight float64,
 	config *Config,
 	rng *rand.Rand,
 	evaluator *evaluationPool,
@@ -347,51 +374,84 @@ func evaluateParallelAOBLMOA(
 	candidates := make([]aquilaCandidate, 0, len(males)+len(females))
 	comparisonBatch := make([]*Mayfly, 0, 2*(len(males)+len(females)))
 
-	preparePopulation := func(population []*Mayfly, isMale bool) {
-		for _, target := range population {
-			if ctx.Err() != nil {
-				return
-			}
+	aquilaCandidateFor := func(target *Mayfly, population []*Mayfly, isMale bool) aquilaCandidate {
+		strategy := selectAquilaStrategy(currentIteration, maxIterations, rng)
+		position := applyAquilaStrategy(
+			target,
+			*globalBest,
+			population,
+			strategy,
+			currentIteration,
+			maxIterations,
+			&strategyConfig,
+		)
 
-			if rng.Float64() >= config.AquilaWeight {
-				continue
-			}
+		original := newMayfly(config.ProblemSize)
+		copy(original.Position, position)
+		maxVec(original.Position, config.LowerBound)
+		minVec(original.Position, config.UpperBound)
 
-			strategy := selectAquilaStrategy(currentIteration, maxIterations, rng)
-			position := applyAquilaStrategy(
-				target,
-				*globalBest,
-				population,
-				strategy,
-				currentIteration,
-				maxIterations,
-				&strategyConfig,
+		candidate := aquilaCandidate{target: target, original: original, isMale: isMale}
+
+		if rng.Float64() < config.OppositionProbability {
+			opposition := newMayfly(config.ProblemSize)
+			opposition.Position = oppositionPoint(
+				original.Position,
+				config.LowerBound,
+				config.UpperBound,
 			)
-
-			original := newMayfly(config.ProblemSize)
-			copy(original.Position, position)
-			maxVec(original.Position, config.LowerBound)
-			minVec(original.Position, config.UpperBound)
-
-			candidate := aquilaCandidate{target: target, original: original, isMale: isMale}
-
-			if rng.Float64() < config.OppositionProbability {
-				opposition := newMayfly(config.ProblemSize)
-				opposition.Position = oppositionPoint(
-					original.Position,
-					config.LowerBound,
-					config.UpperBound,
-				)
-				candidate.opposition = opposition
-				comparisonBatch = append(comparisonBatch, original, opposition)
-			}
-
-			candidates = append(candidates, candidate)
+			candidate.opposition = opposition
+			comparisonBatch = append(comparisonBatch, original, opposition)
 		}
+
+		return candidate
 	}
 
-	preparePopulation(males, true)
-	preparePopulation(females, false)
+	// mayflyCandidate captures the position produced by the ordinary Mayfly
+	// update, which the caller has already applied to target in place.
+	mayflyCandidate := func(target *Mayfly, isMale bool) aquilaCandidate {
+		moved := newMayfly(config.ProblemSize)
+		copy(moved.Position, target.Position)
+
+		return aquilaCandidate{target: target, original: moved, isMale: isMale}
+	}
+
+	for _, target := range males {
+		if ctx.Err() != nil {
+			break
+		}
+
+		if rng.Float64() < config.AquilaWeight {
+			candidates = append(candidates, aquilaCandidateFor(target, males, true))
+
+			continue
+		}
+
+		prepareStandardMale(
+			target, *globalBest, nil, g, dance, g, config, rng, evaluator.evaluator,
+		)
+		candidates = append(candidates, mayflyCandidate(target, true))
+	}
+
+	for i, target := range females {
+		if ctx.Err() != nil {
+			break
+		}
+
+		if rng.Float64() < config.AquilaWeight {
+			candidates = append(candidates, aquilaCandidateFor(target, females, false))
+
+			continue
+		}
+
+		pairedMale := target
+		if i < len(males) {
+			pairedMale = males[i]
+		}
+
+		prepareStandardFemale(target, pairedMale, g, flight, config, rng, evaluator.evaluator)
+		candidates = append(candidates, mayflyCandidate(target, false))
+	}
 
 	contextErr := ctx.Err()
 	if contextErr != nil {
@@ -403,7 +463,23 @@ func evaluateParallelAOBLMOA(
 		return 0, comparisonErr
 	}
 
-	finalBatch := make([]*Mayfly, len(candidates))
+	finalBatch := selectAquilaWinners(candidates, evaluator)
+
+	_, finalErr := evaluator.evaluate(ctx, finalBatch, false, false)
+	if finalErr != nil {
+		return 0, finalErr
+	}
+
+	commitAquilaCandidates(candidates, finalBatch, globalBest, evaluator)
+
+	return len(comparisonBatch) + len(finalBatch), nil
+}
+
+// selectAquilaWinners picks, for every candidate, the better of the Aquila
+// position and its opposition point, where opposition-based learning fired.
+func selectAquilaWinners(candidates []aquilaCandidate, evaluator *evaluationPool) []*Mayfly {
+	winners := make([]*Mayfly, len(candidates))
+
 	for i := range candidates {
 		selected := candidates[i].original
 		if candidates[i].opposition != nil &&
@@ -411,21 +487,31 @@ func evaluateParallelAOBLMOA(
 			selected = candidates[i].opposition
 		}
 
-		finalBatch[i] = selected
+		winners[i] = selected
 	}
 
-	_, finalErr := evaluator.evaluate(ctx, finalBatch, false, false)
-	if finalErr != nil {
-		return 0, finalErr
-	}
+	return winners
+}
 
+// commitAquilaCandidates writes the evaluated positions back onto the swarm and
+// refreshes the personal and global bests.
+func commitAquilaCandidates(
+	candidates []aquilaCandidate,
+	finalBatch []*Mayfly,
+	globalBest *Best,
+	evaluator *evaluationPool,
+) {
 	for i, candidate := range candidates {
 		selected := finalBatch[i]
 		copy(candidate.target.Position, selected.Position)
 		candidate.target.Cost = selected.Cost
 		candidate.target.ConstraintViolation = selected.ConstraintViolation
 
-		if candidate.isMale && evaluator.evaluator.better(
+		if !candidate.isMale {
+			continue
+		}
+
+		if evaluator.evaluator.better(
 			evaluationFromMayfly(candidate.target), evaluationFromBest(candidate.target.Best),
 		) {
 			copy(candidate.target.Best.Position, candidate.target.Position)
@@ -433,12 +519,10 @@ func evaluateParallelAOBLMOA(
 			candidate.target.Best.ConstraintViolation = candidate.target.ConstraintViolation
 		}
 
-		if candidate.isMale && evaluator.evaluator.betterMayflyThanBest(candidate.target, *globalBest) {
+		if evaluator.evaluator.betterMayflyThanBest(candidate.target, *globalBest) {
 			copyMayflyToBest(globalBest, candidate.target)
 		}
 	}
-
-	return len(comparisonBatch) + len(finalBatch), nil
 }
 
 // evaluateParallelChaoticExploitation runs the OLCE-MA chaotic exploitation

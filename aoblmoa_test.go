@@ -1,6 +1,8 @@
 package mayfly
 
 import (
+	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -836,7 +838,8 @@ func TestApplyAOBLMOAToPopulation(t *testing.T) {
 	// Apply AOBLMOA to population
 	currentIter := 50
 	maxIter := 100
-	applyAOBLMOAToPopulation(males, females, globalBest, currentIter, maxIter, config)
+	applyAOBLMOAToPopulation(males, females, globalBest, currentIter, maxIter,
+		config.G, config.Dance, config.FL, config)
 
 	// Check that populations still have correct size
 	if len(males) != 5 {
@@ -1169,5 +1172,255 @@ func TestMultiObjectiveArchiveManagement(t *testing.T) {
 	best := archive.GetBestSolution()
 	if best == nil {
 		t.Error("Expected best solution from archive")
+	}
+}
+
+// aoblmoaTestPopulations builds two small populations with distinct, evaluated
+// positions for the movement regression tests below.
+func aoblmoaTestPopulations(t *testing.T, config *Config, size int) ([]*Mayfly, []*Mayfly) {
+	t.Helper()
+
+	males := make([]*Mayfly, size)
+	females := make([]*Mayfly, size)
+
+	for i := range size {
+		males[i] = newMayfly(config.ProblemSize)
+		females[i] = newMayfly(config.ProblemSize)
+
+		for j := range config.ProblemSize {
+			males[i].Position[j] = config.Rand.Float64()*10.0 - 5.0
+			females[i].Position[j] = config.Rand.Float64()*10.0 - 5.0
+		}
+
+		males[i].Cost = config.ObjectiveFunc(males[i].Position)
+		males[i].ConstraintViolation = 0
+		males[i].Best.Cost = males[i].Cost
+		males[i].Best.ConstraintViolation = 0
+		copy(males[i].Best.Position, males[i].Position)
+
+		females[i].Cost = config.ObjectiveFunc(females[i].Position)
+		females[i].ConstraintViolation = 0
+	}
+
+	return males, females
+}
+
+func snapshotPositions(population []*Mayfly) [][]float64 {
+	snapshot := make([][]float64, len(population))
+	for i, member := range population {
+		snapshot[i] = append([]float64(nil), member.Position...)
+	}
+
+	return snapshot
+}
+
+func samePosition(a, b []float64) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// TestAOBLMOAMovesEveryIndividual guards the defect where an individual that
+// lost the AquilaWeight draw was skipped entirely, leaving roughly half the
+// swarm frozen for the whole run. Every individual must move every iteration,
+// whichever branch it takes.
+func TestAOBLMOAMovesEveryIndividual(t *testing.T) {
+	for _, weight := range []float64{0.0, 0.5, 1.0} {
+		t.Run(fmt.Sprintf("aquila_weight_%.2f", weight), func(t *testing.T) {
+			config := NewAOBLMOAConfig()
+			config.Rand = rand.New(rand.NewSource(7))
+			config.ObjectiveFunc = Sphere
+			config.ProblemSize = 4
+			config.LowerBound = -5.0
+			config.UpperBound = 5.0
+			config.MaxIterations = 100
+			config.AquilaWeight = weight
+			config.VelMin = -2.0
+			config.VelMax = 2.0
+
+			initializeAOBLMOA(config)
+
+			males, females := aoblmoaTestPopulations(t, config, 12)
+			globalBest := Best{Position: append([]float64(nil), males[0].Best.Position...), Cost: males[0].Cost}
+
+			beforeMales := snapshotPositions(males)
+			beforeFemales := snapshotPositions(females)
+
+			applyAOBLMOAToPopulation(
+				males, females, globalBest, 10, config.MaxIterations,
+				config.G, config.Dance, config.FL, config,
+			)
+
+			for i, male := range males {
+				if samePosition(beforeMales[i], male.Position) {
+					t.Errorf("male %d did not move during the iteration", i)
+				}
+			}
+
+			for i, female := range females {
+				if samePosition(beforeFemales[i], female.Position) {
+					t.Errorf("female %d did not move during the iteration", i)
+				}
+			}
+		})
+	}
+}
+
+// TestAOBLMOAEvaluatesWholePopulation asserts the evaluation budget matches the
+// population. A skipped individual is never evaluated, so an evaluation count
+// below the population size is the same defect seen from the accounting side.
+func TestAOBLMOAEvaluatesWholePopulation(t *testing.T) {
+	config := NewAOBLMOAConfig()
+	config.Rand = rand.New(rand.NewSource(11))
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 4
+	config.LowerBound = -5.0
+	config.UpperBound = 5.0
+	config.MaxIterations = 100
+	config.AquilaWeight = 0.5
+	config.OppositionProbability = 0 // isolate the per-individual evaluation
+	config.VelMin = -2.0
+	config.VelMax = 2.0
+
+	initializeAOBLMOA(config)
+
+	males, females := aoblmoaTestPopulations(t, config, 10)
+	globalBest := Best{Position: append([]float64(nil), males[0].Best.Position...), Cost: males[0].Cost}
+
+	evaluations := applyAOBLMOAToPopulation(
+		males, females, globalBest, 10, config.MaxIterations,
+		config.G, config.Dance, config.FL, config,
+	)
+
+	if want := len(males) + len(females); evaluations != want {
+		t.Errorf("AOBLMOA consumed %d evaluations, want one per individual (%d)", evaluations, want)
+	}
+}
+
+// TestAOBLMOAParallelMovesEveryIndividual is the parallel-evaluation twin of
+// TestAOBLMOAMovesEveryIndividual: the batch handed to the worker pool has to
+// cover the whole population, not only the individuals that won the
+// AquilaWeight draw.
+func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
+	for _, weight := range []float64{0.0, 0.5, 1.0} {
+		t.Run(fmt.Sprintf("aquila_weight_%.2f", weight), func(t *testing.T) {
+			config := NewAOBLMOAConfig()
+			config.Rand = rand.New(rand.NewSource(19))
+			config.ObjectiveFunc = Sphere
+			config.ProblemSize = 4
+			config.LowerBound = -5.0
+			config.UpperBound = 5.0
+			config.MaxIterations = 100
+			config.AquilaWeight = weight
+			config.OppositionProbability = 0
+			config.VelMin = -2.0
+			config.VelMax = 2.0
+
+			initializeAOBLMOA(config)
+
+			males, females := aoblmoaTestPopulations(t, config, 12)
+			globalBest := Best{
+				Position:            append([]float64(nil), males[0].Best.Position...),
+				Cost:                males[0].Cost,
+				ConstraintViolation: 0,
+			}
+
+			beforeMales := snapshotPositions(males)
+			beforeFemales := snapshotPositions(females)
+
+			constraints := newConstraintEvaluator(config.ObjectiveFunc, nil)
+			pool := newConstrainedEvaluationPool(constraints, 2)
+
+			defer pool.close()
+
+			evaluations, err := evaluateParallelAOBLMOA(
+				context.Background(), males, females, &globalBest,
+				10, config.MaxIterations, config.G, config.Dance, config.FL,
+				config, config.Rand, pool,
+			)
+			if err != nil {
+				t.Fatalf("evaluateParallelAOBLMOA failed: %v", err)
+			}
+
+			if want := len(males) + len(females); evaluations != want {
+				t.Errorf("AOBLMOA consumed %d evaluations, want one per individual (%d)",
+					evaluations, want)
+			}
+
+			for i, male := range males {
+				if samePosition(beforeMales[i], male.Position) {
+					t.Errorf("male %d did not move during the iteration", i)
+				}
+			}
+
+			for i, female := range females {
+				if samePosition(beforeFemales[i], female.Position) {
+					t.Errorf("female %d did not move during the iteration", i)
+				}
+			}
+		})
+	}
+}
+
+// TestAOBLMOAWithMPMAEnabled guards against a nil median position reaching the
+// standard-Mayfly fallback of the AOBLMOA update. Configuration validation
+// permits UseAOBLMOA and UseMPMA together, and the fallback used to index into
+// the median position that only the MPMA phase computes.
+func TestAOBLMOAWithMPMAEnabled(t *testing.T) {
+	for _, parallel := range []bool{false, true} {
+		t.Run(fmt.Sprintf("parallel_%t", parallel), func(t *testing.T) {
+			config := NewAOBLMOAConfig()
+			config.Rand = rand.New(rand.NewSource(7))
+			config.ObjectiveFunc = Sphere
+			config.ProblemSize = 4
+			config.LowerBound = -5.0
+			config.UpperBound = 5.0
+			config.MaxIterations = 20
+			config.NPop = 10
+			config.NPopF = 10
+			config.AquilaWeight = 0.5
+			config.UseMPMA = true
+			config.MedianWeight = 0.5
+			config.EnableParallel = parallel
+
+			result, err := Optimize(config)
+			if err != nil {
+				t.Fatalf("Optimization failed: %v", err)
+			}
+
+			if len(result.GlobalBest.Position) != config.ProblemSize {
+				t.Errorf("Expected result dimension %d, got %d",
+					config.ProblemSize, len(result.GlobalBest.Position))
+			}
+		})
+	}
+}
+
+// TestAOBLMOAWithoutConfiguredRand makes sure the sequential AOBLMOA path works
+// when the caller leaves Config.Rand unset: the helpers read config.Rand
+// directly, so OptimizeContext has to share its fallback generator.
+func TestAOBLMOAWithoutConfiguredRand(t *testing.T) {
+	config := NewAOBLMOAConfig()
+	config.Rand = nil
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 3
+	config.LowerBound = -5.0
+	config.UpperBound = 5.0
+	config.MaxIterations = 20
+	config.NPop = 8
+	config.NPopF = 8
+
+	result, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("Optimization failed: %v", err)
+	}
+
+	if len(result.GlobalBest.Position) != config.ProblemSize {
+		t.Errorf("Expected result dimension %d, got %d",
+			config.ProblemSize, len(result.GlobalBest.Position))
 	}
 }

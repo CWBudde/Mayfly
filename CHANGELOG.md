@@ -27,6 +27,40 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   male per iteration — 8000 of 38540 evaluations (20.8%) in the run above.
   `ApplyOrthogonalLearning`, `ApplyOrthogonalLearningToElite` and the pooled
   path now return immediately for a non-positive factor.
+- **AOBLMOA moved only part of its swarm.** Every individual drew against
+  `AquilaWeight` to decide whether it took an Aquila-Optimizer step, and an
+  individual that lost the draw was skipped outright — no Aquila step, and no
+  Mayfly velocity update either. A comment claimed the main loop would apply
+  the standard update, but the AOBLMOA branch of that loop replaces the
+  standard update rather than following it, so a losing individual simply stood
+  still, unevaluated, until crossover happened to touch it. At the former
+  default `AquilaWeight` of 0.5, half the population was frozen every
+  iteration. Both the sequential and the parallel evaluation paths were
+  affected. Every individual now moves every iteration, taking either an Aquila
+  step or the ordinary Mayfly update.
+- AOBLMOA's function-evaluation count is now the number of evaluations actually
+  performed rather than a formula that assumed one evaluation per individual —
+  an assumption the skipping made false.
+- EOBBMA's elite opposition-based learning had no observable effect on the
+  search. It generated the *static* opposition point `a + b - x` of each elite
+  and accepted it only when it beat that elite. Reflecting a good solution
+  through the middle of the search space lands in the mirror region, where it
+  essentially never wins, so the candidates were evaluated and always
+  discarded: runs with `OppositionRate` 0 and 1 produced bit-identical results
+  on every seed tried, differing only in the wasted evaluation count. The
+  operator now implements elite opposition-based learning as published,
+  reflecting through the dynamic interval spanned by the elite set with a
+  random coefficient `k ~ U(0, 1)` and resampling out-of-bounds reflections
+  from that interval.
+- GSASMA's "Golden Sine Algorithm" component was not the Golden Sine Algorithm.
+  The implemented rule `x + r1*sin(r2)*|r3*best - x|` is the Sine Cosine
+  Algorithm update; the `GoldenRatio` constant was never read anywhere in the
+  package, so nothing in the variant used the golden ratio. The update now
+  follows Tanyildizi & Demir (2017):
+  `x*|sin(r1)| - r2*sin(r1)*|x1*best - x2*x|`, where `x1` and `x2` are the
+  section points of a golden section search over `[-π, π]` that narrows by
+  `1/φ` after every candidate. `GoldenFactor` keeps its meaning as a scale on
+  the second term and its default of 1.0 reproduces the published rule.
 
 ### Changed
 
@@ -36,6 +70,28 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   default of 0.1 but now means the *initial* radius of a decaying neighborhood
   rather than a constant displacement; setting it to 0 disables the stage.
   The stage costs one evaluation per elite male per iteration.
+- **`NewAOBLMOAConfig` now defaults `AquilaWeight` to 1.0** (was 0.5). The
+  published algorithm has no such probability: it moves every individual either
+  by Mayfly attraction or by an Aquila strategy chosen from the iteration
+  phase. 1.0 is the closest match to the paper, and it was the only setting the
+  skipping defect left unharmed. Set `config.AquilaWeight = 0.5` to keep a
+  half-and-half blend, which now genuinely blends instead of freezing half the
+  swarm.
+- **The optimizer no longer maintains a Pareto archive.** `Optimize` built one
+  for AOBLMOA and pushed the whole population into it every iteration, paying
+  NSGA-II pruning for it, while nothing in the search or in `Result` ever read
+  it back. Removing it leaves results bit-for-bit identical and returns the
+  time. The Pareto toolkit stays exported for callers who want a front:
+  `NewParetoArchive`, `Add`, `AddFromMayfly`, `GetBestSolution` and the new
+  `(*ParetoArchive).UpdateFromPopulation`, which replaces the unexported
+  `updateParetoArchive`. `ArchiveSize` now only sizes an archive the caller
+  builds.
+
+### Removed
+
+- `applyGSASMAToEliteMales`, `applyGoldenSineToElite` and
+  `goldenSineConvergence`, unexported helpers that were unreachable and carried
+  a second copy of the mislabelled Sine-Cosine update.
 
 ## [0.5.0] - 2026-08-22
 

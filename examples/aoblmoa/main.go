@@ -111,11 +111,10 @@ func main() {
 	config1.LowerBound = -5.12
 	config1.UpperBound = 5.12
 	config1.MaxIterations = 500
-	// AquilaWeight = 0.5 (default)
+	// AquilaWeight = 1.0 (default)
 	// OppositionProbability = 0.3 (default)
-	fmt.Printf("  AquilaWeight:          %.1f (50%% Aquila, 50%% Mayfly)\n", config1.AquilaWeight)
+	fmt.Printf("  AquilaWeight:          %.1f (100%% Aquila, as in the paper)\n", config1.AquilaWeight)
 	fmt.Printf("  OppositionProbability: %.1f (30%% use OBL)\n", config1.OppositionProbability)
-	fmt.Printf("  ArchiveSize:           %d (Pareto archive capacity)\n", config1.ArchiveSize)
 	fmt.Println("  Use when: General problems, unsure which strategy is best")
 	fmt.Println()
 
@@ -163,10 +162,11 @@ func main() {
 	config4.LowerBound = -5
 	config4.UpperBound = 10
 	config4.MaxIterations = 500
-	config4.ArchiveSize = 100 // Store up to 100 Pareto-optimal solutions
-	fmt.Printf("  ArchiveSize:           %d (Pareto front capacity)\n", config4.ArchiveSize)
+	config4.ArchiveSize = 100 // Sizes a mayfly.ParetoArchive the caller builds
+	fmt.Printf("  ArchiveSize:           %d (mayfly.ParetoArchive capacity)\n", config4.ArchiveSize)
 	fmt.Println("  Use when: Multiple conflicting objectives need optimization")
-	fmt.Println("  Note: Pareto archive maintains non-dominated solutions internally")
+	fmt.Println("  Note: Optimize is single-objective; build a mayfly.ParetoArchive")
+	fmt.Println("        yourself if you want a front")
 	fmt.Println()
 
 	// Demonstrate adaptive strategy switching
@@ -210,7 +210,8 @@ func main() {
 	fmt.Println("  ✓ NSGA-II selection with crowding distance")
 	fmt.Println("  ✓ Automatic strategy switching (exploration → exploitation)")
 	fmt.Println("  ✓ Configurable hybrid balance (AquilaWeight parameter)")
-	fmt.Println("  ✓ Archive management for Pareto-optimal solutions")
+	fmt.Println("  ✓ Every individual moves every iteration, in either branch")
+	fmt.Println("  ✓ ArchiveSize sizes a caller-managed ParetoArchive")
 	fmt.Println()
 	fmt.Println("Best for:")
 	fmt.Println("  • Complex multi-modal problems with varying landscapes")

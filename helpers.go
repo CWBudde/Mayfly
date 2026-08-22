@@ -103,17 +103,30 @@ func effectiveNC(config *Config) int {
 		return config.NC
 	}
 
+	// A non-positive or non-finite ratio falls back to 1.0 rather than
+	// deriving a count from it. Zero is included deliberately: it is the zero
+	// value of the field, so honoring it literally would give every
+	// partially-filled Config{NC: NCAuto} literal a silent no-crossover run --
+	// the failure this whole change exists to remove. A caller who wants no
+	// offspring writes NC = 0, which effectiveNC returns untouched above.
 	ratio := config.NCRatio
-	if ratio <= 0 {
+	if math.IsNaN(ratio) || math.IsInf(ratio, 0) || ratio <= 0 {
 		ratio = 1.0
 	}
 
-	count := int(math.Round(ratio * float64(config.NPop)))
-	count -= count % 2
+	// The population clamp is applied in floating point, before the conversion
+	// to int, because a large ratio would otherwise overflow the conversion --
+	// which is implementation-defined in Go and in practice yields a negative
+	// count that the clamp below would read as "no offspring".
+	pairs := min(config.NPop, config.NPopF)
 
-	if pairs := min(config.NPop, config.NPopF); count/2 > pairs {
-		count = 2 * pairs
+	scaled := math.Round(ratio * float64(config.NPop))
+	if scaled > float64(2*pairs) {
+		scaled = float64(2 * pairs)
 	}
+
+	count := int(scaled)
+	count -= count % 2
 
 	if count < 0 {
 		count = 0
@@ -141,7 +154,11 @@ func effectiveTournamentSize(config *Config) int {
 // is simply the one with the smallest index. That keeps selection independent
 // of the constraint-aware comparator the sort already applied.
 func selectParents(males, females []*Mayfly, k int, config *Config, rng *rand.Rand) (*Mayfly, *Mayfly) {
-	if config.Selection == SelectionRank {
+	// Anything that is not explicitly a tournament pairs by rank, so that the
+	// unset Selection of a pre-v0.5.0 configuration -- which has no such field
+	// to load -- keeps the pairing it was recorded under. Validation refuses
+	// the unknown strategies this would otherwise absorb.
+	if config.Selection != SelectionTournament {
 		return males[k], females[k]
 	}
 
@@ -182,8 +199,8 @@ func validateOffspring(config *Config) error {
 		)
 	}
 
-	if config.NCRatio < 0 {
-		return fmt.Errorf("NCRatio must be non-negative, got %f", config.NCRatio)
+	if config.NCRatio < 0 || math.IsNaN(config.NCRatio) || math.IsInf(config.NCRatio, 0) {
+		return fmt.Errorf("NCRatio must be a non-negative finite number, got %f", config.NCRatio)
 	}
 
 	if config.TournamentSize < 0 {

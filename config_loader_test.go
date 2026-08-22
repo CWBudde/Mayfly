@@ -123,13 +123,18 @@ func TestValidateConfig(t *testing.T) {
 				MaxIterations: 100,
 				NPop:          20,
 				NPopF:         20,
-				G:             0.8,
-				GDamp:         1.0,
-				A1:            1.0,
-				A2:            1.5,
-				A3:            1.5,
-				Beta:          2.0,
-				Mu:            0.01,
+				// NCAuto, not the zero value: a literal that omits NC asks for
+				// no crossover, and the mutants NM defaults to have nothing to
+				// be drawn from. Optimize has always refused that pairing; it
+				// only reached this fixture once ValidateConfig checked it too.
+				NC:    NCAuto,
+				G:     0.8,
+				GDamp: 1.0,
+				A1:    1.0,
+				A2:    1.5,
+				A3:    1.5,
+				Beta:  2.0,
+				Mu:    0.01,
 			},
 			wantErr: false,
 		},

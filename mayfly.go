@@ -187,11 +187,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		config.NM = int(math.Round(0.05 * float64(config.NPop)))
 	}
 
-	// Resolve the offspring count once, before anything reads it. Validation
-	// already judged the effective value, so this only writes back what the
-	// caller's NCRatio asked for.
-	config.NC = effectiveNC(config)
-
 	if config.VelMax == 0 {
 		config.VelMax = 0.1 * (config.UpperBound - config.LowerBound)
 		config.VelMin = -config.VelMax
@@ -891,9 +886,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			mergeBest(&globalBest, offspringBest, candidateEvaluator)
 		} else {
-			offspring = make([]*Mayfly, 0, config.NC)
+			nc := effectiveNC(config)
+			offspring = make([]*Mayfly, 0, nc)
 
-			for k := range config.NC / 2 {
+			for k := range nc / 2 {
 				p1, p2 := selectParents(males, females, k, config, rng)
 
 				// Apply crossover

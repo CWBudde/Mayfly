@@ -120,6 +120,12 @@ NC == NCAuto  ->  round(NCRatio * NPop), rounded down to an even number
 NC >= 0       ->  exactly NC
 ```
 
+An `NCRatio` that is not a positive finite number falls back to 1.0 rather than
+deriving a count from it. Zero is included deliberately: it is the zero value of
+the field, so a `Config` literal that sets `NC` to `NCAuto` without also setting
+`NCRatio` would otherwise run with no crossover at all — the failure this change
+exists to remove. **`NCRatio` of 0 does not disable crossover; `NC = 0` does.**
+
 `NCAuto` is the default because through v0.4.0 `NC` was an absolute `20` that
 no caller had reason to revisit. Raising `NPop` therefore bought a larger swarm
 and not one additional crossover: at `NPop` 4096 the same ten pairs mated while

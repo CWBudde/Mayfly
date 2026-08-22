@@ -6,7 +6,7 @@ import (
 )
 
 func largestParallelEvaluationBatch(config *Config) int {
-	largest := max(config.NPop, config.NPopF, config.NC, config.NM)
+	largest := max(config.NPop, config.NPopF, effectiveNC(config), config.NM)
 
 	if config.UseDESMA {
 		largest = max(largest, config.EliteCount)

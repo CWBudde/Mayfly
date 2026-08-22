@@ -1,6 +1,7 @@
 package mayfly
 
 import (
+	"math"
 	"math/rand"
 	"testing"
 )
@@ -213,4 +214,117 @@ func sortedPopulations(n int) ([]*Mayfly, []*Mayfly) {
 	}
 
 	return males, females
+}
+
+// The regression the review caught: Selection is a field pre-v0.5.0 configs do
+// not carry, so its zero value has to mean the pairing they were recorded
+// under. Routing it to tournament would have changed every loaded config.
+func TestUnsetSelectionPairsByRank(t *testing.T) {
+	config := NewDefaultConfig()
+	config.Selection = ""
+
+	males, females := sortedPopulations(16)
+
+	// A tournament over 16 members would almost surely leave index 3 at some
+	// point across this many draws; rank pairing never does.
+	for range 64 {
+		male, female := selectParents(males, females, 3, config, rand.New(rand.NewSource(11)))
+		if male != males[3] || female != females[3] {
+			t.Fatal("an unset Selection must pair by rank, not by tournament")
+		}
+	}
+}
+
+// NCAuto must survive a run: a Config reused with a larger NPop has to scale
+// again rather than see the previous run's resolved count as an explicit NC.
+func TestAutoOffspringCountSurvivesARun(t *testing.T) {
+	config := NewDefaultConfig()
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 2
+	config.LowerBound = -5
+	config.UpperBound = 5
+	config.MaxIterations = 3
+	config.Rand = rand.New(rand.NewSource(1))
+
+	_, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+
+	if config.NC != NCAuto {
+		t.Fatalf("NC = %d after a run, want the NCAuto sentinel to be preserved", config.NC)
+	}
+
+	config.NPop = 64
+	config.NPopF = 64
+
+	if got := effectiveNC(config); got != 64 {
+		t.Fatalf("effectiveNC after raising NPop = %d, want 64", got)
+	}
+}
+
+// A ratio large enough to overflow the conversion to int must clamp to the
+// legal maximum, not wrap to a negative count that reads as "no offspring".
+func TestExtremeOffspringRatioClampsToThePopulation(t *testing.T) {
+	for _, ratio := range []float64{1e20, math.MaxFloat64, 1e9} {
+		config := NewDefaultConfig()
+		config.NPop = 64
+		config.NPopF = 32
+		config.NCRatio = ratio
+
+		got := effectiveNC(config)
+		if got != 64 {
+			t.Fatalf("NCRatio=%g: effectiveNC = %d, want the clamp to 2*min(NPop,NPopF)=64", ratio, got)
+		}
+	}
+}
+
+// A ratio that is not a number at all is refused by validation, and effectiveNC
+// falls back rather than deriving a count from it for callers who skip that.
+func TestNonFiniteOffspringRatioIsRefused(t *testing.T) {
+	for _, ratio := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		config := NewDefaultConfig()
+		config.NCRatio = ratio
+
+		err := validateOffspring(config)
+		if err == nil {
+			t.Fatalf("NCRatio=%g must be refused", ratio)
+		}
+
+		config.NPop = 20
+		config.NPopF = 20
+
+		if got := effectiveNC(config); got != 20 {
+			t.Fatalf("NCRatio=%g: effectiveNC = %d, want the 1.0 fallback", ratio, got)
+		}
+	}
+}
+
+// ValidateConfig is documented as the check a loaded configuration passes, so
+// the mating parameters have to fail there and not first at Optimize.
+func TestValidateConfigRejectsBadSelectionParameters(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{"unknown strategy", func(c *Config) { c.Selection = "roulette" }},
+		{"negative ratio", func(c *Config) { c.NCRatio = -1 }},
+		{"negative tournament size", func(c *Config) { c.TournamentSize = -2 }},
+		{"offspring exceed the population", func(c *Config) { c.NC = 4096 }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := NewDefaultConfig()
+			config.ProblemSize = 2
+			config.LowerBound = -5
+			config.UpperBound = 5
+			tt.mutate(config)
+
+			err := ValidateConfig(config)
+			if err == nil {
+				t.Fatal("ValidateConfig accepted a configuration Optimize would refuse")
+			}
+		})
+	}
 }

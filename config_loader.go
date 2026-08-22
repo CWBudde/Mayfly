@@ -107,6 +107,14 @@ func ValidateConfig(config *Config) error {
 		return fmt.Errorf("max_workers must be non-negative (got %d)", config.MaxWorkers)
 	}
 
+	// The mating checks live in validateOffspring because Optimize needs them,
+	// but a configuration loaded from a file has to fail here rather than at
+	// the start of a run that its caller believed was already validated.
+	offspringErr := validateOffspring(config)
+	if offspringErr != nil {
+		return offspringErr
+	}
+
 	// Validate coefficient ranges
 	if config.G < 0 || config.G > 1 {
 		return fmt.Errorf("g (inertia weight) should be in [0,1] (got %f)", config.G)
@@ -416,7 +424,8 @@ func ExportConfigTemplate(path, variant string) error {
 	fmt.Fprintf(file, "\n")
 	fmt.Fprintf(file, "  // Mating parameters\n")
 	fmt.Fprintf(file, "  \"nc\": %d,\n", config.NC)
-	fmt.Fprintf(file, "  // nc_ratio scales nc with npop; 0 pins the count to nc\n")
+	fmt.Fprintf(file, "  // nc_ratio scales nc with npop when nc is -1 (NCAuto);\n")
+	fmt.Fprintf(file, "  // write a literal nc to pin the count instead\n")
 	fmt.Fprintf(file, "  \"nc_ratio\": %f,\n", config.NCRatio)
 	fmt.Fprintf(file, "  \"nm\": %d,\n", config.NM)
 	fmt.Fprintf(file, "  \"mu\": %f,\n", config.Mu)

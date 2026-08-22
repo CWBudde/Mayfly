@@ -14,7 +14,7 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   every iteration, with no acceptance test and no decay — and because the
   logistic map at `r = 4` has an arcsine stationary distribution concentrated
   near 0 and 1, the typical displacement was near-maximal rather than
-  near-zero. The stage now generates one chaotic neighbour per elite male, with
+  near-zero. The stage now generates one chaotic neighbor per elite male, with
   a radius that decays linearly to zero over the run, and accepts it only when
   it is not worse. On 10-dimensional Rastrigin over 30 seeds (500 iterations,
   default population) the mean best cost of `NewOLCEConfig` improves from
@@ -33,7 +33,7 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Behaviour change for `UseOLCE` runs.** Chaotic exploitation moved off the
   crossover and mutation offspring and onto the elite males, so an OLCE-MA run
   no longer reproduces a result recorded under v0.5.0. `ChaosFactor` keeps its
-  default of 0.1 but now means the *initial* radius of a decaying neighbourhood
+  default of 0.1 but now means the *initial* radius of a decaying neighborhood
   rather than a constant displacement; setting it to 0 disables the stage.
   The stage costs one evaluation per elite male per iteration.
 

@@ -49,7 +49,7 @@ Two properties make this a local search rather than a random walk:
 
 - **Greedy acceptance**: the elite only moves onto the candidate when the
   candidate is not worse, so the step can never degrade the population.
-- **Decaying radius**: the neighbourhood shrinks linearly to zero over the run,
+- **Decaying radius**: the neighborhood shrinks linearly to zero over the run,
   so early iterations escape local optima and late iterations refine.
 
 At `r = 4` the logistic map has an arcsine stationary distribution that

@@ -757,7 +757,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				refined = true
 			}
 
-			// Chaotic exploitation: one chaotic neighbour per elite male, with a
+			// Chaotic exploitation: one chaotic neighbor per elite male, with a
 			// radius that decays over the run and greedy acceptance, so the step
 			// can only improve the population.
 			if config.ChaosFactor > 0 {

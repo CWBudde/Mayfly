@@ -446,7 +446,7 @@ func evaluateParallelAOBLMOA(
 //
 // Candidate generation stays on the caller goroutine so the LogisticMap is
 // never shared, and acceptance is greedy: an elite only moves onto its chaotic
-// neighbour when the neighbour is not worse. It returns the number of
+// neighbor when the neighbor is not worse. It returns the number of
 // objective evaluations spent.
 func evaluateParallelChaoticExploitation(
 	ctx context.Context,

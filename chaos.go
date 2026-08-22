@@ -1,5 +1,7 @@
 package mayfly
 
+import "math"
+
 // LogisticMap implements the logistic chaotic map.
 // The logistic map is defined by: x_{n+1} = r * x_n * (1 - x_n)
 // where r is the control parameter. When r = 4.0, the map exhibits
@@ -101,21 +103,28 @@ func olceEliteCount(population int) int {
 // exploitation step for the given iteration.
 //
 // The radius decays linearly from ChaosFactor to zero over the run, which is
-// the shrinking neighbourhood the chaotic local search literature specifies:
+// the shrinking neighborhood the chaotic local search literature specifies:
 // early iterations perturb widely to escape local optima, late iterations
 // refine. A constant radius turns the step into a persistent random walk that
 // prevents convergence.
+//
+// The optimization loop supplies the iteration indices 0 to MaxIterations-1,
+// so progress is measured against the last applied iteration, MaxIterations-1.
+// The radius therefore really reaches zero on the final iteration. A run of a
+// single iteration has no decay to spread out and keeps the full ChaosFactor,
+// because a zero radius would degrade its only exploitation step to a no-op.
 func chaoticExploitationRadius(config *Config, iteration int) float64 {
-	if config.MaxIterations <= 0 {
+	lastIteration := config.MaxIterations - 1
+	if lastIteration <= 0 {
 		return config.ChaosFactor
 	}
 
-	progress := min(max(float64(iteration)/float64(config.MaxIterations), 0.0), 1.0)
+	progress := min(max(float64(iteration)/float64(lastIteration), 0.0), 1.0)
 
 	return config.ChaosFactor * (1.0 - progress)
 }
 
-// chaoticExploitationCandidate writes a chaotic neighbour of source into
+// chaoticExploitationCandidate writes a chaotic neighbor of source into
 // destination. Both slices must have the same length.
 //
 // The displacement of each dimension is drawn from the logistic map and scaled
@@ -133,8 +142,8 @@ func chaoticExploitationCandidate(
 
 // applyChaoticExploitation performs one chaotic local search step on target.
 //
-// A single chaotic neighbour is generated and evaluated, and target is only
-// moved onto it when the neighbour is not worse (greedy acceptance). The cost
+// A single chaotic neighbor is generated and evaluated, and target is only
+// moved onto it when the neighbor is not worse (greedy acceptance). The cost
 // of target therefore never increases, which is what separates chaotic
 // exploitation from an unconditional random kick.
 //
@@ -159,9 +168,18 @@ func applyChaoticExploitation(
 
 // acceptChaoticCandidate applies greedy acceptance of an already evaluated
 // chaotic candidate to target and keeps the personal best consistent.
+//
+// Candidates whose cost or constraint violation is NaN are rejected outright:
+// every comparison against NaN is false, so the greedy guarantee would not
+// hold for objectives that are undefined on part of the domain, and the NaN
+// would spread through mating and sorting.
 func acceptChaoticCandidate(
 	target, candidate *Mayfly, evaluator *constraintEvaluator,
 ) bool {
+	if math.IsNaN(candidate.Cost) || math.IsNaN(candidate.ConstraintViolation) {
+		return false
+	}
+
 	// Greedy acceptance: reject only strictly worse candidates.
 	if evaluator.betterMayfly(target, candidate) {
 		return false

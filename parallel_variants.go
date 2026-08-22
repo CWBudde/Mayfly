@@ -191,6 +191,7 @@ func evaluateParallelEOBBMAOpposition(
 	numElite := max(0, min(config.EliteOppositionCount, len(males)))
 	selected := make([]oppositionCandidate, 0, numElite)
 	evaluationBatch := make([]*Mayfly, 0, numElite)
+	eliteLower, eliteUpper := eliteBounds(males, numElite, config.LowerBound, config.UpperBound)
 
 	for i := range numElite {
 		contextErr := ctx.Err()
@@ -203,7 +204,10 @@ func evaluateParallelEOBBMAOpposition(
 		}
 
 		candidate := newMayfly(config.ProblemSize)
-		candidate.Position = oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
+		candidate.Position = eliteOppositionPoint(
+			males[i].Position, eliteLower, eliteUpper,
+			config.LowerBound, config.UpperBound, rng,
+		)
 		selected = append(selected, oppositionCandidate{eliteIndex: i, mayfly: candidate})
 		evaluationBatch = append(evaluationBatch, candidate)
 	}
@@ -251,10 +255,14 @@ func evaluateParallelGoldenSine(
 	currentIteration, maxIterations int,
 	lowerBound, upperBound float64,
 	scheduler *AnnealingScheduler,
+	section *goldenSection,
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
 	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
+	// One snapshot of the section points is shared by the whole batch, because
+	// the candidates are generated before any of them is evaluated.
+	sectionPoints := section.snapshot()
 	candidates := make([]goldenSineCandidate, numElite)
 	evaluationBatch := make([]*Mayfly, numElite)
 
@@ -271,6 +279,7 @@ func evaluateParallelGoldenSine(
 			goldenFactor,
 			currentIteration,
 			maxIterations,
+			sectionPoints,
 			lowerBound,
 			upperBound,
 			rng,
@@ -292,6 +301,8 @@ func evaluateParallelGoldenSine(
 
 	for i, candidate := range candidates {
 		male := males[i]
+
+		section.update(evaluator.evaluator.betterMayfly(candidate.mayfly, male))
 
 		probability := evaluator.evaluator.acceptanceProbability(
 			evaluationFromMayfly(male), evaluationFromMayfly(candidate.mayfly), temperature,

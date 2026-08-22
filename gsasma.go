@@ -15,63 +15,6 @@ import (
 // This file contains integration logic specific to GSASMA that orchestrates
 // these components within the main Mayfly optimization loop.
 
-// Returns: (updatedGlobalBest, updatedGlobalBestCost, funcEvals).
-//
-//nolint:unused // retained for focused GSASMA helper compatibility.
-func applyGSASMAToEliteMales(males []*Mayfly, eliteRatio float64, globalBest []float64,
-	globalBestCost float64, goldenFactor float64, currentIter, maxIter int,
-	lowerBound, upperBound float64, scheduler *AnnealingScheduler,
-	objectiveFunc ObjectiveFunction, rng *rand.Rand,
-) ([]float64, float64, int) {
-	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
-
-	funcEvals := 0
-	updatedGlobalBest := globalBest
-	updatedGlobalBestCost := globalBestCost
-
-	// Apply Golden Sine Algorithm with Simulated Annealing to elite males
-	for i := range numElite {
-		// Generate candidate position using adaptive Golden Sine
-		candidatePos := goldenSineUpdateAdaptive(
-			males[i].Position,
-			globalBest,
-			goldenFactor,
-			currentIter,
-			maxIter,
-			lowerBound,
-			upperBound,
-			rng,
-		)
-
-		// Evaluate candidate
-		candidateCost := objectiveFunc(candidatePos)
-		funcEvals++
-
-		// Use simulated annealing acceptance criterion
-		if shouldAccept(males[i].Cost, candidateCost, scheduler.GetTemperature(), rng) {
-			// Accept: update male position
-			copy(males[i].Position, candidatePos)
-			males[i].Cost = candidateCost
-
-			// Update personal best if better
-			if candidateCost < males[i].Best.Cost {
-				copy(males[i].Best.Position, candidatePos)
-				males[i].Best.Cost = candidateCost
-			}
-
-			// Update global best if this is the new best
-			if candidateCost < updatedGlobalBestCost {
-				updatedGlobalBest = make([]float64, len(candidatePos))
-				copy(updatedGlobalBest, candidatePos)
-
-				updatedGlobalBestCost = candidateCost
-			}
-		}
-	}
-
-	return updatedGlobalBest, updatedGlobalBestCost, funcEvals
-}
-
 func applyGSASMAToEliteMalesWithEvaluator(
 	males []*Mayfly,
 	eliteRatio float64,
@@ -80,6 +23,7 @@ func applyGSASMAToEliteMalesWithEvaluator(
 	currentIter, maxIter int,
 	lowerBound, upperBound float64,
 	scheduler *AnnealingScheduler,
+	section *goldenSection,
 	evaluator *constraintEvaluator,
 	rng *rand.Rand,
 ) (Best, int) {
@@ -94,11 +38,16 @@ func applyGSASMAToEliteMalesWithEvaluator(
 			goldenFactor,
 			currentIter,
 			maxIter,
+			section.snapshot(),
 			lowerBound,
 			upperBound,
 			rng,
 		)
 		evaluator.evaluateMayfly(candidate, false)
+
+		// The golden section narrows on whether the candidate improved on the
+		// position it was generated from, independent of the annealing draw.
+		section.update(evaluator.betterMayfly(candidate, males[i]))
 
 		probability := evaluator.acceptanceProbability(
 			evaluationFromMayfly(males[i]), evaluationFromMayfly(candidate), scheduler.GetTemperature(),

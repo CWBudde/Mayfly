@@ -8,8 +8,10 @@
 // 17(2), 71-78.
 // DOI: 10.4316/AECE.2017.02010
 //
-// The algorithm combines the golden ratio (φ ≈ 1.618) and sine function
-// to balance exploration and exploitation through oscillatory movement.
+// The algorithm scans the unit circle with the sine function while a golden
+// section search narrows the interval [-π, π] around the incumbent, so the
+// golden ratio controls how the search interval shrinks rather than merely
+// scaling a step size.
 
 package mayfly
 
@@ -21,30 +23,90 @@ import (
 const (
 	// GoldenRatio is the mathematical constant φ = (1 + √5) / 2 ≈ 1.618034.
 	GoldenRatio = 1.618033988749895
+
+	// goldenRatioConjugate is τ = 1/φ = (√5 - 1) / 2 ≈ 0.618034, the section
+	// ratio used to split the search interval.
+	goldenRatioConjugate = 1.0 / GoldenRatio
 )
 
-// goldenSineUpdate applies the Golden Sine Algorithm update rule.
+// goldenSection holds the golden section search interval of the Golden Sine
+// Algorithm. x1 and x2 are the two interior section points that weight the
+// incumbent and the current position in the update rule; the interval shrinks
+// by the golden ratio after every candidate and resets to [-π, π] once the two
+// section points coincide.
+type goldenSection struct {
+	a, b   float64
+	x1, x2 float64
+}
+
+// newGoldenSection returns a golden section search over the full [-π, π]
+// interval prescribed by the Golden Sine Algorithm.
+func newGoldenSection() *goldenSection {
+	section := &goldenSection{a: -math.Pi, b: math.Pi}
+	section.recompute()
+
+	return section
+}
+
+// recompute derives the interior section points from the current interval.
+func (s *goldenSection) recompute() {
+	s.x1 = s.a*goldenRatioConjugate + s.b*(1-goldenRatioConjugate)
+	s.x2 = s.a*(1-goldenRatioConjugate) + s.b*goldenRatioConjugate
+}
+
+// snapshot returns a copy of the section for use by concurrent candidate
+// generation, so that a batch of candidates shares one set of section points.
+func (s *goldenSection) snapshot() goldenSection {
+	return *s
+}
+
+// update narrows the search interval after a candidate has been judged.
+// improved reports whether the candidate beat the position it was generated
+// from. The interval resets once it has collapsed.
+func (s *goldenSection) update(improved bool) {
+	if improved {
+		s.b = s.x2
+		s.x2 = s.x1
+		s.x1 = s.a*goldenRatioConjugate + s.b*(1-goldenRatioConjugate)
+	} else {
+		s.a = s.x1
+		s.x1 = s.x2
+		s.x2 = s.a*(1-goldenRatioConjugate) + s.b*goldenRatioConjugate
+	}
+
+	if s.x1 == s.x2 {
+		s.a, s.b = -math.Pi, math.Pi
+		s.recompute()
+	}
+}
+
+// goldenSineUpdate applies the Golden Sine Algorithm update rule:
+//
+//	X(t+1) = X(t)·|sin(r1)| - r2·sin(r1)·|x1·P - x2·X(t)|
+//
+// with r1 ∈ [0, 2π], r2 ∈ [0, π] drawn once per individual, P the incumbent
+// (destination) position and x1, x2 the golden section points. goldenFactor
+// scales the second term; the published rule is recovered at goldenFactor = 1.
+//
 // rng must not be nil (ensured by caller).
 // Returns: updated position vector.
-func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperBound float64,
-	rng *rand.Rand,
+func goldenSineUpdate(position, best []float64, goldenFactor float64, section goldenSection,
+	lowerBound, upperBound float64, rng *rand.Rand,
 ) []float64 {
 	size := len(position)
 	newPos := make([]float64, size)
 
+	// r1 determines the distance travelled, r2 the direction; both are drawn
+	// once per individual, not per dimension.
+	r1 := rng.Float64() * 2 * math.Pi
+	r2 := rng.Float64() * math.Pi
+
+	sinR1 := math.Sin(r1)
+	absSinR1 := math.Abs(sinR1)
+
 	for i := range size {
-		// Generate random coefficients
-		r1 := rng.Float64() * 2 * math.Pi // [0, 2π]
-		r2 := rng.Float64() * 2 * math.Pi // [0, 2π]
-		r3 := rng.Float64() * 2           // [0, 2]
-
-		// Apply Golden Sine Algorithm formula
-		// The sine function creates oscillatory movement
-		// The absolute difference provides distance-based adaptation
-		distance := math.Abs(r3*best[i] - position[i])
-		update := goldenFactor * r1 * math.Sin(r2) * distance
-
-		newPos[i] = position[i] + update
+		newPos[i] = position[i]*absSinR1 -
+			goldenFactor*r2*sinR1*math.Abs(section.x1*best[i]-section.x2*position[i])
 	}
 
 	// Apply boundary constraints
@@ -54,103 +116,17 @@ func goldenSineUpdate(position, best []float64, goldenFactor, lowerBound, upperB
 	return newPos
 }
 
+// goldenSineUpdateAdaptive scales the golden sine step from 2·goldenFactor down
+// to goldenFactor over the run, favouring exploration early on.
+//
 // Returns: updated position vector.
 func goldenSineUpdateAdaptive(position, best []float64, goldenFactor float64,
-	currentIter, maxIter int, lowerBound, upperBound float64, rng *rand.Rand,
+	currentIter, maxIter int, section goldenSection, lowerBound, upperBound float64,
+	rng *rand.Rand,
 ) []float64 {
 	// Calculate adaptive factor: decreases from 2 to 1 over iterations
 	iterRatio := float64(currentIter) / float64(maxIter)
 	adaptiveFactor := goldenFactor * (2.0 - iterRatio)
 
-	return goldenSineUpdate(position, best, adaptiveFactor, lowerBound, upperBound, rng)
-}
-
-// Returns: number of function evaluations performed.
-//
-//nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
-func applyGoldenSineToElite(mayflies []*Mayfly, eliteRatio float64, globalBest []float64,
-	goldenFactor float64, currentIter, maxIter int, lowerBound, upperBound float64,
-	objectiveFunc ObjectiveFunction, rng *rand.Rand,
-) int {
-	numElite := min(max(int(float64(len(mayflies))*eliteRatio), 1), len(mayflies))
-
-	funcEvals := 0
-
-	// Apply Golden Sine Algorithm to elite mayflies
-	for i := range numElite {
-		// Generate candidate position using adaptive Golden Sine
-		candidatePos := goldenSineUpdateAdaptive(
-			mayflies[i].Position,
-			globalBest,
-			goldenFactor,
-			currentIter,
-			maxIter,
-			lowerBound,
-			upperBound,
-			rng,
-		)
-
-		// Evaluate candidate
-		candidateCost := objectiveFunc(candidatePos)
-		funcEvals++
-
-		// Accept if better (greedy selection)
-		if candidateCost < mayflies[i].Cost {
-			copy(mayflies[i].Position, candidatePos)
-			mayflies[i].Cost = candidateCost
-
-			// Update personal best if applicable
-			if candidateCost < mayflies[i].Best.Cost {
-				copy(mayflies[i].Best.Position, candidatePos)
-				mayflies[i].Best.Cost = candidateCost
-			}
-		}
-	}
-
-	return funcEvals
-}
-
-// goldenSineConvergence applies adaptive Golden Sine update based on convergence.
-// rng must not be nil (ensured by caller).
-// Returns: updated position vector.
-//
-//nolint:unused // reserved for the GSASMA golden-sine variant; not wired into Optimize() yet.
-func goldenSineConvergence(position, best []float64, goldenFactor, lowerBound, upperBound float64,
-	rng *rand.Rand,
-) []float64 {
-	size := len(position)
-	newPos := make([]float64, size)
-
-	// Calculate average distance to best as convergence indicator
-	avgDistance := 0.0
-	for i := range size {
-		avgDistance += math.Abs(position[i] - best[i])
-	}
-
-	avgDistance /= float64(size)
-
-	// Normalize by search space
-	searchSpace := upperBound - lowerBound
-	convergenceFactor := avgDistance / searchSpace
-
-	// Adjust golden factor based on convergence
-	// Close to best: smaller factor (exploitation)
-	// Far from best: larger factor (exploration)
-	adaptedFactor := goldenFactor * (0.5 + convergenceFactor)
-
-	for i := range size {
-		r1 := rng.Float64() * 2 * math.Pi
-		r2 := rng.Float64() * 2 * math.Pi
-		r3 := rng.Float64() * 2
-
-		distance := math.Abs(r3*best[i] - position[i])
-		update := adaptedFactor * r1 * math.Sin(r2) * distance
-
-		newPos[i] = position[i] + update
-	}
-
-	maxVec(newPos, lowerBound)
-	minVec(newPos, upperBound)
-
-	return newPos
+	return goldenSineUpdate(position, best, adaptiveFactor, section, lowerBound, upperBound, rng)
 }

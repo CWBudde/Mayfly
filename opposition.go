@@ -72,3 +72,68 @@ func gaussianUpdate(current, best []float64, lowerBound, upperBound float64, rng
 
 	return result
 }
+
+// eliteBounds computes the dynamic search interval spanned by the first count
+// mayflies of a (sorted) population: da_j = min_i x_ij and db_j = max_i x_ij.
+//
+// Where the elite collapses onto a single point in a dimension the interval
+// degenerates, so that dimension falls back to the static search bounds.
+func eliteBounds(mayflies []*Mayfly, count int, lowerBound, upperBound float64) (da, db []float64) {
+	count = max(0, min(count, len(mayflies)))
+	if count == 0 {
+		return nil, nil
+	}
+
+	size := len(mayflies[0].Position)
+	da = make([]float64, size)
+	db = make([]float64, size)
+
+	for j := range size {
+		lo := mayflies[0].Position[j]
+		hi := lo
+
+		for i := 1; i < count; i++ {
+			lo = min(lo, mayflies[i].Position[j])
+			hi = max(hi, mayflies[i].Position[j])
+		}
+
+		if hi-lo < 1e-12 {
+			lo, hi = lowerBound, upperBound
+		}
+
+		da[j] = lo
+		db[j] = hi
+	}
+
+	return da, db
+}
+
+// eliteOppositionPoint generates the elite opposition point of a position.
+//
+// Unlike the static opposition of oppositionPoint, elite opposition-based
+// learning reflects through the dynamic interval [da_j, db_j] spanned by the
+// elite set and scales the reflection by a random generalised coefficient:
+//
+//	x*_j = k * (da_j + db_j) - x_j,   k ~ U(0, 1)
+//
+// A reflection that leaves the static search bounds is resampled uniformly from
+// the elite interval, as prescribed by the EOBL formulation.
+//
+// Reference:
+// Zhou, X., Wu, Z., Wang, H., & Rahnamayan, S. (2013). Elite opposition-based
+// differential evolution for solving large-scale optimization problems.
+func eliteOppositionPoint(position, da, db []float64, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) []float64 {
+	k := rng.Float64()
+	result := make([]float64, len(position))
+
+	for j := range position {
+		result[j] = k*(da[j]+db[j]) - position[j]
+		if result[j] < lowerBound || result[j] > upperBound {
+			result[j] = da[j] + rng.Float64()*(db[j]-da[j])
+		}
+	}
+
+	return result
+}

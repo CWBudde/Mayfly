@@ -55,13 +55,27 @@ Lévy flight:      ○○○○○────────○○   (small steps 
 
 ### 3. Elite Opposition-Based Learning
 
-**Opposition-based learning** explores the opposite side of the search space:
+**Elite opposition-based learning** reflects an elite through the interval that
+the elite set itself spans, not through the middle of the whole search space:
 
-- For each elite solution, generate its **opposition point**: `x_opp = a + b - x`
-- If opposition point is better, replace the elite
+```
+da(j) = min over the elite set of x(i,j)      (dynamic lower bound)
+db(j) = max over the elite set of x(i,j)      (dynamic upper bound)
+
+x_opp(j) = k * (da(j) + db(j)) - x(j),   k ~ U(0, 1)
+
+x_opp(j) outside [a, b]  ->  x_opp(j) = U(da(j), db(j))
+```
+
+- If the opposition point is better, it replaces the elite
 - Expands search coverage without additional population
+- A dimension in which the elite set has collapsed falls back to `[a, b]`
 
-**Example**: If elite is at x=7 in bounds [0,10], opposition point is at x=3
+Static opposition (`x_opp = a + b - x`) is deliberately *not* used here. Applied
+to an already-good elite it lands in the mirror region of the search space,
+where it is essentially never better, so the operator evaluates candidates that
+are never accepted. Reflecting through the elite interval keeps the candidate in
+a region worth sampling.
 
 ## Usage Examples
 

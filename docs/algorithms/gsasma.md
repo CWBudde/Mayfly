@@ -12,26 +12,45 @@ GSASMA combines four powerful optimization techniques to achieve faster converge
 
 ### 1. Golden Sine Algorithm (GSA)
 
-Uses the **golden ratio** (φ ≈ 1.618) and sine function for adaptive position updates:
+Uses the **golden ratio** (φ ≈ 1.618) and sine function for adaptive position
+updates, following Tanyildizi & Demir (2017):
 
 **Mathematical Formula**:
 
 ```
-X_new(i) = X_old(i) + r1 * sin(r2) * |r3 * X_best(i) - X_old(i)|
+X_new(i) = X_old(i) * |sin(r1)| - f * r2 * sin(r1) * |x1 * X_best(i) - x2 * X_old(i)|
 
 where:
-  r1 ∈ [0, 2π] - controls step magnitude
-  r2 ∈ [0, 2π] - controls sine oscillation
-  r3 ∈ [0, 2]  - controls attraction to best position
+  r1 ∈ [0, 2π] - distance travelled, drawn once per individual
+  r2 ∈ [0, π]  - direction towards the incumbent, drawn once per individual
+  x1, x2       - golden section points of the interval [a, b], initially [-π, π]
+  f            - GoldenFactor, 1.0 reproduces the published rule
+```
+
+The section points come from a golden section search that narrows after every
+candidate, with τ = 1/φ ≈ 0.618:
+
+```
+x1 = a*τ + b*(1-τ)
+x2 = a*(1-τ) + b*τ
+
+candidate improved  ->  b = x2; x2 = x1; x1 = a*τ + b*(1-τ)
+candidate worse     ->  a = x1; x1 = x2; x2 = a*(1-τ) + b*τ
+x1 == x2            ->  reset [a, b] to [-π, π]
 ```
 
 **Properties**:
 
-- Golden ratio provides optimal step sizing
+- The golden ratio shrinks the search interval, it does not merely scale a step
 - Sine oscillation creates wave-like search patterns
-- Adaptive scaling decreases over iterations for smooth convergence
+- `GoldenFactor` is applied exactly as configured; no additional scaling over
+  iterations is introduced
 
 **Applied to**: Elite males (top 20% of population) after sorting
+
+In parallel mode all elite candidates are generated from one snapshot of the
+section points and the interval is narrowed once per batch, after every
+candidate has been evaluated.
 
 ### 2. Simulated Annealing (SA)
 

@@ -200,6 +200,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 	if rng == nil {
 		rng = rand.New(rand.NewSource(seed))
+		// Share the fallback generator with the helpers that read config.Rand
+		// directly, such as the sequential AOBLMOA path.
+		config.Rand = rng
 	}
 
 	candidateEvaluator := newConstraintEvaluator(config.ObjectiveFunc, config.Constraints)
@@ -363,21 +366,25 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	// Initialize GSASMA parameters if enabled
-	var annealingScheduler *AnnealingScheduler
+	var (
+		annealingScheduler  *AnnealingScheduler
+		goldenSectionSearch *goldenSection
+	)
+
 	if config.UseGSASMA {
 		annealingScheduler = NewAnnealingScheduler(
 			config.InitialTemperature,
 			config.CoolingRate,
 			config.CoolingSchedule,
 		)
+		// The golden section search persists across iterations so that the
+		// interval actually narrows over the run.
+		goldenSectionSearch = newGoldenSection()
 	}
 
 	// Initialize AOBLMOA parameters if enabled
-	var paretoArchive *ParetoArchive
-
 	if config.UseAOBLMOA {
 		initializeAOBLMOA(config)
-		paretoArchive = NewParetoArchive(config.ArchiveSize)
 	}
 
 	// Main loop
@@ -398,6 +405,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					&globalBest,
 					it,
 					config.MaxIterations,
+					g,
+					dance,
+					fl,
 					config,
 					rng,
 					evaluator,
@@ -409,16 +419,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				funcCount += aoblmoaEvals
 			} else {
 				// Apply AOBLMOA to populations sequentially for backward compatibility.
-				applyAOBLMOAToPopulationWithEvaluator(
-					males, females, globalBest, it, config.MaxIterations, config, candidateEvaluator,
+				funcCount += applyAOBLMOAToPopulationWithEvaluator(
+					males, females, globalBest, it, config.MaxIterations,
+					g, dance, fl, config, candidateEvaluator,
 				)
-
-				// Count function evaluations (approximation)
-				// Aquila strategies: 1 eval per mayfly
-				// Opposition learning: OppositionProbability * population size * 2 (original + opposition)
-				aoblmoaEvals := config.NPop + config.NPopF
-				oppositionEvals := int(config.OppositionProbability * float64(config.NPop+config.NPopF) * 2)
-				funcCount += aoblmoaEvals + oppositionEvals
 			}
 
 			// Update global best from updated populations
@@ -778,13 +782,19 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			} else {
 				// Apply opposition sequentially for backward compatibility.
 				numEliteOpposition := min(config.EliteOppositionCount, len(males))
+				eliteLower, eliteUpper := eliteBounds(
+					males, numEliteOpposition, config.LowerBound, config.UpperBound,
+				)
 
 				for i := range numEliteOpposition {
 					if rng.Float64() >= config.OppositionRate {
 						continue
 					}
 
-					oppPos := oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
+					oppPos := eliteOppositionPoint(
+						males[i].Position, eliteLower, eliteUpper,
+						config.LowerBound, config.UpperBound, rng,
+					)
 					opposition := newMayfly(config.ProblemSize)
 					copy(opposition.Position, oppPos)
 					candidateEvaluator.evaluateMayfly(opposition, false)
@@ -824,11 +834,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					0.2,
 					&globalBest,
 					config.GoldenFactor,
-					it,
-					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,
+					goldenSectionSearch,
 					rng,
 					evaluator,
 				)
@@ -844,11 +853,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					0.2, // Elite ratio: top 20%
 					globalBest,
 					config.GoldenFactor,
-					it,
-					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,
+					goldenSectionSearch,
 					candidateEvaluator,
 					rng,
 				)
@@ -1171,11 +1179,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					globalBest = updatedGlobalBest
 				}
 			}
-		}
-
-		// AOBLMOA: Update Pareto archive
-		if config.UseAOBLMOA {
-			updateParetoArchive(paretoArchive, males, females)
 		}
 
 		bestSolution[it] = globalBest.Cost

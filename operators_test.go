@@ -371,3 +371,204 @@ func TestMutateSigmaCalculation(t *testing.T) {
 		}
 	}
 }
+
+// TestCrossoverExtrapolates asserts the property the reference blend crossover
+// has and a coefficient confined to [0, 1] cannot: offspring sometimes land
+// outside the interval spanned by their two parents.
+//
+// Without extrapolation every offspring is a convex combination of its
+// parents, so the population's convex hull shrinks monotonically and mating
+// can never restore lost spread. This test fails for gamma = 0.
+func TestCrossoverExtrapolates(t *testing.T) {
+	t.Parallel()
+
+	const (
+		trials = 2000
+		lo     = -100.0
+		hi     = 100.0
+	)
+
+	x1 := []float64{-1, -1, -1, -1}
+	x2 := []float64{1, 1, 1, 1}
+
+	rng := rand.New(rand.NewSource(1))
+
+	outside := 0
+	total := 0
+
+	for range trials {
+		off1, off2 := Crossover(x1, x2, lo, hi, rng)
+
+		for _, off := range [][]float64{off1, off2} {
+			for i := range off {
+				total++
+
+				if off[i] < math.Min(x1[i], x2[i])-1e-12 ||
+					off[i] > math.Max(x1[i], x2[i])+1e-12 {
+					outside++
+				}
+			}
+		}
+	}
+
+	// U(-0.4, 1.4) leaves the unit interval with probability 0.8/1.8 ~= 0.444.
+	fraction := float64(outside) / float64(total)
+	if fraction < 0.35 || fraction > 0.55 {
+		t.Errorf(
+			"fraction of extrapolating genes = %.3f, want ~0.444 (gamma=%v); "+
+				"a value near 0 means crossover can only interpolate",
+			fraction, DefaultCrossoverGamma,
+		)
+	}
+}
+
+// TestCrossoverBlendGammaZeroInterpolatesOnly pins the opposite end: with
+// gamma explicitly zero the operator degenerates to pure interpolation.
+func TestCrossoverBlendGammaZeroInterpolatesOnly(t *testing.T) {
+	t.Parallel()
+
+	x1 := []float64{-1, -1, -1, -1}
+	x2 := []float64{1, 1, 1, 1}
+
+	rng := rand.New(rand.NewSource(2))
+
+	for range 500 {
+		off1, off2 := CrossoverBlend(x1, x2, 0, -100, 100, rng)
+
+		for _, off := range [][]float64{off1, off2} {
+			for i := range off {
+				if off[i] < -1-1e-12 || off[i] > 1+1e-12 {
+					t.Fatalf("gamma=0 produced %v outside [-1, 1]", off[i])
+				}
+			}
+		}
+	}
+}
+
+// TestCrossoverBlendRejectsNonFiniteGamma pins the guard on the exported API:
+// a NaN or infinite gamma would make the coefficient draw produce NaN, and the
+// boundary clamps compare against NaN as false, so the NaN would leak into the
+// offspring. Such a gamma is treated as zero instead.
+func TestCrossoverBlendRejectsNonFiniteGamma(t *testing.T) {
+	t.Parallel()
+
+	gammas := []float64{math.NaN(), math.Inf(1), math.Inf(-1), -1}
+
+	x1 := []float64{-1, -1, -1, -1}
+	x2 := []float64{1, 1, 1, 1}
+
+	for _, gamma := range gammas {
+		rng := rand.New(rand.NewSource(3))
+
+		for range 200 {
+			off1, off2 := CrossoverBlend(x1, x2, gamma, -100, 100, rng)
+
+			for _, off := range [][]float64{off1, off2} {
+				for i := range off {
+					if math.IsNaN(off[i]) || off[i] < -1-1e-12 || off[i] > 1+1e-12 {
+						t.Fatalf("gamma=%v produced %v outside [-1, 1]", gamma, off[i])
+					}
+				}
+			}
+		}
+	}
+}
+
+// TestCrossoverBlendRespectsBounds checks that extrapolated offspring are
+// still clamped to the problem bounds.
+func TestCrossoverBlendRespectsBounds(t *testing.T) {
+	t.Parallel()
+
+	const (
+		lo = -1.5
+		hi = 1.5
+	)
+
+	x1 := []float64{-1, -1, -1, -1}
+	x2 := []float64{1, 1, 1, 1}
+
+	rng := rand.New(rand.NewSource(3))
+
+	for range 1000 {
+		off1, off2 := CrossoverBlend(x1, x2, 5.0, lo, hi, rng)
+
+		for _, off := range [][]float64{off1, off2} {
+			for i := range off {
+				if off[i] < lo || off[i] > hi {
+					t.Fatalf("offspring %v escaped bounds [%v, %v]", off[i], lo, hi)
+				}
+			}
+		}
+	}
+}
+
+// TestEffectiveCrossoverGamma pins the resolution of the config field.
+func TestEffectiveCrossoverGamma(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value float64
+		want  float64
+	}{
+		{"unset zero value falls back to the reference default", 0, DefaultCrossoverGamma},
+		{"negative falls back", -1, DefaultCrossoverGamma},
+		{"NaN falls back", math.NaN(), DefaultCrossoverGamma},
+		{"Inf falls back", math.Inf(1), DefaultCrossoverGamma},
+		{"positive is taken as written", 0.75, 0.75},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := effectiveCrossoverGamma(&Config{CrossoverGamma: tt.value})
+			if got != tt.want {
+				t.Errorf("effectiveCrossoverGamma(%v) = %v, want %v", tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestMutateGaussianTouchesExpectedDimensionCount documents the current
+// mutation semantics: Mu is a *fraction of dimensions*, so exactly
+// ceil(Mu*nVar) genes change -- not a per-gene probability. At the default Mu
+// of 0.01 that is a single dimension for any problem up to 100 variables.
+func TestMutateGaussianTouchesExpectedDimensionCount(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		nVar int
+		mu   float64
+		want int
+	}{
+		{10, 0.01, 1},
+		{56, 0.01, 1},
+		{100, 0.01, 1},
+		{101, 0.01, 2},
+		{56, 0.25, 14},
+		{56, 1.0, 56},
+	}
+
+	for _, tt := range tests {
+		x := make([]float64, tt.nVar)
+		rng := rand.New(rand.NewSource(int64(tt.nVar)))
+
+		y := MutateGaussian(x, tt.mu, -10, 10, rng)
+
+		changed := 0
+
+		for i := range y {
+			if y[i] != x[i] {
+				changed++
+			}
+		}
+
+		if changed != tt.want {
+			t.Errorf(
+				"MutateGaussian(nVar=%d, mu=%v) changed %d dimensions, want %d",
+				tt.nVar, tt.mu, changed, tt.want,
+			)
+		}
+	}
+}

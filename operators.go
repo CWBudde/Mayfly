@@ -5,14 +5,50 @@ import (
 	"math/rand"
 )
 
-// Crossover performs crossover between two parent positions.
+// DefaultCrossoverGamma is the blend-crossover expansion factor used by the
+// reference Mayfly implementation. The author's own Python port draws the
+// crossover coefficient from a uniform distribution over [-gamma, 1+gamma]
+// with gamma = 0.4 (KZervoudakis/Mayfly-Optimization-Algorithm-Python,
+// operators.py: ContinousCrossover; ma.py: MA(..., gamma=0.4)).
+//
+// A gamma of zero confines the coefficient to [0, 1], which makes every
+// offspring a convex combination of its parents. That is a contraction: the
+// convex hull of the population can only shrink from one generation to the
+// next, and the swarm loses spread it can never regain by mating. gamma > 0
+// lets an offspring land outside the parental interval, which is what keeps
+// the blend operator from collapsing diversity.
+const DefaultCrossoverGamma = 0.4
+
+// Crossover performs crossover between two parent positions using
+// DefaultCrossoverGamma. See CrossoverBlend for the general form.
 func Crossover(x1, x2 []float64, lowerBound, upperBound float64, rng *rand.Rand) ([]float64, []float64) {
+	return CrossoverBlend(x1, x2, DefaultCrossoverGamma, lowerBound, upperBound, rng)
+}
+
+// CrossoverBlend performs blend (BLX-style) crossover between two parent
+// positions. The per-dimension coefficient is drawn from U(-gamma, 1+gamma),
+// so offspring may fall outside the interval spanned by the two parents by up
+// to gamma times its width on either side. Offspring are clamped to
+// [lowerBound, upperBound] afterwards.
+//
+// A negative or non-finite gamma is treated as zero; drawing the coefficient
+// with an infinite or NaN gamma would otherwise produce NaN offspring, which
+// the boundary clamps cannot repair.
+func CrossoverBlend(
+	x1, x2 []float64,
+	gamma, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) ([]float64, []float64) {
+	if math.IsNaN(gamma) || math.IsInf(gamma, 0) || gamma < 0 {
+		gamma = 0
+	}
+
 	size := len(x1)
 	off1 := make([]float64, size)
 	off2 := make([]float64, size)
 
 	for i := range size {
-		L := unifrnd(0, 1, rng)
+		L := unifrnd(-gamma, 1+gamma, rng)
 		off1[i] = L*x1[i] + (1-L)*x2[i]
 		off2[i] = L*x2[i] + (1-L)*x1[i]
 	}

@@ -9,6 +9,16 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Crossover is blend crossover again. The coefficient was drawn from `U(0, 1)`,
+  which makes every offspring a convex combination of its two parents: the
+  population's convex hull can only shrink from one generation to the next, and
+  mating can never restore spread the swarm has lost. The reference
+  implementation draws it from `U(-gamma, 1+gamma)` with `gamma = 0.4`
+  (Zervoudakis & Tsafarakis 2020; the author's Python port,
+  `KZervoudakis/Mayfly-Optimization-Algorithm-Python`, `operators.py`
+  `ContinousCrossover` and `ma.py` `MA(..., gamma=0.4)`), so offspring may land
+  outside the parental interval. **This changes the search trajectory of every
+  run and every variant**, including previously seeded ones.
 - OLCE-MA's chaotic exploitation is a greedy local search again instead of an
   unconditional random kick. Every offspring was displaced in every dimension,
   every iteration, with no acceptance test and no decay — and because the
@@ -61,6 +71,16 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   section points of a golden section search over `[-π, π]` that narrows by
   `1/φ` after every candidate. `GoldenFactor` keeps its meaning as a scale on
   the second term and its default of 1.0 reproduces the published rule.
+
+### Added
+
+- `Config.CrossoverGamma`, the blend-crossover expansion factor, defaulting to
+  the reference `DefaultCrossoverGamma` of `0.4`. Zero, negative, `NaN` and
+  `Inf` all resolve to the default, because zero reproduces the interpolation
+  bug this release fixes.
+- `CrossoverBlend`, the general form of `Crossover` taking an explicit gamma.
+  `Crossover` keeps its signature and now delegates with
+  `DefaultCrossoverGamma`.
 
 ### Changed
 

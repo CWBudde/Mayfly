@@ -242,3 +242,23 @@ func validateOffspring(config *Config) error {
 
 	return nil
 }
+
+// effectiveCrossoverGamma reports the blend-crossover expansion factor
+// Optimize will actually use.
+//
+// Unlike NC, the zero value is not honored literally. A gamma of zero confines
+// the crossover coefficient to [0, 1], which makes every offspring a convex
+// combination of its parents -- the contraction this field exists to remove --
+// so a partially-filled Config literal that never mentions CrossoverGamma must
+// not silently get it. Zero, negative values, NaN and Inf therefore all resolve
+// to DefaultCrossoverGamma; only a positive, finite value is taken as written.
+// This is why validateOffspring does not reject those values: they are a
+// documented fallback, not a configuration error.
+func effectiveCrossoverGamma(config *Config) float64 {
+	gamma := config.CrossoverGamma
+	if math.IsNaN(gamma) || math.IsInf(gamma, 0) || gamma <= 0 {
+		return DefaultCrossoverGamma
+	}
+
+	return gamma
+}

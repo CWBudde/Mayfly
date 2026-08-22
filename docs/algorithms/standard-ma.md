@@ -96,7 +96,10 @@ func main() {
   crossover)
 - `Selection`: Parent selection rule, `"rank"` or `"tournament"` (default: `"rank"`)
 - `NM`: Number of mutants (default: 5% of NPop)
-- `Mu`: Mutation rate (default: 0.01)
+- `CrossoverGamma`: Blend-crossover expansion factor (default: 0.4, the
+  reference value; `0` and any invalid value fall back to it)
+- `Mu`: Fraction of dimensions mutated, i.e. `ceil(Mu * ProblemSize)` genes
+  (default: 0.01)
 
 ## Algorithm Workflow
 

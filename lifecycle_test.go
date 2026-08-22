@@ -447,3 +447,140 @@ func TestOptimizeContextRejectsInvalidLifecycleInputs(t *testing.T) {
 		t.Fatal("OptimizeContext accepted zero-value RunOption")
 	}
 }
+
+func TestPopulationObserverReceivesIndependentSnapshots(t *testing.T) {
+	var snapshots []PopulationSnapshot
+
+	observer := func(snapshot PopulationSnapshot) {
+		snapshots = append(snapshots, snapshot)
+
+		// Reach into every copy the observer was handed. None of it may be
+		// aliased to state the optimizer is still using.
+		snapshot.Best.Position[0] = 999
+		snapshot.Males[0].Position[0] = 999
+		snapshot.Males[0].Velocity[0] = 999
+		snapshot.Males[0].Best.Position[0] = 999
+		snapshot.Females[0].Position[0] = 999
+	}
+
+	config := lifecycleConfig(sphere)
+
+	result, err := OptimizeContext(
+		context.Background(),
+		config,
+		WithPopulationObserver(observer),
+	)
+	if err != nil {
+		t.Fatalf("OptimizeContext: %v", err)
+	}
+
+	if len(snapshots) != config.MaxIterations {
+		t.Fatalf("observer called %d times, want %d", len(snapshots), config.MaxIterations)
+	}
+
+	for i, snapshot := range snapshots {
+		if snapshot.Iteration != i+1 {
+			t.Errorf("snapshots[%d].Iteration = %d, want %d", i, snapshot.Iteration, i+1)
+		}
+
+		if len(snapshot.Males) != config.NPop {
+			t.Errorf("snapshots[%d] has %d males, want %d", i, len(snapshot.Males), config.NPop)
+		}
+
+		if len(snapshot.Females) != config.NPopF {
+			t.Errorf("snapshots[%d] has %d females, want %d", i, len(snapshot.Females), config.NPopF)
+		}
+
+		// Index 0 is the one the observer above deliberately corrupted, so the
+		// cost invariant is checked on the members it left alone.
+		for j, male := range snapshot.Males {
+			if len(male.Position) != config.ProblemSize {
+				t.Errorf("snapshots[%d].Males[%d].Position has dimension %d, want %d",
+					i, j, len(male.Position), config.ProblemSize)
+			}
+
+			if j > 0 && male.Cost != sphere(male.Position) {
+				t.Errorf("snapshots[%d].Males[%d].Cost = %v, want %v",
+					i, j, male.Cost, sphere(male.Position))
+			}
+		}
+	}
+
+	if result.GlobalBest.Position[0] == 999 {
+		t.Fatal("observer mutation changed result GlobalBest.Position")
+	}
+
+	last := snapshots[len(snapshots)-1]
+	if last.Best.Cost != result.GlobalBest.Cost {
+		t.Errorf("last snapshot cost %v != result cost %v", last.Best.Cost, result.GlobalBest.Cost)
+	}
+
+	// A run whose observer mutated every snapshot must still land where the
+	// same seed lands without an observer at all.
+	clean, err := OptimizeContext(context.Background(), lifecycleConfig(sphere))
+	if err != nil {
+		t.Fatalf("OptimizeContext without observer: %v", err)
+	}
+
+	if clean.GlobalBest.Cost != result.GlobalBest.Cost {
+		t.Errorf("observed run cost %v != unobserved run cost %v",
+			result.GlobalBest.Cost, clean.GlobalBest.Cost)
+	}
+}
+
+func TestPopulationObserverIsOptional(t *testing.T) {
+	config := lifecycleConfig(sphere)
+
+	result, err := OptimizeContext(
+		context.Background(),
+		config,
+		WithPopulationObserver(nil),
+	)
+	if err != nil {
+		t.Fatalf("OptimizeContext: %v", err)
+	}
+
+	if result.IterationCount != config.MaxIterations {
+		t.Errorf("IterationCount = %d, want %d", result.IterationCount, config.MaxIterations)
+	}
+}
+
+func TestPopulationAndProgressObserversAgree(t *testing.T) {
+	var (
+		progress  []Progress
+		snapshots []PopulationSnapshot
+	)
+
+	config := lifecycleConfig(sphere)
+
+	_, err := OptimizeContext(
+		context.Background(),
+		config,
+		WithProgressObserver(func(update Progress) { progress = append(progress, update) }),
+		WithPopulationObserver(func(s PopulationSnapshot) { snapshots = append(snapshots, s) }),
+	)
+	if err != nil {
+		t.Fatalf("OptimizeContext: %v", err)
+	}
+
+	if len(progress) != len(snapshots) {
+		t.Fatalf("%d progress updates but %d population snapshots", len(progress), len(snapshots))
+	}
+
+	for i := range progress {
+		if progress[i].Iteration != snapshots[i].Iteration {
+			t.Errorf("iteration %d: progress %d != snapshot %d",
+				i, progress[i].Iteration, snapshots[i].Iteration)
+		}
+
+		if progress[i].EvaluationCount != snapshots[i].EvaluationCount {
+			t.Errorf("iteration %d: evaluations %d != %d",
+				i, progress[i].EvaluationCount, snapshots[i].EvaluationCount)
+		}
+
+		if progress[i].Best.Cost != snapshots[i].Best.Cost {
+			t.Errorf("iteration %d: best cost %v != %v",
+				i, progress[i].Best.Cost, snapshots[i].Best.Cost)
+		}
+	}
+}

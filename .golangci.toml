@@ -25,7 +25,10 @@ disable = [
   # Not applicable / too opinionated for this library.
   'depguard',
   'exhaustive',
+  # 'exhaustruct' is the pre-v2.13 name; both are listed so the intent
+  # survives the rename in either direction.
   'exhaustruct',
+  'exhaustruct_v5',
   'gochecknoglobals',
   'gomodguard',
   'ireturn',

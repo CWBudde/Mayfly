@@ -194,7 +194,7 @@ func validateOffspring(config *Config) error {
 	case "", SelectionTournament, SelectionRank:
 	default:
 		return fmt.Errorf(
-			"Selection must be %q or %q, got %q",
+			"selection strategy must be %q or %q, got %q",
 			SelectionTournament, SelectionRank, config.Selection,
 		)
 	}

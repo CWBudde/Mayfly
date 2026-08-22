@@ -46,7 +46,8 @@ func TestScaledOffspringCountAlwaysValidates(t *testing.T) {
 		config.NPopF = npopf
 		config.NM = 0
 
-		if err := validateOffspring(config); err != nil {
+		err := validateOffspring(config)
+		if err != nil {
 			t.Fatalf("NPopF=%d: %v", npopf, err)
 		}
 	}
@@ -157,8 +158,8 @@ func TestLargerTournamentsSelectFitterParents(t *testing.T) {
 }
 
 // The escape hatch a reproducible re-run needs: NCRatio 0 with rank selection
-// is the v0.4.0 mating behaviour exactly.
-func TestHistoricalBehaviourIsStillExpressible(t *testing.T) {
+// is the v0.4.0 mating behavior exactly.
+func TestHistoricalBehaviorIsStillExpressible(t *testing.T) {
 	config := NewDefaultConfig()
 	config.NPop = 512
 	config.NPopF = 512
@@ -192,7 +193,8 @@ func TestInvalidSelectionConfigurationIsRefused(t *testing.T) {
 			config := NewDefaultConfig()
 			tt.mutate(config)
 
-			if err := validateOffspring(config); err == nil {
+			err := validateOffspring(config)
+			if err == nil {
 				t.Fatal("expected the configuration to be refused")
 			}
 		})
@@ -201,9 +203,9 @@ func TestInvalidSelectionConfigurationIsRefused(t *testing.T) {
 
 // sortedPopulations builds two populations already ordered best-first, which is
 // the state the mating loop always receives them in.
-func sortedPopulations(n int) (males, females []*Mayfly) {
-	males = make([]*Mayfly, n)
-	females = make([]*Mayfly, n)
+func sortedPopulations(n int) ([]*Mayfly, []*Mayfly) {
+	males := make([]*Mayfly, n)
+	females := make([]*Mayfly, n)
 
 	for i := range n {
 		males[i] = &Mayfly{Cost: float64(i)}

@@ -88,10 +88,6 @@ type ConvergenceConfig struct {
 	MinIterations int `json:"min_iterations"`
 }
 
-// Config holds the configuration parameters for the Mayfly Algorithm.
-// When EnableParallel is true, ObjectiveFunc and configured constraint
-// functions may be called concurrently with distinct position vectors and
-// must be safe for concurrent use.
 // NCAuto makes Optimize derive the crossover offspring count from NPop and
 // NCRatio instead of taking it literally. It is the default, and it is a
 // distinct sentinel rather than the zero value because zero already means
@@ -103,10 +99,10 @@ type SelectionStrategy string
 
 const (
 	// SelectionTournament draws TournamentSize candidates uniformly from a
-	// population and mates the fittest of them. It is the default because it
-	// lets every member reproduce with probability proportional to its rank
-	// while still favouring the fit, which is what keeps a large population
-	// contributing genetic material instead of merely following the swarm.
+	// population and mates the fittest of them. It lets every member reproduce
+	// with probability proportional to its rank while still favoring the fit,
+	// but it is not the default: see the note in CHANGELOG.md for the Griewank
+	// regression it caused at the default population.
 	SelectionTournament SelectionStrategy = "tournament"
 	// SelectionRank pairs the k-th best male with the k-th best female. It is
 	// the rule the algorithm shipped with through v0.4.0, kept because it is
@@ -115,6 +111,10 @@ const (
 	SelectionRank SelectionStrategy = "rank"
 )
 
+// Config holds the configuration parameters for the Mayfly Algorithm.
+// When EnableParallel is true, ObjectiveFunc and configured constraint
+// functions may be called concurrently with distinct position vectors and
+// must be safe for concurrent use.
 type Config struct {
 	ObjectiveFunc         ObjectiveFunction  `json:"-"`
 	Rand                  *rand.Rand         `json:"-"`

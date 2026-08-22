@@ -886,12 +886,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			mergeBest(&globalBest, offspringBest, candidateEvaluator)
 		} else {
-			offspring = make([]*Mayfly, 0, config.NC)
+			nc := effectiveNC(config)
+			offspring = make([]*Mayfly, 0, nc)
 
-			for k := range config.NC / 2 {
-				// Select parents (best males and females)
-				p1 := males[k]
-				p2 := females[k]
+			for k := range nc / 2 {
+				p1, p2 := selectParents(males, females, k, config, rng)
 
 				// Apply crossover
 				off1Pos, off2Pos := Crossover(p1.Position, p2.Position, config.LowerBound, config.UpperBound, rng)

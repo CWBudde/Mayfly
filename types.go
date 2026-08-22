@@ -88,6 +88,29 @@ type ConvergenceConfig struct {
 	MinIterations int `json:"min_iterations"`
 }
 
+// NCAuto makes Optimize derive the crossover offspring count from NPop and
+// NCRatio instead of taking it literally. It is the default, and it is a
+// distinct sentinel rather than the zero value because zero already means
+// "produce no offspring" and a caller who asked for that must keep getting it.
+const NCAuto = -1
+
+// SelectionStrategy names the rule that pairs parents for crossover.
+type SelectionStrategy string
+
+const (
+	// SelectionTournament draws TournamentSize candidates uniformly from a
+	// population and mates the fittest of them. It lets every member reproduce
+	// with probability proportional to its rank while still favoring the fit,
+	// but it is not the default: see the note in CHANGELOG.md for the Griewank
+	// regression it caused at the default population.
+	SelectionTournament SelectionStrategy = "tournament"
+	// SelectionRank pairs the k-th best male with the k-th best female. It is
+	// the rule the algorithm shipped with through v0.4.0, kept because it is
+	// the only way to reproduce a run recorded before v0.5.0 and because it is
+	// the faithful reading of the original description.
+	SelectionRank SelectionStrategy = "rank"
+)
+
 // Config holds the configuration parameters for the Mayfly Algorithm.
 // When EnableParallel is true, ObjectiveFunc and configured constraint
 // functions may be called concurrently with distinct position vectors and
@@ -99,6 +122,7 @@ type Config struct {
 	Constraints           *ConstraintConfig  `json:"constraints,omitempty"`
 	CoolingSchedule       string             `json:"cooling_schedule"`
 	GravityType           string             `json:"gravity_type"`
+	Selection             SelectionStrategy  `json:"selection"`
 	ReductionFactor       float64            `json:"reduction_factor"`
 	Dance                 float64            `json:"dance"`
 	NPop                  int                `json:"npop"`
@@ -115,6 +139,8 @@ type Config struct {
 	FLDamp                float64            `json:"fl_damp"`
 	NC                    int                `json:"nc"`
 	NM                    int                `json:"nm"`
+	TournamentSize        int                `json:"tournament_size"`
+	NCRatio               float64            `json:"nc_ratio"`
 	Mu                    float64            `json:"mu"`
 	VelMax                float64            `json:"vel_max"`
 	VelMin                float64            `json:"vel_min"`

@@ -90,7 +90,11 @@ func main() {
 
 ### Mating Parameters
 
-- `NC`: Number of offspring (default: 20)
+- `NC`: Number of offspring (default: `NCAuto`, i.e. `NCRatio * NPop`)
+- `NCRatio`: Offspring per population member when `NC` is `NCAuto` (default: 1.0;
+  a non-positive or non-finite value falls back to 1.0 — use `NC = 0` to disable
+  crossover)
+- `Selection`: Parent selection rule, `"rank"` or `"tournament"` (default: `"rank"`)
 - `NM`: Number of mutants (default: 5% of NPop)
 - `Mu`: Mutation rate (default: 0.01)
 

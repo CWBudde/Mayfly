@@ -20,9 +20,10 @@ func evaluateParallelGeneticOperators(
 	iteration int,
 ) ([]*Mayfly, Best, error) {
 	geneticBest := Best{Cost: math.Inf(1), ConstraintViolation: math.Inf(1)}
-	offspring := make([]*Mayfly, 0, 2*(config.NC/2)+config.NM)
+	nc := effectiveNC(config)
+	offspring := make([]*Mayfly, 0, 2*(nc/2)+config.NM)
 
-	for k := range config.NC / 2 {
+	for k := range nc / 2 {
 		contextErr := ctx.Err()
 		if contextErr != nil {
 			return nil, Best{}, contextErr
@@ -30,8 +31,7 @@ func evaluateParallelGeneticOperators(
 
 		// Optimize validates that both populations contain every requested
 		// parent pair before this internal helper is called.
-		male := males[k]     //nolint:gosec // k is bounded by validated NC/2
-		female := females[k] //nolint:gosec // k is bounded by validated NC/2
+		male, female := selectParents(males, females, k, config, rng)
 		off1Pos, off2Pos := Crossover(
 			male.Position,
 			female.Position,

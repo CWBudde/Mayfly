@@ -33,10 +33,20 @@ func NewDefaultConfig() *Config {
 		FL:            1.0,
 		DanceDamp:     0.8,
 		FLDamp:        0.99,
-		NC:            20,
+		NC:            NCAuto,
 		NM:            0, // Will be calculated as 5% of NPop
-		Mu:            0.01,
-		MaxWorkers:    defaultMaxWorkers(),
+		// NC defers to NCRatio, so the offspring count tracks the population
+		// instead of standing still at the 20 that v0.4.0 hardcoded. A ratio
+		// of 1 reproduces NC == NPop, which is what this configuration already
+		// expressed at its own NPop of 20; write NC: 20 to pin the historical
+		// count regardless of population.
+		NCRatio: 1.0,
+		// Selection decides which parents those crossovers use. See
+		// SelectionTournament and SelectionRank.
+		Selection:      SelectionRank,
+		TournamentSize: 3,
+		Mu:             0.01,
+		MaxWorkers:     defaultMaxWorkers(),
 		// DESMA defaults
 		UseDESMA:        false,
 		EliteCount:      5,

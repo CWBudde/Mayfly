@@ -9,6 +9,20 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **AOBLMOA moved only part of its swarm.** Every individual drew against
+  `AquilaWeight` to decide whether it took an Aquila-Optimizer step, and an
+  individual that lost the draw was skipped outright — no Aquila step, and no
+  Mayfly velocity update either. A comment claimed the main loop would apply
+  the standard update, but the AOBLMOA branch of that loop replaces the
+  standard update rather than following it, so a losing individual simply stood
+  still, unevaluated, until crossover happened to touch it. At the former
+  default `AquilaWeight` of 0.5, half the population was frozen every
+  iteration. Both the sequential and the parallel evaluation paths were
+  affected. Every individual now moves every iteration, taking either an Aquila
+  step or the ordinary Mayfly update.
+- AOBLMOA's function-evaluation count is now the number of evaluations actually
+  performed rather than a formula that assumed one evaluation per individual —
+  an assumption the skipping made false.
 - EOBBMA's elite opposition-based learning had no observable effect on the
   search. It generated the *static* opposition point `a + b - x` of each elite
   and accepted it only when it beat that elite. Reflecting a good solution
@@ -29,6 +43,25 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   section points of a golden section search over `[-π, π]` that narrows by
   `1/φ` after every candidate. `GoldenFactor` keeps its meaning as a scale on
   the second term and its default of 1.0 reproduces the published rule.
+
+### Changed
+
+- **`NewAOBLMOAConfig` now defaults `AquilaWeight` to 1.0** (was 0.5). The
+  published algorithm has no such probability: it moves every individual either
+  by Mayfly attraction or by an Aquila strategy chosen from the iteration
+  phase. 1.0 is the closest match to the paper, and it was the only setting the
+  skipping defect left unharmed. Set `config.AquilaWeight = 0.5` to keep a
+  half-and-half blend, which now genuinely blends instead of freezing half the
+  swarm.
+- **The optimizer no longer maintains a Pareto archive.** `Optimize` built one
+  for AOBLMOA and pushed the whole population into it every iteration, paying
+  NSGA-II pruning for it, while nothing in the search or in `Result` ever read
+  it back. Removing it leaves results bit-for-bit identical and returns the
+  time. The Pareto toolkit stays exported for callers who want a front:
+  `NewParetoArchive`, `Add`, `AddFromMayfly`, `GetBestSolution` and the new
+  `(*ParetoArchive).UpdateFromPopulation`, which replaces the unexported
+  `updateParetoArchive`. `ArchiveSize` now only sizes an archive the caller
+  builds.
 
 ### Removed
 

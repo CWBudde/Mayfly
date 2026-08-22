@@ -182,8 +182,6 @@ func NewGSASMAConfig() *Config {
 // AOBLMOA enhances the standard Mayfly Algorithm with:
 // - Aquila Optimizer's four hunting strategies for hybrid exploration/exploitation
 // - Opposition-Based Learning for expanded search space coverage
-// - Multi-objective optimization support with Pareto dominance
-// - Crowding distance for diversity preservation
 //
 // The Aquila Optimizer integration provides four distinct hunting behaviors:
 // 1. Expanded exploration (X1): High soar with vertical stoop for global search
@@ -199,18 +197,26 @@ func NewGSASMAConfig() *Config {
 //
 // Key advantages:
 // - Automatic strategy switching based on iteration progress
-// - Maintains Pareto-optimal solutions in archive
-// - Better diversity through crowding distance
 // - Combines Mayfly's social behavior with Aquila's hunting strategies
+//
+// AquilaWeight is the probability that an individual takes an Aquila step in a
+// given iteration; the rest take the ordinary Mayfly velocity and position
+// update. Nobody is skipped. The published algorithm has no such knob — it
+// moves every individual by Mayfly attraction or by an Aquila strategy chosen
+// from the iteration phase — so AquilaWeight = 1 is the closest match to the
+// paper and is the default here.
+//
+// ArchiveSize sizes the exported ParetoArchive helper. The optimizer no longer
+// maintains an archive of its own, because nothing in the search ever read one.
 //
 // Reference: AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023),
 // PubMed / Various journals.
 func NewAOBLMOAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseAOBLMOA = true
-	config.AquilaWeight = 0.5          // Balanced hybrid between Mayfly and Aquila
+	config.AquilaWeight = 1.0          // Aquila step every iteration, as in the paper
 	config.OppositionProbability = 0.3 // Apply opposition to 30% of solutions
-	config.ArchiveSize = 100           // Store up to 100 Pareto-optimal solutions
+	config.ArchiveSize = 100           // Capacity of a caller-managed ParetoArchive
 	config.StrategySwitch = 0          // Will be set to MaxIterations * 2/3 during optimization
 
 	return config

@@ -48,30 +48,43 @@ func prepareStandardFemales(
 	evaluator *constraintEvaluator,
 ) {
 	for i, female := range females {
-		randomFlight := unifrndVec(-1, 1, config.ProblemSize, rng)
-
-		if evaluator.betterMayfly(males[i], female) {
-			for j := range config.ProblemSize {
-				distance := males[i].Position[j] - female.Position[j]
-				female.Velocity[j] = g*female.Velocity[j] +
-					config.A3*math.Exp(-config.Beta*distance*distance)*distance
-			}
-		} else {
-			for j := range config.ProblemSize {
-				female.Velocity[j] = g*female.Velocity[j] + flight*randomFlight[j]
-			}
-		}
-
-		maxVec(female.Velocity, config.VelMin)
-		minVec(female.Velocity, config.VelMax)
-
-		for j := range config.ProblemSize {
-			female.Position[j] += female.Velocity[j]
-		}
-
-		maxVec(female.Position, config.LowerBound)
-		minVec(female.Position, config.UpperBound)
+		prepareStandardFemale(female, males[i], g, flight, config, rng, evaluator)
 	}
+}
+
+// prepareStandardFemale performs the ordinary Mayfly velocity and position
+// update for a single female, attracted to its paired male when that male is
+// the better of the two and flying randomly otherwise.
+func prepareStandardFemale(
+	female, male *Mayfly,
+	g, flight float64,
+	config *Config,
+	rng *rand.Rand,
+	evaluator *constraintEvaluator,
+) {
+	randomFlight := unifrndVec(-1, 1, config.ProblemSize, rng)
+
+	if evaluator.betterMayfly(male, female) {
+		for j := range config.ProblemSize {
+			distance := male.Position[j] - female.Position[j]
+			female.Velocity[j] = g*female.Velocity[j] +
+				config.A3*math.Exp(-config.Beta*distance*distance)*distance
+		}
+	} else {
+		for j := range config.ProblemSize {
+			female.Velocity[j] = g*female.Velocity[j] + flight*randomFlight[j]
+		}
+	}
+
+	maxVec(female.Velocity, config.VelMin)
+	minVec(female.Velocity, config.VelMax)
+
+	for j := range config.ProblemSize {
+		female.Position[j] += female.Velocity[j]
+	}
+
+	maxVec(female.Position, config.LowerBound)
+	minVec(female.Position, config.UpperBound)
 }
 
 func prepareStandardMales(
@@ -84,31 +97,54 @@ func prepareStandardMales(
 	evaluator *constraintEvaluator,
 ) {
 	for _, male := range males {
-		randomDance := unifrndVec(-1, 1, config.ProblemSize, rng)
+		prepareStandardMale(male, globalBest, medianPosition, g, dance, mpmaG, config, rng, evaluator)
+	}
+}
 
-		if evaluator.better(evaluationFromBest(globalBest), evaluationFromMayfly(male)) {
-			prepareAttractedMale(male, globalBest, medianPosition, g, mpmaG, config)
-		} else {
-			gravity := g
-			if config.UseMPMA {
-				gravity = mpmaG
-			}
+// useMedianPosition reports whether the MPMA median term applies to this
+// update. Variant paths that reuse the standard Mayfly update as a fallback —
+// AOBLMOA, for instance — pass no median position, and must fall back to the
+// plain Mayfly formula even when config.UseMPMA is set.
+func useMedianPosition(medianPosition []float64, config *Config) bool {
+	return config.UseMPMA && medianPosition != nil
+}
 
-			for j := range config.ProblemSize {
-				male.Velocity[j] = gravity*male.Velocity[j] + dance*randomDance[j]
-			}
+// prepareStandardMale performs the ordinary Mayfly velocity and position update
+// for a single male, attracted to its personal and the global best when the
+// global best dominates it and dancing randomly otherwise.
+func prepareStandardMale(
+	male *Mayfly,
+	globalBest Best,
+	medianPosition []float64,
+	g, dance, mpmaG float64,
+	config *Config,
+	rng *rand.Rand,
+	evaluator *constraintEvaluator,
+) {
+	randomDance := unifrndVec(-1, 1, config.ProblemSize, rng)
+
+	if evaluator.better(evaluationFromBest(globalBest), evaluationFromMayfly(male)) {
+		prepareAttractedMale(male, globalBest, medianPosition, g, mpmaG, config)
+	} else {
+		gravity := g
+		if useMedianPosition(medianPosition, config) {
+			gravity = mpmaG
 		}
-
-		maxVec(male.Velocity, config.VelMin)
-		minVec(male.Velocity, config.VelMax)
 
 		for j := range config.ProblemSize {
-			male.Position[j] += male.Velocity[j]
+			male.Velocity[j] = gravity*male.Velocity[j] + dance*randomDance[j]
 		}
-
-		maxVec(male.Position, config.LowerBound)
-		minVec(male.Position, config.UpperBound)
 	}
+
+	maxVec(male.Velocity, config.VelMin)
+	minVec(male.Velocity, config.VelMax)
+
+	for j := range config.ProblemSize {
+		male.Position[j] += male.Velocity[j]
+	}
+
+	maxVec(male.Position, config.LowerBound)
+	minVec(male.Position, config.UpperBound)
 }
 
 func prepareAttractedMale(
@@ -118,11 +154,13 @@ func prepareAttractedMale(
 	g, mpmaG float64,
 	config *Config,
 ) {
+	useMedian := useMedianPosition(medianPosition, config)
+
 	for j := range config.ProblemSize {
 		personalDistance := male.Best.Position[j] - male.Position[j]
 		globalDistance := globalBest.Position[j] - male.Position[j]
 
-		if config.UseMPMA {
+		if useMedian {
 			medianDistance := medianPosition[j] - male.Position[j]
 			male.Velocity[j] = mpmaG*male.Velocity[j] +
 				config.A1*math.Exp(-config.Beta*personalDistance*personalDistance)*personalDistance +

@@ -56,9 +56,10 @@ Iteration Progress     Strategy    Mode
 
 AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
 
-- **AquilaWeight** parameter controls the blend (default: 0.5)
+- **AquilaWeight** parameter controls the blend (default: 1.0)
 - Each mayfly has probability `AquilaWeight` of using Aquila strategies
-- Otherwise uses standard Mayfly velocity updates
+- Otherwise it takes the standard Mayfly velocity and position update
+- Every individual moves every iteration, whichever branch it takes
 - **Best of both worlds**: Mayfly's social learning + Aquila's hunting intelligence
 
 **Example with AquilaWeight = 0.5**:
@@ -67,6 +68,10 @@ AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
 50% of mayflies → Use Aquila hunting strategies (adaptive)
 50% of mayflies → Use Mayfly velocity updates (social)
 ```
+
+The published algorithm has no `AquilaWeight`. It moves every individual either
+by Mayfly attraction or by an Aquila strategy chosen from the iteration phase,
+so `AquilaWeight = 1.0` is the closest match to the paper and is the default.
 
 ### 3. Opposition-Based Learning Framework
 
@@ -83,9 +88,13 @@ AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
 - Before accepting new positions
 - Only to solutions selected by probability threshold
 
-### 4. Multi-Objective Support
+### 4. Multi-Objective Building Blocks
 
-AOBLMOA includes **complete multi-objective optimization** framework:
+The package ships a multi-objective toolkit that callers can drive themselves.
+The optimizer does **not** maintain a Pareto archive of its own: nothing in the
+search ever read one back, so the NSGA-II pruning was pure overhead. Build a
+`ParetoArchive` and feed it with `UpdateFromPopulation` or `AddFromMayfly` when
+you want a front.
 
 #### Pareto Dominance
 
@@ -205,7 +214,6 @@ func multiObjective(x []float64) float64 {
     obj2 := mayfly.Rosenbrock(x)  // Minimize Rosenbrock valley
 
     // For single-objective interface, use weighted sum
-    // (Pareto front is still maintained internally)
     return 0.5*obj1 + 0.5*obj2
 }
 
@@ -218,7 +226,6 @@ func main() {
     config.LowerBound = -5
     config.UpperBound = 10
     config.MaxIterations = 500
-    config.ArchiveSize = 100  // Store up to 100 Pareto-optimal solutions
 
     result, err := mayfly.Optimize(config)
     if err != nil {
@@ -226,8 +233,6 @@ func main() {
     }
 
     fmt.Printf("Best Compromise Solution Cost: %.6f\n", result.GlobalBest.Cost)
-    fmt.Println("\nNote: Internal Pareto archive maintained during optimization")
-    fmt.Println("using NSGA-II selection with crowding distance.")
 }
 ```
 
@@ -335,14 +340,14 @@ func main() {
 }
 ```
 
-**Note**: Full multi-objective interface (accepting `MultiObjectiveFunction` that returns multiple values) is available through the internal archive system. The Pareto front is maintained during optimization using NSGA-II selection with crowding distance.
+**Note**: `Optimize` is single-objective. The Pareto helpers (`ParetoArchive`, `dominates`, NSGA-II selection, crowding distance, hypervolume, IGD) are exported building blocks you drive yourself; the optimizer does not maintain an archive during the run.
 
 ## AOBLMOA Parameters
 
 - `UseAOBLMOA`: Enable AOBLMOA variant (default: false)
-- `AquilaWeight`: Probability of using Aquila strategies vs Mayfly (default: 0.5, range: 0-1)
+- `AquilaWeight`: Probability of using Aquila strategies vs Mayfly (default: 1.0, range: 0-1)
 - `OppositionProbability`: Probability of applying OBL (default: 0.3, range: 0-1)
-- `ArchiveSize`: Maximum Pareto archive size for multi-objective (default: 100)
+- `ArchiveSize`: Maximum size for a `ParetoArchive` the caller builds (default: 100). The optimizer no longer maintains one.
 - `StrategySwitch`: Iteration threshold for strategy switching (default: auto-set to 2/3 of MaxIterations)
 
 ## Benefits
@@ -434,6 +439,9 @@ config.OppositionProbability = 0.1  // 10% of updates use OBL
 - Lower overhead, less exploration
 
 ### Archive Size (Multi-Objective)
+
+`ArchiveSize` only sizes a `ParetoArchive` you build yourself; it has no effect
+on `Optimize`.
 
 **Small Archive** (fast, focused):
 

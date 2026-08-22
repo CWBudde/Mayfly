@@ -173,7 +173,7 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | ------------------ | --------- | ------- | ---------------------------------- |
 | `UseOLCE`          | `bool`    | false   | Enable OLCE-MA variant             |
 | `OrthogonalFactor` | `float64` | 0.3     | Orthogonal learning strength (0-1) |
-| `ChaosFactor`      | `float64` | 0.1     | Chaos perturbation strength (0-1)  |
+| `ChaosFactor`      | `float64` | 0.1     | Initial chaotic search radius, decays to 0 (0 disables) |
 
 ### EOBBMA Parameters
 

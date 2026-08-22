@@ -2,6 +2,7 @@ package mayfly
 
 import (
 	"math"
+	"math/rand"
 	"testing"
 )
 
@@ -70,5 +71,151 @@ func TestLogisticMapResetAndBoundarySafeguards(t *testing.T) {
 	logisticMap.x = 0.5
 	if next := logisticMap.Next(); next != 1-1e-10 {
 		t.Errorf("upper boundary safeguard = %v, want %v", next, 1-1e-10)
+	}
+}
+
+func TestChaoticExploitationRadiusDecays(t *testing.T) {
+	config := NewOLCEConfig()
+	config.ChaosFactor = 0.4
+	config.MaxIterations = 100
+
+	testCases := []struct {
+		name      string
+		iteration int
+		want      float64
+	}{
+		{name: "start", iteration: 0, want: 0.4},
+		{name: "half", iteration: 50, want: 0.2},
+		{name: "end", iteration: 100, want: 0},
+		{name: "beyond end", iteration: 150, want: 0},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			got := chaoticExploitationRadius(config, testCase.iteration)
+			if math.Abs(got-testCase.want) > 1e-12 {
+				t.Errorf("radius at iteration %d = %v, want %v",
+					testCase.iteration, got, testCase.want)
+			}
+		})
+	}
+
+	config.MaxIterations = 0
+
+	if got := chaoticExploitationRadius(config, 7); got != config.ChaosFactor {
+		t.Errorf("radius without iteration budget = %v, want %v", got, config.ChaosFactor)
+	}
+}
+
+// TestChaoticExploitationNeverWorsensIndividual pins the greedy acceptance of
+// the chaotic exploitation step. Before this was a greedy step it displaced
+// every individual unconditionally, which is a persistent random walk.
+func TestChaoticExploitationNeverWorsensIndividual(t *testing.T) {
+	config := NewOLCEConfig()
+	config.ProblemSize = 5
+	config.LowerBound = -10
+	config.UpperBound = 10
+	config.MaxIterations = 200
+	config.ChaosFactor = 0.5
+
+	evaluator := newConstraintEvaluator(Rastrigin, nil)
+	chaosMap := NewLogisticMap(0.37)
+
+	target := newMayfly(config.ProblemSize)
+	for j := range target.Position {
+		target.Position[j] = 3.5 - 0.25*float64(j)
+	}
+
+	evaluator.evaluateMayfly(target, false)
+	copy(target.Best.Position, target.Position)
+	target.Best.Cost = target.Cost
+
+	accepted := 0
+
+	for iteration := range config.MaxIterations {
+		previousCost := target.Cost
+
+		if applyChaoticExploitation(target, config, chaosMap, iteration, evaluator) {
+			accepted++
+		}
+
+		if target.Cost > previousCost {
+			t.Fatalf("iteration %d: cost rose from %v to %v", iteration, previousCost, target.Cost)
+		}
+
+		if target.Cost != Rastrigin(target.Position) {
+			t.Fatalf("iteration %d: cost %v does not match position", iteration, target.Cost)
+		}
+
+		if target.Best.Cost > target.Cost {
+			t.Fatalf("iteration %d: personal best %v worse than current %v",
+				iteration, target.Best.Cost, target.Cost)
+		}
+
+		for j, value := range target.Position {
+			if value < config.LowerBound || value > config.UpperBound {
+				t.Fatalf("iteration %d: dimension %d left bounds: %v", iteration, j, value)
+			}
+		}
+	}
+
+	if accepted == 0 {
+		t.Error("chaotic exploitation never accepted a candidate")
+	}
+}
+
+// TestChaoticExploitationSpendsOneEvaluation guards the evaluation budget of
+// the step: exactly one objective call per individual and iteration.
+func TestChaoticExploitationSpendsOneEvaluation(t *testing.T) {
+	config := NewOLCEConfig()
+	config.ProblemSize = 3
+	config.LowerBound = -5
+	config.UpperBound = 5
+	config.MaxIterations = 10
+
+	calls := 0
+	evaluator := newConstraintEvaluator(func(position []float64) float64 {
+		calls++
+
+		return Sphere(position)
+	}, nil)
+
+	target := newMayfly(config.ProblemSize)
+	evaluator.evaluateMayfly(target, false)
+
+	calls = 0
+
+	applyChaoticExploitation(target, config, NewLogisticMap(0.21), 0, evaluator)
+
+	if calls != 1 {
+		t.Errorf("objective calls = %d, want 1", calls)
+	}
+}
+
+// TestOLCEConvergesOnUnimodalProblem is the end-to-end guard for the same
+// property. An unconditional chaotic kick keeps displacing the population
+// every iteration, which caps the reachable precision several orders of
+// magnitude above what greedy, decaying exploitation reaches.
+func TestOLCEConvergesOnUnimodalProblem(t *testing.T) {
+	const tolerance = 1e-20
+
+	for _, seed := range []int64{1, 2, 3} {
+		config := NewOLCEConfig()
+		config.ObjectiveFunc = Sphere
+		config.ProblemSize = 5
+		config.LowerBound = -5
+		config.UpperBound = 5
+		config.MaxIterations = 200
+		config.Rand = rand.New(rand.NewSource(seed))
+
+		result, err := Optimize(config)
+		if err != nil {
+			t.Fatalf("Optimize with seed %d: %v", seed, err)
+		}
+
+		if result.GlobalBest.Cost > tolerance {
+			t.Errorf("seed %d: best cost = %v, want at most %v",
+				seed, result.GlobalBest.Cost, tolerance)
+		}
 	}
 }

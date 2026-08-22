@@ -702,61 +702,95 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		sortMayflies(males, candidateEvaluator)
 		sortMayflies(females, candidateEvaluator)
 
-		// OLCE-MA: Apply orthogonal learning to elite males
+		// OLCE-MA: Refine the elite males with orthogonal learning and
+		// chaotic exploitation.
 		if config.UseOLCE {
-			// Prepare bounds vectors for orthogonal learning
-			lb := make([]float64, config.ProblemSize)
-			ub := make([]float64, config.ProblemSize)
+			numElite := olceEliteCount(len(males))
+			refined := false
 
-			for j := range config.ProblemSize {
-				lb[j] = config.LowerBound
-				ub[j] = config.UpperBound
-			}
+			// A zero factor collapses every orthogonal candidate onto the parent
+			// male, so the whole stage is a guaranteed no-op. Skipping it keeps
+			// the evaluation budget out of a step that cannot change anything.
+			if config.OrthogonalFactor > 0 {
+				// Prepare bounds vectors for orthogonal learning
+				lb := make([]float64, config.ProblemSize)
+				ub := make([]float64, config.ProblemSize)
 
-			numElite := max(int(float64(len(males))*0.2), 1)
-
-			if evaluator != nil {
-				orthogonalEvals, evaluationErr := evaluateParallelOrthogonalLearning(
-					ctx,
-					males,
-					0.2,
-					globalBest.Position,
-					config.OrthogonalFactor,
-					lb,
-					ub,
-					rng,
-					evaluator,
-				)
-				if evaluationErr != nil {
-					return nil, evaluationErr
+				for j := range config.ProblemSize {
+					lb[j] = config.LowerBound
+					ub[j] = config.UpperBound
 				}
 
-				funcCount += orthogonalEvals
-			} else {
-				// Apply to top 20% of males sequentially for backward compatibility.
-				applyOrthogonalLearningToElite(
-					males,
-					0.2, // Top 20%
-					globalBest.Position,
-					config.OrthogonalFactor,
-					lb, ub,
-					candidateEvaluator,
-					rng,
-				)
+				if evaluator != nil {
+					orthogonalEvals, evaluationErr := evaluateParallelOrthogonalLearning(
+						ctx,
+						males,
+						olceElitePercent,
+						globalBest.Position,
+						config.OrthogonalFactor,
+						lb,
+						ub,
+						rng,
+						evaluator,
+					)
+					if evaluationErr != nil {
+						return nil, evaluationErr
+					}
 
-				// Each elite male generates 4 candidates (L4 array).
-				funcCount += numElite * len(L4Array)
-			}
+					funcCount += orthogonalEvals
+				} else {
+					// Apply to the elite males sequentially for backward compatibility.
+					applyOrthogonalLearningToElite(
+						males,
+						olceElitePercent,
+						globalBest.Position,
+						config.OrthogonalFactor,
+						lb, ub,
+						candidateEvaluator,
+						rng,
+					)
 
-			// Update global best if orthogonal learning found better solution
-			for i := range numElite {
-				if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
-					copyMayflyToBest(&globalBest, males[i])
+					// Each elite male generates 4 candidates (L4 array).
+					funcCount += numElite * len(L4Array)
 				}
+
+				refined = true
 			}
 
-			// Re-sort after orthogonal learning
-			sortMayflies(males, candidateEvaluator)
+			// Chaotic exploitation: one chaotic neighbour per elite male, with a
+			// radius that decays over the run and greedy acceptance, so the step
+			// can only improve the population.
+			if config.ChaosFactor > 0 {
+				if evaluator != nil {
+					chaosEvals, evaluationErr := evaluateParallelChaoticExploitation(
+						ctx, males, numElite, config, chaosMap, it, evaluator,
+					)
+					if evaluationErr != nil {
+						return nil, evaluationErr
+					}
+
+					funcCount += chaosEvals
+				} else {
+					for i := range numElite {
+						applyChaoticExploitation(males[i], config, chaosMap, it, candidateEvaluator)
+
+						funcCount++
+					}
+				}
+
+				refined = true
+			}
+
+			if refined {
+				// Update global best if the refinement found a better solution
+				for i := range numElite {
+					if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
+						copyMayflyToBest(&globalBest, males[i])
+					}
+				}
+
+				sortMayflies(males, candidateEvaluator)
+			}
 		}
 
 		// EOBBMA: Apply elite opposition-based learning
@@ -873,7 +907,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				females,
 				config,
 				rng,
-				chaosMap,
 				evaluator,
 				it,
 			)
@@ -899,24 +932,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				off1 := newMayfly(config.ProblemSize)
 				copy(off1.Position, off1Pos)
 
-				// OLCE-MA: Apply chaotic exploitation to offspring
-				if config.UseOLCE {
-					for j := range config.ProblemSize {
-						chaosValue := chaosMap.Next()
-						perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
-						off1.Position[j] += perturbation
-
-						// Apply bounds
-						if off1.Position[j] < config.LowerBound {
-							off1.Position[j] = config.LowerBound
-						}
-
-						if off1.Position[j] > config.UpperBound {
-							off1.Position[j] = config.UpperBound
-						}
-					}
-				}
-
 				candidateEvaluator.evaluateMayfly(off1, false)
 
 				funcCount++
@@ -932,24 +947,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				// Create offspring 2
 				off2 := newMayfly(config.ProblemSize)
 				copy(off2.Position, off2Pos)
-
-				// OLCE-MA: Apply chaotic exploitation to offspring
-				if config.UseOLCE {
-					for j := range config.ProblemSize {
-						chaosValue := chaosMap.Next()
-						perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
-						off2.Position[j] += perturbation
-
-						// Apply bounds
-						if off2.Position[j] < config.LowerBound {
-							off2.Position[j] = config.LowerBound
-						}
-
-						if off2.Position[j] > config.UpperBound {
-							off2.Position[j] = config.UpperBound
-						}
-					}
-				}
 
 				candidateEvaluator.evaluateMayfly(off2, false)
 
@@ -1001,25 +998,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						rng,
 					)
 
-					// OLCE-MA: Apply chaotic exploitation to mutated offspring if OLCE is also enabled
-					if config.UseOLCE {
-						for j := range config.ProblemSize {
-							// Apply chaotic perturbation
-							chaosValue := chaosMap.Next()
-							perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
-							mut.Position[j] += perturbation
-
-							// Apply bounds
-							if mut.Position[j] < config.LowerBound {
-								mut.Position[j] = config.LowerBound
-							}
-
-							if mut.Position[j] > config.UpperBound {
-								mut.Position[j] = config.UpperBound
-							}
-						}
-					}
-
 					candidateEvaluator.evaluateMayfly(mut, false)
 
 					funcCount++
@@ -1043,25 +1021,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 					mut := newMayfly(config.ProblemSize)
 					mut.Position = Mutate(p.Position, config.Mu, config.LowerBound, config.UpperBound, rng)
-
-					// OLCE-MA: Apply chaotic exploitation to mutated offspring
-					if config.UseOLCE {
-						for j := range config.ProblemSize {
-							// Apply chaotic perturbation
-							chaosValue := chaosMap.Next()
-							perturbation := config.ChaosFactor * (chaosValue - 0.5) * (config.UpperBound - config.LowerBound)
-							mut.Position[j] += perturbation
-
-							// Apply bounds
-							if mut.Position[j] < config.LowerBound {
-								mut.Position[j] = config.LowerBound
-							}
-
-							if mut.Position[j] > config.UpperBound {
-								mut.Position[j] = config.UpperBound
-							}
-						}
-					}
 
 					candidateEvaluator.evaluateMayfly(mut, false)
 

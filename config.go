@@ -77,13 +77,15 @@ func NewDESMAConfig() *Config {
 // - Orthogonal learning to increase diversity and reduce oscillatory movement
 // - Chaotic exploitation to improve local search capability
 //
-// The default parameters are based on research showing 15-30% improvement
-// on multimodal optimization problems with minimal overhead (~12% more evaluations).
+// Both stages operate on the elite males only and use greedy acceptance, so
+// neither can make the population worse. Setting OrthogonalFactor or
+// ChaosFactor to zero disables the corresponding stage completely, including
+// its share of the evaluation budget.
 func NewOLCEConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseOLCE = true
 	config.OrthogonalFactor = 0.3 // Balanced exploration/exploitation
-	config.ChaosFactor = 0.1      // Gentle perturbation for stability
+	config.ChaosFactor = 0.1      // Initial chaotic search radius, decays to zero
 
 	return config
 }

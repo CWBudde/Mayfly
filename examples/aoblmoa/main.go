@@ -211,7 +211,7 @@ func main() {
 	fmt.Println("  ✓ Automatic strategy switching (exploration → exploitation)")
 	fmt.Println("  ✓ Configurable hybrid balance (AquilaWeight parameter)")
 	fmt.Println("  ✓ Every individual moves every iteration, in either branch")
-	fmt.Println("  ✓ Archive management for Pareto-optimal solutions")
+	fmt.Println("  ✓ ArchiveSize sizes a caller-managed ParetoArchive")
 	fmt.Println()
 	fmt.Println("Best for:")
 	fmt.Println("  • Complex multi-modal problems with varying landscapes")

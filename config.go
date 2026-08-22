@@ -216,7 +216,7 @@ func NewAOBLMOAConfig() *Config {
 	config.UseAOBLMOA = true
 	config.AquilaWeight = 1.0          // Aquila step every iteration, as in the paper
 	config.OppositionProbability = 0.3 // Apply opposition to 30% of solutions
-	config.ArchiveSize = 100           // Store up to 100 Pareto-optimal solutions
+	config.ArchiveSize = 100           // Capacity of a caller-managed ParetoArchive
 	config.StrategySwitch = 0          // Will be set to MaxIterations * 2/3 during optimization
 
 	return config

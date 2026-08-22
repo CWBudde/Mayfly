@@ -246,3 +246,121 @@ func TestGaussianUpdateDeterministic(t *testing.T) {
 		}
 	}
 }
+
+// TestEliteBounds checks the dynamic elite interval, including the fallback to
+// the static search bounds when the elite collapses in a dimension.
+func TestEliteBounds(t *testing.T) {
+	makeMayfly := func(position ...float64) *Mayfly {
+		mayfly := newMayfly(len(position))
+		copy(mayfly.Position, position)
+
+		return mayfly
+	}
+
+	population := []*Mayfly{
+		makeMayfly(1.0, 4.0, -2.0),
+		makeMayfly(3.0, 4.0, 0.5),
+		makeMayfly(-1.0, 4.0, 7.0),
+		makeMayfly(99.0, 99.0, 99.0), // outside the elite set
+	}
+
+	da, db := eliteBounds(population, 3, -10, 10)
+
+	wantDa := []float64{-1.0, -10.0, -2.0}
+	wantDb := []float64{3.0, 10.0, 7.0}
+
+	for i := range wantDa {
+		if da[i] != wantDa[i] || db[i] != wantDb[i] {
+			t.Errorf("dimension %d: got [%v, %v], want [%v, %v]",
+				i, da[i], db[i], wantDa[i], wantDb[i])
+		}
+	}
+
+	if da, db := eliteBounds(population, 0, -10, 10); da != nil || db != nil {
+		t.Errorf("eliteBounds() with count 0 = (%v, %v), want (nil, nil)", da, db)
+	}
+}
+
+// TestEliteOppositionPointStaysInBounds checks that elite opposition never
+// leaves the static search bounds, whichever branch of the rule fires.
+func TestEliteOppositionPointStaysInBounds(t *testing.T) {
+	rng := rand.New(rand.NewSource(11))
+	da := []float64{-3, 0, 4}
+	db := []float64{-1, 2, 9}
+	position := []float64{-2, 1, 8}
+
+	for range 500 {
+		opposite := eliteOppositionPoint(position, da, db, -10, 10, rng)
+		for i, value := range opposite {
+			if value < -10 || value > 10 || math.IsNaN(value) {
+				t.Fatalf("dimension %d out of bounds: %v", i, value)
+			}
+		}
+	}
+}
+
+// TestEliteOppositionPointDiffersFromStaticOpposition documents the defect this
+// operator fixes: static opposition mirrors an elite through the middle of the
+// whole search space, which for an already-good elite is essentially always
+// worse and therefore never accepted. Elite opposition reflects through the
+// interval spanned by the elite set instead.
+func TestEliteOppositionPointDiffersFromStaticOpposition(t *testing.T) {
+	rng := rand.New(rand.NewSource(5))
+	da := []float64{0.9, 0.9}
+	db := []float64{1.1, 1.1}
+	position := []float64{1.0, 1.0}
+
+	static := oppositionPoint(position, -10, 10)
+
+	matches := 0
+
+	for range 100 {
+		elite := eliteOppositionPoint(position, da, db, -10, 10, rng)
+		if elite[0] == static[0] && elite[1] == static[1] {
+			matches++
+		}
+	}
+
+	if matches > 0 {
+		t.Errorf("elite opposition coincided with static opposition %d times", matches)
+	}
+}
+
+// TestEOBBMAOppositionRateIsNotInert is the inertness guard for EOBBMA: turning
+// the opposition knob must change the search. Before the elite opposition fix
+// the opposition candidates were evaluated but never accepted, so runs with
+// OppositionRate 0 and 1 produced bit-identical results.
+func TestEOBBMAOppositionRateIsNotInert(t *testing.T) {
+	for _, parallel := range []bool{false, true} {
+		run := func(oppositionRate float64, seed int64) float64 {
+			config := NewEOBBMAConfig()
+			config.ObjectiveFunc = Rastrigin
+			config.ProblemSize = 6
+			config.LowerBound = -5.12
+			config.UpperBound = 5.12
+			config.MaxIterations = 50
+			config.EnableParallel = parallel
+			config.Rand = rand.New(rand.NewSource(seed))
+			config.OppositionRate = oppositionRate
+
+			result, err := Optimize(config)
+			if err != nil {
+				t.Fatalf("Optimize() error = %v", err)
+			}
+
+			return result.GlobalBest.Cost
+		}
+
+		differed := 0
+
+		for seed := int64(1); seed <= 5; seed++ {
+			if run(0, seed) != run(1, seed) {
+				differed++
+			}
+		}
+
+		if differed == 0 {
+			t.Errorf("parallel=%v: OppositionRate has no observable effect on EOBBMA results", parallel)
+		}
+	}
+}

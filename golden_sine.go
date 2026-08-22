@@ -96,7 +96,7 @@ func goldenSineUpdate(position, best []float64, goldenFactor float64, section go
 	size := len(position)
 	newPos := make([]float64, size)
 
-	// r1 determines the distance travelled, r2 the direction; both are drawn
+	// r1 determines the distance traveled, r2 the direction; both are drawn
 	// once per individual, not per dimension.
 	r1 := rng.Float64() * 2 * math.Pi
 	r2 := rng.Float64() * math.Pi
@@ -114,19 +114,4 @@ func goldenSineUpdate(position, best []float64, goldenFactor float64, section go
 	minVec(newPos, upperBound)
 
 	return newPos
-}
-
-// goldenSineUpdateAdaptive scales the golden sine step from 2·goldenFactor down
-// to goldenFactor over the run, favouring exploration early on.
-//
-// Returns: updated position vector.
-func goldenSineUpdateAdaptive(position, best []float64, goldenFactor float64,
-	currentIter, maxIter int, section goldenSection, lowerBound, upperBound float64,
-	rng *rand.Rand,
-) []float64 {
-	// Calculate adaptive factor: decreases from 2 to 1 over iterations
-	iterRatio := float64(currentIter) / float64(maxIter)
-	adaptiveFactor := goldenFactor * (2.0 - iterRatio)
-
-	return goldenSineUpdate(position, best, adaptiveFactor, section, lowerBound, upperBound, rng)
 }

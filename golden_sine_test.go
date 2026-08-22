@@ -1,6 +1,7 @@
 package mayfly
 
 import (
+	"context"
 	"math"
 	"math/rand"
 	"testing"
@@ -159,5 +160,54 @@ func TestGSASMAGoldenFactorIsNotInert(t *testing.T) {
 
 	if differed == 0 {
 		t.Error("GoldenFactor has no observable effect on GSASMA results")
+	}
+}
+
+// TestParallelGoldenSineAdvancesSectionOncePerBatch guards the batch semantics
+// of the parallel Golden Sine step: every candidate is generated from one
+// section snapshot, so the interval must be narrowed exactly one step for the
+// whole batch instead of once per candidate.
+func TestParallelGoldenSineAdvancesSectionOncePerBatch(t *testing.T) {
+	pool := newEvaluationPool(sphere, 2)
+	defer pool.close()
+
+	males := make([]*Mayfly, 4)
+	for i := range males {
+		males[i] = newMayfly(2)
+		males[i].Position = []float64{float64(i + 1), float64(i + 2)}
+		males[i].Cost = sphere(males[i].Position)
+		copy(males[i].Best.Position, males[i].Position)
+		males[i].Best.Cost = males[i].Cost
+	}
+
+	section := newGoldenSection()
+	initial := section.snapshot()
+
+	improved, worse := initial, initial
+	improved.update(true)
+	worse.update(false)
+
+	globalBest := Best{Position: []float64{0, 0}, Cost: 0}
+
+	_, err := evaluateParallelGoldenSine(
+		context.Background(),
+		males,
+		1.0,
+		&globalBest,
+		1.0,
+		-5, 5,
+		NewAnnealingScheduler(100, 0.95, "exponential"),
+		section,
+		rand.New(rand.NewSource(7)),
+		pool,
+	)
+	if err != nil {
+		t.Fatalf("evaluateParallelGoldenSine: %v", err)
+	}
+
+	got := section.snapshot()
+	if got != improved && got != worse {
+		t.Errorf("section = %+v, want one single step from %+v (improved=%+v, worse=%+v)",
+			got, initial, improved, worse)
 	}
 }

@@ -78,15 +78,15 @@ func gaussianUpdate(current, best []float64, lowerBound, upperBound float64, rng
 //
 // Where the elite collapses onto a single point in a dimension the interval
 // degenerates, so that dimension falls back to the static search bounds.
-func eliteBounds(mayflies []*Mayfly, count int, lowerBound, upperBound float64) (da, db []float64) {
+func eliteBounds(mayflies []*Mayfly, count int, lowerBound, upperBound float64) ([]float64, []float64) {
 	count = max(0, min(count, len(mayflies)))
 	if count == 0 {
 		return nil, nil
 	}
 
 	size := len(mayflies[0].Position)
-	da = make([]float64, size)
-	db = make([]float64, size)
+	da := make([]float64, size)
+	db := make([]float64, size)
 
 	for j := range size {
 		lo := mayflies[0].Position[j]

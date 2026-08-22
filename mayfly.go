@@ -837,8 +837,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					0.2,
 					&globalBest,
 					config.GoldenFactor,
-					it,
-					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,
@@ -858,8 +856,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					0.2, // Elite ratio: top 20%
 					globalBest,
 					config.GoldenFactor,
-					it,
-					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,

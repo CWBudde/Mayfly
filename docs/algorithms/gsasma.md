@@ -43,9 +43,14 @@ x1 == x2            ->  reset [a, b] to [-π, π]
 
 - The golden ratio shrinks the search interval, it does not merely scale a step
 - Sine oscillation creates wave-like search patterns
-- Adaptive scaling decreases over iterations for smooth convergence
+- `GoldenFactor` is applied exactly as configured; no additional scaling over
+  iterations is introduced
 
 **Applied to**: Elite males (top 20% of population) after sorting
+
+In parallel mode all elite candidates are generated from one snapshot of the
+section points and the interval is narrowed once per batch, after every
+candidate has been evaluated.
 
 ### 2. Simulated Annealing (SA)
 

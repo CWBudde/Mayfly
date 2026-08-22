@@ -20,7 +20,6 @@ func applyGSASMAToEliteMalesWithEvaluator(
 	eliteRatio float64,
 	globalBest Best,
 	goldenFactor float64,
-	currentIter, maxIter int,
 	lowerBound, upperBound float64,
 	scheduler *AnnealingScheduler,
 	section *goldenSection,
@@ -32,12 +31,10 @@ func applyGSASMAToEliteMalesWithEvaluator(
 
 	for i := range numElite {
 		candidate := newMayfly(len(males[i].Position))
-		candidate.Position = goldenSineUpdateAdaptive(
+		candidate.Position = goldenSineUpdate(
 			males[i].Position,
 			globalBest.Position,
 			goldenFactor,
-			currentIter,
-			maxIter,
 			section.snapshot(),
 			lowerBound,
 			upperBound,

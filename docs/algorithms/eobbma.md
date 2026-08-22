@@ -71,7 +71,7 @@ x_opp(j) outside [a, b]  ->  x_opp(j) = U(da(j), db(j))
 - Expands search coverage without additional population
 - A dimension in which the elite set has collapsed falls back to `[a, b]`
 
-Static opposition (`x_opp = a + b - x`) is deliberately *not* used here. Applied
+Static opposition (`x_opp = a + b - x`) is deliberately _not_ used here. Applied
 to an already-good elite it lands in the mirror region of the search space,
 where it is essentially never better, so the operator evaluates candidates that
 are never accepted. Reflecting through the elite interval keeps the candidate in

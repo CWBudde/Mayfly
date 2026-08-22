@@ -7,6 +7,14 @@ OUT_DIR="${1:-$ROOT_DIR/dist}"
 
 mkdir -p "$OUT_DIR"
 
+# Resolve OUT_DIR to an absolute path before anything uses it. The build below
+# runs with go's working directory set to the demo module, so a relative -o
+# would be written under examples/wasm-demo/ while mkdir and the asset copy
+# here operate from the repository root. The Pages workflow passes a relative
+# "dist", so that split silently produced an upload with every static asset and
+# no mayfly.wasm.
+OUT_DIR="$(cd "$OUT_DIR" && pwd)"
+
 # The demo is its own module with a replace back to the library, matching every
 # other directory under examples/. -C keeps that working from any cwd.
 GOOS=js GOARCH=wasm go build -C "$DEMO_DIR" -o "$OUT_DIR/mayfly.wasm" .

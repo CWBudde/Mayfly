@@ -498,6 +498,20 @@ canvas {
   transform: rotate(45deg);
 }
 
+.projection-note:empty {
+  display: none;
+}
+
+.projection-note {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-top: 0;
+  border-left: 2px solid var(--warn);
+  color: var(--dim);
+  line-height: 1.45;
+}
+
 /* --------------------------------------------------------------------------
    Controls
    -------------------------------------------------------------------------- */
@@ -688,6 +702,28 @@ thead th {
   position: sticky;
   top: 0;
   background: var(--rack);
+}
+
+/* The sort control is a real button so it is focusable and keyboard-operable;
+   it is styled to disappear into the header it sits in. */
+.th-sort {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.th-sort:hover {
+  color: var(--lume);
+}
+
+.th-sort:focus-visible {
+  outline: 1px solid var(--action);
+  outline-offset: 2px;
 }
 
 thead th[aria-sort="ascending"]::after {

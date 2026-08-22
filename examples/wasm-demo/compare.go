@@ -37,10 +37,17 @@ func jsCompare(opts js.Value) any {
 		runs       = clampInt(readInt(opts, "runs", 5), 1, maxCompareRuns)
 		iterations = clampInt(readInt(opts, "iterations", 200), 1, maxCompareIterations)
 		seed       = int64(readFloat(opts, "seed", 42))
-		target     = readFloat(opts, "target", 1e-8)
 		lower      = readFloat(opts, "lower", spec.lower)
 		upper      = readFloat(opts, "upper", spec.upper)
 	)
+
+	// The success threshold is derived from this function's optimum in this
+	// dimension rather than fixed. A constant 1e-8 is only meaningful for the
+	// functions that bottom out at zero: Michalewicz's optimum is negative, so
+	// every one of its runs came in under a positive target and the success
+	// rate read 100% however badly the variant did. Where no target can be
+	// expressed, the column is reported as unavailable instead of invented.
+	target, successMeaningful := successTarget(spec, dimensions)
 
 	names := readStrings(opts, "variants", nil)
 
@@ -76,7 +83,7 @@ func jsCompare(opts js.Value) any {
 		return errorResult("compare: %v", err)
 	}
 
-	return compareResponse(result, spec, dimensions, runs, iterations, target)
+	return compareResponse(result, spec, dimensions, runs, iterations, target, successMeaningful)
 }
 
 func compareResponse(
@@ -84,6 +91,7 @@ func compareResponse(
 	spec benchmark,
 	dimensions, runs, iterations int,
 	target float64,
+	successMeaningful bool,
 ) map[string]any {
 	statistics := make([]any, len(result.Statistics))
 
@@ -95,7 +103,7 @@ func compareResponse(
 			"stdDev":       jsNumber(stat.StdDev),
 			"best":         jsNumber(stat.Best),
 			"worst":        jsNumber(stat.Worst),
-			"successRate":  jsNumber(stat.SuccessRate),
+			"successRate":  optionalNumber(stat.SuccessRate, successMeaningful),
 			"avgFuncEvals": jsNumber(stat.AvgFuncEvals),
 			"avgTime":      jsNumber(stat.AvgTime),
 			"rank":         result.Rankings[i],
@@ -104,17 +112,18 @@ func compareResponse(
 	}
 
 	response := map[string]any{
-		"benchmark":  result.BenchmarkName,
-		"dimensions": dimensions,
-		"runs":       runs,
-		"iterations": iterations,
-		"target":     jsNumber(target),
-		"optimum":    jsNumber(spec.optimum),
-		"baseSeed":   float64(result.BaseSeed),
-		"algorithms": stringsToJS(result.AlgorithmNames),
-		"best":       result.BestAlgorithm,
-		"statistics": statistics,
-		"wilcoxon":   wilcoxonToJS(result.WilcoxonTests),
+		"benchmark":         result.BenchmarkName,
+		"dimensions":        dimensions,
+		"runs":              runs,
+		"iterations":        iterations,
+		"target":            optionalNumber(target, successMeaningful),
+		"successMeaningful": successMeaningful,
+		"optimum":           optionalNumber(spec.optimumValue(dimensions)),
+		"baseSeed":          float64(result.BaseSeed),
+		"algorithms":        stringsToJS(result.AlgorithmNames),
+		"best":              result.BestAlgorithm,
+		"statistics":        statistics,
+		"wilcoxon":          wilcoxonToJS(result.WilcoxonTests),
 	}
 
 	if result.FriedmanResult != nil {

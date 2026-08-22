@@ -46,6 +46,7 @@
   const frameReadout = el("frameReadout");
 
   const benchNote = el("benchNote");
+  const projectionNote = el("projectionNote");
   const variantNote = el("variantNote");
   const buildInfo = el("buildInfo");
 
@@ -231,7 +232,15 @@
     lowerInput.value = String(spec.lower);
     upperInput.value = String(spec.upper);
 
-    benchNote.innerHTML = `<b>${spec.modality}.</b> ${spec.blurb} Optimum ${Render.compact(spec.optimum)}.`;
+    // The optimum is reported per dimension, so the note names the dimension
+    // it belongs to. Michalewicz's minimum is only tabulated for a few, and
+    // saying nothing beats printing the 2-D figure beside a 10-D run.
+    const reference =
+      spec.optimum2d === null || spec.optimum2d === undefined
+        ? ""
+        : ` Optimum in 2D: ${Render.compact(spec.optimum2d)}.`;
+
+    benchNote.innerHTML = `<b>${spec.modality}.</b> ${spec.blurb}${reference}`;
   }
 
   function updateVariantNote() {
@@ -342,6 +351,15 @@
 
     const elapsed = performance.now() - started;
 
+    // Be explicit when the backdrop is not a slice through the optimum: for
+    // Michalewicz above two dimensions no minimizer is known, so it is an
+    // arbitrary mid-domain slice and must not be read as one containing the
+    // answer.
+    projectionNote.textContent =
+      state.land && state.land.projected && !state.land.throughOptimum
+        ? "Projection: no minimizer is known for this function in this dimension, so the backdrop is an arbitrary slice through the middle of the domain."
+        : "";
+
     scrub.max = String(Math.max(0, run.iterations - 1));
     scrub.disabled = false;
     playButton.disabled = false;
@@ -361,7 +379,9 @@
   function updateTelemetry(run, elapsed) {
     telemetry.best.textContent = Render.compact(run.bestCost);
     telemetry.best.dataset.tone =
-      run.optimum !== null && Math.abs(run.bestCost - run.optimum) < 1e-6
+      run.optimum !== null &&
+      run.optimum !== undefined &&
+      Math.abs(run.bestCost - run.optimum) < 1e-6
         ? "good"
         : "";
     telemetry.evals.textContent = run.evaluations.toLocaleString("en-US");

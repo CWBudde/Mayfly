@@ -158,6 +158,17 @@ func clampInt(value, low, high int) int {
 	return value
 }
 
+// optionalNumber renders a value that may not be known for the requested
+// dimension — Michalewicz's optimum outside the tabulated 2, 5 and 10 — as null
+// rather than as a plausible-looking number the page would then display.
+func optionalNumber(value float64, known bool) any {
+	if !known {
+		return nil
+	}
+
+	return jsNumber(value)
+}
+
 // jsNumber renders a float for JavaScript. NaN and ±Inf are not representable
 // in JSON and arrive in JS as unusable values, so they become null and the
 // page renders them as "—" rather than "NaN".

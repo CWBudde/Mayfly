@@ -44,12 +44,22 @@ func jsLandscape(opts js.Value) any {
 	}
 
 	// Above two dimensions the grid is a slice, not the whole function. The
-	// unplotted axes are pinned at the known optimum so the slice passes
-	// through the global minimum and the picture stays meaningful; the page
-	// labels it as a projection so nobody reads it as the full landscape.
-	position := make([]float64, dimensions)
-	for i := range position {
-		position[i] = spec.optimumX
+	// unplotted axes are pinned at the known minimizer so the slice passes
+	// through the global minimum and the picture stays meaningful.
+	//
+	// That minimizer is a vector, not a scalar: Dixon-Price's coordinates
+	// depend on their index, so pinning them all to 1 produced a slice through
+	// a point costing 54 in ten dimensions rather than through the optimum.
+	// Michalewicz has no known minimizer above two dimensions at all; there the
+	// slice is taken through the middle of the domain and reported as
+	// arbitrary, because claiming it runs through an optimum nobody can name
+	// would be the more misleading of the two options.
+	position, throughOptimum := spec.optimumAt(dimensions)
+	if !throughOptimum {
+		position = make([]float64, dimensions)
+		for i := range position {
+			position[i] = (lower + upper) / 2
+		}
 	}
 
 	samples := make([]float32, 0, width*height)
@@ -100,9 +110,12 @@ func jsLandscape(opts js.Value) any {
 		"projected":  dimensions > 2,
 		"axisX":      axisX,
 		"axisY":      axisY,
-		"optimum":    jsNumber(spec.optimum),
-		"optimumX":   jsNumber(spec.optimumX),
 		"dimensions": dimensions,
+
+		// Whether the slice actually passes through the global minimum. The
+		// page says which kind of picture it is showing.
+		"throughOptimum": throughOptimum,
+		"optimum":        optionalNumber(spec.optimumValue(dimensions)),
 	}
 
 	putFloats(response, out, "values", normalized)

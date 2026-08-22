@@ -89,3 +89,6 @@ scratch/
 
 # WebAssembly demo build output
 /dist/
+
+# Stray binary from `go build ./...` inside the demo module
+/examples/wasm-demo/wasm-demo

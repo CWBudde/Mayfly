@@ -41,8 +41,11 @@ func jsInfo(_ js.Value) any {
 			"modality": spec.modality,
 			"lower":    jsNumber(spec.lower),
 			"upper":    jsNumber(spec.upper),
-			"optimum":  jsNumber(spec.optimum),
-			"optimumX": jsNumber(spec.optimumX),
+
+			// Reported per dimension, because Michalewicz's minimum is only
+			// tabulated for a few and the page must not print a 2-D reference
+			// value next to a 10-D run.
+			"optimum2d": optionalNumber(spec.optimumValue(2)),
 		})
 	}
 

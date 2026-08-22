@@ -84,7 +84,7 @@ func jsRun(opts js.Value) any {
 		"terminationReason": string(result.TerminationReason),
 		"bestCost":          jsNumber(result.GlobalBest.Cost),
 		"bestPosition":      floatsToJS(result.GlobalBest.Position),
-		"optimum":           jsNumber(spec.optimum),
+		"optimum":           optionalNumber(spec.optimumValue(dimensions)),
 		"lower":             lower,
 		"upper":             upper,
 

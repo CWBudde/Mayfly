@@ -112,12 +112,17 @@
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
 
-    if (
-      canvas.width !== width * dpr ||
-      canvas.height !== height * dpr
-    ) {
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+    // Round before comparing. canvas.width is an integer attribute, so at a
+    // fractional device pixel ratio (1.5 on many Windows displays) the raw
+    // product never equals it, the comparison stayed true on every animation
+    // frame, and the backing store was reallocated and cleared 60 times a
+    // second.
+    const backingWidth = Math.round(width * dpr);
+    const backingHeight = Math.round(height * dpr);
+
+    if (canvas.width !== backingWidth || canvas.height !== backingHeight) {
+      canvas.width = backingWidth;
+      canvas.height = backingHeight;
     }
 
     const ctx = canvas.getContext("2d");
@@ -503,11 +508,31 @@
   const PAD = { top: 12, right: 12, bottom: 22, left: 52 };
 
   // Costs on these benchmarks fall through many orders of magnitude, so a
-  // linear axis shows one drop and then a flat line along zero. A symmetric
-  // log axis keeps the late refinement — which is where the variants actually
-  // differ — visible.
+  // linear axis shows one drop and then a flat line along zero. A log axis
+  // keeps the late refinement — which is where the variants actually differ —
+  // visible.
+  //
+  // It only works for strictly positive costs, though, and Michalewicz's are
+  // negative throughout. Asking for a log axis there collapsed both bounds
+  // onto the floor and drew a flat line instead of the run's progress, so a
+  // series with any non-positive value falls back to a linear axis and says so
+  // in its label.
   function logScale(value, floor) {
     return Math.log10(Math.max(value, floor));
+  }
+
+  function allPositive(series) {
+    for (const s of series) {
+      for (let i = 0; i < s.values.length; i += 1) {
+        const value = s.values[i];
+
+        if (isFinite(value) && value <= 0) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   function drawSeries(canvas, series, options) {
@@ -524,7 +549,7 @@
       return;
     }
 
-    const useLog = Boolean(opts.log);
+    const useLog = Boolean(opts.log) && allPositive(live);
     let floor = Infinity;
     let low = Infinity;
     let high = -Infinity;
@@ -656,7 +681,8 @@
     label(ctx, String(longest), width - PAD.right, height - PAD.bottom / 2, "right");
     label(
       ctx,
-      opts.xLabel || "iteration",
+      (opts.xLabel || "iteration") +
+        (opts.log && !useLog ? " · linear axis (signed costs)" : ""),
       PAD.left + plotW / 2,
       height - PAD.bottom / 2,
       "center",
@@ -689,17 +715,31 @@
       return;
     }
 
-    const floor = Math.max(Math.min.apply(null, all), 1e-12);
+    const lowest = Math.min.apply(null, all);
     const ceiling = Math.max.apply(null, all);
-    const logFloor = Math.log10(floor * 0.5);
-    const logCeiling = Math.log10(Math.max(ceiling, floor * 10));
     const plotW = width - PAD.left - PAD.right;
     const plotH = height - PAD.top - PAD.bottom;
 
+    // Michalewicz's costs are negative, and a log domain cannot hold them: the
+    // floor and the ceiling both collapsed onto 1e-12 and every bar was drawn
+    // flat on the baseline, leaving this panel blank for a benchmark the UI
+    // offers. Signed costs get a linear axis instead.
+    const useLog = lowest > 0;
+    const floor = useLog ? Math.max(lowest, 1e-12) : lowest;
+    const logFloor = useLog ? Math.log10(floor * 0.5) : 0;
+    const logCeiling = useLog ? Math.log10(Math.max(ceiling, floor * 10)) : 0;
+
+    // A linear axis needs headroom so an all-equal population is not a row of
+    // zero-height bars.
+    const linearSpan = ceiling - lowest || Math.abs(ceiling) || 1;
+    const linearFloor = lowest - linearSpan * 0.05;
+    const linearCeiling = ceiling + linearSpan * 0.05;
+
     const toY = (value) => {
-      const t =
-        (Math.log10(Math.max(value, floor * 0.5)) - logFloor) /
-        (logCeiling - logFloor || 1);
+      const t = useLog
+        ? (Math.log10(Math.max(value, floor * 0.5)) - logFloor) /
+          (logCeiling - logFloor || 1)
+        : (value - linearFloor) / (linearCeiling - linearFloor || 1);
 
       return PAD.top + plotH - Math.max(0, Math.min(1, t)) * plotH;
     };
@@ -733,18 +773,45 @@
 
     for (let i = 0; i <= 3; i += 1) {
       const y = PAD.top + (plotH * i) / 3;
-      const raw = logCeiling - ((logCeiling - logFloor) * i) / 3;
-      label(ctx, compact(Math.pow(10, raw)), PAD.left - 6, y, "right");
+      const raw = useLog
+        ? Math.pow(10, logCeiling - ((logCeiling - logFloor) * i) / 3)
+        : linearCeiling - ((linearCeiling - linearFloor) * i) / 3;
+      label(ctx, axisLabel(raw, linearCeiling - linearFloor, useLog), PAD.left - 6, y, "right");
     }
 
     frame(ctx, width, height, PAD);
     label(
       ctx,
-      "population sorted by cost — males then females",
+      "population sorted by cost — males then females" +
+        (useLog ? "" : " · linear axis"),
       PAD.left + plotW / 2,
       height - PAD.bottom / 2,
       "center",
     );
+  }
+
+  // A converged population spans a range far smaller than its own magnitude —
+  // four significant digits then print the same string for every tick, which
+  // reads as a broken axis rather than a tight one. Scale the precision to the
+  // span being labelled.
+  function axisLabel(value, span, useLog) {
+    if (useLog || !isFinite(span) || span <= 0) {
+      return compact(value);
+    }
+
+    const magnitude = Math.abs(value);
+
+    if (magnitude === 0) {
+      return "0";
+    }
+
+    const digits = Math.ceil(Math.log10(magnitude / span)) + 2;
+
+    if (digits > 6) {
+      return value.toExponential(2);
+    }
+
+    return value.toPrecision(Math.max(2, Math.min(15, digits)));
   }
 
   function slice(flat, frameIndex, count) {

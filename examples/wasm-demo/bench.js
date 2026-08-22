@@ -195,7 +195,6 @@
       iterations: intValue(iterationsInput, 200),
       dimensions: intValue(dimensionsInput, 10),
       seed: intValue(seedInput, 42),
-      target: 1e-8,
     });
   }
 
@@ -226,7 +225,7 @@
   function finishSweep(cancelled) {
     window.clearTimeout(state.cancelTimer);
     state.running = false;
-    startButton.disabled = false;
+    startButton.disabled = !state.ready;
     stopButton.disabled = true;
 
     const done = state.results.length;
@@ -248,11 +247,23 @@
     const message = event.data || {};
 
     if (message.type === "ready") {
+      const firstBoot = state.info === null;
+
       state.info = message.info;
       state.ready = true;
       swarmRing.dataset.state = "ready";
       rack.dataset.boot = "ready";
       Render.ring(swarmRing, 1);
+
+      // Only on the first boot. A watchdog respawn re-sends "ready", and
+      // rebuilding the chips there would throw away whatever the user had
+      // selected before the run that had to be killed.
+      if (!firstBoot) {
+        setStatus("WASM ready", "ready");
+        updateEstimate();
+
+        return;
+      }
 
       buildChips(
         benchmarkChips,
@@ -334,6 +345,12 @@
       state.worker.terminate();
     }
 
+    // The replacement has to boot and publish its own wasm instance before it
+    // can accept anything. Leaving state.ready true let Start re-enable while
+    // the new worker was still loading, and that sweep was rejected with
+    // "worker is not ready" and silently lost.
+    state.ready = false;
+    startButton.disabled = true;
     state.worker = new Worker("bench-worker.js");
     state.worker.onmessage = handleMessage;
     state.worker.onerror = (err) => {
@@ -394,7 +411,9 @@
         Render.compact(row.stdDev),
         Render.compact(row.best),
         Render.compact(row.worst),
-        row.successRate === null ? "—" : `${row.successRate.toFixed(0)}%`,
+        row.successRate === null || row.successRate === undefined
+          ? "—"
+          : `${row.successRate.toFixed(0)}%`,
         row.avgFuncEvals === null ? "—" : Math.round(row.avgFuncEvals).toLocaleString("en-US"),
         row.avgTime === null ? "—" : row.avgTime.toFixed(1),
       ];
@@ -451,7 +470,15 @@
   }
 
   function renderChartLegend(algorithms) {
-    if (chartLegend.childElementCount === algorithms.length) {
+    // Compare the names, not just how many there are. Swapping one selected
+    // variant for another keeps the count identical, and the old buttons kept
+    // their label, colour and toggle closure wired to the wrong series.
+    const rendered = Array.from(chartLegend.children).map((c) => c.textContent);
+    const unchanged =
+      rendered.length === algorithms.length &&
+      rendered.every((name, i) => name === algorithms[i]);
+
+    if (unchanged) {
       return;
     }
 
@@ -496,7 +523,16 @@
     const result = state.results[state.results.length - 1];
     const friedman = result.friedman;
 
-    if (friedman) {
+    if (!friedman) {
+      // friedmanTest needs at least two algorithms to rank. Without this the
+      // panel kept the previous sweep's verdict, or the initial prompt, and
+      // read as if it applied to the run just finished.
+      friedmanEl.innerHTML = `<b>${result.benchmark}:</b> the Friedman test needs at least two variants; ${
+        result.algorithms.length === 1
+          ? `only ${result.algorithms[0]} was selected`
+          : "none were selected"
+      }.`;
+    } else {
       friedmanEl.innerHTML = friedman.significant
         ? `<b>${result.benchmark}:</b> the variants are not equivalent — Friedman χ² = ${Render.compact(
             friedman.chiSquare,
@@ -672,10 +708,18 @@
       input.addEventListener("change", updateEstimate);
     }
 
+    // Sorting was mouse-only: a bare <th> takes no focus and fires no click
+    // from the keyboard, so the main results table could not be reordered
+    // without a pointer. Each header gets a real button inside it, which brings
+    // focus, Enter and Space with it for free.
     for (const th of statsTable.querySelectorAll("thead th")) {
-      th.addEventListener("click", () => {
-        const key = th.dataset.key;
+      const key = th.dataset.key;
+      const button = document.createElement("button");
 
+      button.type = "button";
+      button.className = "th-sort";
+      button.textContent = th.textContent;
+      button.addEventListener("click", () => {
         if (state.sort.key === key) {
           state.sort.direction *= -1;
         } else {
@@ -684,6 +728,9 @@
 
         renderTable();
       });
+
+      th.textContent = "";
+      th.append(button);
     }
 
     let resizeTimer = null;

@@ -82,6 +82,7 @@
 
     let low = Infinity;
     let high = -Infinity;
+    let lowest = Infinity;
 
     for (const group of groups) {
       for (const entry of visible) {
@@ -98,15 +99,27 @@
           low = Math.min(low, value);
         }
 
+        lowest = Math.min(lowest, value);
         high = Math.max(high, value);
       }
     }
+
+    if (!isFinite(lowest)) {
+      window.Render.clear(ctx, width, height);
+
+      return;
+    }
+
+    // Michalewicz's costs are negative, so no positive `low` exists: the axis
+    // degenerated, `high` was forced to 1, and every bar was drawn at the floor
+    // with zero height. Signed data gets a linear axis instead of a log one.
+    const useLog = lowest > 0;
 
     if (!isFinite(low)) {
       low = 1e-12;
     }
 
-    if (!isFinite(high) || high <= 0) {
+    if (!isFinite(high)) {
       high = 1;
     }
 
@@ -118,12 +131,24 @@
     const MAX_DECADES = 12;
     const logHigh = Math.log10(Math.max(high, low * 10)) + 0.2;
     const logLow = Math.max(Math.log10(low) - 0.5, logHigh - MAX_DECADES);
+
+    // Linear bounds, used when the data is signed. Bars are drawn from the
+    // bottom of the plot, so the floor sits a little below the smallest value.
+    const linearSpan = high - lowest || Math.abs(high) || 1;
+    const linearLow = lowest - linearSpan * 0.08;
+    const linearHigh = high + linearSpan * 0.08;
     const plotW = width - PAD.left - PAD.right;
     const plotH = height - PAD.top - PAD.bottom;
 
     const toY = (value) => {
-      const safe = value > 0 ? value : low;
-      const t = (Math.log10(safe) - logLow) / (logHigh - logLow || 1);
+      let t;
+
+      if (useLog) {
+        const safe = value > 0 ? value : low;
+        t = (Math.log10(safe) - logLow) / (logHigh - logLow || 1);
+      } else {
+        t = (value - linearLow) / (linearHigh - linearLow || 1);
+      }
 
       return PAD.top + plotH - Math.max(0, Math.min(1, t)) * plotH;
     };
@@ -139,25 +164,38 @@
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
-    const firstDecade = Math.floor(logLow);
-    const lastDecade = Math.ceil(logHigh);
+    if (useLog) {
+      const firstDecade = Math.floor(logLow);
+      const lastDecade = Math.ceil(logHigh);
 
-    // At most ~9 labelled decades, whatever the span; more than that and the
-    // mono labels collide into a smear.
-    const step = Math.max(1, Math.ceil((lastDecade - firstDecade) / 9));
+      // At most ~9 labelled decades, whatever the span; more than that and the
+      // mono labels collide into a smear.
+      const step = Math.max(1, Math.ceil((lastDecade - firstDecade) / 9));
 
-    for (let decade = firstDecade; decade <= lastDecade; decade += step) {
-      const y = toY(Math.pow(10, decade));
+      for (let decade = firstDecade; decade <= lastDecade; decade += step) {
+        const y = toY(Math.pow(10, decade));
 
-      if (y < PAD.top || y > PAD.top + plotH) {
-        continue;
+        if (y < PAD.top || y > PAD.top + plotH) {
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(PAD.left, y + 0.5);
+        ctx.lineTo(width - PAD.right, y + 0.5);
+        ctx.stroke();
+        ctx.fillText(`1e${decade}`, PAD.left - 6, y);
       }
+    } else {
+      for (let i = 0; i <= 5; i += 1) {
+        const value = linearHigh - ((linearHigh - linearLow) * i) / 5;
+        const y = toY(value);
 
-      ctx.beginPath();
-      ctx.moveTo(PAD.left, y + 0.5);
-      ctx.lineTo(width - PAD.right, y + 0.5);
-      ctx.stroke();
-      ctx.fillText(`1e${decade}`, PAD.left - 6, y);
+        ctx.beginPath();
+        ctx.moveTo(PAD.left, y + 0.5);
+        ctx.lineTo(width - PAD.right, y + 0.5);
+        ctx.stroke();
+        ctx.fillText(window.Render.compact(value), PAD.left - 6, y);
+      }
     }
 
     ctx.restore();
@@ -212,7 +250,11 @@
     ctx.font = '10px "JetBrains Mono", ui-monospace, monospace';
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillText(opts.yLabel || "median best cost", width / 2, height - 6);
+    ctx.fillText(
+      (opts.yLabel || "median best cost") + (useLog ? "" : " · linear axis"),
+      width / 2,
+      height - 6,
+    );
     ctx.restore();
   }
 

@@ -93,7 +93,6 @@ async function runSweep(request) {
       runs: request.runs,
       iterations: request.iterations,
       seed: request.seed,
-      target: request.target,
     });
 
     if (!result || result.error) {

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#0a0d1a"/>
+  <!-- the swarm: males square, females round, best a diamond -->
+  <rect x="5" y="7" width="4" height="4" fill="#ffb347"/>
+  <rect x="21" y="19" width="4" height="4" fill="#ffb347"/>
+  <rect x="8" y="22" width="4" height="4" fill="#ffb347"/>
+  <circle cx="24" cy="9" r="2.2" fill="#35d6c4"/>
+  <circle cx="10" cy="16" r="2.2" fill="#35d6c4"/>
+  <circle cx="19" cy="25" r="2.2" fill="#35d6c4"/>
+  <path d="M16 12 L20 16 L16 20 L12 16 Z" fill="#ff5d8f"/>
+</svg>

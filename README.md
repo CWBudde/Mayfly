@@ -5,6 +5,8 @@ A Go implementation of the Mayfly Optimization Algorithm (MA), a nature-inspired
 [![Go Reference](https://pkg.go.dev/badge/github.com/cwbudde/mayfly.svg)](https://pkg.go.dev/github.com/cwbudde/mayfly)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cwbudde/mayfly)](https://goreportcard.com/report/github.com/cwbudde/mayfly)
 
+**[Try it in your browser →](https://cwbudde.github.io/Mayfly/)** — watch the swarm search, and compare all seven variants, with the library itself compiled to WebAssembly.
+
 ## Overview
 
 The Mayfly Algorithm is a swarm intelligence optimization algorithm inspired by the flight behavior and mating process of mayflies. This implementation includes the standard algorithm and 6 enhanced variants for different optimization scenarios.
@@ -251,6 +253,22 @@ cd examples/selector && go run main.go
 # Comprehensive benchmark suite
 cd examples/benchmark_suite && go run main.go
 ```
+
+## Web Demo
+
+A browser demo of the library lives in [`examples/wasm-demo`](examples/wasm-demo)
+and is published to <https://cwbudde.github.io/Mayfly/>. It has two pages: a
+**Swarm Lab** that animates both populations over a benchmark landscape, and a
+**Variant Shootout** that runs the statistical comparison framework across all
+seven variants. Everything it shows is computed by this library compiled to
+`js/wasm` — there is no JavaScript reimplementation of the algorithm.
+
+```bash
+just run-wasm-demo   # build into ./dist and serve at http://localhost:8090
+```
+
+See [`examples/wasm-demo/README.md`](examples/wasm-demo/README.md) for what it
+exercises and how to read its numbers.
 
 ## Build Commands
 

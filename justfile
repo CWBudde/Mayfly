@@ -37,6 +37,19 @@ bench:
 run:
     cd examples && go run main.go
 
+# Build the WebAssembly demo into ./dist
+build-wasm-demo:
+    ./scripts/build-wasm-demo.sh
+
+# Build and serve the WebAssembly demo locally
+run-wasm-demo: build-wasm-demo
+    @echo "Serving the demo at http://localhost:8090"
+    python3 -m http.server -d dist 8090
+
+# Build the demo for js/wasm without emitting a binary (a fast compile check)
+check-wasm-demo:
+    cd examples/wasm-demo && GOOS=js GOARCH=wasm go build -o /dev/null . && go build -o /dev/null ./...
+
 # Install the formatters and linters used by `just fmt` / `just lint`
 setup-deps:
     #!/usr/bin/env bash
@@ -98,6 +111,7 @@ clean:
     go clean
     rm -f coverage.out coverage.html
     rm -f *.test *.prof
+    rm -rf dist/
 
 # Generate documentation
 docs:

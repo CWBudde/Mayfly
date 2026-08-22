@@ -21,6 +21,28 @@ type Progress struct { //nolint:govet // Preserve public field order for unkeyed
 // OptimizeContext invokes observers synchronously on the calling goroutine.
 type ProgressObserver func(Progress)
 
+// PopulationSnapshot is the state of both populations after a completed
+// iteration. Iteration is one-based. Every mayfly, and Best, is a deep copy:
+// observers may retain or modify them without affecting the optimizer.
+//
+// It is deliberately separate from Progress rather than an extension of it.
+// Copying NPop+NPopF position and velocity vectors once per iteration is not
+// free, and the overwhelmingly common reason to observe a run is to watch the
+// best cost fall, which Progress already answers. Callers who want the swarm
+// itself — to animate it, to measure diversity, to debug a variant's search
+// behavior — opt in with WithPopulationObserver and pay for it there.
+type PopulationSnapshot struct {
+	Males           []Mayfly
+	Females         []Mayfly
+	Best            Best
+	Iteration       int
+	EvaluationCount int
+}
+
+// PopulationObserver receives both populations after each completed iteration.
+// OptimizeContext invokes observers synchronously on the calling goroutine.
+type PopulationObserver func(PopulationSnapshot)
+
 // Logger receives structured optimization lifecycle events. *slog.Logger
 // implements Logger. OptimizeContext invokes loggers synchronously on the
 // calling goroutine.
@@ -36,10 +58,11 @@ type RunOption struct {
 }
 
 type runOptions struct {
-	observer       ProgressObserver
-	logger         Logger
-	initialMales   [][]float64
-	initialFemales [][]float64
+	observer           ProgressObserver
+	populationObserver PopulationObserver
+	logger             Logger
+	initialMales       [][]float64
+	initialFemales     [][]float64
 }
 
 // WithInitialPopulation seeds the start of the male and female populations.
@@ -63,6 +86,19 @@ func WithInitialPopulation(males, females [][]float64) RunOption {
 func WithProgressObserver(observer ProgressObserver) RunOption {
 	return RunOption{apply: func(options *runOptions) error {
 		options.observer = observer
+
+		return nil
+	}}
+}
+
+// WithPopulationObserver registers an observer for the male and female
+// populations. It is called once per completed iteration, after
+// WithProgressObserver's observer. Passing a nil observer disables population
+// reporting, which is the default: no copying happens unless an observer is
+// registered.
+func WithPopulationObserver(observer PopulationObserver) RunOption {
+	return RunOption{apply: func(options *runOptions) error {
+		options.populationObserver = observer
 
 		return nil
 	}}
@@ -171,6 +207,45 @@ func notifyProgress(observer ProgressObserver, iteration, evaluationCount int, b
 		EvaluationCount: evaluationCount,
 		Best:            cloneBest(best),
 	})
+}
+
+func notifyPopulation(
+	observer PopulationObserver,
+	iteration, evaluationCount int,
+	best Best,
+	males, females []*Mayfly,
+) {
+	if observer == nil {
+		return
+	}
+
+	observer(PopulationSnapshot{
+		Males:           cloneMayflies(males),
+		Females:         cloneMayflies(females),
+		Best:            cloneBest(best),
+		Iteration:       iteration,
+		EvaluationCount: evaluationCount,
+	})
+}
+
+// cloneMayflies flattens a population of pointers into independent values, so
+// an observer cannot reach back into the running optimizer through a shared
+// slice header or a retained pointer.
+func cloneMayflies(population []*Mayfly) []Mayfly {
+	if population == nil {
+		return nil
+	}
+
+	cloned := make([]Mayfly, len(population))
+	for i, mayfly := range population {
+		if mayfly == nil {
+			continue
+		}
+
+		cloned[i] = *mayfly.clone()
+	}
+
+	return cloned
 }
 
 var errNilContext = errors.New("context cannot be nil")

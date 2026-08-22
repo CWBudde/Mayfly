@@ -1,6 +1,7 @@
 package mayfly
 
 import (
+	"math"
 	"testing"
 )
 
@@ -318,5 +319,78 @@ func TestNormalCDF(t *testing.T) {
 		if result < tt.expected-tt.tolerance || result > tt.expected+tt.tolerance {
 			t.Errorf("normalCDF(%f) = %f, expected ~%f", tt.x, result, tt.expected)
 		}
+	}
+}
+
+func TestChiSquareSurvival(t *testing.T) {
+	// Reference values from the chi-square distribution. The first three are
+	// the classic 5% critical points, so a correct implementation reproduces
+	// them to within rounding of the tabulated statistic.
+	tests := []struct {
+		x    float64
+		df   int
+		want float64
+	}{
+		{x: 3.841, df: 1, want: 0.05},
+		{x: 5.991, df: 2, want: 0.05},
+		{x: 12.592, df: 6, want: 0.05},
+		{x: 14.207, df: 6, want: 0.027},
+		{x: 7.286, df: 6, want: 0.295},
+		{x: 0.0, df: 3, want: 1.0},
+		{x: 1.0, df: 40, want: 1.0},
+		{x: 100.0, df: 40, want: 0.0},
+	}
+
+	for _, testCase := range tests {
+		got := chiSquareSurvival(testCase.x, testCase.df)
+
+		if math.Abs(got-testCase.want) > 0.002 {
+			t.Errorf("chiSquareSurvival(%v, %d) = %v, want %v",
+				testCase.x, testCase.df, got, testCase.want)
+		}
+	}
+}
+
+func TestChiSquareSurvivalIsMonotonic(t *testing.T) {
+	// The defect in the previous implementation was that it was not monotonic,
+	// which is what let a larger statistic report a larger p-value.
+	previous := math.Inf(1)
+
+	for x := 0.0; x <= 40.0; x += 0.25 {
+		got := chiSquareSurvival(x, 6)
+
+		if got > previous+1e-12 {
+			t.Fatalf("survival rose at x=%v: %v after %v", x, got, previous)
+		}
+
+		if got < 0 || got > 1 {
+			t.Fatalf("survival at x=%v is outside [0,1]: %v", x, got)
+		}
+
+		previous = got
+	}
+}
+
+func TestFriedmanSignificanceIsNotInverted(t *testing.T) {
+	// Three algorithms, five paired runs, with a strict ordering every time:
+	// the ranks could not be more consistent, so the test must reject the null.
+	consistent := [][]RunResult{
+		{{BestCost: 1}, {BestCost: 1}, {BestCost: 1}, {BestCost: 1}, {BestCost: 1}},
+		{{BestCost: 2}, {BestCost: 2}, {BestCost: 2}, {BestCost: 2}, {BestCost: 2}},
+		{{BestCost: 3}, {BestCost: 3}, {BestCost: 3}, {BestCost: 3}, {BestCost: 3}},
+	}
+
+	result := friedmanTest(consistent)
+	if result == nil {
+		t.Fatal("friedmanTest returned nil")
+	}
+
+	if !result.Significant {
+		t.Errorf("a perfectly consistent ranking was reported as not significant (chi2 %v, p %v)",
+			result.ChiSquare, result.PValue)
+	}
+
+	if result.PValue < 0 || result.PValue > 1 {
+		t.Errorf("PValue %v is outside [0,1]", result.PValue)
 	}
 }

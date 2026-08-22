@@ -1154,6 +1154,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		fl *= config.FLDamp
 
 		notifyProgress(run.observer, it+1, funcCount, globalBest)
+		notifyPopulation(run.populationObserver, it+1, funcCount, globalBest, males, females)
 		logIterationCompleted(ctx, run.logger, it+1, funcCount, globalBest)
 
 		iterationErr = ctx.Err()

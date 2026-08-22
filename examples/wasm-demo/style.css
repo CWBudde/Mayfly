@@ -1,0 +1,909 @@
+/* ==========================================================================
+   mayfly — Swarm Lab
+   Instrument-rack visual system, borrowed from the algo-fft demo so the two
+   read as one family. One dark look, no light variant, no border radius.
+
+   Signature idea: the swarm is two populations, not one. Males and females get
+   their own hue AND their own glyph everywhere they appear — canvas, legend,
+   chart, table. Colour alone would exclude roughly one man in twelve, and the
+   dual population is the single thing about this algorithm a viewer most needs
+   to see.
+   ========================================================================== */
+
+:root {
+  /* ---- ground tokens ---- */
+  --void: #0a0d1a; /* page ground */
+  --rack: #121629; /* panel fill */
+  --rule: #232a4a; /* hairlines — the only separator device */
+  --dim: #7d86b4; /* labels, ticks, secondary readouts */
+  --lume: #e9ecff; /* primary text */
+
+  /* ---- the swarm ---- */
+  /* JS reads these via getComputedStyle; keep them real custom properties. */
+  --male: #ffb347; /* amber   — males, personal-best seekers */
+  --female: #35d6c4; /* teal    — females, attracted or flying free */
+  --best: #ff5d8f; /* rose    — the global best and its trail */
+  --elite: #8b7dff; /* violet  — variant extras: elites, opposition, probes */
+
+  /* ---- landscape ramp: low cost dark, high cost lit ---- */
+  --land-low: #0d1230;
+  --land-mid: #2b2a63;
+  --land-high: #6a5aa8;
+
+  /* interactive states draw from the swarm, not a separate brand colour */
+  --action: var(--male);
+  --action-hi: var(--best);
+  --armed: var(--female);
+
+  --ok: #35d6c4;
+  --warn: #ffb347;
+  --bad: #ff5d8f;
+
+  /* ---- type ---- */
+  --font-display: "Archivo", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    monospace;
+
+  /* ---- rhythm ---- */
+  --gutter: 24px;
+  --rack-max: 1280px;
+}
+
+html {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--lume);
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+   Primitives
+   -------------------------------------------------------------------------- */
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--action);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+a:hover {
+  border-bottom-color: currentColor;
+}
+
+button,
+select,
+input {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 6px 10px;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--action);
+  color: var(--action);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button[data-primary] {
+  border-color: var(--action);
+  color: var(--action);
+}
+
+button[data-primary]:hover:not(:disabled) {
+  background: var(--action);
+  color: var(--void);
+}
+
+select {
+  cursor: pointer;
+  width: 100%;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%),
+    linear-gradient(135deg, var(--dim) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% + 1px),
+    calc(100% - 9px) calc(50% + 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+input[type="range"] {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  accent-color: var(--action);
+}
+
+:focus-visible {
+  outline: 1px solid var(--action);
+  outline-offset: 2px;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Rack shell
+   -------------------------------------------------------------------------- */
+
+.rack {
+  max-width: var(--rack-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 64px;
+}
+
+.rail-top {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lume);
+}
+
+.brand b {
+  color: var(--action);
+  font-weight: 600;
+}
+
+.site-nav {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.site-nav a {
+  color: var(--dim);
+  border-bottom: 1px solid transparent;
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--lume);
+  border-bottom-color: var(--action);
+}
+
+.rack-footer {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  color: var(--dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+/* --------------------------------------------------------------------------
+   Boot indicator — a swarm ring that fills while the wasm streams in, then
+   becomes the male/female/best legend.
+   -------------------------------------------------------------------------- */
+
+.swarm-ring {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+
+.swarm-ring__track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+}
+
+.swarm-ring__fill {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--male),
+    var(--female) 50%,
+    var(--best) 85%,
+    var(--male)
+  );
+  mask-image: conic-gradient(
+    from -90deg,
+    #000 calc(var(--boot-progress, 0) * 360deg),
+    transparent 0
+  );
+  transition: mask-image 120ms linear;
+}
+
+.swarm-ring[data-state="ready"] .swarm-ring__fill {
+  mask-image: none;
+  animation: ring-settle 500ms ease-out;
+}
+
+@keyframes ring-settle {
+  from {
+    transform: scale(0.86);
+    opacity: 0.5;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Hero
+   -------------------------------------------------------------------------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+  gap: 32px;
+  padding: 40px 0 28px;
+  align-items: start;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.hero h1 {
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.04;
+  margin-bottom: 16px;
+}
+
+.lede {
+  margin: 0;
+  color: var(--dim);
+  font-size: 15px;
+}
+
+.lede + .lede {
+  margin-top: 12px;
+}
+
+.hero__stage {
+  position: relative;
+  border: 1px solid var(--rule);
+  background: var(--rack);
+}
+
+.stage-canvas {
+  aspect-ratio: 1 / 1;
+  max-height: 70vh;
+}
+
+/* --------------------------------------------------------------------------
+   Status + telemetry
+   -------------------------------------------------------------------------- */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+  flex: none;
+}
+
+.status[data-state="ready"] {
+  color: var(--lume);
+}
+
+.status[data-state="ready"]::before {
+  background: var(--ok);
+}
+
+.status[data-state="loading"]::before {
+  background: var(--warn);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.status[data-state="error"] {
+  color: var(--bad);
+}
+
+.status[data-state="error"]::before {
+  background: var(--bad);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.telemetry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--rule);
+  border-top: 0;
+}
+
+.telemetry div {
+  flex: 1 1 140px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--rule);
+}
+
+.telemetry div:last-child {
+  border-right: 0;
+}
+
+.telemetry dt,
+.telemetry .k {
+  display: block;
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.telemetry .v {
+  color: var(--lume);
+  font-size: 14px;
+}
+
+.telemetry .v[data-tone="good"] {
+  color: var(--ok);
+}
+
+/* --------------------------------------------------------------------------
+   Transport
+   -------------------------------------------------------------------------- */
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-top: 0;
+}
+
+.transport input[type="range"] {
+  flex: 1;
+  min-width: 80px;
+}
+
+.transport .frame-readout {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--dim);
+  min-width: 92px;
+  text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   Legend
+   -------------------------------------------------------------------------- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-top: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend i {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  background: currentColor;
+}
+
+.legend .male {
+  color: var(--male);
+}
+
+.legend .female {
+  color: var(--female);
+}
+
+.legend .female i {
+  border-radius: 50%;
+}
+
+.legend .best {
+  color: var(--best);
+}
+
+.legend .best i {
+  transform: rotate(45deg);
+}
+
+.projection-note:empty {
+  display: none;
+}
+
+.projection-note {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-top: 0;
+  border-left: 2px solid var(--warn);
+  color: var(--dim);
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Controls
+   -------------------------------------------------------------------------- */
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--gutter);
+  margin-top: 32px;
+}
+
+.control-group {
+  position: relative;
+  border: 1px solid var(--rule);
+  background: var(--rack);
+  padding: 26px 16px 16px;
+}
+
+.corner-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 4px 8px;
+  background: var(--rule);
+  color: var(--lume);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.field:first-of-type {
+  margin-top: 4px;
+}
+
+.field > label {
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field-note {
+  margin: 10px 0 0;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.field-note b {
+  color: var(--lume);
+  font-weight: 500;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   Panels
+   -------------------------------------------------------------------------- */
+
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: var(--gutter);
+  margin-top: var(--gutter);
+}
+
+.panel {
+  position: relative;
+  border: 1px solid var(--rule);
+  background: var(--rack);
+  padding: 26px 16px 16px;
+}
+
+.panel--wide {
+  grid-column: 1 / -1;
+}
+
+.panel-note {
+  margin: 0 0 12px;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.panel canvas {
+  aspect-ratio: 16 / 9;
+}
+
+.panel--wide canvas {
+  aspect-ratio: 4 / 1;
+}
+
+/* --------------------------------------------------------------------------
+   Chips
+   -------------------------------------------------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.chip {
+  padding: 5px 9px;
+  border: 1px solid var(--rule);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--action);
+  color: var(--action);
+}
+
+.chip:hover {
+  color: var(--lume);
+}
+
+/* --------------------------------------------------------------------------
+   Benchmark page
+   -------------------------------------------------------------------------- */
+
+.progress {
+  height: 3px;
+  background: var(--rule);
+  margin-top: 14px;
+}
+
+.progress__bar {
+  height: 100%;
+  width: 0;
+  background: var(--action);
+  transition: width 160ms linear;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+th,
+td {
+  padding: 7px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--rule);
+}
+
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+
+thead th {
+  color: var(--dim);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  background: var(--rack);
+}
+
+/* The sort control is a real button so it is focusable and keyboard-operable;
+   it is styled to disappear into the header it sits in. */
+.th-sort {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.th-sort:hover {
+  color: var(--lume);
+}
+
+.th-sort:focus-visible {
+  outline: 1px solid var(--action);
+  outline-offset: 2px;
+}
+
+thead th[aria-sort="ascending"]::after {
+  content: " ▲";
+  color: var(--action);
+}
+
+thead th[aria-sort="descending"]::after {
+  content: " ▼";
+  color: var(--action);
+}
+
+tbody tr:hover td {
+  background: rgb(255 255 255 / 3%);
+}
+
+td[data-rank="1"] {
+  color: var(--ok);
+}
+
+td.win {
+  color: var(--ok);
+}
+
+td.lose {
+  color: var(--bad);
+}
+
+td.tie {
+  color: var(--dim);
+}
+
+.matrix td,
+.matrix th {
+  text-align: center;
+  padding: 6px 8px;
+}
+
+.matrix td:first-child,
+.matrix th:first-child {
+  text-align: left;
+}
+
+.verdict {
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.verdict b {
+  color: var(--lume);
+  font-weight: 500;
+}
+
+.caveat {
+  margin-top: var(--gutter);
+  padding: 16px;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--warn);
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.caveat h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--lume);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.caveat p {
+  margin: 0 0 8px;
+}
+
+.caveat p:last-child {
+  margin-bottom: 0;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Motion
+   Structure is always visible without JS. The reveal is additive: it only
+   plays once data-boot flips to "ready", and if that attribute is never set
+   (a script failure, not just a WASM load failure) the page still reads as a
+   complete static layout rather than a permanent blank gap.
+   -------------------------------------------------------------------------- */
+
+.rack[data-boot="ready"] .hero__stage {
+  animation: sweep-in 700ms ease-out forwards;
+}
+
+.rack[data-boot="ready"] .controls {
+  animation: fade-up 420ms ease-out 120ms both;
+}
+
+.rack[data-boot="ready"] .panels {
+  animation: fade-up 420ms ease-out 220ms both;
+}
+
+@keyframes sweep-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 28px;
+  }
+
+  .stage-canvas {
+    max-height: none;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .field {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .site-nav {
+    gap: 12px;
+  }
+}

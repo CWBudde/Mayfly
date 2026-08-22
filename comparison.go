@@ -734,13 +734,14 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 	// Degrees of freedom
 	df := k - 1
 
-	// Approximate p-value using chi-square distribution
-	pValue := chiSquareCDF(chiSquare, df)
+	// The p-value is the upper tail: the chance of a statistic at least this
+	// extreme when every algorithm performs identically.
+	pValue := chiSquareSurvival(chiSquare, df)
 
 	return &FriedmanTestResult{
 		ChiSquare:        chiSquare,
-		PValue:           1.0 - pValue,
-		Significant:      (1.0 - pValue) < 0.05,
+		PValue:           pValue,
+		Significant:      pValue < 0.05,
 		DegreesOfFreedom: df,
 	}
 }
@@ -795,20 +796,112 @@ func normalCDF(x float64) float64 {
 	return 0.5 * (1.0 + math.Erf(x/math.Sqrt2))
 }
 
-// chiSquareCDF computes an approximation of the chi-square CDF.
-// This is a simplified implementation for common use cases.
-func chiSquareCDF(x float64, df int) float64 {
+// chiSquareSurvival returns the upper-tail probability of the chi-square
+// distribution: P(X > x) with df degrees of freedom. That is the p-value the
+// Friedman test needs.
+//
+// It replaces an earlier "chiSquareCDF" whose small-df branch returned
+// exp(-x/2) * (x/2)^(df/2) — a curve that is neither a CDF nor monotonic, and
+// which was additionally used as a p-value without taking the complement. The
+// two errors did not cancel: the reported significance was inverted, so a
+// strong result read as no difference and vice versa.
+func chiSquareSurvival(x float64, df int) float64 {
+	if df <= 0 {
+		return math.NaN()
+	}
+
 	if x <= 0 {
-		return 0
+		return 1
 	}
-	// Use incomplete gamma function approximation
-	// For simplicity, use normal approximation for large df
-	if df > 30 {
-		z := (x - float64(df)) / math.Sqrt(2.0*float64(df))
-		return normalCDF(z)
+
+	return regularizedGammaQ(float64(df)/2.0, x/2.0)
+}
+
+// regularizedGammaQ is Q(a, x), the regularized upper incomplete gamma
+// function. The series converges quickly for x below a+1 and the continued
+// fraction for x above it, which is the standard split.
+func regularizedGammaQ(a, x float64) float64 {
+	if x < 0 || a <= 0 {
+		return math.NaN()
 	}
-	// For small df, use a rough approximation
-	return math.Min(math.Exp(-x/2.0)*math.Pow(x/2.0, float64(df)/2.0), 1.0)
+
+	if x == 0 {
+		return 1
+	}
+
+	if x < a+1 {
+		return 1 - lowerGammaSeries(a, x)
+	}
+
+	return upperGammaContinuedFraction(a, x)
+}
+
+const (
+	gammaMaxIterations = 300
+	gammaEpsilon       = 3e-14
+	gammaTiny          = 1e-300
+)
+
+// lowerGammaSeries evaluates P(a, x) by its series expansion.
+func lowerGammaSeries(a, x float64) float64 {
+	logPrefactor := -x + a*math.Log(x) - logGamma(a)
+	term := 1.0 / a
+	sum := term
+	next := a
+
+	for range gammaMaxIterations {
+		next++
+		term *= x / next
+		sum += term
+
+		if math.Abs(term) < math.Abs(sum)*gammaEpsilon {
+			break
+		}
+	}
+
+	return sum * math.Exp(logPrefactor)
+}
+
+// upperGammaContinuedFraction evaluates Q(a, x) by its continued fraction,
+// using the modified Lentz algorithm.
+func upperGammaContinuedFraction(a, x float64) float64 {
+	logPrefactor := -x + a*math.Log(x) - logGamma(a)
+
+	b := x + 1 - a
+	c := 1 / gammaTiny
+	d := 1 / b
+	h := d
+
+	for i := 1; i <= gammaMaxIterations; i++ {
+		an := -float64(i) * (float64(i) - a)
+		b += 2
+
+		d = an*d + b
+		if math.Abs(d) < gammaTiny {
+			d = gammaTiny
+		}
+
+		c = b + an/c
+		if math.Abs(c) < gammaTiny {
+			c = gammaTiny
+		}
+
+		d = 1 / d
+		delta := d * c
+		h *= delta
+
+		if math.Abs(delta-1) < gammaEpsilon {
+			break
+		}
+	}
+
+	return h * math.Exp(logPrefactor)
+}
+
+func logGamma(x float64) float64 {
+	value, _ := math.Lgamma(x)
+
+	return value
 }
 
 // PrintComparisonResults prints a formatted comparison report to stdout.

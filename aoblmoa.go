@@ -14,139 +14,124 @@ package mayfly
 // Reference:
 // AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023)
 
-// applyAOBLMOA applies the AOBLMOA variant logic to update a mayfly population.
-// This function is called during the main optimization loop when UseAOBLMOA is enabled.
+// aquilaPosition returns an Aquila-Optimizer candidate position for the mayfly,
+// optionally refined by opposition-based learning.
 //
-// AOBLMOA combines:
-// - Standard Mayfly position updates (weighted by 1 - AquilaWeight)
-// - Aquila Optimizer strategies (weighted by AquilaWeight)
-// - Opposition-based learning for select solutions
+// The caller decides whether the individual takes the Aquila branch at all;
+// an individual that does not must still receive the ordinary Mayfly velocity
+// and position update. See applyAOBLMOAToPopulationWithEvaluator.
 //
-// Parameters:
-//   - mayfly: The mayfly to update
-//   - globalBest: Current best solution
-//   - population: All mayflies (males or females)
-//   - isMale: Whether this is a male mayfly
-//   - currentIter, maxIter: Iteration progress
-//   - config: Algorithm configuration
-//
-// Returns:
-//   - Updated position for the mayfly
-//
-//nolint:unused // retained for focused AOBLMOA helper compatibility.
-func applyAOBLMOA(mayfly *Mayfly, globalBest Best, population []*Mayfly,
-	currentIter, maxIter int, config *Config,
-) []float64 {
-	return applyAOBLMOAWithEvaluator(
-		mayfly, globalBest, population, currentIter, maxIter, config,
-		newConstraintEvaluator(config.ObjectiveFunc, nil),
-	)
-}
-
-func applyAOBLMOAWithEvaluator(
+// It returns the candidate position and the number of objective evaluations it
+// consumed (two when opposition-based learning fired, zero otherwise).
+func aquilaPosition(
 	mayfly *Mayfly,
 	globalBest Best,
 	population []*Mayfly,
 	currentIter, maxIter int,
 	config *Config,
 	evaluator *constraintEvaluator,
-) []float64 {
-	// Determine if we should apply Aquila strategy or standard Mayfly update
-	useAquilaStrategy := config.Rand.Float64() < config.AquilaWeight
+) ([]float64, int) {
+	strategy := selectAquilaStrategy(currentIter, maxIter, config.Rand)
+	newPosition := applyAquilaStrategy(mayfly, globalBest, population,
+		strategy, currentIter, maxIter, config)
 
-	var newPosition []float64
-
-	if useAquilaStrategy {
-		// Use Aquila Optimizer strategy
-		strategy := selectAquilaStrategy(currentIter, maxIter, config.Rand)
-		newPosition = applyAquilaStrategy(mayfly, globalBest, population,
-			strategy, currentIter, maxIter, config)
-	} else {
-		// Use standard Mayfly update (this will be done by the main loop)
-		// Return nil to signal that standard update should be used
-		return nil
+	// Apply opposition-based learning with probability OppositionProbability.
+	if config.Rand.Float64() >= config.OppositionProbability {
+		return newPosition, 0
 	}
 
-	// Apply opposition-based learning with probability OppositionProbability
-	if config.Rand.Float64() < config.OppositionProbability {
-		// Generate opposition point
-		oppositionPos := oppositionPoint(newPosition, config.LowerBound, config.UpperBound)
+	oppositionPos := oppositionPoint(newPosition, config.LowerBound, config.UpperBound)
 
-		// Evaluate both positions and keep the better one
-		original := evaluator.evaluate(newPosition, false)
-		opposition := evaluator.evaluate(oppositionPos, false)
+	original := evaluator.evaluate(newPosition, false)
+	opposition := evaluator.evaluate(oppositionPos, false)
 
-		if evaluator.better(opposition, original) {
-			newPosition = oppositionPos
-		}
+	if evaluator.better(opposition, original) {
+		newPosition = oppositionPos
 	}
 
-	return newPosition
+	return newPosition, 2
 }
 
-// 4. Updates positions and evaluates fitness.
+// applyAOBLMOAToPopulation applies the AOBLMOA variant logic to a whole
+// population, using a freshly built evaluator.
 func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
-	currentIter, maxIter int, config *Config,
-) {
-	applyAOBLMOAToPopulationWithEvaluator(
-		males, females, globalBest, currentIter, maxIter, config,
+	currentIter, maxIter int, g, dance, flight float64, config *Config,
+) int {
+	return applyAOBLMOAToPopulationWithEvaluator(
+		males, females, globalBest, currentIter, maxIter, g, dance, flight, config,
 		newConstraintEvaluator(config.ObjectiveFunc, nil),
 	)
 }
 
+// applyAOBLMOAToPopulationWithEvaluator moves and evaluates every male and
+// female exactly once.
+//
+// Each individual either takes an Aquila-Optimizer step (with probability
+// config.AquilaWeight) or the ordinary Mayfly velocity and position update.
+// Both branches move the individual: nobody is skipped. The Aquila strategy
+// itself already switches on iteration progress, matching the paper's
+// two-thirds exploration / one-third exploitation split.
+//
+// It returns the number of objective evaluations consumed.
 func applyAOBLMOAToPopulationWithEvaluator(
 	males, females []*Mayfly,
 	globalBest Best,
 	currentIter, maxIter int,
+	g, dance, flight float64,
 	config *Config,
 	evaluator *constraintEvaluator,
-) {
-	// Update males with AOBLMOA
-	for i := range males {
-		newPos := applyAOBLMOAWithEvaluator(
-			males[i], globalBest, males, currentIter, maxIter, config, evaluator,
-		)
+) int {
+	evaluations := 0
 
-		if newPos != nil {
-			// AOBLMOA provided a new position, use it
-			copy(males[i].Position, newPos)
+	for _, male := range males {
+		if config.Rand.Float64() < config.AquilaWeight {
+			newPos, oblEvals := aquilaPosition(
+				male, globalBest, males, currentIter, maxIter, config, evaluator,
+			)
+			evaluations += oblEvals
 
-			// Clamp to bounds
-			maxVec(males[i].Position, config.LowerBound)
-			minVec(males[i].Position, config.UpperBound)
-
-			// Evaluate
-			evaluator.evaluateMayfly(males[i], false)
-
-			// Update personal best
-			if evaluator.better(evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best)) {
-				males[i].Best.Cost = males[i].Cost
-				males[i].Best.ConstraintViolation = males[i].ConstraintViolation
-				copy(males[i].Best.Position, males[i].Position)
-			}
+			copy(male.Position, newPos)
+			maxVec(male.Position, config.LowerBound)
+			minVec(male.Position, config.UpperBound)
+		} else {
+			prepareStandardMale(
+				male, globalBest, nil, g, dance, g, config, config.Rand, evaluator,
+			)
 		}
-		// If nil, the standard Mayfly update will be used instead
+
+		evaluator.evaluateMayfly(male, false)
+
+		evaluations++
+
+		if evaluator.better(evaluationFromMayfly(male), evaluationFromBest(male.Best)) {
+			male.Best.Cost = male.Cost
+			male.Best.ConstraintViolation = male.ConstraintViolation
+			copy(male.Best.Position, male.Position)
+		}
 	}
 
-	// Update females with AOBLMOA
-	for i := range females {
-		newPos := applyAOBLMOAWithEvaluator(
-			females[i], globalBest, females, currentIter, maxIter, config, evaluator,
-		)
+	for i, female := range females {
+		if config.Rand.Float64() < config.AquilaWeight {
+			newPos, oblEvals := aquilaPosition(
+				female, globalBest, females, currentIter, maxIter, config, evaluator,
+			)
+			evaluations += oblEvals
 
-		if newPos != nil {
-			// AOBLMOA provided a new position, use it
-			copy(females[i].Position, newPos)
-
-			// Clamp to bounds
-			maxVec(females[i].Position, config.LowerBound)
-			minVec(females[i].Position, config.UpperBound)
-
-			// Evaluate
-			evaluator.evaluateMayfly(females[i], false)
+			copy(female.Position, newPos)
+			maxVec(female.Position, config.LowerBound)
+			minVec(female.Position, config.UpperBound)
+		} else if i < len(males) {
+			prepareStandardFemale(female, males[i], g, flight, config, config.Rand, evaluator)
+		} else {
+			prepareStandardFemale(female, female, g, flight, config, config.Rand, evaluator)
 		}
-		// If nil, the standard Mayfly update will be used instead
+
+		evaluator.evaluateMayfly(female, false)
+
+		evaluations++
 	}
+
+	return evaluations
 }
 
 // initializeAOBLMOA initializes AOBLMOA-specific parameters.
@@ -237,16 +222,18 @@ func (pa *ParetoArchive) GetBestSolution() *ParetoSolution {
 	return best
 }
 
-// updateParetoArchive updates the Pareto archive with current population.
-// This is called at the end of each iteration to maintain the best solutions found.
-func updateParetoArchive(archive *ParetoArchive, males, females []*Mayfly) {
-	// Add all males
+// UpdateFromPopulation adds every member of the given populations to the
+// archive.
+//
+// The optimizer does not call this itself. Nothing in the search reads the
+// archive back, so maintaining it every iteration only bought NSGA-II pruning
+// cost; callers that want a Pareto front build and feed one explicitly.
+func (pa *ParetoArchive) UpdateFromPopulation(males, females []*Mayfly) {
 	for _, m := range males {
-		archive.AddFromMayfly(m)
+		pa.AddFromMayfly(m)
 	}
 
-	// Add all females
 	for _, f := range females {
-		archive.AddFromMayfly(f)
+		pa.AddFromMayfly(f)
 	}
 }

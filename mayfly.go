@@ -373,11 +373,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	// Initialize AOBLMOA parameters if enabled
-	var paretoArchive *ParetoArchive
-
 	if config.UseAOBLMOA {
 		initializeAOBLMOA(config)
-		paretoArchive = NewParetoArchive(config.ArchiveSize)
 	}
 
 	// Main loop
@@ -398,6 +395,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					&globalBest,
 					it,
 					config.MaxIterations,
+					g,
+					dance,
+					fl,
 					config,
 					rng,
 					evaluator,
@@ -409,16 +409,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				funcCount += aoblmoaEvals
 			} else {
 				// Apply AOBLMOA to populations sequentially for backward compatibility.
-				applyAOBLMOAToPopulationWithEvaluator(
-					males, females, globalBest, it, config.MaxIterations, config, candidateEvaluator,
+				funcCount += applyAOBLMOAToPopulationWithEvaluator(
+					males, females, globalBest, it, config.MaxIterations,
+					g, dance, fl, config, candidateEvaluator,
 				)
-
-				// Count function evaluations (approximation)
-				// Aquila strategies: 1 eval per mayfly
-				// Opposition learning: OppositionProbability * population size * 2 (original + opposition)
-				aoblmoaEvals := config.NPop + config.NPopF
-				oppositionEvals := int(config.OppositionProbability * float64(config.NPop+config.NPopF) * 2)
-				funcCount += aoblmoaEvals + oppositionEvals
 			}
 
 			// Update global best from updated populations
@@ -1168,11 +1162,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					globalBest = updatedGlobalBest
 				}
 			}
-		}
-
-		// AOBLMOA: Update Pareto archive
-		if config.UseAOBLMOA {
-			updateParetoArchive(paretoArchive, males, females)
 		}
 
 		bestSolution[it] = globalBest.Cost

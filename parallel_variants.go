@@ -327,11 +327,19 @@ type aquilaCandidate struct {
 	isMale     bool
 }
 
+// evaluateParallelAOBLMOA moves and evaluates every male and female exactly
+// once per iteration.
+//
+// An individual either takes an Aquila-Optimizer step (with probability
+// config.AquilaWeight) or the ordinary Mayfly velocity and position update.
+// Both branches move the individual, so the batch handed to the evaluator
+// always covers the whole population.
 func evaluateParallelAOBLMOA(
 	ctx context.Context,
 	males, females []*Mayfly,
 	globalBest *Best,
 	currentIteration, maxIterations int,
+	g, dance, flight float64,
 	config *Config,
 	rng *rand.Rand,
 	evaluator *evaluationPool,
@@ -341,51 +349,84 @@ func evaluateParallelAOBLMOA(
 	candidates := make([]aquilaCandidate, 0, len(males)+len(females))
 	comparisonBatch := make([]*Mayfly, 0, 2*(len(males)+len(females)))
 
-	preparePopulation := func(population []*Mayfly, isMale bool) {
-		for _, target := range population {
-			if ctx.Err() != nil {
-				return
-			}
+	aquilaCandidateFor := func(target *Mayfly, population []*Mayfly, isMale bool) aquilaCandidate {
+		strategy := selectAquilaStrategy(currentIteration, maxIterations, rng)
+		position := applyAquilaStrategy(
+			target,
+			*globalBest,
+			population,
+			strategy,
+			currentIteration,
+			maxIterations,
+			&strategyConfig,
+		)
 
-			if rng.Float64() >= config.AquilaWeight {
-				continue
-			}
+		original := newMayfly(config.ProblemSize)
+		copy(original.Position, position)
+		maxVec(original.Position, config.LowerBound)
+		minVec(original.Position, config.UpperBound)
 
-			strategy := selectAquilaStrategy(currentIteration, maxIterations, rng)
-			position := applyAquilaStrategy(
-				target,
-				*globalBest,
-				population,
-				strategy,
-				currentIteration,
-				maxIterations,
-				&strategyConfig,
+		candidate := aquilaCandidate{target: target, original: original, isMale: isMale}
+
+		if rng.Float64() < config.OppositionProbability {
+			opposition := newMayfly(config.ProblemSize)
+			opposition.Position = oppositionPoint(
+				original.Position,
+				config.LowerBound,
+				config.UpperBound,
 			)
-
-			original := newMayfly(config.ProblemSize)
-			copy(original.Position, position)
-			maxVec(original.Position, config.LowerBound)
-			minVec(original.Position, config.UpperBound)
-
-			candidate := aquilaCandidate{target: target, original: original, isMale: isMale}
-
-			if rng.Float64() < config.OppositionProbability {
-				opposition := newMayfly(config.ProblemSize)
-				opposition.Position = oppositionPoint(
-					original.Position,
-					config.LowerBound,
-					config.UpperBound,
-				)
-				candidate.opposition = opposition
-				comparisonBatch = append(comparisonBatch, original, opposition)
-			}
-
-			candidates = append(candidates, candidate)
+			candidate.opposition = opposition
+			comparisonBatch = append(comparisonBatch, original, opposition)
 		}
+
+		return candidate
 	}
 
-	preparePopulation(males, true)
-	preparePopulation(females, false)
+	// mayflyCandidate captures the position produced by the ordinary Mayfly
+	// update, which the caller has already applied to target in place.
+	mayflyCandidate := func(target *Mayfly, isMale bool) aquilaCandidate {
+		moved := newMayfly(config.ProblemSize)
+		copy(moved.Position, target.Position)
+
+		return aquilaCandidate{target: target, original: moved, isMale: isMale}
+	}
+
+	for _, target := range males {
+		if ctx.Err() != nil {
+			break
+		}
+
+		if rng.Float64() < config.AquilaWeight {
+			candidates = append(candidates, aquilaCandidateFor(target, males, true))
+
+			continue
+		}
+
+		prepareStandardMale(
+			target, *globalBest, nil, g, dance, g, config, rng, evaluator.evaluator,
+		)
+		candidates = append(candidates, mayflyCandidate(target, true))
+	}
+
+	for i, target := range females {
+		if ctx.Err() != nil {
+			break
+		}
+
+		if rng.Float64() < config.AquilaWeight {
+			candidates = append(candidates, aquilaCandidateFor(target, females, false))
+
+			continue
+		}
+
+		pairedMale := target
+		if i < len(males) {
+			pairedMale = males[i]
+		}
+
+		prepareStandardFemale(target, pairedMale, g, flight, config, rng, evaluator.evaluator)
+		candidates = append(candidates, mayflyCandidate(target, false))
+	}
 
 	contextErr := ctx.Err()
 	if contextErr != nil {

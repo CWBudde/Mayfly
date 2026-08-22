@@ -299,7 +299,6 @@ func TestParallelGeneticOffspringAreFullyInitialized(t *testing.T) {
 		[]*Mayfly{female},
 		config,
 		rand.New(rand.NewSource(99)),
-		nil,
 		pool,
 		0,
 	)
@@ -366,12 +365,14 @@ func TestParallelVariantEvaluationUsesVariantBatchCapacity(t *testing.T) {
 			},
 		},
 		{
+			// 2 initial + 2 crossover + 1 mutation + 4 orthogonal candidates
+			// + 1 chaotic exploitation candidate per elite male.
 			name:                "OLCE candidates",
 			newConfig:           NewOLCEConfig,
 			malePopulation:      1,
 			femalePopulation:    1,
 			wantConcurrency:     4,
-			wantEvaluationCount: 11,
+			wantEvaluationCount: 12,
 			configure:           func(*Config) {},
 		},
 		{

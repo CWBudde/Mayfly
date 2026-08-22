@@ -107,6 +107,12 @@ func evaluateParallelOrthogonalLearning(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
+	// A zero factor collapses every candidate onto its parent male, so the
+	// stage cannot change anything and must not spend evaluations.
+	if factor <= 0 {
+		return 0, nil
+	}
+
 	numElite := min(max(int(float64(len(males))*topPercent), 1), len(males))
 	candidates := make([]*Mayfly, 0, numElite*len(L4Array))
 
@@ -517,4 +523,48 @@ func commitAquilaCandidates(
 			copyMayflyToBest(globalBest, candidate.target)
 		}
 	}
+}
+
+// evaluateParallelChaoticExploitation runs the OLCE-MA chaotic exploitation
+// step on the leading elites of males through the worker pool.
+//
+// Candidate generation stays on the caller goroutine so the LogisticMap is
+// never shared, and acceptance is greedy: an elite only moves onto its chaotic
+// neighbor when the neighbor is not worse. It returns the number of
+// objective evaluations spent.
+func evaluateParallelChaoticExploitation(
+	ctx context.Context,
+	males []*Mayfly,
+	numElite int,
+	config *Config,
+	chaosMap *LogisticMap,
+	iteration int,
+	evaluator *evaluationPool,
+) (int, error) {
+	radius := chaoticExploitationRadius(config, iteration)
+	candidates := make([]*Mayfly, 0, numElite)
+
+	for i := range numElite {
+		contextErr := ctx.Err()
+		if contextErr != nil {
+			return 0, contextErr
+		}
+
+		candidate := newMayfly(len(males[i].Position))
+		chaoticExploitationCandidate(
+			candidate.Position, males[i].Position, config, chaosMap, radius,
+		)
+		candidates = append(candidates, candidate)
+	}
+
+	_, evaluationErr := evaluator.evaluate(ctx, candidates, false, false)
+	if evaluationErr != nil {
+		return 0, evaluationErr
+	}
+
+	for i, candidate := range candidates {
+		acceptChaoticCandidate(males[i], candidate, evaluator.evaluator)
+	}
+
+	return len(candidates), nil
 }

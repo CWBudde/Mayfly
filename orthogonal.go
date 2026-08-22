@@ -56,6 +56,9 @@ var L4Array = [][]int{
 //
 // Returns:
 //   - A new Mayfly representing the best candidate from the orthogonal exploration
+//
+// A factor of zero disables the step: every candidate would collapse onto the
+// male itself, so male is returned unchanged without spending any evaluation.
 func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float64,
 	lb, ub []float64, objFunc func([]float64) float64, rng *rand.Rand,
 ) *Mayfly {
@@ -67,6 +70,13 @@ func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float64,
 	lb, ub []float64, evaluator *constraintEvaluator, rng *rand.Rand,
 ) *Mayfly {
+	// With a zero factor both the blend and the perturbation vanish, so every
+	// candidate is bit-identical to the male. Evaluating them would burn the
+	// full L4 budget on a guaranteed no-op.
+	if factor <= 0 {
+		return male
+	}
+
 	dim := len(male.Position)
 	candidates := make([]*Mayfly, len(L4Array))
 
@@ -146,6 +156,8 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 //
 // Returns:
 //   - The males slice with top performers improved via orthogonal learning
+//
+// A factor of zero disables the step and spends no evaluations.
 func ApplyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	gbest []float64, factor float64, lb, ub []float64,
 	objFunc func([]float64) float64, rng *rand.Rand,
@@ -159,6 +171,11 @@ func applyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	gbest []float64, factor float64, lb, ub []float64,
 	evaluator *constraintEvaluator, rng *rand.Rand,
 ) {
+	// A zero factor cannot move any male, so skip the stage entirely.
+	if factor <= 0 {
+		return
+	}
+
 	// Calculate number of elite males to improve
 	numElite := min(max(int(float64(len(males))*topPercent), 1), len(males))
 

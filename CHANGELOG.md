@@ -7,6 +7,35 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- EOBBMA's elite opposition-based learning had no observable effect on the
+  search. It generated the *static* opposition point `a + b - x` of each elite
+  and accepted it only when it beat that elite. Reflecting a good solution
+  through the middle of the search space lands in the mirror region, where it
+  essentially never wins, so the candidates were evaluated and always
+  discarded: runs with `OppositionRate` 0 and 1 produced bit-identical results
+  on every seed tried, differing only in the wasted evaluation count. The
+  operator now implements elite opposition-based learning as published,
+  reflecting through the dynamic interval spanned by the elite set with a
+  random coefficient `k ~ U(0, 1)` and resampling out-of-bounds reflections
+  from that interval.
+- GSASMA's "Golden Sine Algorithm" component was not the Golden Sine Algorithm.
+  The implemented rule `x + r1*sin(r2)*|r3*best - x|` is the Sine Cosine
+  Algorithm update; the `GoldenRatio` constant was never read anywhere in the
+  package, so nothing in the variant used the golden ratio. The update now
+  follows Tanyildizi & Demir (2017):
+  `x*|sin(r1)| - r2*sin(r1)*|x1*best - x2*x|`, where `x1` and `x2` are the
+  section points of a golden section search over `[-π, π]` that narrows by
+  `1/φ` after every candidate. `GoldenFactor` keeps its meaning as a scale on
+  the second term and its default of 1.0 reproduces the published rule.
+
+### Removed
+
+- `applyGSASMAToEliteMales`, `applyGoldenSineToElite` and
+  `goldenSineConvergence`, unexported helpers that were unreachable and carried
+  a second copy of the mislabelled Sine-Cosine update.
+
 ## [0.5.0] - 2026-08-22
 
 ### Fixed

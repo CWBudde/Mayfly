@@ -363,13 +363,20 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	// Initialize GSASMA parameters if enabled
-	var annealingScheduler *AnnealingScheduler
+	var (
+		annealingScheduler  *AnnealingScheduler
+		goldenSectionSearch *goldenSection
+	)
+
 	if config.UseGSASMA {
 		annealingScheduler = NewAnnealingScheduler(
 			config.InitialTemperature,
 			config.CoolingRate,
 			config.CoolingSchedule,
 		)
+		// The golden section search persists across iterations so that the
+		// interval actually narrows over the run.
+		goldenSectionSearch = newGoldenSection()
 	}
 
 	// Initialize AOBLMOA parameters if enabled
@@ -778,13 +785,19 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			} else {
 				// Apply opposition sequentially for backward compatibility.
 				numEliteOpposition := min(config.EliteOppositionCount, len(males))
+				eliteLower, eliteUpper := eliteBounds(
+					males, numEliteOpposition, config.LowerBound, config.UpperBound,
+				)
 
 				for i := range numEliteOpposition {
 					if rng.Float64() >= config.OppositionRate {
 						continue
 					}
 
-					oppPos := oppositionPoint(males[i].Position, config.LowerBound, config.UpperBound)
+					oppPos := eliteOppositionPoint(
+						males[i].Position, eliteLower, eliteUpper,
+						config.LowerBound, config.UpperBound, rng,
+					)
 					opposition := newMayfly(config.ProblemSize)
 					copy(opposition.Position, oppPos)
 					candidateEvaluator.evaluateMayfly(opposition, false)
@@ -824,11 +837,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					0.2,
 					&globalBest,
 					config.GoldenFactor,
-					it,
-					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,
+					goldenSectionSearch,
 					rng,
 					evaluator,
 				)
@@ -844,11 +856,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					0.2, // Elite ratio: top 20%
 					globalBest,
 					config.GoldenFactor,
-					it,
-					config.MaxIterations,
 					config.LowerBound,
 					config.UpperBound,
 					annealingScheduler,
+					goldenSectionSearch,
 					candidateEvaluator,
 					rng,
 				)

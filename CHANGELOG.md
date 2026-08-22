@@ -7,6 +7,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-22
+
 ### Fixed
 
 - Crossover is blend crossover again. The coefficient was drawn from `U(0, 1)`,
@@ -215,7 +217,9 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Benchmark functions, algorithm selection, comparison utilities, examples,
   JSON configuration, and algorithm documentation.
 
-[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/CWBudde/Mayfly/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/CWBudde/Mayfly/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/CWBudde/Mayfly/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/CWBudde/Mayfly/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/CWBudde/Mayfly/compare/v0.2.0...v0.2.1

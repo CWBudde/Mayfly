@@ -9,13 +9,12 @@ import (
 // evaluateParallelGeneticOperators prepares genetic candidates on the caller
 // goroutine, then evaluates the fixed crossover and mutation batches through
 // the run-scoped worker pool. Keeping random generation and slice growth here
-// avoids sharing rand.Rand, LogisticMap, or a slice header between goroutines.
+// avoids sharing rand.Rand or a slice header between goroutines.
 func evaluateParallelGeneticOperators(
 	ctx context.Context,
 	males, females []*Mayfly,
 	config *Config,
 	rng *rand.Rand,
-	chaosMap *LogisticMap,
 	evaluator *evaluationPool,
 	iteration int,
 ) ([]*Mayfly, Best, error) {
@@ -45,11 +44,9 @@ func evaluateParallelGeneticOperators(
 
 		off1 := newMayfly(config.ProblemSize)
 		copy(off1.Position, off1Pos)
-		applyOffspringChaos(off1.Position, config, chaosMap)
 
 		off2 := newMayfly(config.ProblemSize)
 		copy(off2.Position, off2Pos)
-		applyOffspringChaos(off2.Position, config, chaosMap)
 
 		offspring = append(offspring, off1, off2)
 	}
@@ -95,7 +92,6 @@ func evaluateParallelGeneticOperators(
 			)
 		}
 
-		applyOffspringChaos(mutant.Position, config, chaosMap)
 		// Append immediately so later mutants retain the existing ability to
 		// select an earlier mutant as their parent.
 		offspring = append(offspring, mutant)
@@ -115,27 +111,6 @@ func evaluateParallelGeneticOperators(
 	}
 
 	return offspring, geneticBest, nil
-}
-
-func applyOffspringChaos(position []float64, config *Config, chaosMap *LogisticMap) {
-	if !config.UseOLCE {
-		return
-	}
-
-	for j := range position {
-		chaosValue := chaosMap.Next()
-		perturbation := config.ChaosFactor * (chaosValue - 0.5) *
-			(config.UpperBound - config.LowerBound)
-		position[j] += perturbation
-
-		if position[j] < config.LowerBound {
-			position[j] = config.LowerBound
-		}
-
-		if position[j] > config.UpperBound {
-			position[j] = config.UpperBound
-		}
-	}
 }
 
 func adaptiveCauchyProbability(iteration int, config *Config) float64 {

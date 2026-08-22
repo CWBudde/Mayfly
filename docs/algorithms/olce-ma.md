@@ -20,6 +20,8 @@ Applies **orthogonal experimental design** to elite males (top 20% of population
 - **Method**: Systematic exploration of parameter combinations
 - **Effect**: More efficient search of the solution space
 - **Applied to**: Elite males after sorting by fitness
+- **Disabling**: `OrthogonalFactor = 0` skips the stage and spends no
+  evaluations on it
 
 **Benefits**:
 
@@ -29,10 +31,12 @@ Applies **orthogonal experimental design** to elite males (top 20% of population
 
 ### 2. Chaotic Exploitation
 
-Uses a **logistic chaotic map** to perturb offspring positions:
+Applies a **chaotic local search** to the same elite males, one candidate per
+elite and iteration:
 
 ```
-x_chaos = ChaosFactor * chaos_value * (UpperBound - LowerBound)
+radius   = ChaosFactor * (1 - iteration / MaxIterations)
+candidate[j] = clamp(elite[j] + radius * (z - 0.5) * (UpperBound - LowerBound))
 ```
 
 Where chaos values follow the logistic map:
@@ -40,6 +44,18 @@ Where chaos values follow the logistic map:
 ```
 z(n+1) = 4 * z(n) * (1 - z(n))
 ```
+
+Two properties make this a local search rather than a random walk:
+
+- **Greedy acceptance**: the elite only moves onto the candidate when the
+  candidate is not worse, so the step can never degrade the population.
+- **Decaying radius**: the neighborhood shrinks linearly to zero over the run,
+  so early iterations escape local optima and late iterations refine.
+
+At `r = 4` the logistic map has an arcsine stationary distribution that
+concentrates near 0 and 1, so the typical displacement is close to the full
+radius. Without greedy acceptance and decay, that turns the step into a
+persistent large random walk that prevents convergence.
 
 **Properties**:
 
@@ -203,7 +219,9 @@ func main() {
 
 - `UseOLCE`: Enable OLCE-MA variant (default: false)
 - `OrthogonalFactor`: Orthogonal learning strength (default: 0.3, range: 0-1)
-- `ChaosFactor`: Chaos perturbation strength (default: 0.1, range: 0-1)
+- `ChaosFactor`: Initial chaotic search radius as a fraction of the search
+  space width (default: 0.1, range: 0-1). The radius decays to zero over the
+  run. Set to 0 to disable chaotic exploitation entirely.
 
 ## Benefits
 

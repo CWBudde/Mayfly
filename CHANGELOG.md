@@ -19,6 +19,24 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `ContinousCrossover` and `ma.py` `MA(..., gamma=0.4)`), so offspring may land
   outside the parental interval. **This changes the search trajectory of every
   run and every variant**, including previously seeded ones.
+- OLCE-MA's chaotic exploitation is a greedy local search again instead of an
+  unconditional random kick. Every offspring was displaced in every dimension,
+  every iteration, with no acceptance test and no decay — and because the
+  logistic map at `r = 4` has an arcsine stationary distribution concentrated
+  near 0 and 1, the typical displacement was near-maximal rather than
+  near-zero. The stage now generates one chaotic neighbor per elite male, with
+  a radius that decays linearly to zero over the run, and accepts it only when
+  it is not worse. On 10-dimensional Rastrigin over 30 seeds (500 iterations,
+  default population) the mean best cost of `NewOLCEConfig` improves from
+  8.4392 to 2.8035; the standard algorithm scores 3.6211 on the same seeds, so
+  OLCE-MA was previously more than twice as bad as the variant it enhances.
+- OLCE-MA's orthogonal learning no longer spends its evaluation budget when
+  `OrthogonalFactor` is 0. Both the blend and the perturbation scale with the
+  factor, so all four L4 candidates were bit-identical to the parent male and
+  the stage was a guaranteed no-op that still cost four evaluations per elite
+  male per iteration — 8000 of 38540 evaluations (20.8%) in the run above.
+  `ApplyOrthogonalLearning`, `ApplyOrthogonalLearningToElite` and the pooled
+  path now return immediately for a non-positive factor.
 - **AOBLMOA moved only part of its swarm.** Every individual drew against
   `AquilaWeight` to decide whether it took an Aquila-Optimizer step, and an
   individual that lost the draw was skipped outright — no Aquila step, and no
@@ -66,6 +84,12 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Behaviour change for `UseOLCE` runs.** Chaotic exploitation moved off the
+  crossover and mutation offspring and onto the elite males, so an OLCE-MA run
+  no longer reproduces a result recorded under v0.5.0. `ChaosFactor` keeps its
+  default of 0.1 but now means the *initial* radius of a decaying neighborhood
+  rather than a constant displacement; setting it to 0 disables the stage.
+  The stage costs one evaluation per elite male per iteration.
 - **`NewAOBLMOAConfig` now defaults `AquilaWeight` to 1.0** (was 0.5). The
   published algorithm has no such probability: it moves every individual either
   by Mayfly attraction or by an Aquila strategy chosen from the iteration

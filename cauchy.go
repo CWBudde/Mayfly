@@ -64,7 +64,7 @@ func cauchyRandVec(size int, x0, gamma float64, rng *rand.Rand) []float64 {
 // Returns: mutated position vector.
 func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
-	nMu := int(math.Ceil(mu * float64(nVar)))
+	nMu := mutationCount(mu, nVar)
 
 	// Scale parameter: Use 10% of search space as in Gaussian mutation
 	// This provides comparable exploration range while leveraging heavy tails

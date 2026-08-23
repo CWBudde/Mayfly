@@ -62,11 +62,33 @@ func CrossoverBlend(
 	return off1, off2
 }
 
+// mutationCount converts a mutation rate into the number of dimensions to
+// perturb, saturating instead of producing a slice bound the operators cannot
+// use.
+//
+// Optimize rejects a mu outside [0,1] before a run starts, so this only has to
+// hold for callers who reach the exported operators directly. Their previous
+// answer to an out-of-range rate was a slice-bounds panic: mu > 1 asks for more
+// dimensions than exist, mu < 0 asks for a negative count, and NaN converts to
+// the most negative int. None of those is a more useful outcome than mutating
+// every dimension or none.
+func mutationCount(mu float64, nVar int) int {
+	if math.IsNaN(mu) || mu <= 0 {
+		return 0
+	}
+
+	if mu >= 1 {
+		return nVar
+	}
+
+	return min(int(math.Ceil(mu*float64(nVar))), nVar)
+}
+
 // MutateGaussian applies Gaussian mutation to a position vector.
 // This uses a normal (Gaussian) distribution for perturbations.
 func MutateGaussian(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
-	nMu := int(math.Ceil(mu * float64(nVar)))
+	nMu := mutationCount(mu, nVar)
 	sigma := 0.1 * (upperBound - lowerBound)
 
 	y := make([]float64, nVar)

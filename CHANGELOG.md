@@ -26,6 +26,20 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- A `Mu` outside the documented `[0, 1]` panicked the optimizer partway through
+  a run instead of being rejected. `Mu` is a fraction of the dimensions, and the
+  mutation operators turn it into a count with `ceil(Mu * ProblemSize)` and then
+  slice a permutation of the dimensions to that length. A `Mu` above 1 asks for
+  more dimensions than exist, a negative one asks for a negative count, and
+  `NaN` converts to the most negative `int`; all three ended in
+  `slice bounds out of range`. `Mu = 1.0000001` was enough. The range was
+  already documented and already enforced by `LoadConfig`, so only configs built
+  programmatically were exposed — `Optimize` never checked it. The check now
+  lives in `validateOffspring` alongside the other genetic-operator parameters,
+  so both paths agree and the run fails before it starts. The exported operators
+  `MutateGaussian`, `MutateCauchy` and `HybridMutate` take the rate directly and
+  now saturate rather than panic: at or below `0`, and at `NaN`, they mutate
+  nothing; at or above `1` they mutate every dimension.
 - The Friedman test reported inverted significance. Its p-value came from
   `chiSquareCDF`, whose small-`df` branch returned
   `exp(-x/2) * (x/2)^(df/2)` — a curve that is neither a cumulative

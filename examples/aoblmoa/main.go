@@ -103,49 +103,48 @@ func main() {
 	fmt.Println("================================================================================")
 	fmt.Println()
 
-	// Example 1: Balanced hybrid (default)
-	fmt.Println("Example 1: Balanced Hybrid Configuration (Default)")
+	// Example 1: the published algorithm (default)
+	fmt.Println("Example 1: Paper Configuration (Default)")
 	config1 := mayfly.NewAOBLMOAConfig()
 	config1.ObjectiveFunc = mayfly.Rastrigin
 	config1.ProblemSize = 10
 	config1.LowerBound = -5.12
 	config1.UpperBound = 5.12
 	config1.MaxIterations = 500
-	// AquilaWeight = 1.0 (default)
-	// OppositionProbability = 0.3 (default)
-	fmt.Printf("  AquilaWeight:          %.1f (100%% Aquila, as in the paper)\n", config1.AquilaWeight)
-	fmt.Printf("  OppositionProbability: %.1f (30%% use OBL)\n", config1.OppositionProbability)
-	fmt.Println("  Use when: General problems, unsure which strategy is best")
+	fmt.Printf("  AquilaWeight:   %.0f (AquilaWeightAuto: the branch is a fitness test)\n",
+		config1.AquilaWeight)
+	fmt.Printf("  StrategySwitch: %d (0 resolves to 2/3 of MaxIterations per run)\n",
+		config1.StrategySwitch)
+	fmt.Println("  Use when: always, unless reproducing a pre-v0.6.0 run")
 	fmt.Println()
 
-	// Example 2: More Aquila (aggressive exploration)
-	fmt.Println("Example 2: Aggressive Exploration Configuration")
+	// Example 2: exploit later
+	fmt.Println("Example 2: Longer Exploration Configuration")
 	config2 := mayfly.NewAOBLMOAConfig()
 	config2.ObjectiveFunc = mayfly.Schwefel
 	config2.ProblemSize = 10
 	config2.LowerBound = -500
 	config2.UpperBound = 500
 	config2.MaxIterations = 500
-	config2.AquilaWeight = 0.7          // 70% Aquila
-	config2.OppositionProbability = 0.5 // 50% OBL
-	fmt.Printf("  AquilaWeight:          %.1f (70%% Aquila, 30%% Mayfly)\n", config2.AquilaWeight)
-	fmt.Printf("  OppositionProbability: %.1f (50%% use OBL)\n", config2.OppositionProbability)
+	config2.StrategySwitch = 450 // exploit only over the last 50 iterations
+	fmt.Printf("  StrategySwitch: %d of %d iterations\n",
+		config2.StrategySwitch, config2.MaxIterations)
 	fmt.Println("  Use when: Highly deceptive problems, many local optima")
 	fmt.Println()
 
-	// Example 3: More Mayfly (social learning)
-	fmt.Println("Example 3: Social Learning Configuration")
+	// Example 3: the deprecated compatibility knob
+	fmt.Println("Example 3: Reproducing a pre-v0.6.0 Run")
 	config3 := mayfly.NewAOBLMOAConfig()
 	config3.ObjectiveFunc = mayfly.Rosenbrock
 	config3.ProblemSize = 10
 	config3.LowerBound = -5
 	config3.UpperBound = 10
 	config3.MaxIterations = 500
-	config3.AquilaWeight = 0.3          // 30% Aquila
-	config3.OppositionProbability = 0.1 // 10% OBL
-	fmt.Printf("  AquilaWeight:          %.1f (30%% Aquila, 70%% Mayfly)\n", config3.AquilaWeight)
-	fmt.Printf("  OppositionProbability: %.1f (10%% use OBL)\n", config3.OppositionProbability)
-	fmt.Println("  Use when: Problems benefit from swarm intelligence, smooth landscapes")
+	config3.AquilaWeight = 1.0 // the pre-v0.6.0 default: draw the branch at random
+	fmt.Printf("  AquilaWeight:   %.1f (deprecated override, probabilistic branch)\n",
+		config3.AquilaWeight)
+	fmt.Println("  Note: only the branch choice is restored; the offspring stage")
+	fmt.Println("        is the paper's, so old runs are not reproduced exactly")
 	fmt.Println()
 
 	// Example 4: Multi-objective setup
@@ -203,14 +202,12 @@ func main() {
 	fmt.Println("AOBLMOA Features Summary")
 	fmt.Println("================================================================================")
 	fmt.Println()
-	fmt.Println("  ✓ Four adaptive hunting strategies (Aquila Optimizer)")
-	fmt.Println("  ✓ Hybrid Mayfly-Aquila operator switching")
-	fmt.Println("  ✓ Opposition-based learning for expanded coverage")
-	fmt.Println("  ✓ Multi-objective optimization with Pareto dominance")
-	fmt.Println("  ✓ NSGA-II selection with crowding distance")
-	fmt.Println("  ✓ Automatic strategy switching (exploration → exploitation)")
-	fmt.Println("  ✓ Configurable hybrid balance (AquilaWeight parameter)")
+	fmt.Println("  ✓ Four Aquila hunting strategies, split by sex and phase")
+	fmt.Println("  ✓ Mayfly/Aquila branch decided by a fitness test, not a draw")
+	fmt.Println("  ✓ Stochastic opposition-based learning on every offspring")
+	fmt.Println("  ✓ StrategySwitch controls the exploration/exploitation split")
 	fmt.Println("  ✓ Every individual moves every iteration, in either branch")
+	fmt.Println("  ✓ NM is inert: opposition replaces Gaussian mutation")
 	fmt.Println("  ✓ ArchiveSize sizes a caller-managed ParetoArchive")
 	fmt.Println()
 	fmt.Println("Best for:")

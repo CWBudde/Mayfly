@@ -366,7 +366,7 @@ func maximizeProfit(x []float64) float64 {
 - EOBBMA: Elite opposition-based with Lévy flight
 - GSASMA: Golden sine + simulated annealing
 - MPMA: Median position-based
-- AOBLMOA: Multi-objective with Aquila optimizer
+- AOBLMOA: Aquila Optimizer strategies + stochastic opposition-based learning
 
 **Framework Unification** (Phase 7):
 
@@ -387,7 +387,7 @@ All variants maintain research fidelity to original papers:
 4. **EOBBMA**: _Arabian Journal for Science and Engineering_, 2024
 5. **GSASMA**: _Electronics Letters / IEEE_, 2022
 6. **MPMA**: _IEEE Access_, 2022
-7. **AOBLMOA**: _PubMed / Various journals_, 2023
+7. **AOBLMOA**: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
 
 ## Common Pitfalls
 

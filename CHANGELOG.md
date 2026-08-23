@@ -7,6 +7,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-23
+
 ### Added
 
 - `AquilaWeightAuto`, the sentinel that selects AOBLMOA's published branch rule.
@@ -362,7 +364,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Benchmark functions, algorithm selection, comparison utilities, examples,
   JSON configuration, and algorithm documentation.
 
-[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/CWBudde/Mayfly/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/CWBudde/Mayfly/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/CWBudde/Mayfly/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/CWBudde/Mayfly/compare/v0.3.0...v0.4.0

@@ -5,7 +5,7 @@ A Go implementation of the Mayfly Optimization Algorithm (MA), a nature-inspired
 [![Go Reference](https://pkg.go.dev/badge/github.com/cwbudde/mayfly.svg)](https://pkg.go.dev/github.com/cwbudde/mayfly)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cwbudde/mayfly)](https://goreportcard.com/report/github.com/cwbudde/mayfly)
 
-**[Try it in your browser →](https://cwbudde.github.io/Mayfly/)** — watch the swarm search, and compare all seven variants, with the library itself compiled to WebAssembly.
+**[Try it in your browser →](https://cwbudde.github.io/mayfly/)** — watch the swarm search, and compare all seven variants, with the library itself compiled to WebAssembly.
 
 ## Overview
 

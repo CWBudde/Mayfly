@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"testing"
 )
 
@@ -1366,11 +1367,12 @@ func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
 	}
 }
 
-// TestAOBLMOAWithMPMAEnabled guards against a nil median position reaching the
-// standard-Mayfly fallback of the AOBLMOA update. Configuration validation
-// permits UseAOBLMOA and UseMPMA together, and the fallback used to index into
-// the median position that only the MPMA phase computes.
-func TestAOBLMOAWithMPMAEnabled(t *testing.T) {
+// TestAOBLMOAWithMPMAIsRejected pins the fix for a configuration that used to
+// be accepted and then silently ignored. AOBLMOA replaces the whole
+// position-update phase, so no median position is ever computed and the
+// standard-male fallback inside AOBLMOA drops the median term — a run with
+// UseMPMA set behaved exactly like one without it.
+func TestAOBLMOAWithMPMAIsRejected(t *testing.T) {
 	for _, parallel := range []bool{false, true} {
 		t.Run(fmt.Sprintf("parallel_%t", parallel), func(t *testing.T) {
 			config := NewAOBLMOAConfig()
@@ -1388,13 +1390,16 @@ func TestAOBLMOAWithMPMAEnabled(t *testing.T) {
 			config.EnableParallel = parallel
 
 			result, err := Optimize(config)
-			if err != nil {
-				t.Fatalf("Optimization failed: %v", err)
+			if err == nil {
+				t.Fatal("Optimize accepted UseAOBLMOA together with UseMPMA, want an error")
 			}
 
-			if len(result.GlobalBest.Position) != config.ProblemSize {
-				t.Errorf("Expected result dimension %d, got %d",
-					config.ProblemSize, len(result.GlobalBest.Position))
+			if result != nil {
+				t.Errorf("Optimize returned a result alongside an error: %+v", result)
+			}
+
+			if !strings.Contains(err.Error(), "position-update phase") {
+				t.Errorf("error %q does not explain that the variants are mutually exclusive", err)
 			}
 		})
 	}
@@ -1423,4 +1428,183 @@ func TestAOBLMOAWithoutConfiguredRand(t *testing.T) {
 		t.Errorf("Expected result dimension %d, got %d",
 			config.ProblemSize, len(result.GlobalBest.Position))
 	}
+}
+
+// TestAOBLMOASequentialAndParallelAgree pins the property that used to be
+// violated: the two AOBLMOA implementations must compute the same iteration.
+//
+// The sequential path moved and re-evaluated every male before it reached the
+// females, so a female compared herself against her paired male's fresh cost;
+// the parallel path moved the males but deferred their evaluation, so the same
+// comparison saw this iteration's position with last iteration's cost. The
+// Aquila mean position and its random peer diverged for the same reason. Both
+// paths now update the swarm against the state it had when the iteration
+// began, which is also what the standard variant does when it updates the
+// females before the males.
+func TestAOBLMOASequentialAndParallelAgree(t *testing.T) {
+	for _, testCase := range []struct {
+		name                  string
+		aquilaWeight          float64
+		oppositionProbability float64
+	}{
+		{"mayfly_branch_only", 0.0, 0.5},
+		{"mixed_branches", 0.5, 0.5},
+		{"aquila_branch_only", 1.0, 0.5},
+		{"without_opposition", 0.5, 0.0},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			build := func(parallel bool) *Config {
+				config := NewAOBLMOAConfig()
+				config.Rand = rand.New(rand.NewSource(2024))
+				config.ObjectiveFunc = Sphere
+				config.ProblemSize = 4
+				config.LowerBound = -5.0
+				config.UpperBound = 5.0
+				config.MaxIterations = 25
+				config.NPop = 8
+				config.NPopF = 8
+				config.NC = 8
+				config.AquilaWeight = testCase.aquilaWeight
+				config.OppositionProbability = testCase.oppositionProbability
+				config.EnableParallel = parallel
+
+				return config
+			}
+
+			sequential, err := Optimize(build(false))
+			if err != nil {
+				t.Fatalf("sequential optimization failed: %v", err)
+			}
+
+			parallel, err := Optimize(build(true))
+			if err != nil {
+				t.Fatalf("parallel optimization failed: %v", err)
+			}
+
+			if sequential.GlobalBest.Cost != parallel.GlobalBest.Cost {
+				t.Errorf("global best cost differs: sequential %v, parallel %v",
+					sequential.GlobalBest.Cost, parallel.GlobalBest.Cost)
+			}
+
+			if !samePosition(sequential.GlobalBest.Position, parallel.GlobalBest.Position) {
+				t.Errorf("global best position differs: sequential %v, parallel %v",
+					sequential.GlobalBest.Position, parallel.GlobalBest.Position)
+			}
+
+			if sequential.FuncEvalCount != parallel.FuncEvalCount {
+				t.Errorf("evaluation budget differs: sequential %d, parallel %d",
+					sequential.FuncEvalCount, parallel.FuncEvalCount)
+			}
+		})
+	}
+}
+
+// TestAOBLMOAPairsFemalesWithIterationStartMales pins the pairing state
+// directly.
+//
+// Every female starts on top of her paired male, whose recorded cost is better
+// than any female's, and every female starts at rest. Paired against the male's
+// iteration-start position and cost, the attraction term is exactly zero, so a
+// female must stay exactly where she is — no random draw enters the result.
+//
+// Before the fix the sequential path had already moved and re-evaluated the
+// males by the time the females ran, so the pairing saw a male who had walked
+// away and whose real cost was worse than the recorded one; the female flew
+// randomly instead and moved. The parallel path saw the moved position with the
+// recorded cost, which drove her toward the male's old position.
+func TestAOBLMOAPairsFemalesWithIterationStartMales(t *testing.T) {
+	const size = 6
+
+	build := func(t *testing.T) (*Config, []*Mayfly, []*Mayfly, Best) {
+		t.Helper()
+
+		config := NewAOBLMOAConfig()
+		config.Rand = rand.New(rand.NewSource(13))
+		config.ObjectiveFunc = Sphere
+		config.ProblemSize = 3
+		config.LowerBound = -5.0
+		config.UpperBound = 5.0
+		config.MaxIterations = 100
+		// Send every individual down the ordinary Mayfly branch.
+		config.AquilaWeight = 0
+		config.OppositionProbability = 0
+		config.VelMin = -2.0
+		config.VelMax = 2.0
+
+		initializeAOBLMOA(config)
+
+		males := make([]*Mayfly, size)
+		females := make([]*Mayfly, size)
+
+		for i := range size {
+			males[i] = newMayfly(config.ProblemSize)
+			females[i] = newMayfly(config.ProblemSize)
+
+			for j := range config.ProblemSize {
+				position := config.Rand.Float64()*8.0 - 4.0
+				males[i].Position[j] = position
+				females[i].Position[j] = position
+				males[i].Best.Position[j] = position
+			}
+
+			// A recorded cost no female can beat, and one the male's real
+			// position does not have: re-evaluating him changes the verdict.
+			males[i].Cost = -1
+			males[i].Best.Cost = -1
+			females[i].Cost = config.ObjectiveFunc(females[i].Position)
+		}
+
+		globalBest := Best{
+			Position:            append([]float64(nil), males[0].Best.Position...),
+			Cost:                males[0].Best.Cost,
+			ConstraintViolation: 0,
+		}
+
+		return config, males, females, globalBest
+	}
+
+	assertFemalesStill := func(t *testing.T, females []*Mayfly, before [][]float64) {
+		t.Helper()
+
+		for i, female := range females {
+			if !samePosition(before[i], female.Position) {
+				t.Errorf("female %d moved: %v became %v; she was paired against a male "+
+					"whose iteration-start position she already occupies",
+					i, before[i], female.Position)
+			}
+		}
+	}
+
+	t.Run("sequential", func(t *testing.T) {
+		config, males, females, globalBest := build(t)
+		before := snapshotPositions(females)
+
+		applyAOBLMOAToPopulation(
+			males, females, globalBest, 10, config.MaxIterations,
+			config.G, config.Dance, config.FL, config,
+		)
+
+		assertFemalesStill(t, females, before)
+	})
+
+	t.Run("parallel", func(t *testing.T) {
+		config, males, females, globalBest := build(t)
+		before := snapshotPositions(females)
+
+		constraints := newConstraintEvaluator(config.ObjectiveFunc, nil)
+		pool := newConstrainedEvaluationPool(constraints, 2)
+
+		defer pool.close()
+
+		_, err := evaluateParallelAOBLMOA(
+			context.Background(), males, females, &globalBest,
+			10, config.MaxIterations, config.G, config.Dance, config.FL,
+			config, config.Rand, pool,
+		)
+		if err != nil {
+			t.Fatalf("evaluateParallelAOBLMOA failed: %v", err)
+		}
+
+		assertFemalesStill(t, females, before)
+	})
 }

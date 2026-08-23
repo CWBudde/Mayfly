@@ -69,6 +69,8 @@ Control the size and behavior of the mayfly populations:
 - Increase population for complex/high-dimensional problems (30-50)
 - Decrease for simple problems or quick testing (10-15)
 - `NPop` and `NPopF` are typically equal
+- `NPopF` must not exceed `NPop`: every female is paired with the male at the
+  same index
 
 ## Velocity Parameters
 
@@ -478,6 +480,9 @@ The `Optimize()` function validates configuration:
 - `ProblemSize`
 - finite `LowerBound` and `UpperBound` with `LowerBound < UpperBound`
 - positive `MaxIterations`, `NPop`, and `NPopF` (set by all factories)
+- `NPopF` no larger than `NPop`
+- at most one of `UseAOBLMOA`, `UseEOBBMA`, and `UseMPMA`: they replace the same
+  position-update phase, so combining them left the losing one inert
 
 **Auto-calculated fields** (if zero):
 

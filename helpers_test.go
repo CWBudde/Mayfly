@@ -355,3 +355,56 @@ func TestSortMayfliesSingleElement(t *testing.T) {
 		t.Errorf("sortMayflies() modified single element: got cost %v, want 5.0", mayflies[0].Cost)
 	}
 }
+
+// TestValidateUpdatePhaseVariants covers the combinations that used to be
+// accepted and then silently ignored. The position-update phase of the main
+// loop is a switch, so the losing variant contributed nothing while the
+// configuration still claimed it was enabled — most visibly MPMA under
+// AOBLMOA, whose standard-male fallback drops the median term because no
+// median position is ever computed.
+func TestValidateUpdatePhaseVariants(t *testing.T) {
+	for _, testCase := range []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr bool
+	}{
+		{"none", func(*Config) {}, false},
+		{"aoblmoa alone", func(c *Config) { c.UseAOBLMOA = true }, false},
+		{"eobbma alone", func(c *Config) { c.UseEOBBMA = true }, false},
+		{"mpma alone", func(c *Config) { c.UseMPMA = true }, false},
+		{
+			"aoblmoa with a composable variant",
+			func(c *Config) { c.UseAOBLMOA, c.UseDESMA = true, true },
+			false,
+		},
+		{
+			"aoblmoa with mpma",
+			func(c *Config) { c.UseAOBLMOA, c.UseMPMA = true, true },
+			true,
+		},
+		{
+			"aoblmoa with eobbma",
+			func(c *Config) { c.UseAOBLMOA, c.UseEOBBMA = true, true },
+			true,
+		},
+		{
+			"eobbma with mpma",
+			func(c *Config) { c.UseEOBBMA, c.UseMPMA = true, true },
+			true,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			config := NewDefaultConfig()
+			testCase.mutate(config)
+
+			err := validateUpdatePhaseVariants(config)
+			if testCase.wantErr && err == nil {
+				t.Fatal("validateUpdatePhaseVariants accepted the combination, want an error")
+			}
+
+			if !testCase.wantErr && err != nil {
+				t.Fatalf("validateUpdatePhaseVariants rejected the combination: %v", err)
+			}
+		})
+	}
+}

@@ -52,6 +52,34 @@ func aquilaPosition(
 	return newPosition, 2
 }
 
+// snapshotPopulation freezes the position and fitness of a population at the
+// start of an AOBLMOA iteration.
+//
+// Both AOBLMOA paths update the whole swarm against this frozen state: the
+// Aquila strategies read population positions (the mean position and a random
+// peer), and every female is paired against a male. Reading the live slices
+// instead makes the outcome depend on how far the update loop has already
+// progressed, which is where the sequential and the parallel path used to
+// disagree — the sequential path moved and re-evaluated every male before the
+// females ran, while the parallel path deferred the Aquila moves and the
+// evaluations to the end of the iteration.
+//
+// Freezing also matches the plain standard variant, which updates the females
+// against the males' previous-iteration position and cost.
+func snapshotPopulation(population []*Mayfly) []*Mayfly {
+	snapshot := make([]*Mayfly, len(population))
+
+	for i, member := range population {
+		frozen := newMayfly(len(member.Position))
+		copy(frozen.Position, member.Position)
+		frozen.Cost = member.Cost
+		frozen.ConstraintViolation = member.ConstraintViolation
+		snapshot[i] = frozen
+	}
+
+	return snapshot
+}
+
 // applyAOBLMOAToPopulation applies the AOBLMOA variant logic to a whole
 // population, using a freshly built evaluator.
 func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
@@ -83,10 +111,15 @@ func applyAOBLMOAToPopulationWithEvaluator(
 ) int {
 	evaluations := 0
 
+	// Every individual is updated against the state the swarm had when the
+	// iteration began, so the result does not depend on the update order.
+	frozenMales := snapshotPopulation(males)
+	frozenFemales := snapshotPopulation(females)
+
 	for _, male := range males {
 		if config.Rand.Float64() < config.AquilaWeight {
 			newPos, oblEvals := aquilaPosition(
-				male, globalBest, males, currentIter, maxIter, config, evaluator,
+				male, globalBest, frozenMales, currentIter, maxIter, config, evaluator,
 			)
 			evaluations += oblEvals
 
@@ -113,7 +146,7 @@ func applyAOBLMOAToPopulationWithEvaluator(
 	for i, female := range females {
 		if config.Rand.Float64() < config.AquilaWeight {
 			newPos, oblEvals := aquilaPosition(
-				female, globalBest, females, currentIter, maxIter, config, evaluator,
+				female, globalBest, frozenFemales, currentIter, maxIter, config, evaluator,
 			)
 			evaluations += oblEvals
 
@@ -121,12 +154,9 @@ func applyAOBLMOAToPopulationWithEvaluator(
 			maxVec(female.Position, config.LowerBound)
 			minVec(female.Position, config.UpperBound)
 		} else {
-			pairedMale := female
-			if i < len(males) {
-				pairedMale = males[i]
-			}
-
-			prepareStandardFemale(female, pairedMale, g, flight, config, config.Rand, evaluator)
+			prepareStandardFemale(
+				female, frozenMales[i], g, flight, config, config.Rand, evaluator,
+			)
 		}
 
 		evaluator.evaluateMayfly(female, false)

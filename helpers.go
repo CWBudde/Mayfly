@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"slices"
+	"strings"
 )
 
 // unifrnd generates a random float64 between lower and upper.
@@ -191,6 +192,27 @@ func tournamentIndex(n, size int, rng *rand.Rand) int {
 // who shrinks the population without also shrinking NC — the default NC of 20
 // with any NPop below 10, for instance — used to get an out-of-range panic from
 // inside the library rather than an error out of Optimize.
+// validateFemalePairing rejects a female population larger than the male
+// population. Every female is paired with the male at the same index, so a
+// surplus female has no pairing at all, and the female update phases used to
+// index straight past the end of the male slice and panic.
+//
+// This is a structural property of the pairing rather than a tunable
+// relationship, so Optimize reports it before the offspring checks: a caller
+// whose populations cannot pair at all is not helped by first being told about
+// NC.
+func validateFemalePairing(config *Config) error {
+	if config.NPopF > config.NPop {
+		return fmt.Errorf(
+			"NPopF (female population, %d) must not exceed NPop (male population, %d): "+
+				"each female is paired with the male at the same index",
+			config.NPopF, config.NPop,
+		)
+	}
+
+	return nil
+}
+
 func validateOffspring(config *Config) error {
 	if config.NC < 0 && config.NC != NCAuto {
 		return fmt.Errorf(
@@ -271,4 +293,39 @@ func effectiveCrossoverGamma(config *Config) float64 {
 	}
 
 	return gamma
+}
+
+// validateUpdatePhaseVariants rejects combinations of variants that replace the
+// same phase of the iteration.
+//
+// The position-update phase of the main loop is a switch: AOBLMOA wins over
+// EOBBMA, which wins over the standard update that carries the MPMA median
+// term. Setting two of them therefore left one silently inert — enabling MPMA
+// alongside AOBLMOA never computed a median position at all, and the standard
+// male fallback inside AOBLMOA dropped the median term while the configuration
+// claimed MPMA was in use. Refusing the combination makes that explicit
+// instead.
+func validateUpdatePhaseVariants(config *Config) error {
+	enabled := make([]string, 0, 3)
+
+	if config.UseAOBLMOA {
+		enabled = append(enabled, "UseAOBLMOA")
+	}
+
+	if config.UseEOBBMA {
+		enabled = append(enabled, "UseEOBBMA")
+	}
+
+	if config.UseMPMA {
+		enabled = append(enabled, "UseMPMA")
+	}
+
+	if len(enabled) < 2 {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"%s replace the same position-update phase and cannot be combined; enable exactly one",
+		strings.Join(enabled, " and "),
+	)
 }

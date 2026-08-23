@@ -46,11 +46,17 @@ func TestOptimizeRejectsMoreParentPairsThanPopulation(t *testing.T) {
 	for _, testCase := range []struct {
 		name            string
 		npop, npopf, nc int
+		// wantError pins which validation reports the case. "males too few"
+		// also has more females than males, and that pairing failure is the
+		// more fundamental one, so Optimize reports it first. Naming the
+		// expected message per case keeps that precedence deliberate instead
+		// of an accident of validation order.
+		wantError string
 	}{
-		{"males too few", 4, 20, 20},
-		{"females too few", 20, 4, 20},
-		{"both too few", 4, 4, 20},
-		{"one pair short", 9, 9, 20},
+		{"males too few", 4, 20, 20, "must not exceed NPop"},
+		{"females too few", 20, 4, 20, "parent pairs"},
+		{"both too few", 4, 4, 20, "parent pairs"},
+		{"one pair short", 9, 9, 20, "parent pairs"},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			// A panic here is the regression, so let it fail the test loudly
@@ -65,8 +71,8 @@ func TestOptimizeRejectsMoreParentPairsThanPopulation(t *testing.T) {
 				t.Errorf("Optimize returned a result alongside an error: %+v", result)
 			}
 
-			if !strings.Contains(err.Error(), "parent pairs") {
-				t.Errorf("error %q does not explain the parent-pair constraint", err)
+			if !strings.Contains(err.Error(), testCase.wantError) {
+				t.Errorf("error %q does not contain %q", err, testCase.wantError)
 			}
 		})
 	}
@@ -313,5 +319,74 @@ func TestMutationOperatorsSurviveOutOfRangeRates(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestOptimizeRejectsMoreFemalesThanMales covers a second index-out-of-range
+// crash in the same family: every female update phase pairs females[i] with
+// males[i], so NPopF above NPop indexed past the end of the male slice. The
+// standard path and the EOBBMA path both panicked, sequentially and in
+// parallel; only AOBLMOA carried an ad-hoc guard.
+func TestOptimizeRejectsMoreFemalesThanMales(t *testing.T) {
+	for _, testCase := range []struct {
+		name    string
+		variant func() *Config
+	}{
+		{"standard", NewDefaultConfig},
+		{"eobbma", NewEOBBMAConfig},
+		{"aoblmoa", NewAOBLMOAConfig},
+	} {
+		for _, parallel := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s_parallel_%t", testCase.name, parallel), func(t *testing.T) {
+				// A panic here is the regression, so let it fail the test
+				// loudly rather than be recovered into a pass.
+				config := testCase.variant()
+				config.ObjectiveFunc = Sphere
+				config.ProblemSize = 3
+				config.LowerBound = -5.0
+				config.UpperBound = 5.0
+				config.MaxIterations = 5
+				config.NPop = 6
+				config.NPopF = 12
+				config.NC = 6
+				config.NM = 1
+				config.EnableParallel = parallel
+				config.Rand = rand.New(rand.NewSource(3))
+
+				result, err := Optimize(config)
+				if err == nil {
+					t.Fatal("Optimize accepted NPopF=12 with NPop=6, want an error")
+				}
+
+				if result != nil {
+					t.Errorf("Optimize returned a result alongside an error: %+v", result)
+				}
+
+				if !strings.Contains(err.Error(), "must not exceed NPop") {
+					t.Errorf("error %q does not explain the pairing constraint", err)
+				}
+			})
+		}
+	}
+}
+
+// TestOptimizeAcceptsFewerFemalesThanMales pins the boundary from the other
+// side: a smaller female population is legal and must keep working.
+func TestOptimizeAcceptsFewerFemalesThanMales(t *testing.T) {
+	config := NewDefaultConfig()
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 3
+	config.LowerBound = -5.0
+	config.UpperBound = 5.0
+	config.MaxIterations = 5
+	config.NPop = 12
+	config.NPopF = 6
+	config.NC = 6
+	config.NM = 1
+	config.Rand = rand.New(rand.NewSource(3))
+
+	_, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("Optimize rejected NPopF=6 with NPop=12: %v", err)
 	}
 }

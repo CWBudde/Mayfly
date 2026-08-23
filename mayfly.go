@@ -92,6 +92,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, fmt.Errorf("MaxWorkers must be non-negative, got %d", config.MaxWorkers)
 	}
 
+	pairingErr := validateFemalePairing(config)
+	if pairingErr != nil {
+		return nil, pairingErr
+	}
+
 	offspringErr := validateOffspring(config)
 	if offspringErr != nil {
 		return nil, offspringErr
@@ -168,6 +173,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
 			return nil, fmt.Errorf("AOBLMOA OppositionProbability must be in [0, 1], got %v", config.OppositionProbability)
 		}
+	}
+
+	updatePhaseErr := validateUpdatePhaseVariants(config)
+	if updatePhaseErr != nil {
+		return nil, updatePhaseErr
 	}
 
 	run, err := resolveRunOptions(options)

@@ -40,6 +40,30 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `MutateGaussian`, `MutateCauchy` and `HybridMutate` take the rate directly and
   now saturate rather than panic: at or below `0`, and at `NaN`, they mutate
   nothing; at or above `1` they mutate every dimension.
+- The two AOBLMOA implementations computed different iterations. The sequential
+  path moved and re-evaluated every male before the females ran, so a female
+  compared herself against her paired male's fresh cost; the parallel path moved
+  the males but deferred their evaluation, so the same comparison saw this
+  iteration's position with last iteration's cost, and the Aquila mean position
+  and random peer mixed moved and unmoved members. Both paths now update the
+  whole swarm against the state it had when the iteration began — the same
+  pre-move pairing the standard variant uses — and produce identical results for
+  a given seed and configuration.
+- `Optimize` rejects `NPopF` greater than `NPop` instead of panicking. Every
+  female update phase pairs `females[i]` with `males[i]`, so a larger female
+  population indexed past the end of the male slice; the standard and EOBBMA
+  paths crashed with `index out of range`, sequentially and in parallel.
+- `ValidateConfig` rejects `NPopF` greater than `NPop` as well. It checked that
+  both populations were positive but not that they could pair, so a
+  configuration loaded from a file passed validation and then failed at the
+  start of a run its caller believed was already checked. Both entry points now
+  report the pairing failure before the offspring checks, so the same
+  configuration produces the same error whichever one sees it first.
+- `Optimize` rejects `UseAOBLMOA`, `UseEOBBMA`, and `UseMPMA` in combination
+  instead of silently ignoring all but one of them. They replace the same
+  position-update phase of the main loop, which is a switch, so enabling MPMA
+  alongside AOBLMOA never computed a median position and the median term was
+  dropped while the configuration still claimed MPMA was in use.
 - The Friedman test reported inverted significance. Its p-value came from
   `chiSquareCDF`, whose small-`df` branch returned
   `exp(-x/2) * (x/2)^(df/2)` — a curve that is neither a cumulative

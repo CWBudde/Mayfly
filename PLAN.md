@@ -1,5 +1,111 @@
 # Mayfly Algorithm Suite - Remaining Tasks
 
+> ## ⚠️ Known defects in `functions.go` — benchmark edge-case handling
+>
+> Found 2026-08-23 while porting this file verbatim into the sibling
+> [Dragonfly](https://github.com/MeKo-Christian/dragonfly) library. The same defects exist
+> in both repositories and should be fixed in both, together, so the two benchmark suites
+> stay numerically comparable.
+>
+> **1. `Levy([])` panics.** With an empty input, `n == 0` and the function indexes `w[n-1]`
+> — `index out of range [0] with length 0`. It is the only benchmark function that panics
+> rather than returning a value. A metaheuristic should never call it with an empty vector,
+> but a panic is the wrong failure mode for a pure scoring function, and it makes the suite
+> unsafe to fuzz.
+>
+> **2. Empty-input handling is inconsistent across the suite.** Measured behaviour of
+> `f([])` for all 15 functions:
+>
+> | Result    | Functions                                                                                                                                |
+> | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+> | `0`       | Sphere, Rastrigin, Rosenbrock, Griewank, Schwefel, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, ExpandedSchafferF6 |
+> | `NaN`     | Ackley, HappyCat — both divide by `n`                                                                                                    |
+> | **panic** | Levy                                                                                                                                     |
+>
+> Pick one convention for the whole suite and apply it uniformly. Returning `0` for an
+> empty vector is defensible (an empty sum is zero) and is already what 12 of the 15 do;
+> whichever is chosen, document it in the file's package comment and add a table-driven
+> test that asserts it for every function at once, so a new benchmark cannot land without
+> a deliberate answer.
+>
+> **Not defects — checked and cleared.** Two things in this file look wrong at a glance and
+> are not. Recording them here so they are not "fixed" into actual bugs later:
+>
+> - `Levy` uses `sin(math.Pi*wi + 1)`. The `+ 1` is correct and is part of the standard
+>   definition (Surjanovic & Bingham:
+>   `f = sin²(πw₁) + Σ(wᵢ−1)²[1+10sin²(πwᵢ+1)] + (w_d−1)²[1+sin²(2πw_d)]`, `wᵢ = 1+(xᵢ−1)/4`).
+>   It is **not** a mistranscription of `π/4`.
+> - `ExpandedSchafferF6` closes the loop with the wrap-around pair `g(x[n-1], x[0])`. That
+>   cyclic term is part of the CEC definition of the expanded function, not an extra.
+>
+> ### Tasks -- resolved 2026-08-23, in both repositories together
+>
+> The convention is `f([]) == 0` for every single-objective function, stated in the
+> `functions.go` file comment and asserted for all fifteen at once by
+> `TestBenchmarkFunctionsEmptyInput`.
+>
+> - [x] Fix the `Levy([])` panic
+> - [x] Choose and document a single empty-input convention for `functions.go`
+> - [x] Add a table-driven test asserting that convention for all 15 functions
+> - [x] Mirror the fix and the test in the Dragonfly library's ported `functions.go`
+
+> ## ⚠️ Known defect in `selector.go` — `estimateLandscape` measures the box, not the function
+>
+> Found 2026-08-23 while building the sibling
+> [Dragonfly](https://github.com/MeKo-Christian/dragonfly) library's own selector. Dragonfly
+> deliberately did **not** port this heuristic; Mayfly still uses it.
+>
+> `estimateLandscape` (selector.go:239) averages the raw finite-difference gradient
+> **magnitude** over random samples and compares that average against three absolute
+> thresholds — `> 100 → Deceptive`, `> 10 → Rugged`, `< 0.01 → NarrowValley`, else `Smooth`.
+> A gradient magnitude carries the units of the search space, so the classification scales
+> with the width of the box rather than with the shape of the function.
+>
+> Measured, d = 30, calling `estimateLandscape` directly:
+>
+> | Function  | `[-5,5]`    | `[-50,50]`  | `[-500,500]` |
+> | --------- | ----------- | ----------- | ------------ |
+> | Sphere    | `Rugged`    | `Deceptive` | `Deceptive`  |
+> | Rastrigin | `Deceptive` | `Deceptive` | `Deceptive`  |
+>
+> Sphere is a smooth convex bowl — the textbook `Smooth` case, and exactly what
+> `RecommendForBenchmark` hard-codes it as at selector.go:353. The sampler never returns
+> `Smooth` for it at any tested scale, and rates it _more_ deceptive than Rastrigin as the
+> box grows. This matters because `Landscape` is not inert: `SelectVariant` routes on
+> `== Deceptive` (selector.go:87, 126) and `== NarrowValley` (selector.go:130), so a
+> misclassification silently changes which algorithm a caller is told to use.
+>
+> Two smaller things in the same function:
+>
+> - The accumulator is named `gradientVariance` but holds a **mean magnitude** — no variance
+>   is ever computed, despite the comment at selector.go:274 saying "high gradient variance
+>   suggests rugged landscape". Ruggedness is about how much the gradient _changes_, which
+>   is the quantity the name promises and the code does not compute.
+> - `ClassifyProblem` and `estimateLandscape` draw through `unifrnd(lower, upper, nil)`,
+>   i.e. the package-level RNG, so a classification is not reproducible from a seed and
+>   cannot be made so by the caller.
+>
+> **Suggested fix** — make the statistic scale-free. Dragonfly's replacement uses random
+> line scans and reports (a) average direction changes per line for modality and (b) total
+> variation normalised by _that line's own value range_ for landscape. Both are invariant
+> under rescaling the box and under affine rescaling of the objective, and they separate
+> Sphere/Zakharov from Rastrigin/Schwefel/Ackley. See `Dragonfly/selector.go`.
+>
+> Note that `Deceptive` and `NarrowValley` arguably cannot be established by sampling at
+> all: both are claims about where the optimum sits relative to the surrounding terrain,
+> not about local roughness. Dragonfly's version returns only `Smooth` or `Rugged` and
+> documents that the other two are for the caller to set.
+>
+> ### Tasks
+>
+> - [ ] Replace the absolute gradient-magnitude thresholds with a scale-free statistic
+> - [ ] Rename `gradientVariance`, or compute the variance the name and comment promise
+> - [ ] Thread an `*rand.Rand` through `ClassifyProblem` / `estimateLandscape` instead of
+>       drawing from the package-level RNG
+> - [ ] Add a test asserting a function classifies identically on `[-5,5]` and `[-500,500]`
+> - [ ] Reconcile `ClassifyProblem`'s answers with the hard-coded `RecommendForBenchmark`
+>       table, which is the de facto expected output
+
 ## High Priority
 
 ### Phase 1: Advanced Features

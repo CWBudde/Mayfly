@@ -1,3 +1,14 @@
+// Benchmark objective functions for the Mayfly Algorithm library.
+//
+// The suite is algorithm-agnostic: every function is pure math over a
+// []float64 position vector, so results are directly comparable with the
+// sibling Dragonfly library.
+//
+// Every single-objective function returns 0 for an empty position vector.
+// An empty sum is zero, and the alternatives -- NaN from dividing by a zero
+// dimension count, or a panic from indexing an empty slice -- are the wrong
+// failure mode for a pure scoring function.
+
 package mayfly
 
 import "math"
@@ -44,6 +55,12 @@ func Rosenbrock(x []float64) float64 {
 // Ackley is the Ackley benchmark function: a nearly flat outer region with a deep central basin.
 // Global minimum is at f(0, ..., 0) = 0.
 func Ackley(x []float64) float64 {
+	// An empty position vector scores 0, per the convention documented at the
+	// top of this file.
+	if len(x) == 0 {
+		return 0
+	}
+
 	n := float64(len(x))
 	sum1 := 0.0
 	sum2 := 0.0
@@ -86,6 +103,12 @@ func Schwefel(x []float64) float64 {
 // Levy is the Levy benchmark function: multimodal with a strongly oscillating surface.
 // Typical bounds: [-10, 10].
 func Levy(x []float64) float64 {
+	// An empty position vector scores 0, per the convention documented at the
+	// top of this file.
+	if len(x) == 0 {
+		return 0
+	}
+
 	n := len(x)
 	w := make([]float64, n)
 
@@ -229,6 +252,12 @@ func Weierstrass(x []float64) float64 {
 // HappyCat is the HappyCat benchmark function: multimodal with a curved, thin optimal region.
 // Typical bounds: [-2, 2].
 func HappyCat(x []float64) float64 {
+	// An empty position vector scores 0, per the convention documented at the
+	// top of this file.
+	if len(x) == 0 {
+		return 0
+	}
+
 	n := float64(len(x))
 	alpha := 0.125
 

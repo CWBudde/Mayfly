@@ -439,15 +439,6 @@ func TestBenchmarkFunctionsEdgeCases(t *testing.T) {
 		{"Griewank", Griewank},
 	}
 
-	t.Run("empty_vector", func(t *testing.T) {
-		x := []float64{}
-		for _, fn := range functions {
-			result := fn.fn(x)
-			// Should not panic, behavior may vary
-			t.Logf("%s(empty) = %v", fn.name, result)
-		}
-	})
-
 	t.Run("large_values", func(t *testing.T) {
 		x := []float64{1000.0, 1000.0}
 		for _, fn := range functions {
@@ -868,5 +859,41 @@ func BenchmarkWeierstrass(b *testing.B) {
 
 	for range b.N {
 		_ = Weierstrass(x)
+	}
+}
+
+// TestBenchmarkFunctionsEmptyInput checks the suite-wide convention that every
+// single-objective benchmark function scores an empty position vector as 0,
+// for both a nil slice and an allocated empty one, without panicking.
+func TestBenchmarkFunctionsEmptyInput(t *testing.T) {
+	functions := map[string]ObjectiveFunction{
+		"Sphere":             Sphere,
+		"Rastrigin":          Rastrigin,
+		"Rosenbrock":         Rosenbrock,
+		"Ackley":             Ackley,
+		"Griewank":           Griewank,
+		"Schwefel":           Schwefel,
+		"Levy":               Levy,
+		"Zakharov":           Zakharov,
+		"Michalewicz":        Michalewicz,
+		"DixonPrice":         DixonPrice,
+		"BentCigar":          BentCigar,
+		"Discus":             Discus,
+		"Weierstrass":        Weierstrass,
+		"HappyCat":           HappyCat,
+		"ExpandedSchafferF6": ExpandedSchafferF6,
+	}
+
+	inputs := map[string][]float64{
+		"nil":   nil,
+		"empty": {},
+	}
+
+	for name, fn := range functions {
+		for label, x := range inputs {
+			if got := fn(x); got != 0 {
+				t.Errorf("%s(%s) = %v, want 0", name, label, got)
+			}
+		}
 	}
 }

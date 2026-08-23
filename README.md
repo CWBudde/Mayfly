@@ -145,6 +145,28 @@ config := mayfly.NewMPMAConfig()
 config := mayfly.NewAOBLMOAConfig()
 ```
 
+## Quasi-Random Initial Populations
+
+The first generation is a sample of the search box, and a uniform random sample
+leaves gaps that nothing later in the algorithm is told about. `Config.QMCInit`
+seeds it from a low-discrepancy sequence instead:
+
+```go
+config := mayfly.NewDefaultConfig()
+config.QMCInit = mayfly.QMCInitSobol // or QMCInitHalton; default is QMCInitUniform
+```
+
+Measured over the 16-problem benchmark suite at 30 runs each, Sobol is
+significantly better on two problems (Rastrigin at 10D, mean 1.80 → 1.15,
+p = 0.043; Griewank at 10D, 0.143 → 0.081, p = 0.022) and significantly worse on
+none; Halton reaches p < 0.05 nowhere. Two hits in thirty-two tests is about
+what chance produces, so uniform stays the default and Sobol is worth *trying*
+on multimodal problems the algorithm does not solve outright. See
+[Quasi-Random Initial Populations](docs/qmc-initialization.md) for the full
+table, the four problems where every strategy hits machine precision and the
+comparison says nothing at all, and why the significant problems moved when the
+algorithm changed.
+
 ## Intelligent Algorithm Selection
 
 Let the library recommend the best algorithm for your problem:

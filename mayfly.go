@@ -102,6 +102,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, offspringErr
 	}
 
+	qmcInitErr := validateQMCInit(config)
+	if qmcInitErr != nil {
+		return nil, qmcInitErr
+	}
+
 	// Validate variant-specific parameters
 	if config.UseDESMA {
 		if config.SearchRange < 0 {
@@ -220,6 +225,14 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		config.Rand = rng
 	}
 
+	// The quasi-random block, if one was asked for, comes off the generator
+	// before anything else consumes it, so that the population's coverage does
+	// not depend on how much randomness the setup above happened to use.
+	qmcPositions, qmcErr := quasiRandomPositions(config, rng)
+	if qmcErr != nil {
+		return nil, qmcErr
+	}
+
 	candidateEvaluator := newConstraintEvaluator(config.ObjectiveFunc, config.Constraints)
 
 	var evaluator *evaluationPool
@@ -255,7 +268,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialMales) {
 				copy(males[i].Position, run.initialMales[i])
 			} else {
-				males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+				males[i].Position = initialPositionFor(config, qmcPositions, i, rng)
 			}
 
 			sanitizeVec(males[i].Position, config.LowerBound, config.UpperBound, rng)
@@ -285,7 +298,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialFemales) {
 				copy(females[i].Position, run.initialFemales[i])
 			} else {
-				females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+				females[i].Position = initialPositionFor(config, qmcPositions, config.NPop+i, rng)
 			}
 
 			sanitizeVec(females[i].Position, config.LowerBound, config.UpperBound, rng)
@@ -309,7 +322,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialMales) {
 				copy(males[i].Position, run.initialMales[i])
 			} else {
-				males[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+				males[i].Position = initialPositionFor(config, qmcPositions, i, rng)
 			}
 
 			sanitizeVec(males[i].Position, config.LowerBound, config.UpperBound, rng)
@@ -337,7 +350,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialFemales) {
 				copy(females[i].Position, run.initialFemales[i])
 			} else {
-				females[i].Position = unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+				females[i].Position = initialPositionFor(config, qmcPositions, config.NPop+i, rng)
 			}
 
 			sanitizeVec(females[i].Position, config.LowerBound, config.UpperBound, rng)

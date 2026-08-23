@@ -131,6 +131,7 @@ type Config struct {
 	Constraints           *ConstraintConfig  `json:"constraints,omitempty"`
 	CoolingSchedule       string             `json:"cooling_schedule"`
 	GravityType           string             `json:"gravity_type"`
+	QMCInit               string             `json:"qmc_init"`
 	Selection             SelectionStrategy  `json:"selection"`
 	ReductionFactor       float64            `json:"reduction_factor"`
 	Dance                 float64            `json:"dance"`
@@ -156,6 +157,7 @@ type Config struct {
 	VelMin                float64            `json:"vel_min"`
 	EliteCount            int                `json:"elite_count"`
 	SearchRange           float64            `json:"search_range"`
+	QMCSeed               uint64             `json:"qmc_seed"`
 	EnlargeFactor         float64            `json:"enlarge_factor"`
 	MaxIterations         int                `json:"max_iterations"`
 	UpperBound            float64            `json:"upper_bound"`

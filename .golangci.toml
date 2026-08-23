@@ -165,6 +165,11 @@ text = 'fieldalignment'
 path = '(comparison|config_loader|selector)\.go'
 linters = ['forbidigo']
 
+# The QMC initialization study prints its table; that table is the point of it.
+[[linters.exclusions.rules]]
+path = 'qmcstudy_test\.go'
+linters = ['forbidigo']
+
 # Known complexity hotspots: the monolithic Optimize() loop and the flat
 # validation/reporting routines. Tracked for refactoring in PLAN.md.
 [[linters.exclusions.rules]]

@@ -643,6 +643,27 @@ func (b *VariantBuilder) WithPopulation(males, females int) *VariantBuilder {
 	return b
 }
 
+// WithQMCInitialPopulation seeds the initial population from a quasi-random
+// low-discrepancy sequence instead of independent uniform draws.
+//
+// sequence is QMCInitSobol, QMCInitHalton, or QMCInitUniform for the default.
+// An unknown name is not rejected here — Build has no error path that fits and
+// silently ignoring it would be worse — so it surfaces from Optimize, which
+// validates the whole config in one place.
+//
+// The scramble seed is drawn from the run's RNG, so repeated runs start from
+// different low-discrepancy point sets. Set Config.QMCSeed through WithConfig
+// to pin it.
+func (b *VariantBuilder) WithQMCInitialPopulation(sequence string) *VariantBuilder {
+	if b == nil {
+		return nil
+	}
+
+	b.config.QMCInit = sequence
+
+	return b
+}
+
 // WithConfig applies a custom configuration function to the builder.
 //
 // Example: WithConfig(func(c *Config) { c.A1 = 2.0; c.Beta = 3.0 }).

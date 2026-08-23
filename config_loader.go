@@ -141,6 +141,11 @@ func ValidateConfig(config *Config) error {
 		return fmt.Errorf("beta must be positive (got %f)", config.Beta)
 	}
 
+	err := validateQMCInit(config)
+	if err != nil {
+		return err
+	}
+
 	// Validate variant-specific parameters
 	if config.UseDESMA {
 		if config.EliteCount < 0 {
@@ -456,6 +461,11 @@ func ExportConfigTemplate(path, variant string) error {
 	fmt.Fprintf(file, "  // Velocity limits (0 = auto-calculated)\n")
 	fmt.Fprintf(file, "  \"vel_max\": %f,\n", config.VelMax)
 	fmt.Fprintf(file, "  \"vel_min\": %f,\n", config.VelMin)
+	fmt.Fprintf(file, "\n")
+	fmt.Fprintf(file, "  // Initial population: \"uniform\", \"sobol\" or \"halton\"\n")
+	fmt.Fprintf(file, "  // (qmc_seed 0 draws the scramble seed from the run's RNG)\n")
+	fmt.Fprintf(file, "  \"qmc_init\": \"%s\",\n", config.QMCInit)
+	fmt.Fprintf(file, "  \"qmc_seed\": %d,\n", config.QMCSeed)
 	fmt.Fprintf(file, "\n")
 	fmt.Fprintf(file, "  // Variant flags (only one should be true)\n")
 	fmt.Fprintf(file, "  \"use_desma\": %t,\n", config.UseDESMA)

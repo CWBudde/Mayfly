@@ -8,6 +8,7 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 - **Want to understand algorithms?** Check [Algorithm Documentation](#algorithm-documentation)
 - **Need an API summary?** Open the [API Quick Reference](api/quick-reference.md)
 - **Looking for benchmarks?** Visit [Benchmark Functions](benchmarks.md)
+- **Wondering about the initial population?** See [Quasi-Random Initial Populations](qmc-initialization.md)
 - **Interested in research?** Read [Research References](research.md)
 
 ## Documentation Structure
@@ -101,6 +102,11 @@ Complete API reference:
   - Reproducible optimizer benchmarks
   - CPU and memory profiling commands
   - Recorded optimization results
+
+- **[Quasi-Random Initial Populations](qmc-initialization.md)** - Config.QMCInit
+  - Sobol and Halton initial populations
+  - The measurement over the benchmark suite
+  - Where it helps and where it says nothing
 
 - **[Research References](research.md)** - Academic papers
   - Original research citations

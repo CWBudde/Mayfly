@@ -1357,7 +1357,9 @@ func samePosition(a, b []float64) bool {
 // swarm frozen for the whole run. Every individual must move every iteration,
 // whichever branch it takes.
 func TestAOBLMOAMovesEveryIndividual(t *testing.T) {
-	for _, weight := range []float64{0.0, 0.5, 1.0} {
+	// AquilaWeightAuto is the paper's deterministic branch test; the three
+	// probabilities exercise the deprecated override.
+	for _, weight := range []float64{AquilaWeightAuto, 0.0, 0.5, 1.0} {
 		t.Run(fmt.Sprintf("aquila_weight_%.2f", weight), func(t *testing.T) {
 			config := NewAOBLMOAConfig()
 			config.Rand = rand.New(rand.NewSource(7))
@@ -1430,7 +1432,7 @@ func TestAOBLMOAEvaluatesWholePopulation(t *testing.T) {
 // cover the whole population, not only the individuals that won the
 // AquilaWeight draw.
 func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
-	for _, weight := range []float64{0.0, 0.5, 1.0} {
+	for _, weight := range []float64{AquilaWeightAuto, 0.0, 0.5, 1.0} {
 		t.Run(fmt.Sprintf("aquila_weight_%.2f", weight), func(t *testing.T) {
 			config := NewAOBLMOAConfig()
 			config.Rand = rand.New(rand.NewSource(19))
@@ -1567,11 +1569,23 @@ func TestAOBLMOASequentialAndParallelAgree(t *testing.T) {
 		name                  string
 		aquilaWeight          float64
 		oppositionProbability float64
+		strategySwitch        int
+		mutants               int
 	}{
-		{"mayfly_branch_only", 0.0, 0.5},
-		{"mixed_branches", 0.5, 0.5},
-		{"aquila_branch_only", 1.0, 0.5},
-		{"without_opposition", 0.5, 0.0},
+		// The paper's own configuration: a deterministic branch test, the
+		// default two-thirds phase split, and no mutation stage.
+		{"paper_default", AquilaWeightAuto, 0.3, 0, 0},
+		// NM must buy nothing under AOBLMOA, and both paths have to skip the
+		// mutation stage identically rather than one of them running it.
+		{"paper_default_with_mutants", AquilaWeightAuto, 0.3, 0, 4},
+		// An explicit switch point, so the wiring of StrategySwitch is covered
+		// on both paths.
+		{"early_strategy_switch", AquilaWeightAuto, 0.3, 3, 0},
+		// The deprecated override, across its range.
+		{"mayfly_branch_only", 0.0, 0.5, 0, 0},
+		{"mixed_branches", 0.5, 0.5, 0, 0},
+		{"aquila_branch_only", 1.0, 0.5, 0, 0},
+		{"without_opposition", 0.5, 0.0, 0, 0},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			build := func(parallel bool) *Config {
@@ -1587,6 +1601,8 @@ func TestAOBLMOASequentialAndParallelAgree(t *testing.T) {
 				config.NC = 8
 				config.AquilaWeight = testCase.aquilaWeight
 				config.OppositionProbability = testCase.oppositionProbability
+				config.StrategySwitch = testCase.strategySwitch
+				config.NM = testCase.mutants
 				config.EnableParallel = parallel
 
 				return config

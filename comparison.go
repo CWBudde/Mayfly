@@ -638,10 +638,16 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 	}
 
 	if len(differences) == 0 {
+		// Every pair tied, so there is no evidence of a difference at all.
+		// PValue has to say so explicitly: its zero value reads as p = 0,
+		// which is the most significant result the field can hold, and a
+		// caller printing it sees "0.000" where the truth is that the two
+		// algorithms produced the same costs on every run.
 		return WilcoxonResult{
 			Algorithm1: name1,
 			Algorithm2: name2,
 			Winner:     wilcoxonTie,
+			PValue:     1.0,
 		}
 	}
 

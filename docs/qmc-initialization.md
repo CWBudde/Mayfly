@@ -45,8 +45,18 @@ unrandomized initial population would be identical in every run, and a thirty-ru
 study would report a standard deviation that measured only what happens after
 initialization. Scrambling (Owen for Sobol, nested for Halton) keeps the
 low-discrepancy property while making each run a different point set — the
-"randomized QMC" arrangement. Set `QMCSeed` to reproduce a single run without
-also pinning `Config.Rand`.
+"randomized QMC" arrangement.
+
+**`QMCSeed` pins the initial population, not the run.** Everything after
+initialization reads `Config.Rand`, and `Optimize` seeds that from the clock
+when the caller leaves it nil — so a run with `QMCSeed` set but `Rand` nil
+starts from the same forty points every time and diverges immediately
+afterwards. Reproducing a whole run means pinning both:
+
+```go
+config.QMCSeed = 20260823
+config.Rand = rand.New(rand.NewSource(42))
+```
 
 ### Why the population is one aligned block
 

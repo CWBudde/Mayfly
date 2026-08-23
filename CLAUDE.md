@@ -167,7 +167,7 @@ Critical internal functions in `mayfly.go`:
 
 - `newMayfly(size)` - Constructor with pre-allocated slices
 - `unifrnd()` / `unifrndVec()` - Uniform random generation
-- `quasiRandomPositions()` / `initialPositionFor()` - Starting positions for the population, uniform or quasi-random (`qmcinit.go`; see `docs/qmc-initialization.md`)
+- `quasiRandomPositions()` / `fillInitialPosition()` - Starting positions for the population, uniform or quasi-random (`qmcinit.go`; see `docs/qmc-initialization.md`)
 - `randn()` - Normal distribution generation
 - `maxVec()` / `minVec()` - Element-wise boundary clamping (in-place)
 - `sortMayflies()` - Bubble sort (appropriate for small populations)

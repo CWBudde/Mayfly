@@ -268,7 +268,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialMales) {
 				copy(males[i].Position, run.initialMales[i])
 			} else {
-				males[i].Position = initialPositionFor(config, qmcPositions, i, rng)
+				fillInitialPosition(config, qmcPositions, i, males[i].Position, rng)
 			}
 
 			sanitizeVec(males[i].Position, config.LowerBound, config.UpperBound, rng)
@@ -298,7 +298,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialFemales) {
 				copy(females[i].Position, run.initialFemales[i])
 			} else {
-				females[i].Position = initialPositionFor(config, qmcPositions, config.NPop+i, rng)
+				fillInitialPosition(config, qmcPositions, config.NPop+i, females[i].Position, rng)
 			}
 
 			sanitizeVec(females[i].Position, config.LowerBound, config.UpperBound, rng)
@@ -322,7 +322,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialMales) {
 				copy(males[i].Position, run.initialMales[i])
 			} else {
-				males[i].Position = initialPositionFor(config, qmcPositions, i, rng)
+				fillInitialPosition(config, qmcPositions, i, males[i].Position, rng)
 			}
 
 			sanitizeVec(males[i].Position, config.LowerBound, config.UpperBound, rng)
@@ -350,7 +350,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			if i < len(run.initialFemales) {
 				copy(females[i].Position, run.initialFemales[i])
 			} else {
-				females[i].Position = initialPositionFor(config, qmcPositions, config.NPop+i, rng)
+				fillInitialPosition(config, qmcPositions, config.NPop+i, females[i].Position, rng)
 			}
 
 			sanitizeVec(females[i].Position, config.LowerBound, config.UpperBound, rng)

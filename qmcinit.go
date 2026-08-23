@@ -117,8 +117,9 @@ func quasiRandomPositions(config *Config, rng *rand.Rand) ([][]float64, error) {
 // measured only the algorithm's own stochasticity downstream of it. Drawing
 // the seed from the run's RNG makes each run a distinct *randomized* QMC
 // sample — still low-discrepancy, no longer the same one twice — while
-// Config.QMCSeed pins it for a caller who wants a single run reproducible
-// without pinning Config.Rand.
+// Config.QMCSeed pins it. Note that it pins only the initial population: the
+// rest of the run reads Config.Rand, which Optimize seeds from the clock when
+// the caller leaves it nil, so reproducing a whole run means pinning both.
 func newQMCSequence(config *Config, total int, rng *rand.Rand) (qmc.Sequence, error) {
 	seed := config.QMCSeed
 	if seed == 0 {
@@ -161,18 +162,25 @@ func newQMCSequence(config *Config, total int, rng *rand.Rand) (qmc.Sequence, er
 	}
 }
 
-// initialPositionFor returns the starting position for population index i,
-// which is the male index for i < NPop and NPop+the female index after it.
+// fillInitialPosition writes the starting position for population index i into
+// dst, which is the slice newMayfly already allocated. The male index is i and
+// the female index is NPop+i.
 //
 // positions is what quasiRandomPositions returned, so nil means the uniform
-// strategy and the position is drawn here. The indexing is deliberate rather
-// than a running cursor: a caller-supplied initial population overrides
+// strategy and the coordinates are drawn here. The indexing is deliberate
+// rather than a running cursor: a caller-supplied initial population overrides
 // individual indices, and row i has to stay row i so that the points actually
 // used remain a subset of one low-discrepancy block.
-func initialPositionFor(config *Config, positions [][]float64, index int, rng *rand.Rand) []float64 {
+func fillInitialPosition(config *Config, positions [][]float64, index int, dst []float64, rng *rand.Rand) {
 	if positions == nil {
-		return unifrndVec(config.LowerBound, config.UpperBound, config.ProblemSize, rng)
+		// One draw per coordinate, in the same order unifrndVec would use, so
+		// the uniform path consumes the generator exactly as it always has.
+		for j := range dst {
+			dst[j] = unifrnd(config.LowerBound, config.UpperBound, rng)
+		}
+
+		return
 	}
 
-	return positions[index]
+	copy(dst, positions[index])
 }

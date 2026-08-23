@@ -30,7 +30,7 @@ const (
 // every problem in benchmarkProblems.
 //
 // Runs are paired by seed: run r of each strategy starts from
-// rand.NewSource(r), so the three strategies see the same sequence of random
+// rand.NewSource(r+1), so the three strategies see the same sequence of random
 // decisions up to the point where the initial population differs. They diverge
 // immediately after that — a different starting population leads the algorithm
 // to consume its generator differently — so the pairing removes the seed as a

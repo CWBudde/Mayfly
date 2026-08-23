@@ -160,7 +160,7 @@ Measured over the 16-problem benchmark suite at 30 runs each, Sobol is
 significantly better on two problems (Rastrigin at 10D, mean 1.80 → 1.15,
 p = 0.043; Griewank at 10D, 0.143 → 0.081, p = 0.022) and significantly worse on
 none; Halton reaches p < 0.05 nowhere. Two hits in thirty-two tests is about
-what chance produces, so uniform stays the default and Sobol is worth *trying*
+what chance produces, so uniform stays the default and Sobol is worth _trying_
 on multimodal problems the algorithm does not solve outright. See
 [Quasi-Random Initial Populations](docs/qmc-initialization.md) for the full
 table, the four problems where every strategy hits machine precision and the

@@ -220,6 +220,16 @@ func validateOffspring(config *Config) error {
 		return fmt.Errorf("NM (mutant count) must be non-negative, got %d", config.NM)
 	}
 
+	// Mu is a fraction of the dimensions, so the mutation operators turn it
+	// into a count with ceil(Mu*ProblemSize) and slice a permutation of the
+	// dimensions to that length. Anything outside [0,1] makes that count
+	// negative or longer than the permutation, and NaN converts to the most
+	// negative int; all three panic in the operator rather than failing here.
+	// NaN needs its own test because every comparison against it is false.
+	if config.Mu < 0 || config.Mu > 1 || math.IsNaN(config.Mu) {
+		return fmt.Errorf("mutation rate Mu must be in [0,1], got %f", config.Mu)
+	}
+
 	// Mating pairs the k-th best male with the k-th best female, so neither
 	// population may be shorter than the number of pairs.
 	if pairs := effectiveNC(config) / 2; pairs > config.NPop || pairs > config.NPopF {

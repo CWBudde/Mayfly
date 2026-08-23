@@ -107,9 +107,11 @@ func ValidateConfig(config *Config) error {
 		return fmt.Errorf("max_workers must be non-negative (got %d)", config.MaxWorkers)
 	}
 
-	// The mating checks live in validateOffspring because Optimize needs them,
-	// but a configuration loaded from a file has to fail here rather than at
-	// the start of a run that its caller believed was already validated.
+	// The mating and mutation-rate checks live in validateOffspring because
+	// Optimize needs them, but a configuration loaded from a file has to fail
+	// here rather than at the start of a run that its caller believed was
+	// already validated. Mu used to be checked separately just below, which
+	// left the file path guarded and the programmatic path panicking.
 	offspringErr := validateOffspring(config)
 	if offspringErr != nil {
 		return offspringErr
@@ -130,10 +132,6 @@ func ValidateConfig(config *Config) error {
 
 	if config.Beta <= 0 {
 		return fmt.Errorf("beta must be positive (got %f)", config.Beta)
-	}
-
-	if config.Mu < 0 || config.Mu > 1 {
-		return fmt.Errorf("mu (mutation rate) should be in [0,1] (got %f)", config.Mu)
 	}
 
 	// Validate variant-specific parameters

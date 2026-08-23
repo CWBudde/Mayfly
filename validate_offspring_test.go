@@ -1,6 +1,8 @@
 package mayfly
 
 import (
+	"fmt"
+	"math"
 	"math/rand"
 	"strings"
 	"testing"
@@ -180,5 +182,136 @@ func TestConvergenceCurveIsACostHistory(t *testing.T) {
 	final := result.ConvergenceCurve[len(result.ConvergenceCurve)-1]
 	if final != result.GlobalBest.Cost {
 		t.Errorf("curve ends at %v but GlobalBest.Cost is %v", final, result.GlobalBest.Cost)
+	}
+}
+
+// TestOptimizeRejectsMutationRateOutsideUnitInterval covers the panic that made
+// this validation necessary. Mu is a fraction of the dimensions, and the
+// mutation operators turn it into a count with ceil(Mu*ProblemSize) and then
+// slice a permutation of the dimensions to that length. A Mu above 1 asks for
+// more dimensions than exist, a negative Mu asks for a negative count, and NaN
+// converts to the most negative int, so all three used to panic inside the
+// library partway through a run.
+//
+// The documented range has always been [0,1] and LoadConfig already enforced
+// it, so only the programmatic path was exposed.
+func TestOptimizeRejectsMutationRateOutsideUnitInterval(t *testing.T) {
+	for _, testCase := range []struct {
+		name string
+		mu   float64
+	}{
+		{"just above one", 1.0000001},
+		{"above one", 1.5},
+		{"twice the dimensions", 2},
+		{"negative", -0.1},
+		{"not a number", math.NaN()},
+		{"positive infinity", math.Inf(1)},
+		{"negative infinity", math.Inf(-1)},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			// A panic here is the regression, so let it fail the test loudly
+			// rather than be recovered into a pass.
+			config := smallConfig(20, 20, 20, 1)
+			config.Mu = testCase.mu
+
+			result, err := Optimize(config)
+			if err == nil {
+				t.Fatalf("Optimize accepted Mu=%v, want an error", testCase.mu)
+			}
+
+			if result != nil {
+				t.Errorf("Optimize returned a result alongside an error: %+v", result)
+			}
+
+			if !strings.Contains(err.Error(), "Mu") {
+				t.Errorf("error %q does not name the offending field", err)
+			}
+		})
+	}
+}
+
+// TestOptimizeAcceptsMutationRatesInsideUnitInterval pins the other half of the
+// boundary: every rate the documentation permits must still run, including both
+// endpoints. Mu=1 mutates every dimension, which is the case that sits directly
+// against the rejected 1.0000001 above.
+func TestOptimizeAcceptsMutationRatesInsideUnitInterval(t *testing.T) {
+	for _, mu := range []float64{0, 0.01, 0.5, 1} {
+		t.Run(fmt.Sprintf("mu=%v", mu), func(t *testing.T) {
+			config := smallConfig(20, 20, 20, 1)
+			config.Mu = mu
+
+			result, err := Optimize(config)
+			if err != nil {
+				t.Fatalf("Optimize rejected the documented Mu=%v: %v", mu, err)
+			}
+
+			if math.IsNaN(result.GlobalBest.Cost) || math.IsInf(result.GlobalBest.Cost, 0) {
+				t.Errorf("Optimize returned a non-finite cost %v for Mu=%v",
+					result.GlobalBest.Cost, mu)
+			}
+		})
+	}
+}
+
+// TestMutationCountSaturatesOutOfRangeRates covers the exported mutation
+// operators, which take a rate directly and so stay reachable with an
+// out-of-range one even though Optimize now rejects it first. Saturating keeps
+// them from panicking on a bound they cannot slice with.
+func TestMutationCountSaturatesOutOfRangeRates(t *testing.T) {
+	const nVar = 10
+
+	for _, testCase := range []struct {
+		name string
+		mu   float64
+		want int
+	}{
+		{"zero mutates nothing", 0, 0},
+		{"a tenth rounds up to one", 0.05, 1},
+		{"a fraction rounds up", 0.42, 5},
+		{"one mutates everything", 1, nVar},
+		{"above one saturates", 2.5, nVar},
+		{"negative floors at zero", -0.5, 0},
+		{"not a number floors at zero", math.NaN(), 0},
+		{"positive infinity saturates", math.Inf(1), nVar},
+		{"negative infinity floors at zero", math.Inf(-1), 0},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := mutationCount(testCase.mu, nVar); got != testCase.want {
+				t.Errorf("mutationCount(%v, %d) = %d, want %d",
+					testCase.mu, nVar, got, testCase.want)
+			}
+		})
+	}
+}
+
+// TestMutationOperatorsSurviveOutOfRangeRates is the end-to-end form of the
+// case above: both exported operators used to panic on these rates.
+func TestMutationOperatorsSurviveOutOfRangeRates(t *testing.T) {
+	for _, mu := range []float64{-1, 1.0000001, 2, math.NaN(), math.Inf(1), math.Inf(-1)} {
+		t.Run(fmt.Sprintf("mu=%v", mu), func(t *testing.T) {
+			position := []float64{0, 0.25, -0.5, 1, -1}
+
+			for name, mutate := range map[string]func() []float64{
+				"MutateGaussian": func() []float64 {
+					return MutateGaussian(position, mu, -1, 1, rand.New(rand.NewSource(1)))
+				},
+				"MutateCauchy": func() []float64 {
+					return MutateCauchy(position, mu, -1, 1, rand.New(rand.NewSource(1)))
+				},
+			} {
+				mutated := mutate()
+				if len(mutated) != len(position) {
+					t.Errorf("%s(mu=%v) returned %d dimensions, want %d",
+						name, mu, len(mutated), len(position))
+				}
+
+				for i, value := range mutated {
+					if value < -1 || value > 1 {
+						t.Errorf("%s(mu=%v) put dimension %d at %v, outside [-1,1]",
+							name, mu, i, value)
+					}
+				}
+			}
+		})
 	}
 }

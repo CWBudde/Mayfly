@@ -134,6 +134,18 @@ mutates exactly `ceil(Mu * ProblemSize)` randomly chosen dimensions. At the
 default `0.01` that is a single dimension for any problem of 100 variables or
 fewer.
 
+Unlike `CrossoverGamma` and `NCRatio`, an out-of-range `Mu` is rejected rather
+than resolved to a default: `Optimize` returns an error for anything outside
+`[0, 1]`, including `NaN` and `Inf`. There is no sensible count to fall back to,
+and the count is a slice bound, so the previous behaviour was a panic partway
+through the run. Both endpoints are valid — `0` mutates nothing and `1` mutates
+every dimension.
+
+The exported operators (`MutateGaussian`, `MutateCauchy`, `HybridMutate`) take
+the rate directly and so can still be reached with an out-of-range one. They
+saturate instead of panicking: at or below `0` — and at `NaN` — they mutate
+nothing, and at or above `1` they mutate every dimension.
+
 ### How `NC` is resolved
 
 A written `NC` always wins, including the `0` that disables crossover. Only the

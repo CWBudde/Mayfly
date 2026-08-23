@@ -1,6 +1,7 @@
 package mayfly
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -133,45 +134,178 @@ func TestRecommendForUnknownBenchmark(t *testing.T) {
 	}
 }
 
-func TestClassifyProblem(t *testing.T) {
-	// This is a lightweight test since ClassifyProblem does sampling
-	// We just verify it returns valid characteristics
-	characteristics := ClassifyProblem(Sphere, 5, -10, 10)
+func TestClassifyProblemIsSeedReproducible(t *testing.T) {
+	first := ClassifyProblem(Sphere, 5, -5, 5, rand.New(rand.NewSource(99)))
+	second := ClassifyProblem(Sphere, 5, -5, 5, rand.New(rand.NewSource(99)))
 
-	if characteristics.Dimensionality != 5 {
-		t.Errorf("Expected dimensionality 5, got %d", characteristics.Dimensionality)
+	if first != second {
+		t.Errorf("ClassifyProblem is not reproducible for a seed: %+v vs %+v", first, second)
 	}
 
-	// Sphere should be classified as unimodal or multimodal (not highly)
-	if characteristics.Modality == HighlyMultimodal {
-		t.Error("Sphere should not be classified as highly multimodal")
+	if first.Dimensionality != 5 {
+		t.Errorf("Dimensionality = %d, want 5", first.Dimensionality)
 	}
 
-	// Landscape should be valid
-	validLandscapes := map[Landscape]bool{
-		Smooth: true, Rugged: true, Deceptive: true, NarrowValley: true,
-	}
-	if !validLandscapes[characteristics.Landscape] {
-		t.Errorf("Invalid landscape classification: %v", characteristics.Landscape)
+	// The caller-set fields must be left alone, not guessed at.
+	if first.MultiObjective || first.ExpensiveEvaluations || first.RequiresFastConvergence {
+		t.Errorf("ClassifyProblem filled in a caller-set field: %+v", first)
 	}
 }
 
-func TestEstimateModality(t *testing.T) {
-	// Test modality estimation with known distributions
-	// Low variance should indicate unimodal
-	samples := []float64{1.0, 1.1, 0.9, 1.05, 0.95, 1.2, 0.8}
-
-	modality := estimateModality(samples)
-	if modality == HighlyMultimodal {
-		t.Error("Low variance should not be classified as highly multimodal")
+// TestClassifyProblemIsScaleFree pins the property the line-scan probe exists
+// for and the gradient-magnitude heuristic it replaced did not have: the
+// verdict follows the function, not the width of the box. Sphere is the same
+// shape on [-5,5] and on [-500,500] and must classify the same way.
+func TestClassifyProblemIsScaleFree(t *testing.T) {
+	tests := []struct {
+		name          string
+		fn            ObjectiveFunction
+		size          int
+		lower, upper  float64
+		wantModality  Modality
+		wantLandscape Landscape
+	}{
+		{"Sphere narrow box", Sphere, 5, -5, 5, Unimodal, Smooth},
+		{"Sphere wide box", Sphere, 5, -500, 500, Unimodal, Smooth},
+		{"Zakharov", Zakharov, 5, -5, 10, Unimodal, Smooth},
+		{"Rastrigin", Rastrigin, 10, -5.12, 5.12, HighlyMultimodal, Rugged},
+		{"Schwefel", Schwefel, 10, -500, 500, HighlyMultimodal, Rugged},
+		{"Ackley", Ackley, 10, -32, 32, HighlyMultimodal, Rugged},
 	}
 
-	// High variance should indicate multimodal
-	samples = []float64{1.0, 100.0, 5.0, 200.0, 10.0, 150.0}
+	for _, test := range tests {
+		got := ClassifyProblem(test.fn, test.size, test.lower, test.upper, rand.New(rand.NewSource(4)))
 
-	modality = estimateModality(samples)
-	if modality == Unimodal {
-		t.Error("High variance should not be classified as unimodal")
+		if got.Modality != test.wantModality {
+			t.Errorf("%s: modality = %v, want %v", test.name, got.Modality, test.wantModality)
+		}
+
+		if got.Landscape != test.wantLandscape {
+			t.Errorf("%s: landscape = %v, want %v", test.name, got.Landscape, test.wantLandscape)
+		}
+	}
+}
+
+// TestLineShapeHandWorked checks the two scan statistics on scans whose shape
+// is obvious by inspection.
+func TestLineShapeHandWorked(t *testing.T) {
+	// A single V: down 4, up 4. One direction change; total variation 8 over a
+	// range of 4, so roughness 2 -- the value a line crossing one basin gives,
+	// which is why smoothRoughness sits above it.
+	turns, roughness := lineShape([]float64{4, 2, 0, 2, 4})
+	if turns != 1 {
+		t.Errorf("single-basin scan turns = %v, want 1", turns)
+	}
+
+	if roughness != 2 {
+		t.Errorf("single-basin scan roughness = %v, want 2", roughness)
+	}
+
+	// A sawtooth 0,1,0,1,0,1,0: five direction changes; total variation 6 over
+	// a range of 1, so roughness 6.
+	turns, roughness = lineShape([]float64{0, 1, 0, 1, 0, 1, 0})
+	if turns != 5 {
+		t.Errorf("sawtooth turns = %v, want 5", turns)
+	}
+
+	if roughness != 6 {
+		t.Errorf("sawtooth roughness = %v, want 6", roughness)
+	}
+
+	// A flat scan has no direction changes and no range to normalize by.
+	turns, roughness = lineShape([]float64{3, 3, 3, 3})
+	if turns != 0 || roughness != 0 {
+		t.Errorf("flat scan = %v, %v, want 0, 0", turns, roughness)
+	}
+
+	// A monotone ramp turns nowhere and has roughness exactly 1.
+	turns, roughness = lineShape([]float64{0, 1, 2, 3})
+	if turns != 0 || roughness != 1 {
+		t.Errorf("ramp = %v, %v, want 0, 1", turns, roughness)
+	}
+}
+
+// TestClassifyProblemNeverGuessesDeceptiveOrNarrowValley documents the limit
+// stated on ClassifyProblem: neither can be established from samples, so the
+// classifier must not claim them.
+func TestClassifyProblemNeverGuessesDeceptiveOrNarrowValley(t *testing.T) {
+	functions := map[string]ObjectiveFunction{
+		"Schwefel":   Schwefel,
+		"Rosenbrock": Rosenbrock,
+		"BentCigar":  BentCigar,
+		"Sphere":     Sphere,
+	}
+
+	for name, fn := range functions {
+		got := ClassifyProblem(fn, 6, -10, 10, rand.New(rand.NewSource(21)))
+		if got.Landscape != Smooth && got.Landscape != Rugged {
+			t.Errorf("%s classified as %v; ClassifyProblem may only report Smooth or Rugged",
+				name, got.Landscape)
+		}
+	}
+}
+
+func TestClassifyProblemAcceptsNilRNG(t *testing.T) {
+	characteristics := ClassifyProblem(Sphere, 3, -1, 1, nil)
+	if characteristics.Dimensionality != 3 {
+		t.Errorf("Dimensionality = %d, want 3", characteristics.Dimensionality)
+	}
+}
+
+// TestClassifyProblemAgreesWithBenchmarkTable reconciles the sampler with the
+// hand-classified switch in RecommendForBenchmark, which is the de facto
+// expected output. Modality and landscape are checked for every entry; the
+// table's Deceptive and NarrowValley verdicts are asserted *not* to come back
+// from the sampler, since ClassifyProblem never claims either -- those entries
+// are the caller's knowledge, not the sampler's, and the test pins exactly that
+// division.
+//
+// Griewank is the one entry where the sampler and the table genuinely disagree,
+// and the row records why rather than hiding it. See the note on that row.
+func TestClassifyProblemAgreesWithBenchmarkTable(t *testing.T) {
+	tests := []struct {
+		name           string
+		fn             ObjectiveFunction
+		lower, upper   float64
+		tableLandscape Landscape // as hard-coded in RecommendForBenchmark
+		wantModality   Modality  // what the sampler must report
+		wantLandscape  Landscape // what the sampler must report
+	}{
+		{"Sphere", Sphere, -100, 100, Smooth, Unimodal, Smooth},
+		{"Rastrigin", Rastrigin, -5.12, 5.12, Rugged, HighlyMultimodal, Rugged},
+		{"Rosenbrock", Rosenbrock, -5, 10, NarrowValley, Unimodal, Smooth},
+		{"Ackley", Ackley, -32, 32, Rugged, HighlyMultimodal, Rugged},
+		// Griewank's table entry is HighlyMultimodal/Rugged, which the
+		// literature supports and an optimizer working near the optimum feels.
+		// The line scan cannot see it over the standard [-600,600] box: the
+		// cosine ripples have a period of a few units and an amplitude of order
+		// one, against a value range of order 100000, so they are both aliased
+		// by the scan spacing and negligible in the total variation. The
+		// sampler reports the shape at box scale, which at that scale is a
+		// bowl. This is the documented resolution limit, not a regression.
+		{"Griewank", Griewank, -600, 600, Rugged, Unimodal, Smooth},
+		{"Schwefel", Schwefel, -500, 500, Deceptive, HighlyMultimodal, Rugged},
+		{"BentCigar", BentCigar, -100, 100, NarrowValley, Unimodal, Smooth},
+		{"Discus", Discus, -100, 100, NarrowValley, Unimodal, Smooth},
+	}
+
+	for _, test := range tests {
+		got := ClassifyProblem(test.fn, 10, test.lower, test.upper, rand.New(rand.NewSource(7)))
+
+		if got.Modality != test.wantModality {
+			t.Errorf("%s: modality = %v, want %v", test.name, got.Modality, test.wantModality)
+		}
+
+		if got.Landscape != test.wantLandscape {
+			t.Errorf("%s: landscape = %v, want %v", test.name, got.Landscape, test.wantLandscape)
+		}
+
+		if test.tableLandscape == Deceptive || test.tableLandscape == NarrowValley {
+			if got.Landscape == test.tableLandscape {
+				t.Errorf("%s: ClassifyProblem reported %v, which it cannot establish by sampling",
+					test.name, got.Landscape)
+			}
+		}
 	}
 }
 

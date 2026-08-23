@@ -7,6 +7,49 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `ClassifyProblem` takes a trailing `*rand.Rand`. It and its helpers drew
+  through the package-level generator, so a classification could not be
+  reproduced from a seed and the caller had no way to make it so. `nil` keeps
+  the old behaviour of a fresh generator. **Breaking**: existing calls need a
+  fifth argument.
+- `ClassifyProblem` estimates modality and landscape from random straight-line
+  scans across the box rather than from sample variance and finite-difference
+  gradients. Modality counts direction changes per line; landscape sums each
+  line's total variation in units of that line's own value range. Both are
+  scale-free, so the verdict follows the function instead of the bounds. This is
+  the classifier the sibling Dragonfly library uses, with two thresholds
+  retuned: `smoothRoughness` sits just above the single-basin bound of 2 rather
+  than at 3, and `multimodalTurningPoints` at 5 rather than 6, because Schwefel
+  straddled both and its verdict flipped with the seed.
+- `ClassifyProblem` no longer returns `Deceptive` or `NarrowValley`. Both are
+  claims about where the optimum sits relative to the surrounding terrain, which
+  sampling cannot establish; callers who know their problem should set
+  `Landscape` on the returned value. The `RecommendForBenchmark` table still
+  reports them, since those landscapes are known from the literature.
+- The short runs behind `RequiresStableConvergence` are seeded from the passed
+  generator, and a failed run is skipped instead of being counted as `+Inf` and
+  dragged into the mean.
+
+### Fixed
+
+- `ClassifyProblem` classified by the width of the search box rather than by the
+  shape of the function. The old `estimateLandscape` averaged the raw
+  finite-difference gradient *magnitude* and compared it against absolute
+  thresholds, but a gradient magnitude carries the units of the search space, so
+  Sphere -- a smooth convex bowl, and hard-coded as `Smooth` in
+  `RecommendForBenchmark` -- came back `Rugged` on `[-5,5]` and `Deceptive` on
+  `[-500,500]`, rating it more deceptive than Rastrigin as the box grew. The
+  verdict is not inert: the selector routes on `Deceptive` and `NarrowValley`,
+  so the misclassification silently changed which algorithm a caller was told to
+  use. `TestClassifyProblemIsScaleFree` now pins Sphere to the same answer on
+  both boxes.
+- The accumulator behind that classification was named `gradientVariance` and
+  documented as a variance, but held a mean magnitude; no variance was ever
+  computed. The statistic it was reaching for -- how much the landscape turns --
+  is now measured directly as turning points per line scan.
+
 ## [0.6.0] - 2026-08-23
 
 ### Added

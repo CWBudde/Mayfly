@@ -159,6 +159,7 @@ characteristics := mayfly.ClassifyProblem(
     10,          // Problem size
     -10,         // Lower bound
     10,          // Upper bound
+    nil,         // *rand.Rand; pass a seeded one for a reproducible verdict
 )
 
 // Now use characteristics for algorithm selection
@@ -168,11 +169,24 @@ best := selector.RecommendBest(characteristics)
 
 **Classification Process**:
 
-1. Samples function at random points
-2. Analyzes gradient behavior
-3. Detects modality through local optimization
-4. Classifies landscape characteristics
-5. Returns `ProblemCharacteristics` object
+1. Walks several random straight lines across the search box
+2. Counts direction changes per line, which gives `Modality`
+3. Sums the total variation per line in units of that line's own value range,
+   which gives `Landscape`
+4. Runs a few very short optimizations to see how much the outcome depends on
+   the seed, which sets `RequiresStableConvergence`
+5. Returns a `ProblemCharacteristics` object
+
+Both scan statistics are scale-free: they answer the same way whatever the
+bounds and whatever the units of the cost.
+
+**What it will not tell you**: `Landscape` comes back only as `Smooth` or
+`Rugged`. `Deceptive` and `NarrowValley` describe where the optimum sits
+relative to the surrounding terrain, which a few dozen samples cannot establish,
+so the classifier never claims either. If you know your problem is
+Schwefel-like or Rosenbrock-like, set `Landscape` on the returned value.
+`ExpensiveEvaluations`, `RequiresFastConvergence` and `MultiObjective` are yours
+to set for the same reason.
 
 ## Configuration Presets
 

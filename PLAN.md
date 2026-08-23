@@ -96,14 +96,28 @@
 > not about local roughness. Dragonfly's version returns only `Smooth` or `Rugged` and
 > documents that the other two are for the caller to set.
 >
-> ### Tasks
+> ### Tasks -- resolved 2026-08-24
 >
-> - [ ] Replace the absolute gradient-magnitude thresholds with a scale-free statistic
-> - [ ] Rename `gradientVariance`, or compute the variance the name and comment promise
-> - [ ] Thread an `*rand.Rand` through `ClassifyProblem` / `estimateLandscape` instead of
+> Dragonfly's line-scan classifier is now Mayfly's too, with two thresholds retuned:
+> `smoothRoughness` 3.0 -> 2.2 and `multimodalTurningPoints` 6.0 -> 5.0. Schwefel sat on
+> both of Dragonfly's values, so its verdict flipped with the seed; the new ones sit in the
+> measured gaps and hold over forty seeds. **Dragonfly likely has the same latent
+> flakiness** -- its own `TestClassifyProblemSeparatesSmoothFromRugged` expects Schwefel
+> `Rugged` at a single seed, which passes there by luck of the draw. Worth re-tuning that
+> library to match.
+>
+> One reconciliation gap is documented rather than fixed: Griewank over `[-600,600]` reads
+> `Unimodal`/`Smooth`, against the table's `HighlyMultimodal`/`Rugged`. Its cosine ripples
+> are a few units wide and of order one tall against a value range of order 100000 -- both
+> aliased by the scan spacing and negligible in the total variation. The table entry is the
+> better answer for an optimizer working near the optimum and stays as it is.
+>
+> - [x] Replace the absolute gradient-magnitude thresholds with a scale-free statistic
+> - [x] Rename `gradientVariance`, or compute the variance the name and comment promise
+> - [x] Thread an `*rand.Rand` through `ClassifyProblem` / `estimateLandscape` instead of
 >       drawing from the package-level RNG
-> - [ ] Add a test asserting a function classifies identically on `[-5,5]` and `[-500,500]`
-> - [ ] Reconcile `ClassifyProblem`'s answers with the hard-coded `RecommendForBenchmark`
+> - [x] Add a test asserting a function classifies identically on `[-5,5]` and `[-500,500]`
+> - [x] Reconcile `ClassifyProblem`'s answers with the hard-coded `RecommendForBenchmark`
 >       table, which is the de facto expected output
 
 ## High Priority

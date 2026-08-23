@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/cwbudde/mayfly"
 )
@@ -75,7 +76,10 @@ func main() {
 	fmt.Println("-----------------------------------------------------------------")
 
 	fmt.Println("Classifying Schwefel function...")
-	classified := mayfly.ClassifyProblem(mayfly.Schwefel, 10, -500, 500)
+
+	// A seeded generator keeps the classification reproducible; pass nil for a
+	// fresh one.
+	classified := mayfly.ClassifyProblem(mayfly.Schwefel, 10, -500, 500, rand.New(rand.NewSource(42)))
 
 	fmt.Printf("  Dimensionality: %d\n", classified.Dimensionality)
 	fmt.Printf("  Modality: ")
@@ -99,6 +103,10 @@ func main() {
 	case mayfly.NarrowValley:
 		fmt.Println("Narrow Valley")
 	}
+
+	fmt.Println("  (ClassifyProblem reports only Smooth or Rugged. Schwefel is")
+	fmt.Println("   Deceptive as well, but that is a fact about where its optimum")
+	fmt.Println("   sits, not something a sampler can see -- set it yourself.)")
 
 	bestForClassified := selector.RecommendBest(classified)
 	fmt.Printf("\n  Recommended: %s (Score: %.1f%%)\n",

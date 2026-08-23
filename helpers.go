@@ -27,6 +27,11 @@ func unifrndVec(lower, upper float64, size int, rng *rand.Rand) []float64 {
 	return vec
 }
 
+// isFinite reports whether value is a real number: neither NaN nor an infinity.
+func isFinite(value float64) bool {
+	return !math.IsNaN(value) && !math.IsInf(value, 0)
+}
+
 // randn generates a normally distributed random number.
 func randn(rng *rand.Rand) float64 {
 	if rng == nil {

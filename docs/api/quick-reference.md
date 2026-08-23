@@ -138,8 +138,9 @@ result, err := mayfly.NewBuilderFromVariant(recommendation.Variant).
 ```
 
 `AlgorithmRecommendation` reports `Variant`, `Reasoning`, `Score`, and
-`Confidence`. `ClassifyProblem(fn, size, lower, upper)` estimates
-characteristics by sampling. `RecommendForBenchmark(name)` handles the bundled
+`Confidence`. `ClassifyProblem(fn, size, lower, upper, rng)` estimates
+characteristics from scale-free line scans; `rng` may be nil, and `Landscape`
+comes back only as `Smooth` or `Rugged`. `RecommendForBenchmark(name)` handles the bundled
 benchmark names.
 
 ## Comparison framework

@@ -7,6 +7,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-24
+
 ### Added
 
 - `Config.Seed` and nullable `Result.Seed` provide truthful reproducibility;
@@ -17,6 +19,25 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   periodic global-best opposition are no longer falsely attributed to GSASMA.
 - Validated exported Pareto helpers and defensive archive snapshots.
 - `just test-modules` and CI coverage for every nested example module.
+- `Config.QMCInit` seeds the initial population from a low-discrepancy sequence
+  instead of independent uniform draws: `QMCInitUniform` (the zero value and the
+  historical behaviour), `QMCInitSobol`, or `QMCInitHalton`. The builder exposes
+  it as `WithQMCInitialPopulation`. Males and females come out of one stream, so
+  the halves do not land on top of each other, and the population sits on one
+  balanced block of the sequence rather than straddling two.
+- `Config.QMCSeed` pins that sequence's scramble. Left at zero the scramble is
+  drawn from the run's generator, which is what makes repeated runs start from
+  different point sets while a pinned `Config.Rand` still reproduces a whole run.
+  Sobol is limited to the 1024 dimensions of the direction numbers `qmc` embeds
+  and reports an error naming the ceiling past that; Halton has no ceiling.
+- `docs/qmc-initialization.md` is the measurement behind that feature, including
+  where it makes no difference. Across the sixteen benchmark problems the effect
+  is at chance level -- two significant results for Sobol, none against, against
+  about 1.6 expected by chance, and an earlier run of the same study found two
+  hits on two *different* problems. **Uniform stays the default**; the sequence
+  is worth trying on a problem that does not converge, not assumed to be an
+  improvement.
+- Dependency: `github.com/cwbudde/qmc v0.2.0`.
 
 ### Changed
 
@@ -57,6 +78,14 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The short runs behind `RequiresStableConvergence` are seeded from the passed
   generator, and a failed run is skipped instead of being counted as `+Inf` and
   dragged into the mean.
+- Every benchmark function scores an empty position vector as 0, stated as the
+  suite's convention in the file comment. `Levy([])` panicked on `w[n-1]`,
+  `Ackley([])` and `HappyCat([])` returned NaN from dividing by a zero dimension
+  count, and the other twelve already returned 0.
+  `TestBenchmarkFunctionsEmptyInput` asserts it for all fifteen against both a
+  nil and an allocated empty slice. The same change lands in the sibling
+  Dragonfly library, which ported the file verbatim, so the two suites stay
+  numerically comparable.
 
 ### Fixed
 
@@ -77,6 +106,11 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tie-corrected asymptotic probabilities, and Friedman applies tie correction.
 - Corrected the false claim that AOBLMOA is a multi-objective optimizer. The
   deprecated multi-objective preset now returns an error.
+- `wilcoxonSignedRankTest` reported `PValue` as 0 when every pair tied. It
+  discards pairs closer than 1e-10, and the early return for an empty remainder
+  never touched the field, so the zero value stood -- the most significant
+  result the test can express, where the truth in that branch is that there is
+  no evidence of any difference at all. It reports 1.
 
 - `ClassifyProblem` classified by the width of the search box rather than by the
   shape of the function. The old `estimateLandscape` averaged the raw
@@ -451,7 +485,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Benchmark functions, algorithm selection, comparison utilities, examples,
   JSON configuration, and algorithm documentation.
 
-[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/CWBudde/Mayfly/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/CWBudde/Mayfly/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/CWBudde/Mayfly/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/CWBudde/Mayfly/compare/v0.4.0...v0.5.0

@@ -2,7 +2,10 @@ module github.com/cwbudde/mayfly
 
 go 1.23.3
 
-require github.com/cucumber/godog v0.15.1
+require (
+	github.com/cucumber/godog v0.15.1
+	github.com/cwbudde/qmc v0.2.0
+)
 
 require (
 	github.com/cucumber/gherkin/go/v26 v26.2.0 // indirect

@@ -181,48 +181,61 @@ func NewGSASMAConfig() *Config {
 }
 
 // NewAOBLMOAConfig creates a default configuration for the AOBLMOA variant
-// (Aquila Optimizer-Based Learning Multi-Objective Algorithm).
+// (Aquila Optimizer and Opposition-Based Learning Mayfly Optimization
+// Algorithm).
 // You must set ObjectiveFunc, ProblemSize, LowerBound, and UpperBound.
 //
-// AOBLMOA enhances the standard Mayfly Algorithm with:
-// - Aquila Optimizer's four hunting strategies for hybrid exploration/exploitation
-// - Opposition-Based Learning for expanded search space coverage
+// AOBLMOA changes two stages of the standard Mayfly Algorithm:
+//   - In the update phase it keeps the attraction branches and replaces the
+//     nuptial dance (males) and the random flight (females) with Aquila
+//     Optimizer hunting strategies. Which branch an individual takes is a
+//     deterministic fitness test, not a draw.
+//   - In the offspring phase it replaces Gaussian mutation with stochastic
+//     opposition-based learning applied to every offspring, followed by greedy
+//     selection.
 //
-// The Aquila Optimizer integration provides four distinct hunting behaviors:
+// The Aquila Optimizer contributes four hunting behaviors:
 // 1. Expanded exploration (X1): High soar with vertical stoop for global search
 // 2. Narrowed exploration (X2): Contour flight with short glide for local exploration
 // 3. Expanded exploitation (X3): Low flight with slow descent for convergence
 // 4. Narrowed exploitation (X4): Walk and grab for intensive local search
 //
-// This variant is particularly effective for:
-// - Multi-objective optimization problems with conflicting objectives
-// - Complex landscapes requiring adaptive strategy switching
-// - Problems benefiting from hybrid metaheuristic approaches
-// - Engineering design with multiple performance criteria
+// The individual's sex and the iteration phase together fix which of the four
+// applies; see aoblmoaStrategyFor, which carries the paper's one unresolved
+// contradiction on that mapping.
 //
-// Key advantages:
-// - Automatic strategy switching based on iteration progress
-// - Combines Mayfly's social behavior with Aquila's hunting strategies
+// Note that Optimize is single-objective. AOBLMOA's Pareto helpers are
+// exported for callers who build a front themselves; the search does not read
+// one.
 //
-// AquilaWeight is the probability that an individual takes an Aquila step in a
-// given iteration; the rest take the ordinary Mayfly velocity and position
-// update. Nobody is skipped. The published algorithm has no such knob — it
-// moves every individual by Mayfly attraction or by an Aquila strategy chosen
-// from the iteration phase — so AquilaWeight = 1 is the closest match to the
-// paper and is the default here.
+// AquilaWeight is deprecated and defaults to AquilaWeightAuto. The published
+// algorithm has no such knob: it decides each individual's branch by a
+// deterministic fitness test, not by chance. Setting a probability in [0, 1]
+// restores the pre-v0.6.0 behavior of drawing the branch at random.
+//
+// StrategySwitch is the first iteration of the Aquila exploitation phase. Zero
+// defers to two thirds of MaxIterations, the split the Aquila Optimizer paper
+// prescribes; a value at or beyond MaxIterations keeps the run in exploration
+// throughout.
+//
+// OppositionProbability is unused by AOBLMOA, which applies stochastic
+// opposition-based learning to every offspring unconditionally. It is kept
+// because the other opposition-based variants read it.
 //
 // ArchiveSize sizes the exported ParetoArchive helper. The optimizer no longer
 // maintains an archive of its own, because nothing in the search ever read one.
 //
-// Reference: AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023),
-// PubMed / Various journals.
+// Reference:
+// Zhao, Y.; Huang, C.; Zhang, M.; Cui, Y. AOBLMOA: A Hybrid Biomimetic
+// Optimization Algorithm for Numerical Optimization and Engineering Design
+// Problems. Biomimetics 2023, 8(4), 381. DOI: 10.3390/biomimetics8040381.
 func NewAOBLMOAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseAOBLMOA = true
-	config.AquilaWeight = 1.0          // Aquila step every iteration, as in the paper
-	config.OppositionProbability = 0.3 // Apply opposition to 30% of solutions
-	config.ArchiveSize = 100           // Capacity of a caller-managed ParetoArchive
-	config.StrategySwitch = 0          // Will be set to MaxIterations * 2/3 during optimization
+	config.AquilaWeight = AquilaWeightAuto // Deterministic branch test, as in the paper
+	config.OppositionProbability = 0.3     // Unused by AOBLMOA; see the doc comment
+	config.ArchiveSize = 100               // Capacity of a caller-managed ParetoArchive
+	config.StrategySwitch = 0              // Resolved to MaxIterations * 2/3 per run
 
 	return config
 }

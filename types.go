@@ -171,7 +171,7 @@ type Config struct {
 	// every individual by Mayfly attraction or by an Aquila strategy, decided
 	// by a fitness test, not by chance. Leave this at AquilaWeightAuto for the
 	// published algorithm; set a probability in [0, 1] only to approximate the
-	// pre-v0.6.0 behaviour, which drew the branch at random.
+	// pre-v0.6.0 behavior, which drew the branch at random.
 	AquilaWeight         float64 `json:"aquila_weight"`
 	MedianWeight         float64 `json:"median_weight"`
 	LowerBound           float64 `json:"lower_bound"`

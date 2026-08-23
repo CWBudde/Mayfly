@@ -6,7 +6,7 @@ import (
 )
 
 func largestParallelEvaluationBatch(config *Config) int {
-	largest := max(config.NPop, config.NPopF, effectiveNC(config), config.NM)
+	largest := max(config.NPop, config.NPopF, effectiveNC(config), effectiveNM(config))
 
 	if config.UseDESMA {
 		largest = max(largest, config.EliteCount)
@@ -27,7 +27,10 @@ func largestParallelEvaluationBatch(config *Config) int {
 	}
 
 	if config.UseAOBLMOA {
-		largest = max(largest, 2*(config.NPop+config.NPopF))
+		// The update phase evaluates the whole swarm as one batch, and
+		// NPop+NPopF exceeds max(NPop, NPopF), so this clause genuinely
+		// enlarges the pool rather than restating the general case.
+		largest = max(largest, config.NPop+config.NPopF)
 	}
 
 	return largest
@@ -345,20 +348,14 @@ func evaluateParallelGoldenSine(
 	return len(evaluationBatch), nil
 }
 
-type aquilaCandidate struct {
-	target     *Mayfly
-	original   *Mayfly
-	opposition *Mayfly
-	isMale     bool
-}
-
-// evaluateParallelAOBLMOA moves and evaluates every male and female exactly
-// once per iteration.
+// evaluateParallelAOBLMOA runs one AOBLMOA update phase with the swarm
+// evaluated through the worker pool.
 //
-// An individual either takes an Aquila-Optimizer step (with probability
-// config.AquilaWeight) or the ordinary Mayfly velocity and position update.
-// Both branches move the individual, so the batch handed to the evaluator
-// always covers the whole population.
+// The moves themselves come from applyAOBLMOAMoves, the same function the
+// sequential path calls, so the two paths cannot drift: this function only
+// decides how the resulting positions are evaluated. Opposition-based learning
+// no longer lives in the update phase, so there is no candidate machinery left
+// here either -- every individual is moved once and evaluated once.
 func evaluateParallelAOBLMOA(
 	ctx context.Context,
 	males, females []*Mayfly,
@@ -369,168 +366,26 @@ func evaluateParallelAOBLMOA(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
-	strategyConfig := *config
-	strategyConfig.Rand = rng
-
-	// Every individual is updated against the state the swarm had when the
-	// iteration began, matching the sequential path in
-	// applyAOBLMOAToPopulationWithEvaluator. Reading the live slices would mix
-	// pre-move and post-move members into the Aquila mean and hand the females
-	// a male whose position is already this iteration's but whose cost is still
-	// last iteration's.
-	frozenMales := snapshotPopulation(males)
-	frozenFemales := snapshotPopulation(females)
-
-	candidates := make([]aquilaCandidate, 0, len(males)+len(females))
-	comparisonBatch := make([]*Mayfly, 0, 2*(len(males)+len(females)))
-
-	aquilaCandidateFor := func(target *Mayfly, population []*Mayfly, isMale bool) aquilaCandidate {
-		strategy := selectAquilaStrategy(currentIteration, effectiveStrategySwitch(config), rng)
-		position := applyAquilaStrategy(
-			target,
-			*globalBest,
-			population,
-			strategy,
-			currentIteration,
-			maxIterations,
-			&strategyConfig,
-			rng,
-		)
-
-		original := newMayfly(config.ProblemSize)
-		copy(original.Position, position)
-		maxVec(original.Position, config.LowerBound)
-		minVec(original.Position, config.UpperBound)
-
-		candidate := aquilaCandidate{target: target, original: original, isMale: isMale}
-
-		if rng.Float64() < config.OppositionProbability {
-			opposition := newMayfly(config.ProblemSize)
-			opposition.Position = oppositionPoint(
-				original.Position,
-				config.LowerBound,
-				config.UpperBound,
-			)
-			candidate.opposition = opposition
-			comparisonBatch = append(comparisonBatch, original, opposition)
-		}
-
-		return candidate
-	}
-
-	// mayflyCandidate captures the position produced by the ordinary Mayfly
-	// update, which the caller has already applied to target in place.
-	mayflyCandidate := func(target *Mayfly, isMale bool) aquilaCandidate {
-		moved := newMayfly(config.ProblemSize)
-		copy(moved.Position, target.Position)
-
-		return aquilaCandidate{target: target, original: moved, isMale: isMale}
-	}
-
-	for _, target := range males {
-		if ctx.Err() != nil {
-			break
-		}
-
-		if rng.Float64() < config.AquilaWeight {
-			candidates = append(candidates, aquilaCandidateFor(target, frozenMales, true))
-
-			continue
-		}
-
-		prepareStandardMale(
-			target, *globalBest, nil, g, dance, g, config, rng, evaluator.evaluator,
-		)
-		candidates = append(candidates, mayflyCandidate(target, true))
-	}
-
-	for i, target := range females {
-		if ctx.Err() != nil {
-			break
-		}
-
-		if rng.Float64() < config.AquilaWeight {
-			candidates = append(candidates, aquilaCandidateFor(target, frozenFemales, false))
-
-			continue
-		}
-
-		prepareStandardFemale(
-			target, frozenMales[i], g, flight, config, rng, evaluator.evaluator,
-		)
-		candidates = append(candidates, mayflyCandidate(target, false))
-	}
-
 	contextErr := ctx.Err()
 	if contextErr != nil {
 		return 0, contextErr
 	}
 
-	_, comparisonErr := evaluator.evaluate(ctx, comparisonBatch, false, false)
-	if comparisonErr != nil {
-		return 0, comparisonErr
+	applyAOBLMOAMoves(males, females, *globalBest, currentIteration, maxIterations,
+		g, dance, flight, config, rng, evaluator.evaluator)
+
+	batch := make([]*Mayfly, 0, len(males)+len(females))
+	batch = append(batch, males...)
+	batch = append(batch, females...)
+
+	_, evaluationErr := evaluator.evaluate(ctx, batch, false, false)
+	if evaluationErr != nil {
+		return 0, evaluationErr
 	}
 
-	finalBatch := selectAquilaWinners(candidates, evaluator)
+	updatePersonalBests(males, evaluator.evaluator)
 
-	_, finalErr := evaluator.evaluate(ctx, finalBatch, false, false)
-	if finalErr != nil {
-		return 0, finalErr
-	}
-
-	commitAquilaCandidates(candidates, finalBatch, globalBest, evaluator)
-
-	return len(comparisonBatch) + len(finalBatch), nil
-}
-
-// selectAquilaWinners picks, for every candidate, the better of the Aquila
-// position and its opposition point, where opposition-based learning fired.
-func selectAquilaWinners(candidates []aquilaCandidate, evaluator *evaluationPool) []*Mayfly {
-	winners := make([]*Mayfly, len(candidates))
-
-	for i := range candidates {
-		selected := candidates[i].original
-		if candidates[i].opposition != nil &&
-			evaluator.evaluator.betterMayfly(candidates[i].opposition, selected) {
-			selected = candidates[i].opposition
-		}
-
-		winners[i] = selected
-	}
-
-	return winners
-}
-
-// commitAquilaCandidates writes the evaluated positions back onto the swarm and
-// refreshes the personal and global bests.
-func commitAquilaCandidates(
-	candidates []aquilaCandidate,
-	finalBatch []*Mayfly,
-	globalBest *Best,
-	evaluator *evaluationPool,
-) {
-	for i, candidate := range candidates {
-		selected := finalBatch[i]
-		copy(candidate.target.Position, selected.Position)
-		candidate.target.Cost = selected.Cost
-		candidate.target.ConstraintViolation = selected.ConstraintViolation
-
-		if !candidate.isMale {
-			continue
-		}
-
-		if evaluator.evaluator.better(
-			evaluationFromMayfly(candidate.target), evaluationFromBest(candidate.target.Best),
-		) {
-			copy(candidate.target.Best.Position, candidate.target.Position)
-			candidate.target.Best.Cost = candidate.target.Cost
-			candidate.target.Best.ConstraintViolation = candidate.target.ConstraintViolation
-		}
-
-		if evaluator.evaluator.betterMayflyThanBest(candidate.target, *globalBest) {
-			copyMayflyToBest(globalBest, candidate.target)
-		}
-	}
+	return len(batch), nil
 }
 
 // evaluateParallelChaoticExploitation runs the OLCE-MA chaotic exploitation

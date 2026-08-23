@@ -114,7 +114,7 @@ func effectiveStrategySwitch(config *Config) int {
 // The second result says whether an override is in force at all. At the
 // default of AquilaWeightAuto it is false and the branch is chosen the way the
 // paper chooses it, by a deterministic fitness test. Any other value restores
-// the pre-v0.6.0 behaviour of drawing the branch at random with that
+// the pre-v0.6.0 behavior of drawing the branch at random with that
 // probability.
 //
 // Like effectiveNC it never writes back, so the sentinel survives a run and a

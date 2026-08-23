@@ -202,11 +202,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 	logOptimizationStarted(ctx, run.logger, config)
 
-	// Initialize parameters
-	if config.NM == 0 {
-		config.NM = int(math.Round(0.05 * float64(config.NPop)))
-	}
-
 	if config.VelMax == 0 {
 		config.VelMax = 0.1 * (config.UpperBound - config.LowerBound)
 		config.VelMin = -config.VelMax
@@ -400,11 +395,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		// The golden section search persists across iterations so that the
 		// interval actually narrows over the run.
 		goldenSectionSearch = newGoldenSection()
-	}
-
-	// Initialize AOBLMOA parameters if enabled
-	if config.UseAOBLMOA {
-		initializeAOBLMOA(config)
 	}
 
 	// Main loop
@@ -929,7 +919,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		var offspring []*Mayfly
 
 		if evaluator != nil {
-			parallelOffspring, offspringBest, evaluationErr := evaluateParallelGeneticOperators(
+			parallelOffspring, offspringBest, geneticEvaluations, evaluationErr := evaluateParallelGeneticOperators(
 				ctx,
 				males,
 				females,
@@ -943,7 +933,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			}
 
 			offspring = parallelOffspring
-			funcCount += len(offspring)
+			// Not len(offspring): AOBLMOA evaluates an opposition point for
+			// every offspring without appending it, so the stage spends more
+			// evaluations than it returns individuals.
+			funcCount += geneticEvaluations
 
 			mergeBest(&globalBest, offspringBest, candidateEvaluator)
 		} else {
@@ -967,7 +960,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 				funcCount++
 
-				if candidateEvaluator.betterMayflyThanBest(off1, globalBest) {
+				if !config.UseAOBLMOA &&
+					candidateEvaluator.betterMayflyThanBest(off1, globalBest) {
 					copyMayflyToBest(&globalBest, off1)
 				}
 
@@ -983,7 +977,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 				funcCount++
 
-				if candidateEvaluator.betterMayflyThanBest(off2, globalBest) {
+				if !config.UseAOBLMOA &&
+					candidateEvaluator.betterMayflyThanBest(off2, globalBest) {
 					copyMayflyToBest(&globalBest, off2)
 				}
 
@@ -994,11 +989,39 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				offspring = append(offspring, off1, off2)
 			}
 
-			// Mutation
-			// GSASMA: Use hybrid Cauchy-Gaussian mutation
-			if config.UseGSASMA {
+			// Offspring refinement: AOBLMOA applies stochastic
+			// opposition-based learning, GSASMA a hybrid Cauchy-Gaussian
+			// mutation, everything else the ordinary Gaussian mutation.
+			switch {
+			case config.UseAOBLMOA:
+				// The paper replaces offspring mutation with stochastic
+				// opposition-based learning on every offspring, ungated:
+				// Eq. (31) builds the opposition point and Eq. (32) greedily
+				// keeps the better of the pair. Config.NM is inert here; see
+				// effectiveNM.
+				opposites := prepareStochasticOBL(offspring, config, rng)
+
+				for _, opposite := range opposites {
+					candidateEvaluator.evaluateMayfly(opposite, false)
+
+					funcCount++
+				}
+
+				commitStochasticOBL(offspring, opposites, candidateEvaluator)
+
+				// The global best is merged only now, from the kept
+				// offspring. Eq. (32) always keeps the better of the pair, so
+				// a discarded candidate could never have been the global best
+				// and nothing is lost by waiting.
+				for _, child := range offspring {
+					if candidateEvaluator.betterMayflyThanBest(child, globalBest) {
+						copyMayflyToBest(&globalBest, child)
+					}
+				}
+
+			case config.UseGSASMA:
 				// Apply hybrid mutation with adaptive Cauchy probability
-				for range config.NM {
+				for range effectiveNM(config) {
 					// Select parent from offspring
 					i := rng.Intn(len(offspring))
 					p := offspring[i]
@@ -1043,9 +1066,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 					offspring = append(offspring, mut)
 				}
-			} else {
+
+			default:
 				// Standard mutation
-				for range config.NM {
+				for range effectiveNM(config) {
 					// Select parent from offspring
 					i := rng.Intn(len(offspring))
 					p := offspring[i]

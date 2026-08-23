@@ -17,17 +17,17 @@ func evaluateParallelGeneticOperators(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 	iteration int,
-) ([]*Mayfly, Best, error) {
+) ([]*Mayfly, Best, int, error) {
 	geneticBest := Best{Cost: math.Inf(1), ConstraintViolation: math.Inf(1)}
 	nc := effectiveNC(config)
-	offspring := make([]*Mayfly, 0, 2*(nc/2)+config.NM)
+	offspring := make([]*Mayfly, 0, 2*(nc/2)+effectiveNM(config))
 
 	gamma := effectiveCrossoverGamma(config)
 
 	for k := range nc / 2 {
 		contextErr := ctx.Err()
 		if contextErr != nil {
-			return nil, Best{}, contextErr
+			return nil, Best{}, 0, contextErr
 		}
 
 		// Optimize validates that both populations contain every requested
@@ -53,10 +53,26 @@ func evaluateParallelGeneticOperators(
 
 	crossoverBest, err := evaluator.evaluate(ctx, offspring, false, true)
 	if err != nil {
-		return nil, Best{}, err
+		return nil, Best{}, 0, err
 	}
 
+	evaluations := len(offspring)
+
 	initializeOffspringBests(offspring)
+
+	if config.UseAOBLMOA {
+		// AOBLMOA replaces offspring mutation with stochastic
+		// opposition-based learning on every offspring; see
+		// prepareStochasticOBL. The crossover best is deliberately not merged
+		// above: Eq. (32) always keeps the better of each pair, so the global
+		// best is taken from the kept offspring once the selection is done.
+		oblEvaluations, oblErr := applyParallelStochasticOBL(ctx, offspring, config, rng, evaluator)
+		if oblErr != nil {
+			return nil, Best{}, 0, oblErr
+		}
+
+		return offspring, keptOffspringBest(offspring, evaluator), evaluations + oblEvaluations, nil
+	}
 
 	if evaluator.evaluator.betterBest(crossoverBest, geneticBest) {
 		geneticBest = crossoverBest
@@ -64,10 +80,10 @@ func evaluateParallelGeneticOperators(
 
 	mutationStart := len(offspring)
 
-	for range config.NM {
+	for range effectiveNM(config) {
 		contextErr := ctx.Err()
 		if contextErr != nil {
-			return nil, Best{}, contextErr
+			return nil, Best{}, 0, contextErr
 		}
 
 		parent := offspring[rng.Intn(len(offspring))]
@@ -101,7 +117,7 @@ func evaluateParallelGeneticOperators(
 
 	mutationBest, err := evaluator.evaluate(ctx, mutants, false, true)
 	if err != nil {
-		return nil, Best{}, err
+		return nil, Best{}, 0, err
 	}
 
 	initializeOffspringBests(mutants)
@@ -110,7 +126,50 @@ func evaluateParallelGeneticOperators(
 		geneticBest = mutationBest
 	}
 
-	return offspring, geneticBest, nil
+	return offspring, geneticBest, len(offspring), nil
+}
+
+// applyParallelStochasticOBL runs the AOBLMOA opposition stage over the worker
+// pool. The candidates are built on the caller goroutine by the very function
+// the sequential path calls, so both paths consume the same random numbers in
+// the same order.
+func applyParallelStochasticOBL(
+	ctx context.Context,
+	offspring []*Mayfly,
+	config *Config,
+	rng *rand.Rand,
+	evaluator *evaluationPool,
+) (int, error) {
+	opposites := prepareStochasticOBL(offspring, config, rng)
+
+	_, err := evaluator.evaluate(ctx, opposites, false, false)
+	if err != nil {
+		return 0, err
+	}
+
+	commitStochasticOBL(offspring, opposites, evaluator.evaluator)
+
+	return len(opposites), nil
+}
+
+// keptOffspringBest reports the best of the offspring that survived greedy
+// opposition selection.
+func keptOffspringBest(offspring []*Mayfly, evaluator *evaluationPool) Best {
+	best := Best{Cost: math.Inf(1), ConstraintViolation: math.Inf(1)}
+
+	for _, child := range offspring {
+		if !evaluator.evaluator.betterMayflyThanBest(child, best) {
+			continue
+		}
+
+		best = cloneBest(Best{
+			Position:            child.Position,
+			Cost:                child.Cost,
+			ConstraintViolation: child.ConstraintViolation,
+		})
+	}
+
+	return best
 }
 
 func adaptiveCauchyProbability(iteration int, config *Config) float64 {

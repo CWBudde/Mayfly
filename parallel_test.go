@@ -293,7 +293,7 @@ func TestParallelGeneticOffspringAreFullyInitialized(t *testing.T) {
 	pool := newEvaluationPool(config.ObjectiveFunc, 3)
 	defer pool.close()
 
-	offspring, best, err := evaluateParallelGeneticOperators(
+	offspring, best, _, err := evaluateParallelGeneticOperators(
 		context.Background(),
 		[]*Mayfly{male},
 		[]*Mayfly{female},
@@ -376,16 +376,17 @@ func TestParallelVariantEvaluationUsesVariantBatchCapacity(t *testing.T) {
 			configure:           func(*Config) {},
 		},
 		{
-			name:                "AOBLMOA opposition candidates",
+			// 2 males + 2 females initially, the same 4 again for the update
+			// phase (AOBLMOA moves and evaluates the whole swarm exactly
+			// once), 2 crossover offspring, and 2 stochastic opposition points
+			// -- one per offspring, which is what replaces mutation.
+			name:                "AOBLMOA whole swarm and opposed offspring",
 			newConfig:           NewAOBLMOAConfig,
 			malePopulation:      2,
 			femalePopulation:    2,
 			wantConcurrency:     4,
-			wantEvaluationCount: 19,
-			configure: func(config *Config) {
-				config.AquilaWeight = 1
-				config.OppositionProbability = 1
-			},
+			wantEvaluationCount: 12,
+			configure:           func(*Config) {},
 		},
 	}
 
@@ -468,10 +469,7 @@ func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 		{name: "MPMA", newConfig: NewMPMAConfig, configure: func(config *Config) {
 			config.UseWeightedMedian = true
 		}},
-		{name: "AOBLMOA", newConfig: NewAOBLMOAConfig, configure: func(config *Config) {
-			config.AquilaWeight = 1
-			config.OppositionProbability = 1
-		}},
+		{name: "AOBLMOA", newConfig: NewAOBLMOAConfig, configure: func(*Config) {}},
 	}
 
 	for _, testCase := range testCases {
@@ -536,10 +534,7 @@ func TestParallelVariantFunctionCountsAreExact(t *testing.T) {
 		}},
 		{name: "GSASMA", newConfig: NewGSASMAConfig, configure: func(*Config) {}},
 		{name: "MPMA", newConfig: NewMPMAConfig, configure: func(*Config) {}},
-		{name: "AOBLMOA", newConfig: NewAOBLMOAConfig, configure: func(config *Config) {
-			config.AquilaWeight = 1
-			config.OppositionProbability = 1
-		}},
+		{name: "AOBLMOA", newConfig: NewAOBLMOAConfig, configure: func(*Config) {}},
 	}
 
 	for _, testCase := range testCases {

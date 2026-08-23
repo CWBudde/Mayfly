@@ -746,31 +746,121 @@ func TestParetoArchiveEmpty(t *testing.T) {
 	}
 }
 
-// TestInitializeAOBLMOA tests AOBLMOA initialization.
-func TestInitializeAOBLMOA(t *testing.T) {
+// TestAOBLMOAConfigDefaults pins the AOBLMOA defaults and, above all, that
+// they survive a run.
+//
+// initializeAOBLMOA used to clamp the configuration in place on the first
+// iteration, which would have rewritten the AquilaWeightAuto sentinel to 0 --
+// the same reused-Config hazard TestAutoOffspringCountSurvivesARun forbids for
+// NCAuto. The function is gone; validation covers every range it clamped.
+func TestAOBLMOAConfigDefaults(t *testing.T) {
 	config := NewAOBLMOAConfig()
-	config.MaxIterations = 100
 
-	initializeAOBLMOA(config)
-
-	// Check strategy switch point is set
-	if config.StrategySwitch == 0 {
-		t.Error("Expected strategy switch point to be set")
+	if config.AquilaWeight != AquilaWeightAuto {
+		t.Errorf("AquilaWeight = %v, want the AquilaWeightAuto sentinel (%v)",
+			config.AquilaWeight, AquilaWeightAuto)
 	}
 
-	// Check opposition probability is in valid range
-	if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
-		t.Errorf("Opposition probability %f is out of range [0, 1]", config.OppositionProbability)
+	if config.StrategySwitch != 0 {
+		t.Errorf("StrategySwitch = %d, want 0 so it resolves per run", config.StrategySwitch)
 	}
 
-	// Check Aquila weight is in valid range
-	if config.AquilaWeight < 0 || config.AquilaWeight > 1 {
-		t.Errorf("Aquila weight %f is out of range [0, 1]", config.AquilaWeight)
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 3
+	config.LowerBound = -5
+	config.UpperBound = 5
+	config.MaxIterations = 5
+	config.NPop = 8
+	config.NPopF = 8
+	config.Rand = rand.New(rand.NewSource(3))
+
+	_, err := Optimize(config)
+	if err != nil {
+		t.Fatalf("Optimize: %v", err)
 	}
 
-	// Check archive size is positive
-	if config.ArchiveSize <= 0 {
-		t.Error("Expected positive archive size")
+	if config.AquilaWeight != AquilaWeightAuto {
+		t.Errorf("AquilaWeight = %v after a run, want the sentinel preserved", config.AquilaWeight)
+	}
+
+	if config.StrategySwitch != 0 {
+		t.Errorf("StrategySwitch = %d after a run, want it left unresolved so a reused "+
+			"Config rescales with MaxIterations", config.StrategySwitch)
+	}
+}
+
+// TestAOBLMOARejectsInvalidAquilaWeight covers both entry points: the sentinel
+// has to pass and out-of-range overrides still have to fail.
+func TestAOBLMOARejectsInvalidAquilaWeight(t *testing.T) {
+	for _, testCase := range []struct {
+		name    string
+		weight  float64
+		wantErr bool
+	}{
+		{name: "sentinel", weight: AquilaWeightAuto, wantErr: false},
+		{name: "zero", weight: 0, wantErr: false},
+		{name: "one", weight: 1, wantErr: false},
+		{name: "above one", weight: 1.5, wantErr: true},
+		{name: "negative but not the sentinel", weight: -0.5, wantErr: true},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			config := NewAOBLMOAConfig()
+			config.ObjectiveFunc = Sphere
+			config.ProblemSize = 2
+			config.LowerBound = -5
+			config.UpperBound = 5
+			config.MaxIterations = 2
+			config.NPop = 6
+			config.NPopF = 6
+			config.Rand = rand.New(rand.NewSource(5))
+			config.AquilaWeight = testCase.weight
+
+			_, err := Optimize(config)
+			if gotErr := err != nil; gotErr != testCase.wantErr {
+				t.Errorf("Optimize error = %v, want error: %t", err, testCase.wantErr)
+			}
+
+			loadErr := ValidateConfig(config)
+			if (loadErr != nil) != testCase.wantErr {
+				t.Errorf("ValidateConfig error = %v, want error: %t", loadErr, testCase.wantErr)
+			}
+		})
+	}
+}
+
+// TestAOBLMOARejectsNegativeStrategySwitch pins the one StrategySwitch value
+// that is genuinely wrong. A switch at or beyond MaxIterations is legal and
+// means the run never leaves exploration.
+func TestAOBLMOARejectsNegativeStrategySwitch(t *testing.T) {
+	config := NewAOBLMOAConfig()
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = 2
+	config.LowerBound = -5
+	config.UpperBound = 5
+	config.MaxIterations = 4
+	config.NPop = 6
+	config.NPopF = 6
+	config.Rand = rand.New(rand.NewSource(5))
+	config.StrategySwitch = -1
+
+	_, err := Optimize(config)
+	if err == nil {
+		t.Fatal("Optimize accepted a negative StrategySwitch")
+	}
+
+	if !strings.Contains(err.Error(), "StrategySwitch") {
+		t.Errorf("error %q does not name StrategySwitch", err)
+	}
+
+	if ValidateConfig(config) == nil {
+		t.Error("ValidateConfig accepted a negative strategy_switch")
+	}
+
+	config.StrategySwitch = 4 * config.MaxIterations
+
+	_, neverExploitErr := Optimize(config)
+	if neverExploitErr != nil {
+		t.Errorf("Optimize rejected a StrategySwitch beyond MaxIterations: %v", neverExploitErr)
 	}
 }
 
@@ -840,8 +930,6 @@ func TestApplyAOBLMOAToPopulation(t *testing.T) {
 	config.LowerBound = -5.0
 	config.UpperBound = 5.0
 	config.MaxIterations = 100
-
-	initializeAOBLMOA(config)
 
 	// Create small populations
 	males := make([]*Mayfly, 5)
@@ -1282,8 +1370,6 @@ func TestAOBLMOAMovesEveryIndividual(t *testing.T) {
 			config.VelMin = -2.0
 			config.VelMax = 2.0
 
-			initializeAOBLMOA(config)
-
 			males, females := aoblmoaTestPopulations(t, config, 12)
 			globalBest := Best{Position: append([]float64(nil), males[0].Best.Position...), Cost: males[0].Cost}
 
@@ -1326,8 +1412,6 @@ func TestAOBLMOAEvaluatesWholePopulation(t *testing.T) {
 	config.VelMin = -2.0
 	config.VelMax = 2.0
 
-	initializeAOBLMOA(config)
-
 	males, females := aoblmoaTestPopulations(t, config, 10)
 	globalBest := Best{Position: append([]float64(nil), males[0].Best.Position...), Cost: males[0].Cost}
 
@@ -1359,8 +1443,6 @@ func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
 			config.OppositionProbability = 0
 			config.VelMin = -2.0
 			config.VelMax = 2.0
-
-			initializeAOBLMOA(config)
 
 			males, females := aoblmoaTestPopulations(t, config, 12)
 			globalBest := Best{
@@ -1569,8 +1651,6 @@ func TestAOBLMOAPairsFemalesWithIterationStartMales(t *testing.T) {
 		config.OppositionProbability = 0
 		config.VelMin = -2.0
 		config.VelMax = 2.0
-
-		initializeAOBLMOA(config)
 
 		males := make([]*Mayfly, size)
 		females := make([]*Mayfly, size)

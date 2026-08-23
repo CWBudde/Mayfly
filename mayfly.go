@@ -97,6 +97,18 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, offspringErr
 	}
 
+	// Every female is paired with the male at the same index, so a female
+	// population larger than the male population has no pairing at all. The
+	// female update phases used to index straight past the end of the male
+	// slice and panic.
+	if config.NPopF > config.NPop {
+		return nil, fmt.Errorf(
+			"NPopF (female population, %d) must not exceed NPop (male population, %d): "+
+				"each female is paired with the male at the same index",
+			config.NPopF, config.NPop,
+		)
+	}
+
 	// Validate variant-specific parameters
 	if config.UseDESMA {
 		if config.SearchRange < 0 {
@@ -168,6 +180,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
 			return nil, fmt.Errorf("AOBLMOA OppositionProbability must be in [0, 1], got %v", config.OppositionProbability)
 		}
+	}
+
+	updatePhaseErr := validateUpdatePhaseVariants(config)
+	if updatePhaseErr != nil {
+		return nil, updatePhaseErr
 	}
 
 	run, err := resolveRunOptions(options)

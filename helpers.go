@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"slices"
+	"strings"
 )
 
 // unifrnd generates a random float64 between lower and upper.
@@ -271,4 +272,39 @@ func effectiveCrossoverGamma(config *Config) float64 {
 	}
 
 	return gamma
+}
+
+// validateUpdatePhaseVariants rejects combinations of variants that replace the
+// same phase of the iteration.
+//
+// The position-update phase of the main loop is a switch: AOBLMOA wins over
+// EOBBMA, which wins over the standard update that carries the MPMA median
+// term. Setting two of them therefore left one silently inert — enabling MPMA
+// alongside AOBLMOA never computed a median position at all, and the standard
+// male fallback inside AOBLMOA dropped the median term while the configuration
+// claimed MPMA was in use. Refusing the combination makes that explicit
+// instead.
+func validateUpdatePhaseVariants(config *Config) error {
+	enabled := make([]string, 0, 3)
+
+	if config.UseAOBLMOA {
+		enabled = append(enabled, "UseAOBLMOA")
+	}
+
+	if config.UseEOBBMA {
+		enabled = append(enabled, "UseEOBBMA")
+	}
+
+	if config.UseMPMA {
+		enabled = append(enabled, "UseMPMA")
+	}
+
+	if len(enabled) < 2 {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"%s replace the same position-update phase and cannot be combined; enable exactly one",
+		strings.Join(enabled, " and "),
+	)
 }

@@ -371,6 +371,16 @@ func evaluateParallelAOBLMOA(
 ) (int, error) {
 	strategyConfig := *config
 	strategyConfig.Rand = rng
+
+	// Every individual is updated against the state the swarm had when the
+	// iteration began, matching the sequential path in
+	// applyAOBLMOAToPopulationWithEvaluator. Reading the live slices would mix
+	// pre-move and post-move members into the Aquila mean and hand the females
+	// a male whose position is already this iteration's but whose cost is still
+	// last iteration's.
+	frozenMales := snapshotPopulation(males)
+	frozenFemales := snapshotPopulation(females)
+
 	candidates := make([]aquilaCandidate, 0, len(males)+len(females))
 	comparisonBatch := make([]*Mayfly, 0, 2*(len(males)+len(females)))
 
@@ -422,7 +432,7 @@ func evaluateParallelAOBLMOA(
 		}
 
 		if rng.Float64() < config.AquilaWeight {
-			candidates = append(candidates, aquilaCandidateFor(target, males, true))
+			candidates = append(candidates, aquilaCandidateFor(target, frozenMales, true))
 
 			continue
 		}
@@ -439,17 +449,14 @@ func evaluateParallelAOBLMOA(
 		}
 
 		if rng.Float64() < config.AquilaWeight {
-			candidates = append(candidates, aquilaCandidateFor(target, females, false))
+			candidates = append(candidates, aquilaCandidateFor(target, frozenFemales, false))
 
 			continue
 		}
 
-		pairedMale := target
-		if i < len(males) {
-			pairedMale = males[i]
-		}
-
-		prepareStandardFemale(target, pairedMale, g, flight, config, rng, evaluator.evaluator)
+		prepareStandardFemale(
+			target, frozenMales[i], g, flight, config, rng, evaluator.evaluator,
+		)
 		candidates = append(candidates, mayflyCandidate(target, false))
 	}
 

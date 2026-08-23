@@ -192,6 +192,27 @@ func tournamentIndex(n, size int, rng *rand.Rand) int {
 // who shrinks the population without also shrinking NC — the default NC of 20
 // with any NPop below 10, for instance — used to get an out-of-range panic from
 // inside the library rather than an error out of Optimize.
+// validateFemalePairing rejects a female population larger than the male
+// population. Every female is paired with the male at the same index, so a
+// surplus female has no pairing at all, and the female update phases used to
+// index straight past the end of the male slice and panic.
+//
+// This is a structural property of the pairing rather than a tunable
+// relationship, so Optimize reports it before the offspring checks: a caller
+// whose populations cannot pair at all is not helped by first being told about
+// NC.
+func validateFemalePairing(config *Config) error {
+	if config.NPopF > config.NPop {
+		return fmt.Errorf(
+			"NPopF (female population, %d) must not exceed NPop (male population, %d): "+
+				"each female is paired with the male at the same index",
+			config.NPopF, config.NPop,
+		)
+	}
+
+	return nil
+}
+
 func validateOffspring(config *Config) error {
 	if config.NC < 0 && config.NC != NCAuto {
 		return fmt.Errorf(

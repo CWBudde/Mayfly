@@ -3,6 +3,7 @@ package mayfly
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -100,6 +101,30 @@ func TestValidateConfigRejectsNegativeMaxWorkers(t *testing.T) {
 	err := ValidateConfig(config)
 	if err == nil {
 		t.Fatal("ValidateConfig accepted negative MaxWorkers")
+	}
+}
+
+// TestValidateConfigRejectsMoreFemalesThanMales covers a gap between the two
+// entry points: ValidateConfig checked the populations were positive but not
+// that they could pair, so a configuration loaded from a file passed
+// validation and only failed later inside Optimize, on a run its caller
+// believed was already validated.
+func TestValidateConfigRejectsMoreFemalesThanMales(t *testing.T) {
+	config := NewDefaultConfig()
+	config.ProblemSize = 10
+	config.LowerBound = -10
+	config.UpperBound = 10
+	config.NPop = 6
+	config.NPopF = 12
+	config.NC = 6
+
+	err := ValidateConfig(config)
+	if err == nil {
+		t.Fatal("ValidateConfig accepted NPopF greater than NPop")
+	}
+
+	if !strings.Contains(err.Error(), "must not exceed NPop") {
+		t.Errorf("error %q does not explain the pairing constraint", err)
 	}
 }
 

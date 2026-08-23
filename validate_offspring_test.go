@@ -46,11 +46,17 @@ func TestOptimizeRejectsMoreParentPairsThanPopulation(t *testing.T) {
 	for _, testCase := range []struct {
 		name            string
 		npop, npopf, nc int
+		// wantError pins which validation reports the case. "males too few"
+		// also has more females than males, and that pairing failure is the
+		// more fundamental one, so Optimize reports it first. Naming the
+		// expected message per case keeps that precedence deliberate instead
+		// of an accident of validation order.
+		wantError string
 	}{
-		{"males too few", 4, 20, 20},
-		{"females too few", 20, 4, 20},
-		{"both too few", 4, 4, 20},
-		{"one pair short", 9, 9, 20},
+		{"males too few", 4, 20, 20, "must not exceed NPop"},
+		{"females too few", 20, 4, 20, "parent pairs"},
+		{"both too few", 4, 4, 20, "parent pairs"},
+		{"one pair short", 9, 9, 20, "parent pairs"},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			// A panic here is the regression, so let it fail the test loudly
@@ -65,8 +71,8 @@ func TestOptimizeRejectsMoreParentPairsThanPopulation(t *testing.T) {
 				t.Errorf("Optimize returned a result alongside an error: %+v", result)
 			}
 
-			if !strings.Contains(err.Error(), "parent pairs") {
-				t.Errorf("error %q does not explain the parent-pair constraint", err)
+			if !strings.Contains(err.Error(), testCase.wantError) {
+				t.Errorf("error %q does not contain %q", err, testCase.wantError)
 			}
 		})
 	}

@@ -92,21 +92,14 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, fmt.Errorf("MaxWorkers must be non-negative, got %d", config.MaxWorkers)
 	}
 
+	pairingErr := validateFemalePairing(config)
+	if pairingErr != nil {
+		return nil, pairingErr
+	}
+
 	offspringErr := validateOffspring(config)
 	if offspringErr != nil {
 		return nil, offspringErr
-	}
-
-	// Every female is paired with the male at the same index, so a female
-	// population larger than the male population has no pairing at all. The
-	// female update phases used to index straight past the end of the male
-	// slice and panic.
-	if config.NPopF > config.NPop {
-		return nil, fmt.Errorf(
-			"NPopF (female population, %d) must not exceed NPop (male population, %d): "+
-				"each female is paired with the male at the same index",
-			config.NPopF, config.NPop,
-		)
 	}
 
 	// Validate variant-specific parameters

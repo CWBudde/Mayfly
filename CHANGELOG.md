@@ -53,6 +53,12 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   female update phase pairs `females[i]` with `males[i]`, so a larger female
   population indexed past the end of the male slice; the standard and EOBBMA
   paths crashed with `index out of range`, sequentially and in parallel.
+- `ValidateConfig` rejects `NPopF` greater than `NPop` as well. It checked that
+  both populations were positive but not that they could pair, so a
+  configuration loaded from a file passed validation and then failed at the
+  start of a run its caller believed was already checked. Both entry points now
+  report the pairing failure before the offspring checks, so the same
+  configuration produces the same error whichever one sees it first.
 - `Optimize` rejects `UseAOBLMOA`, `UseEOBBMA`, and `UseMPMA` in combination
   instead of silently ignoring all but one of them. They replace the same
   position-update phase of the main loop, which is a switch, so enabling MPMA

@@ -125,8 +125,11 @@ const (
 // functions may be called concurrently with distinct position vectors and
 // must be safe for concurrent use.
 type Config struct {
-	ObjectiveFunc         ObjectiveFunction  `json:"-"`
-	Rand                  *rand.Rand         `json:"-"`
+	ObjectiveFunc ObjectiveFunction `json:"-"`
+	Rand          *rand.Rand        `json:"-"`
+	// Seed asks Optimize to construct a reproducible run-local generator. It is
+	// mutually exclusive with Rand, whose original seed cannot be recovered.
+	Seed                  *int64             `json:"seed,omitempty"`
 	Convergence           *ConvergenceConfig `json:"convergence,omitempty"`
 	Constraints           *ConstraintConfig  `json:"constraints,omitempty"`
 	CoolingSchedule       string             `json:"cooling_schedule"`
@@ -151,7 +154,7 @@ type Config struct {
 	NM                    int                `json:"nm"`
 	TournamentSize        int                `json:"tournament_size"`
 	NCRatio               float64            `json:"nc_ratio"`
-	CrossoverGamma        float64            `json:"crossover_gamma"` // 0/negative/NaN/Inf: DefaultCrossoverGamma
+	CrossoverGamma        float64            `json:"crossover_gamma"` // 0 or negative: DefaultCrossoverGamma
 	Mu                    float64            `json:"mu"`
 	VelMax                float64            `json:"vel_max"`
 	VelMin                float64            `json:"vel_min"`
@@ -184,6 +187,7 @@ type Config struct {
 	CoolingRate          float64 `json:"cooling_rate"`
 	CauchyMutationRate   float64 `json:"cauchy_mutation_rate"`
 	UseGSASMA            bool    `json:"use_gsasma"`
+	UseHMMA              bool    `json:"use_hmma"`
 	UseWeightedMedian    bool    `json:"use_weighted_median"`
 	ApplyOBLToGlobalBest bool    `json:"apply_obl_to_global_best"`
 	UseAOBLMOA           bool    `json:"use_aoblmoa"`
@@ -229,7 +233,9 @@ type Result struct {
 	GlobalBest        Best
 	FuncEvalCount     int
 	IterationCount    int
-	Seed              int64 // Random seed used for reproducibility
+	// Seed is the reproducibility seed when the optimizer constructed the RNG.
+	// It is nil when the caller supplied an opaque *rand.Rand.
+	Seed *int64
 }
 
 // newMayfly creates an empty mayfly with allocated slices.

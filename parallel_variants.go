@@ -3,10 +3,11 @@ package mayfly
 import (
 	"context"
 	"math/rand"
+	"sort"
 )
 
 func largestParallelEvaluationBatch(config *Config) int {
-	largest := max(config.NPop, config.NPopF, effectiveNC(config), effectiveNM(config))
+	largest := max(config.NPop, config.NPopF, effectiveNC(config), 2*effectiveNM(config))
 
 	if config.UseDESMA {
 		largest = max(largest, config.EliteCount)
@@ -14,7 +15,7 @@ func largestParallelEvaluationBatch(config *Config) int {
 
 	if config.UseOLCE {
 		numElite := min(max(int(float64(config.NPop)*0.2), 1), config.NPop)
-		largest = max(largest, numElite*len(L4Array))
+		largest = max(largest, numElite*len(orthogonalArray(config.ProblemSize)))
 	}
 
 	if config.UseEOBBMA {
@@ -44,6 +45,10 @@ func evaluateParallelDESMAElites(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (*Mayfly, int, error) {
+	if config.EliteCount <= 0 {
+		return nil, 0, nil
+	}
+
 	randomOffsets := make([]float64, config.EliteCount*config.ProblemSize)
 	for i := range config.EliteCount {
 		contextErr := ctx.Err()
@@ -80,13 +85,8 @@ func evaluateParallelDESMAElites(
 		return nil, 0, evaluationErr
 	}
 
-	bestElite := newMayfly(config.ProblemSize)
-	copy(bestElite.Position, currentBest.Position)
-	bestElite.Cost = currentBest.Cost
-	bestElite.ConstraintViolation = currentBest.ConstraintViolation
-	copy(bestElite.Best.Position, currentBest.Position)
-	bestElite.Best.Cost = currentBest.Cost
-	bestElite.Best.ConstraintViolation = currentBest.ConstraintViolation
+	bestElite := mayflyFromBest(currentBest, config.ProblemSize)
+	improved := false
 
 	for _, elite := range elites {
 		if evaluator.evaluator.betterMayfly(elite, bestElite) {
@@ -94,7 +94,11 @@ func evaluateParallelDESMAElites(
 			copy(bestElite.Best.Position, elite.Position)
 			bestElite.Best.Cost = elite.Cost
 			bestElite.Best.ConstraintViolation = elite.ConstraintViolation
+			improved = true
 		}
+	}
+	if !improved {
+		return nil, len(elites), nil
 	}
 
 	return bestElite, len(elites), nil
@@ -110,36 +114,32 @@ func evaluateParallelOrthogonalLearning(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
-	// A zero factor collapses every candidate onto its parent male, so the
-	// stage cannot change anything and must not spend evaluations.
 	if factor <= 0 {
 		return 0, nil
 	}
 
 	numElite := min(max(int(float64(len(males))*topPercent), 1), len(males))
-	candidates := make([]*Mayfly, 0, numElite*len(L4Array))
+	dim := len(males[0].Position)
+	array := orthogonalArray(dim)
+	candidates := make([]*Mayfly, 0, numElite*len(array))
+	_ = rng // The published orthogonal design is deterministic.
 
 	for i := range numElite {
-		contextErr := ctx.Err()
-		if contextErr != nil {
-			return 0, contextErr
+		if err := ctx.Err(); err != nil {
+			return 0, err
 		}
 
 		male := males[i]
-
-		for _, row := range L4Array {
-			candidate := newMayfly(len(male.Position))
+		for _, row := range array {
+			candidate := newMayfly(dim)
 
 			for j := range male.Position {
 				var position float64
-				if row[j%3] == 0 {
+				if row[j] == 0 {
 					position = male.Position[j] + factor*(male.Best.Position[j]-male.Position[j])
 				} else {
 					position = male.Position[j] + factor*(globalBest[j]-male.Position[j])
 				}
-
-				perturbation := (rng.Float64()*2 - 1) * factor * 0.1
-				position += perturbation * (upperBounds[j] - lowerBounds[j])
 				candidate.Position[j] = min(max(position, lowerBounds[j]), upperBounds[j])
 			}
 
@@ -152,11 +152,49 @@ func evaluateParallelOrthogonalLearning(
 		return 0, evaluationErr
 	}
 
+	predicted := make([]*Mayfly, numElite)
 	for i := range numElite {
-		start := i * len(L4Array)
-		bestCandidate := candidates[start]
+		start := i * len(array)
+		group := candidates[start : start+len(array)]
+		ranked := append([]*Mayfly(nil), group...)
+		sort.SliceStable(ranked, func(left, right int) bool {
+			return evaluator.evaluator.betterMayfly(ranked[left], ranked[right])
+		})
+		rankByCandidate := make(map[*Mayfly]float64, len(ranked))
+		for rank, candidate := range ranked {
+			rankByCandidate[candidate] = float64(rank + 1)
+		}
 
-		for _, candidate := range candidates[start+1 : start+len(L4Array)] {
+		male := males[i]
+		candidate := newMayfly(dim)
+		for dimension := range dim {
+			levelScores := [2]float64{}
+			for experiment, rowCandidate := range group {
+				levelScores[array[experiment][dimension]] += rankByCandidate[rowCandidate]
+			}
+			if levelScores[1] < levelScores[0] {
+				candidate.Position[dimension] = male.Position[dimension] +
+					factor*(globalBest[dimension]-male.Position[dimension])
+			} else {
+				candidate.Position[dimension] = male.Position[dimension] +
+					factor*(male.Best.Position[dimension]-male.Position[dimension])
+			}
+			candidate.Position[dimension] = min(
+				max(candidate.Position[dimension], lowerBounds[dimension]), upperBounds[dimension],
+			)
+		}
+		predicted[i] = candidate
+	}
+
+	_, evaluationErr = evaluator.evaluate(ctx, predicted, false, false)
+	if evaluationErr != nil {
+		return 0, evaluationErr
+	}
+
+	for i := range numElite {
+		start := i * len(array)
+		bestCandidate := predicted[i]
+		for _, candidate := range candidates[start : start+len(array)] {
 			if evaluator.evaluator.betterMayfly(candidate, bestCandidate) {
 				bestCandidate = candidate
 			}
@@ -181,7 +219,7 @@ func evaluateParallelOrthogonalLearning(
 		}
 	}
 
-	return len(candidates), nil
+	return len(candidates) + len(predicted), nil
 }
 
 type oppositionCandidate struct {
@@ -250,11 +288,6 @@ func evaluateParallelEOBBMAOpposition(
 	return len(evaluationBatch), nil
 }
 
-type goldenSineCandidate struct {
-	mayfly         *Mayfly
-	acceptanceDraw float64
-}
-
 func evaluateParallelGoldenSine(
 	ctx context.Context,
 	males []*Mayfly,
@@ -267,85 +300,23 @@ func evaluateParallelGoldenSine(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
-	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
-	// One snapshot of the section points is shared by the whole batch, because
-	// the candidates are generated before any of them is evaluated. The section
-	// is therefore advanced once per batch, after all results are in.
-	sectionPoints := section.snapshot()
-	candidates := make([]goldenSineCandidate, numElite)
-	evaluationBatch := make([]*Mayfly, numElite)
-
-	for i := range numElite {
-		contextErr := ctx.Err()
-		if contextErr != nil {
-			return 0, contextErr
-		}
-
-		candidate := newMayfly(len(males[i].Position))
-		candidate.Position = goldenSineUpdate(
-			males[i].Position,
-			globalBest.Position,
-			goldenFactor,
-			sectionPoints,
-			lowerBound,
-			upperBound,
-			rng,
-		)
-
-		candidates[i] = goldenSineCandidate{
-			mayfly:         candidate,
-			acceptanceDraw: rng.Float64(),
-		}
-		evaluationBatch[i] = candidate
+	if err := ctx.Err(); err != nil {
+		return 0, err
 	}
-
-	_, evaluationErr := evaluator.evaluate(ctx, evaluationBatch, false, false)
-	if evaluationErr != nil {
-		return 0, evaluationErr
+	// Golden-section state is recurrent: candidate i+1 is generated from the
+	// interval update caused by candidate i. Evaluating this stage as a batch
+	// changes the algorithm, so parallel mode deliberately uses the canonical
+	// sequential recurrence here while the other independent phases remain
+	// parallel.
+	updatedBest, evaluations := applyGSASMAToEliteMalesWithEvaluator(
+		males, eliteRatio, *globalBest, goldenFactor, lowerBound, upperBound,
+		scheduler, section, evaluator.evaluator, rng,
+	)
+	*globalBest = updatedBest
+	if err := ctx.Err(); err != nil {
+		return 0, err
 	}
-
-	temperature := scheduler.GetTemperature()
-
-	batchImproved := false
-
-	for i, candidate := range candidates {
-		male := males[i]
-
-		if evaluator.evaluator.betterMayfly(candidate.mayfly, male) {
-			batchImproved = true
-		}
-
-		probability := evaluator.evaluator.acceptanceProbability(
-			evaluationFromMayfly(male), evaluationFromMayfly(candidate.mayfly), temperature,
-		)
-		if !(candidate.acceptanceDraw < probability) {
-			continue
-		}
-
-		copy(male.Position, candidate.mayfly.Position)
-		male.Cost = candidate.mayfly.Cost
-		male.ConstraintViolation = candidate.mayfly.ConstraintViolation
-
-		if evaluator.evaluator.better(
-			evaluationFromMayfly(male), evaluationFromBest(male.Best),
-		) {
-			copy(male.Best.Position, male.Position)
-			male.Best.Cost = male.Cost
-			male.Best.ConstraintViolation = male.ConstraintViolation
-		}
-
-		if evaluator.evaluator.betterMayflyThanBest(male, *globalBest) {
-			copyMayflyToBest(globalBest, male)
-		}
-	}
-
-	// The whole batch was generated from a single section snapshot, so the
-	// interval is narrowed exactly once for it. Narrowing per candidate would
-	// judge later candidates against section points they were never generated
-	// from.
-	section.update(batchImproved)
-
-	return len(evaluationBatch), nil
+	return evaluations, nil
 }
 
 // evaluateParallelAOBLMOA runs one AOBLMOA update phase with the swarm

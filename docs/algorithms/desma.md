@@ -12,7 +12,7 @@ DESMA (Dynamic Elite Strategy Mayfly Algorithm) is an improved variant that addr
 
 ### Dynamic Elite Generation
 
-After selection, DESMA generates `EliteCount` (default: 5) candidate solutions around the global best within a dynamic `SearchRange`. If any elite solution is better than the worst male, it replaces it.
+After selection, DESMA generates `EliteCount` (default: 10) candidate solutions around the global best within a dynamic `SearchRange`. If any elite solution is better than the worst male, it replaces it.
 
 **Implementation** (mayfly.go:473-510 and generateEliteMayflies() at line 543):
 
@@ -69,7 +69,7 @@ func main() {
 ## DESMA-Specific Parameters
 
 - `UseDESMA`: Enable DESMA variant (default: false)
-- `EliteCount`: Number of elite mayflies to generate per iteration (default: 5)
+- `EliteCount`: Number of elite mayflies to generate per iteration (default: 10)
 - `SearchRange`: Initial search range for elite generation (default: auto-calculated as 10% of search space)
 - `EnlargeFactor`: Factor to enlarge search range when improving (default: 1.05)
 - `ReductionFactor`: Factor to reduce search range when not improving (default: 0.95)
@@ -131,7 +131,7 @@ After the standard MA selection step:
 **Default (balanced)**:
 
 ```go
-config.EliteCount = 5
+config.EliteCount = 10
 ```
 
 - Good balance between exploration and computational cost

@@ -199,7 +199,7 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | Parameter         | Type      | Default | Description                            |
 | ----------------- | --------- | ------- | -------------------------------------- |
 | `UseDESMA`        | `bool`    | false   | Enable DESMA variant                   |
-| `EliteCount`      | `int`     | 5       | Number of elite solutions to generate  |
+| `EliteCount`      | `int`     | 10      | Number of elite solutions to generate  |
 | `SearchRange`     | `float64` | Auto\*  | Search range for elite generation      |
 | `EnlargeFactor`   | `float64` | 1.05    | Factor to enlarge range when improving |
 | `ReductionFactor` | `float64` | 0.95    | Factor to reduce range when stagnating |
@@ -232,9 +232,15 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | `InitialTemperature`   | `float64` | 100.0         | Starting temperature for SA                      |
 | `CoolingRate`          | `float64` | 0.95          | Temperature decay rate                           |
 | `CoolingSchedule`      | `string`  | "exponential" | Schedule: "exponential", "linear", "logarithmic" |
-| `CauchyMutationRate`   | `float64` | 0.3           | Base Cauchy mutation probability                 |
 | `GoldenFactor`         | `float64` | 1.0           | GSA influence factor (0.5-2.0)                   |
-| `ApplyOBLToGlobalBest` | `bool`    | true          | Enable OBL on global best                        |
+
+### HMMA Parameters
+
+| Parameter                | Type      | Default | Description                               |
+| ------------------------ | --------- | ------- | ----------------------------------------- |
+| `UseHMMA`                | `bool`    | false   | Enable Hybrid Mutation MA                 |
+| `CauchyMutationRate`     | `float64` | 0.3     | Base Cauchy mutation probability          |
+| `ApplyOBLToGlobalBest`   | `bool`    | true    | Apply periodic opposition to global best  |
 
 ### MPMA Parameters
 
@@ -242,7 +248,7 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | ------------------- | --------- | -------- | ------------------------------------------------ |
 | `UseMPMA`           | `bool`    | false    | Enable MPMA variant                              |
 | `MedianWeight`      | `float64` | 0.5      | Median position influence (0-1)                  |
-| `GravityType`       | `string`  | "linear" | Gravity type: "linear", "exponential", "sigmoid" |
+| `GravityType`       | `string`  | "paper"  | Published schedule; alternatives are extensions       |
 | `UseWeightedMedian` | `bool`    | false    | Use fitness-weighted median                      |
 
 ### AOBLMOA Parameters

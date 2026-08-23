@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	fmt.Println("=== EOBBMA (Elite Opposition-Based Bare Bones MA) Example ===\n")
+	fmt.Println("=== EOBBMA (Elite Opposition-Based Bare Bones MA) Example ===")
+	fmt.Println()
 
 	// Seed random number generator
 	seed := time.Now().UnixNano()

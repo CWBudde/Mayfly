@@ -25,6 +25,21 @@ test-race:
 test-full:
     go test -v -timeout 10m ./...
 
+# Build, vet, and test the root module and every nested example module.
+test-modules:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    while IFS= read -r module_file; do
+        module_dir="$(dirname "$module_file")"
+        echo "==> $module_dir"
+        (
+            cd "$module_dir"
+            go build ./...
+            go vet ./...
+            go test ./...
+        )
+    done < <(find . -name go.mod -not -path './.git/*' -print | sort)
+
 # Run integration tests (Gherkin/Cucumber)
 test-integration:
     go test -v -run TestFeatures
@@ -61,7 +76,7 @@ setup-deps:
     command -v treefmt >/dev/null 2>&1 || { echo "Installing treefmt..."; curl -fsSL https://github.com/numtide/treefmt/releases/download/v2.5.0/treefmt_2.5.0_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz treefmt; }
 
     # golangci-lint v2 (linter + formatter runner)
-    command -v golangci-lint >/dev/null 2>&1 || { echo "Installing golangci-lint..."; go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest; }
+    command -v golangci-lint >/dev/null 2>&1 || { echo "Installing golangci-lint..."; go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2; }
 
     # Go formatters
     command -v gofumpt >/dev/null 2>&1 || { echo "Installing gofumpt..."; go install mvdan.cc/gofumpt@latest; }
@@ -134,10 +149,10 @@ check: check-formatted check-tidy lint test
 check-race: check-formatted check-tidy lint test-race
 
 # Full CI pipeline
-ci: verify check
+ci: verify check test-modules
 
 # Full CI pipeline with race detection
-ci-race: verify check-race
+ci-race: verify check-race test-modules
 
 # Profile CPU performance
 profile-cpu:
@@ -236,6 +251,7 @@ release-check version:
     just lint
     go vet ./...
     go test -timeout 20m ./...
+    just test-modules
 
 # Validate and create an annotated release tag locally
 release version:

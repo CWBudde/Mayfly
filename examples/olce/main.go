@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	fmt.Println("=== OLCE-MA (Orthogonal Learning & Chaotic Exploitation) Example ===\n")
+	fmt.Println("=== OLCE-MA (Orthogonal Learning & Chaotic Exploitation) Example ===")
+	fmt.Println()
 
 	// Seed random number generator
 	seed := time.Now().UnixNano()

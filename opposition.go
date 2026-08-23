@@ -141,24 +141,13 @@ func eliteOppositionPoint(position, da, db []float64, lowerBound, upperBound flo
 // stochasticOppositionPoint generates the stochastic opposition point of a
 // position, AOBLMOA Eq. (31):
 //
-//	x̃_j = (lb + ub − x_j) × r,   r ~ N(0, 1)
+//	x̃_j = (lb + ub − x_j) × r,   r ~ U(0, 1)
 //
-// The Gaussian factor is what separates this from the plain oppositionPoint of
-// Tizhoosh's scheme: it can overshoot the reflection, undershoot it, or (for a
-// negative draw) mirror it back to the same side of the interval as the
-// original. That is deliberate — the paper uses the stochastic variant to keep
-// the opposition stage exploratory rather than merely symmetric — but it does
-// mean the result routinely leaves the search bounds, so it is clamped.
-//
-// OPEN PAPER QUESTION.
-// The paper's subscript notation is inconsistent about whether r is drawn once
-// per solution or once per dimension. Per-dimension is the default here: it is
-// the reading that keeps the stage exploratory in every coordinate, and a
-// single shared factor would collapse the opposition of a whole vector onto
-// one scaled reflection.
-//
-// To adopt the per-solution reading instead, hoist the randn call out of the
-// loop and change nothing else.
+// The article describes r inconsistently, but the authors' implementation
+// resolves both ambiguities: one uniform scalar is drawn for the complete
+// offspring and multiplies the reflected vector. Since r is in [0,1], a valid
+// input can still leave asymmetric bounds after scaling, so the result is
+// clipped defensively.
 //
 // Reference:
 // Zhao, Y.; Huang, C.; Zhang, M.; Cui, Y. AOBLMOA. Biomimetics 2023, 8(4), 381.
@@ -166,9 +155,9 @@ func stochasticOppositionPoint(position []float64, lowerBound, upperBound float6
 	rng *rand.Rand,
 ) []float64 {
 	result := make([]float64, len(position))
+	r := rng.Float64()
 
 	for i := range position {
-		r := randn(rng)
 		result[i] = (lowerBound + upperBound - position[i]) * r
 		result[i] = min(max(result[i], lowerBound), upperBound)
 	}

@@ -87,18 +87,18 @@ func TestOptimizeAcceptsExactlyEnoughParents(t *testing.T) {
 	}
 }
 
-// TestOptimizeRejectsMutantsWithoutOffspring covers the second way NC crashed
-// the loop: mutants are drawn from the offspring slice with rng.Intn, which
-// panics on an empty slice.
-func TestOptimizeRejectsMutantsWithoutOffspring(t *testing.T) {
+// TestOptimizeAllowsMutantsWithoutCrossover pins the sex-preserving mutation
+// lifecycle: mutants draw from their matching incumbent population and do not
+// require crossover children to exist first.
+func TestOptimizeAllowsMutantsWithoutCrossover(t *testing.T) {
 	for _, nc := range []int{0, 1} {
 		result, err := Optimize(smallConfig(10, 10, nc, 3))
-		if err == nil {
-			t.Fatalf("Optimize accepted NC=%d with NM=3, want an error", nc)
+		if err != nil {
+			t.Fatalf("Optimize rejected NC=%d with NM=3: %v", nc, err)
 		}
 
-		if result != nil {
-			t.Errorf("Optimize returned a result alongside an error: %+v", result)
+		if result == nil {
+			t.Fatalf("Optimize returned no result for NC=%d with NM=3", nc)
 		}
 	}
 }
@@ -229,7 +229,7 @@ func TestOptimizeRejectsMutationRateOutsideUnitInterval(t *testing.T) {
 				t.Errorf("Optimize returned a result alongside an error: %+v", result)
 			}
 
-			if !strings.Contains(err.Error(), "Mu") {
+			if !strings.Contains(strings.ToLower(err.Error()), "mu") {
 				t.Errorf("error %q does not name the offending field", err)
 			}
 		})

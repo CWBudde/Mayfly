@@ -39,7 +39,7 @@ Lower objective costs rank better.
 
 ## Configuring a Comparison
 
-`NewComparisonRunner` compares all seven registered variants by default, using
+`NewComparisonRunner` compares all eight registered variants by default, using
 30 runs, 500 iterations, sequential execution, and a time-based seed.
 
 | Method                              | Purpose                                                                                     |
@@ -155,7 +155,7 @@ the destination file and return filesystem or encoding errors.
 
 ## Complete Parallel Example
 
-The runnable example compares all seven variants on Rastrigin, limits the number
+The runnable example compares all eight variants on Rastrigin, limits the number
 of concurrent trials, handles Ctrl+C cancellation, prints the report and chart,
 and exports CSV and JSON:
 

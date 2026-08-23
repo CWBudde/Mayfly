@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Standard Mayfly Algorithm Examples ===\n")
+	fmt.Println("=== Standard Mayfly Algorithm Examples ===")
+	fmt.Println()
 
 	// Example 1: Sphere function
 	fmt.Println("=== Optimizing Sphere Function ===")
@@ -17,7 +18,8 @@ func main() {
 	fmt.Println("\n=== Optimizing Rastrigin Function ===")
 	runOptimization("Rastrigin", mayfly.Rastrigin, -10, 10, 50, false)
 
-	fmt.Println("\n\n=== DESMA (Dynamic Elite Strategy) Examples ===\n")
+	fmt.Println("\n\n=== DESMA (Dynamic Elite Strategy) Examples ===")
+	fmt.Println()
 
 	fmt.Println("=== Optimizing Sphere Function with DESMA ===")
 	runOptimization("Sphere", mayfly.Sphere, -10, 10, 50, true)

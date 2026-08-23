@@ -207,10 +207,10 @@ func TestAOBLMOAUpdatePhaseSpendsNoEvaluationsBeyondTheSwarm(t *testing.T) {
 	}
 }
 
-// TestStochasticOppositionPointScalesByAGaussian pins Eq. (31). The Gaussian
-// factor is the whole difference from Tizhoosh's plain reflection, which
-// oppositionPoint implements and which the variant used to call here.
-func TestStochasticOppositionPointScalesByAGaussian(t *testing.T) {
+// TestStochasticOppositionPointUsesOneUniformScalar pins the authors' source
+// resolution of ambiguous Eq. (31): one U(0,1) scalar multiplies the complete
+// reflected offspring vector.
+func TestStochasticOppositionPointUsesOneUniformScalar(t *testing.T) {
 	const (
 		lower = -100.0
 		upper = 100.0
@@ -221,12 +221,11 @@ func TestStochasticOppositionPointScalesByAGaussian(t *testing.T) {
 
 	got := stochasticOppositionPoint(position, lower, upper, rand.New(rand.NewSource(seed)))
 
-	// Replay the same draws to spell out the formula independently. One draw
-	// per dimension is the reading stochasticOppositionPoint documents as
-	// open; a per-solution reading would consume exactly one.
+	// Replay the one draw to spell out the formula independently.
 	replay := rand.New(rand.NewSource(seed))
+	r := replay.Float64()
 	for i, x := range position {
-		want := (lower + upper - x) * randn(replay)
+		want := (lower + upper - x) * r
 		if got[i] != want {
 			t.Errorf("dimension %d: got %v, want (lb+ub-x)*r = %v", i, got[i], want)
 		}
@@ -239,8 +238,8 @@ func TestStochasticOppositionPointScalesByAGaussian(t *testing.T) {
 	}
 }
 
-// TestStochasticOppositionPointStaysInBounds guards the clamp: a Gaussian
-// factor well above one throws the reflection far outside the search space.
+// TestStochasticOppositionPointStaysInBounds guards clipping for asymmetric
+// bounds, where scaling the reflected coordinate can still leave the domain.
 func TestStochasticOppositionPointStaysInBounds(t *testing.T) {
 	const (
 		lower = -5.0
@@ -367,37 +366,18 @@ func TestAOBLMOAReplacesMutationWithOpposition(t *testing.T) {
 // was declared, defaulted, documented and tested, but never read, so these two
 // runs were identical.
 func TestAOBLMOAHonoursStrategySwitch(t *testing.T) {
-	run := func(strategySwitch int) *Result {
-		t.Helper()
-
-		config := NewAOBLMOAConfig()
-		config.Rand = rand.New(rand.NewSource(707))
-		config.ObjectiveFunc = Rastrigin
-		config.ProblemSize = 4
-		config.LowerBound = -5.12
-		config.UpperBound = 5.12
-		config.MaxIterations = 30
-		config.NPop = 10
-		config.NPopF = 10
-		config.NC = 10
-		config.StrategySwitch = strategySwitch
-
-		result, err := Optimize(config)
-		if err != nil {
-			t.Fatalf("Optimize: %v", err)
-		}
-
-		return result
+	config := NewAOBLMOAConfig()
+	config.MaxIterations = 30
+	config.StrategySwitch = 0
+	if got := effectiveStrategySwitch(config); got != 20 {
+		t.Fatalf("default strategy switch = %d, want 20", got)
 	}
-
-	// 20 is the default two-thirds split for 30 iterations; 1 switches to
-	// exploitation almost immediately.
-	if run(20).GlobalBest.Cost != run(0).GlobalBest.Cost {
-		t.Error("the default StrategySwitch does not reproduce the two-thirds split")
+	if !aquilaExplorationPhase(10, effectiveStrategySwitch(config)) {
+		t.Fatal("default switch leaves exploration too early")
 	}
-
-	if run(1).GlobalBest.Cost == run(0).GlobalBest.Cost {
-		t.Error("StrategySwitch does not change the run; the phase split is still hard-coded")
+	config.StrategySwitch = 1
+	if aquilaExplorationPhase(10, effectiveStrategySwitch(config)) {
+		t.Fatal("configured switch is ignored")
 	}
 }
 
@@ -405,39 +385,45 @@ func TestAOBLMOAHonoursStrategySwitch(t *testing.T) {
 // hatch: the sentinel takes the paper's deterministic branch, and any
 // probability restores the old draw.
 func TestAOBLMOAAquilaWeightOverrideChangesTheBranch(t *testing.T) {
-	run := func(weight float64) float64 {
+	run := func(weight float64) [][]float64 {
 		t.Helper()
 
 		config := NewAOBLMOAConfig()
 		config.Rand = rand.New(rand.NewSource(808))
-		config.ObjectiveFunc = Rastrigin
+		config.ObjectiveFunc = Sphere
 		config.ProblemSize = 4
-		config.LowerBound = -5.12
-		config.UpperBound = 5.12
-		config.MaxIterations = 25
-		config.NPop = 10
-		config.NPopF = 10
-		config.NC = 10
+		config.LowerBound = -5
+		config.UpperBound = 5
+		config.MaxIterations = 100
 		config.AquilaWeight = weight
-
-		result, err := Optimize(config)
-		if err != nil {
-			t.Fatalf("Optimize: %v", err)
-		}
-
-		return result.GlobalBest.Cost
+		males, females := aoblmoaTestPopulations(t, config, 8)
+		best := Best{Position: append([]float64(nil), males[0].Position...), Cost: males[0].Cost}
+		applyAOBLMOAToPopulation(males, females, best, 10, config.MaxIterations,
+			config.G, config.Dance, config.FL, config)
+		return append(snapshotPositions(males), snapshotPositions(females)...)
 	}
 
+	equal := func(left, right [][]float64) bool {
+		if len(left) != len(right) {
+			return false
+		}
+		for i := range left {
+			if !samePosition(left[i], right[i]) {
+				return false
+			}
+		}
+		return true
+	}
 	paper := run(AquilaWeightAuto)
-	if paper == run(0) {
+	if equal(paper, run(0)) {
 		t.Error("AquilaWeight = 0 matches the paper default; the override is not read")
 	}
 
-	if paper == run(1) {
+	if equal(paper, run(1)) {
 		t.Error("AquilaWeight = 1 matches the paper default; the override is not read")
 	}
 
-	if run(0) == run(1) {
+	if equal(run(0), run(1)) {
 		t.Error("AquilaWeight = 0 and 1 agree; the override does not select a branch")
 	}
 }

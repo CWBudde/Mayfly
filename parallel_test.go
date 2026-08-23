@@ -155,7 +155,7 @@ func TestParallelGeneticEvaluationUsesOffspringBatchCapacity(t *testing.T) {
 			mutants:            4,
 			maxWorkers:         4,
 			wantMaxConcurrency: 4,
-			wantEvaluations:    10,
+			wantEvaluations:    14,
 		},
 	}
 
@@ -306,8 +306,8 @@ func TestParallelGeneticOffspringAreFullyInitialized(t *testing.T) {
 		t.Fatalf("evaluateParallelGeneticOperators: %v", err)
 	}
 
-	if len(offspring) != config.NC+config.NM {
-		t.Fatalf("offspring count = %d, want %d", len(offspring), config.NC+config.NM)
+	if len(offspring) != config.NC+2*config.NM {
+		t.Fatalf("offspring count = %d, want %d", len(offspring), config.NC+2*config.NM)
 	}
 
 	for i, mayfly := range offspring {
@@ -359,20 +359,21 @@ func TestParallelVariantEvaluationUsesVariantBatchCapacity(t *testing.T) {
 			malePopulation:      1,
 			femalePopulation:    1,
 			wantConcurrency:     4,
-			wantEvaluationCount: 12,
+			wantEvaluationCount: 13,
 			configure: func(config *Config) {
 				config.EliteCount = 5
 			},
 		},
 		{
-			// 2 initial + 2 crossover + 1 mutation + 4 orthogonal candidates
-			// + 1 chaotic exploitation candidate per elite male.
+			// 2 initial + 2 update + 2 crossover + 2 mutations (one per
+			// sex) + 4 orthogonal rows + 1 factor-analysis candidate +
+			// 1 chaotic candidate.
 			name:                "OLCE candidates",
 			newConfig:           NewOLCEConfig,
 			malePopulation:      1,
 			femalePopulation:    1,
 			wantConcurrency:     4,
-			wantEvaluationCount: 12,
+			wantEvaluationCount: 14,
 			configure:           func(*Config) {},
 		},
 		{
@@ -470,11 +471,12 @@ func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 			config.UseWeightedMedian = true
 		}},
 		{name: "AOBLMOA", newConfig: NewAOBLMOAConfig, configure: func(*Config) {}},
+		{name: "HMMA", newConfig: NewHMMAConfig, configure: func(*Config) {}},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			run := func(name string, maxWorkers int) *Result {
+			run := func(name string, parallel bool, maxWorkers int) *Result {
 				t.Helper()
 
 				config := testCase.newConfig()
@@ -488,7 +490,7 @@ func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 				config.NC = 4
 				config.NM = 2
 				config.Rand = rand.New(rand.NewSource(991))
-				config.EnableParallel = true
+				config.EnableParallel = parallel
 				config.MaxWorkers = maxWorkers
 				testCase.configure(config)
 
@@ -500,7 +502,7 @@ func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 				return result
 			}
 
-			baseline := run("parallel/baseline", 1)
+			baseline := run("sequential/baseline", false, 1)
 			for _, parallelRun := range []struct {
 				name       string
 				maxWorkers int
@@ -508,7 +510,7 @@ func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 				{name: "parallel/1_worker_repeat", maxWorkers: 1},
 				{name: "parallel/4_workers", maxWorkers: 4},
 			} {
-				result := run(parallelRun.name, parallelRun.maxWorkers)
+				result := run(parallelRun.name, true, parallelRun.maxWorkers)
 				if !reflect.DeepEqual(result.GlobalBest, baseline.GlobalBest) ||
 					!reflect.DeepEqual(result.ConvergenceCurve, baseline.ConvergenceCurve) ||
 					result.FuncEvalCount != baseline.FuncEvalCount ||
@@ -778,17 +780,16 @@ func TestParallelEvaluationCancellationWaitsForInflightCalls(t *testing.T) {
 	}
 }
 
-func TestParallelInitializationSanitizesInvalidCosts(t *testing.T) {
+func TestParallelInitializationRejectsAllInvalidCosts(t *testing.T) {
 	config := parallelTestConfig(func([]float64) float64 { return math.Inf(1) })
 	config.MaxIterations = 1
 
 	result, err := Optimize(config)
-	if err != nil {
-		t.Fatalf("Optimize: %v", err)
+	if !errors.Is(err, ErrNoFiniteObjectiveValue) {
+		t.Fatalf("Optimize error = %v, want %v", err, ErrNoFiniteObjectiveValue)
 	}
-
-	if math.IsInf(result.GlobalBest.Cost, 0) || math.IsNaN(result.GlobalBest.Cost) {
-		t.Errorf("GlobalBest.Cost = %v, want sanitized finite cost", result.GlobalBest.Cost)
+	if result != nil {
+		t.Fatalf("Optimize returned result for all-invalid initialization: %+v", result)
 	}
 }
 

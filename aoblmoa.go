@@ -1,6 +1,10 @@
 package mayfly
 
-import "math/rand"
+import (
+	"errors"
+	"fmt"
+	"math/rand"
+)
 
 // AOBLMOA - Aquila Optimizer and Opposition-Based Learning Mayfly Optimization
 // Algorithm.
@@ -313,33 +317,101 @@ func commitStochasticOBL(offspring, opposites []*Mayfly, evaluator *constraintEv
 
 // ParetoArchive maintains a set of non-dominated solutions for multi-objective problems.
 type ParetoArchive struct {
+	// Deprecated: this is a defensive snapshot kept for source compatibility.
+	// Archive operations never trust mutations made through it.
 	Solutions []*ParetoSolution
-	MaxSize   int
+	// Deprecated: use Capacity. Mutating this field does not resize the archive.
+	MaxSize int
+
+	solutions          []*ParetoSolution
+	maxSize            int
+	objectiveDimension int
+	initErr            error
 }
 
 // NewParetoArchive creates a new Pareto archive with specified maximum size.
 func NewParetoArchive(maxSize int) *ParetoArchive {
-	return &ParetoArchive{
-		Solutions: make([]*ParetoSolution, 0, maxSize),
-		MaxSize:   maxSize,
+	archive := &ParetoArchive{MaxSize: maxSize, maxSize: maxSize}
+	if maxSize <= 0 {
+		archive.initErr = fmt.Errorf("Pareto archive capacity must be positive, got %d", maxSize)
+		archive.maxSize = 0
+		return archive
 	}
+	archive.solutions = make([]*ParetoSolution, 0, maxSize)
+	archive.syncSnapshot()
+	return archive
+}
+
+// NewParetoArchiveWithObjectives creates an archive with an explicit objective
+// dimension. Use it when the dimension is known before the first insertion.
+func NewParetoArchiveWithObjectives(maxSize, objectiveDimension int) (*ParetoArchive, error) {
+	archive := NewParetoArchive(maxSize)
+	if archive.initErr != nil {
+		return nil, archive.initErr
+	}
+	if objectiveDimension <= 0 {
+		return nil, fmt.Errorf("objective dimension must be positive, got %d", objectiveDimension)
+	}
+	archive.objectiveDimension = objectiveDimension
+	return archive, nil
 }
 
 // Add adds a solution to the Pareto archive.
 // If the archive is full, it uses NSGA-II selection to maintain diversity.
-func (pa *ParetoArchive) Add(solution *ParetoSolution) {
-	// Add the new solution
-	pa.Solutions = append(pa.Solutions, solution)
-
-	// If archive exceeds max size, select best solutions
-	if len(pa.Solutions) > pa.MaxSize {
-		pa.Solutions = selectByNSGA2(pa.Solutions, pa.MaxSize)
+func (pa *ParetoArchive) Add(solution *ParetoSolution) (bool, error) {
+	if pa == nil {
+		return false, errors.New("Pareto archive is nil")
 	}
+	if pa.initErr != nil {
+		return false, pa.initErr
+	}
+	if solution == nil {
+		return false, errors.New("Pareto solution is nil")
+	}
+	dimension := pa.objectiveDimension
+	if dimension == 0 {
+		dimension = len(solution.ObjectiveValues)
+	}
+	if err := validateObjectiveVector(solution.ObjectiveValues, dimension); err != nil {
+		return false, err
+	}
+	for i, coordinate := range solution.Position {
+		if !isFinite(coordinate) {
+			return false, fmt.Errorf("position %d is not finite", i)
+		}
+	}
+
+	for _, incumbent := range pa.solutions {
+		if objectiveVectorsEqual(incumbent.ObjectiveValues, solution.ObjectiveValues) {
+			return false, nil
+		}
+		if dominates(incumbent.ObjectiveValues, solution.ObjectiveValues) {
+			return false, nil
+		}
+	}
+
+	kept := make([]*ParetoSolution, 0, len(pa.solutions)+1)
+	for _, incumbent := range pa.solutions {
+		if !dominates(solution.ObjectiveValues, incumbent.ObjectiveValues) {
+			kept = append(kept, incumbent)
+		}
+	}
+	kept = append(kept, cloneParetoSolution(solution))
+	if len(kept) > pa.maxSize {
+		kept = selectByNSGA2(kept, pa.maxSize)
+	}
+	pa.solutions = kept
+	pa.objectiveDimension = dimension
+	pa.syncSnapshot()
+	return true, nil
 }
 
 // AddFromMayfly converts a Mayfly to a ParetoSolution and adds it to the archive.
 // For single-objective problems, the objective value is just the cost.
-func (pa *ParetoArchive) AddFromMayfly(mayfly *Mayfly) {
+func (pa *ParetoArchive) AddFromMayfly(mayfly *Mayfly) (bool, error) {
+	if mayfly == nil {
+		return false, errors.New("mayfly is nil")
+	}
 	solution := &ParetoSolution{
 		Position:         make([]float64, len(mayfly.Position)),
 		ObjectiveValues:  []float64{mayfly.Cost},
@@ -347,24 +419,40 @@ func (pa *ParetoArchive) AddFromMayfly(mayfly *Mayfly) {
 		CrowdingDistance: 0,
 	}
 	copy(solution.Position, mayfly.Position)
-	pa.Add(solution)
+	return pa.Add(solution)
 }
 
 // GetBestSolution returns the solution with the lowest first objective value.
 // This is useful for single-objective optimization.
 func (pa *ParetoArchive) GetBestSolution() *ParetoSolution {
-	if len(pa.Solutions) == 0 {
+	if pa == nil || len(pa.solutions) == 0 {
 		return nil
 	}
 
-	best := pa.Solutions[0]
-	for _, sol := range pa.Solutions[1:] {
+	best := pa.solutions[0]
+	for _, sol := range pa.solutions[1:] {
 		if sol.ObjectiveValues[0] < best.ObjectiveValues[0] {
 			best = sol
 		}
 	}
 
-	return best
+	return cloneParetoSolution(best)
+}
+
+// GetSolutions returns a defensive snapshot of the archive.
+func (pa *ParetoArchive) GetSolutions() []*ParetoSolution {
+	if pa == nil {
+		return nil
+	}
+	return cloneParetoSolutions(pa.solutions)
+}
+
+// Capacity returns the validated maximum number of retained solutions.
+func (pa *ParetoArchive) Capacity() int {
+	if pa == nil {
+		return 0
+	}
+	return pa.maxSize
 }
 
 // UpdateFromPopulation adds every member of the given populations to the
@@ -373,12 +461,33 @@ func (pa *ParetoArchive) GetBestSolution() *ParetoSolution {
 // The optimizer does not call this itself. Nothing in the search reads the
 // archive back, so maintaining it every iteration only bought NSGA-II pruning
 // cost; callers that want a Pareto front build and feed one explicitly.
-func (pa *ParetoArchive) UpdateFromPopulation(males, females []*Mayfly) {
+func (pa *ParetoArchive) UpdateFromPopulation(males, females []*Mayfly) error {
 	for _, m := range males {
-		pa.AddFromMayfly(m)
+		if _, err := pa.AddFromMayfly(m); err != nil {
+			return err
+		}
 	}
 
 	for _, f := range females {
-		pa.AddFromMayfly(f)
+		if _, err := pa.AddFromMayfly(f); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func (pa *ParetoArchive) syncSnapshot() {
+	pa.Solutions = cloneParetoSolutions(pa.solutions)
+}
+
+func objectiveVectorsEqual(a, b []float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

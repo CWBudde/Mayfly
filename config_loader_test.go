@@ -263,7 +263,6 @@ func TestPresetConfigs(t *testing.T) {
 		PresetHighDimensional,
 		PresetFastConvergence,
 		PresetStableConvergence,
-		PresetMultiObjective,
 	}
 
 	for _, preset := range presets {
@@ -326,10 +325,6 @@ func TestPresetConfigs(t *testing.T) {
 				if !config.UseMPMA {
 					t.Error("Stable convergence preset should use MPMA")
 				}
-			case PresetMultiObjective:
-				if !config.UseAOBLMOA {
-					t.Error("Multi-objective preset should use AOBLMOA")
-				}
 			}
 		})
 	}
@@ -338,9 +333,9 @@ func TestPresetConfigs(t *testing.T) {
 func TestListPresets(t *testing.T) {
 	presets := ListPresets()
 
-	// Should have 9 presets
-	if len(presets) != 9 {
-		t.Errorf("Expected 9 presets, got %d", len(presets))
+	// No preset claims multi-objective support.
+	if len(presets) != 8 {
+		t.Errorf("Expected 8 presets, got %d", len(presets))
 	}
 
 	// Each preset should have a description
@@ -360,13 +355,18 @@ func TestListPresets(t *testing.T) {
 		PresetHighDimensional,
 		PresetFastConvergence,
 		PresetStableConvergence,
-		PresetMultiObjective,
 	}
 
 	for _, preset := range requiredPresets {
 		if _, found := presets[preset]; !found {
 			t.Errorf("Required preset %s not found", preset)
 		}
+	}
+}
+
+func TestMultiObjectivePresetIsRejected(t *testing.T) {
+	if _, err := NewPresetConfig(PresetMultiObjective); err == nil {
+		t.Fatal("deprecated multi-objective preset was accepted")
 	}
 }
 

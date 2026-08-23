@@ -15,7 +15,7 @@ func TestLevyFlight(t *testing.T) {
 		rng   *rand.Rand
 	}{
 		{"standard_levy", 1.5, 1.0, rand.New(rand.NewSource(42))},
-		{"alpha_2.0", 2.0, 1.0, rand.New(rand.NewSource(123))},
+		{"alpha_1.9", 1.9, 1.0, rand.New(rand.NewSource(123))},
 		{"alpha_1.0", 1.0, 1.0, rand.New(rand.NewSource(456))},
 		{"beta_0.5", 1.5, 0.5, rand.New(rand.NewSource(789))},
 	}
@@ -50,6 +50,26 @@ func TestLevyFlight(t *testing.T) {
 
 			if !hasLargeValue {
 				t.Logf("Warning: levyFlight() may not be generating heavy-tailed distribution")
+			}
+		})
+	}
+}
+
+func TestLevyFlightRejectsDegenerateParameters(t *testing.T) {
+	for _, testCase := range []struct {
+		name  string
+		alpha float64
+		beta  float64
+	}{
+		{name: "alpha zero", alpha: 0, beta: 1},
+		{name: "alpha two", alpha: 2, beta: 1},
+		{name: "alpha NaN", alpha: math.NaN(), beta: 1},
+		{name: "beta zero", alpha: 1.5, beta: 0},
+		{name: "beta infinity", alpha: 1.5, beta: math.Inf(1)},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := levyFlight(testCase.alpha, testCase.beta, rand.New(rand.NewSource(1))); got != 0 {
+				t.Errorf("invalid levy parameters returned %v, want safe zero step", got)
 			}
 		})
 	}

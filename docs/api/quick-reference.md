@@ -46,6 +46,7 @@ validated before objective evaluation starts.
 | `NewOLCEConfig()`    | Orthogonal Learning and Chaotic Exploitation | `UseOLCE`    |
 | `NewEOBBMAConfig()`  | Elite Opposition-Based Bare Bones            | `UseEOBBMA`  |
 | `NewGSASMAConfig()`  | Golden Sine with Simulated Annealing         | `UseGSASMA`  |
+| `NewHMMAConfig()`    | Hybrid Mutation                              | `UseHMMA`    |
 | `NewMPMAConfig()`    | Median Position-Based                        | `UseMPMA`    |
 | `NewAOBLMOAConfig()` | Aquila Optimizer-Based Learning              | `UseAOBLMOA` |
 
@@ -83,7 +84,7 @@ result, err := mayfly.OptimizeContext(
 | `IterationCount`                 | Number of completed iterations                   |
 | `FuncEvalCount`                  | Number of objective evaluations                  |
 | `TerminationReason`              | Maximum iterations, target cost, or stagnation   |
-| `Seed`                           | Seed used by the run                             |
+| `Seed`                           | Seed used by the run; nil for caller-owned RNGs  |
 
 ```go
 if err := result.ExportConvergenceCSV("convergence.csv"); err != nil {
@@ -202,7 +203,8 @@ positive `PenaltyFactor`.
 Available presets are `PresetUnimodal`, `PresetMultimodal`,
 `PresetHighlyMultimodal`, `PresetDeceptive`, `PresetNarrowValley`,
 `PresetHighDimensional`, `PresetFastConvergence`, `PresetStableConvergence`,
-and `PresetMultiObjective`.
+The former `PresetMultiObjective` is deprecated and returns an error because
+the optimizer accepts one scalar objective.
 
 ## Bundled objective functions
 

@@ -7,7 +7,33 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `Config.Seed` and nullable `Result.Seed` provide truthful reproducibility;
+  opaque caller-owned `*rand.Rand` values no longer produce an invented seed.
+- `ClassifyProblemContext` adds validation, cancellation, evaluation budgets,
+  scan-only operation, and explicit errors to the landscape classifier.
+- HMMA is a separately registered variant. Hybrid Cauchy/Gaussian mutation and
+  periodic global-best opposition are no longer falsely attributed to GSASMA.
+- Validated exported Pareto helpers and defensive archive snapshots.
+- `just test-modules` and CI coverage for every nested example module.
+
 ### Changed
+
+- **Correctness release:** seeded trajectories from older versions are not
+  comparable to v0.7 results. Standard attraction now uses the paper's scalar
+  Cartesian distances; crossover retains offspring sex; mutation generates
+  `NM` candidates per sex from the matching incumbent population.
+- Configuration is immutable during a run, every named variant is exclusive,
+  all numeric fields must be finite, explicit velocity limits must be a valid
+  pair, and non-finite objective values are rejected rather than rewarded.
+  `CrossoverGamma` no longer accepts `NaN` or `Inf` as a fallback signal; zero
+  and negative values still resolve to `DefaultCrossoverGamma`.
+- Sequential and parallel modes share proposal and commit semantics. Recurrent
+  golden-section updates remain sequential so enabling workers does not select
+  a different algorithm.
+- `ComparisonRunner.TargetCost` is now `*float64`, allowing zero and negative
+  targets. Failed runs are explicit and excluded from numeric aggregates.
 
 - `ClassifyProblem` takes a trailing `*rand.Rand`. It and its helpers drew
   through the package-level generator, so a classification could not be
@@ -33,6 +59,24 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   dragged into the mean.
 
 ### Fixed
+
+- Females now participate in `GlobalBest`, convergence, target termination, and
+  stagnation decisions. Populations are sorted before the first ranked update.
+- Corrected MPMA's fitness-ranked median and published gravity schedule;
+  AOBLMOA's Aquila equations, crossover, and one-scalar uniform opposition;
+  EOBBMA's fitness-dependent bare-bones/Lévy updates and boundary pullback;
+  DESMA's dynamic inertia, elite no-op behavior, default count, and citation;
+  and OLCE's dimension-safe orthogonal design and factor analysis.
+- All objective phases consistently reject NaN and both infinities. A run whose
+  entire initial population is invalid returns `ErrNoFiniteObjectiveValue`.
+- Strict JSON loading rejects unknown, duplicate, and trailing data; generated
+  templates are complete valid JSON and are written atomically.
+- Pareto archives now retain only finite nondominated solutions, reject mixed
+  dimensions and duplicates, and cannot be mutated through aliased pointers.
+- Comparison ranking handles ties, Wilcoxon uses exact small-sample or
+  tie-corrected asymptotic probabilities, and Friedman applies tie correction.
+- Corrected the false claim that AOBLMOA is a multi-objective optimizer. The
+  deprecated multi-objective preset now returns an error.
 
 - `ClassifyProblem` classified by the width of the search box rather than by the
   shape of the function. The old `estimateLandscape` averaged the raw

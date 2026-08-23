@@ -90,5 +90,14 @@ scratch/
 # WebAssembly demo build output
 /dist/
 
-# Stray binary from `go build ./...` inside the demo module
+# Compiled example binaries (built by `go build` inside each example module)
+/examples/example
+/examples/aoblmoa/example
+/examples/benchmark_suite/benchmark_suite
+/examples/comparison/comparison
+/examples/eobbma/eobbma-example
+/examples/gsasma/gsasma
+/examples/mpma/mpma-example
+/examples/olce/olce-example
+/examples/selector/selector
 /examples/wasm-demo/wasm-demo

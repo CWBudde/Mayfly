@@ -30,6 +30,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Set up just
+        uses: extractions/setup-just@v2
+
       - name: Resolve and validate version
         id: version
         env:
@@ -61,10 +64,12 @@ jobs:
           go vet ./...
 
       - name: Run tests
-        run: go test -timeout 20m ./...
+        run: |
+          go test -timeout 20m ./...
+          just test-modules
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.12.2
           args: --config ./.golangci.toml --timeout 5m

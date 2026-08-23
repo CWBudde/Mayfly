@@ -44,7 +44,7 @@ func randn(rng *rand.Rand) float64 {
 // maxVec returns element-wise maximum of vector and scalar.
 func maxVec(vec []float64, bound float64) {
 	for i := range vec {
-		if vec[i] < bound {
+		if math.IsNaN(vec[i]) || math.IsInf(vec[i], -1) || vec[i] < bound {
 			vec[i] = bound
 		}
 	}
@@ -53,7 +53,7 @@ func maxVec(vec []float64, bound float64) {
 // minVec returns element-wise minimum of vector and scalar.
 func minVec(vec []float64, bound float64) {
 	for i := range vec {
-		if vec[i] > bound {
+		if math.IsNaN(vec[i]) || math.IsInf(vec[i], 1) || vec[i] > bound {
 			vec[i] = bound
 		}
 	}
@@ -76,6 +76,17 @@ func sortMayflies(mayflies []*Mayfly, evaluators ...*constraintEvaluator) {
 			return 0
 		}
 	})
+}
+
+// mergePopulationBest considers every evaluated member of population for the
+// run-level best. Both sexes must pass through this helper: sex controls the
+// update equation, not whether an objective value is eligible to win.
+func mergePopulationBest(best *Best, population []*Mayfly, evaluator *constraintEvaluator) {
+	for _, mayfly := range population {
+		if evaluator.betterMayflyThanBest(mayfly, *best) {
+			copyMayflyToBest(best, mayfly)
+		}
+	}
 }
 
 // effectiveNM reports the mutant count Optimize will actually use, resolving
@@ -311,16 +322,6 @@ func validateOffspring(config *Config) error {
 		)
 	}
 
-	// Mutants are drawn from the offspring, so there must be at least one.
-	if effectiveNC(config) < 2 && effectiveNM(config) > 0 {
-		return fmt.Errorf(
-			"NC (offspring count) of %d produces no offspring for %d mutants to be drawn from; "+
-				"raise NC to at least 2 (note that NM=0 does not disable mutants, "+
-				"it selects the default of 5%% of NPop)",
-			effectiveNC(config), effectiveNM(config),
-		)
-	}
-
 	return nil
 }
 
@@ -331,10 +332,13 @@ func validateOffspring(config *Config) error {
 // the crossover coefficient to [0, 1], which makes every offspring a convex
 // combination of its parents -- the contraction this field exists to remove --
 // so a partially-filled Config literal that never mentions CrossoverGamma must
-// not silently get it. Zero, negative values, NaN and Inf therefore all resolve
-// to DefaultCrossoverGamma; only a positive, finite value is taken as written.
-// This is why validateOffspring does not reject those values: they are a
-// documented fallback, not a configuration error.
+// not silently get it. Zero and negative values therefore resolve to
+// DefaultCrossoverGamma; only a positive, finite value is taken as written.
+// This is why validateOffspring does not reject them: they are a documented
+// fallback, not a configuration error. NaN and Inf are a different case -- since
+// v0.7 ValidateConfig rejects every non-finite numeric field, so a run never
+// reaches this function with one. The check below is kept as defense in depth
+// for callers that build a Config without validating it.
 func effectiveCrossoverGamma(config *Config) float64 {
 	gamma := config.CrossoverGamma
 	if math.IsNaN(gamma) || math.IsInf(gamma, 0) || gamma <= 0 {

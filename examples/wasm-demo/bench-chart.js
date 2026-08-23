@@ -7,7 +7,7 @@
  *
  * Series are distinguished by colour AND hatch pattern, and every bar carries
  * its rank as text. Colour alone excludes roughly one man in twelve, and this
- * chart's entire job is letting someone rank seven algorithms at a glance.
+ * chart's entire job is letting someone rank eight algorithms at a glance.
  */
 (function () {
   "use strict";

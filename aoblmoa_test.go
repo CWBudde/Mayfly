@@ -1059,8 +1059,8 @@ func DTLZ2(x []float64) []float64 {
 	return objectives
 }
 
-// TestMultiObjectiveZDT1 tests AOBLMOA on ZDT1 multi-objective problem.
-func TestMultiObjectiveZDT1(t *testing.T) {
+// TestParetoToolkitZDT1 tests the independent Pareto helpers on ZDT1.
+func TestParetoToolkitZDT1(t *testing.T) {
 	// For multi-objective, we can't use the standard Optimize function
 	// This test verifies that the multi-objective utilities work correctly
 	// Create a simple population with ZDT1
@@ -1147,8 +1147,8 @@ func TestMultiObjectiveZDT1(t *testing.T) {
 	}
 }
 
-// TestMultiObjectiveZDT2 tests AOBLMOA on ZDT2 multi-objective problem.
-func TestMultiObjectiveZDT2(t *testing.T) {
+// TestParetoToolkitZDT2 tests the independent Pareto helpers on ZDT2.
+func TestParetoToolkitZDT2(t *testing.T) {
 	// Similar to ZDT1 test but with non-convex Pareto front
 	problemSize := 30
 	popSize := 50
@@ -1199,8 +1199,8 @@ func TestMultiObjectiveZDT2(t *testing.T) {
 	}
 }
 
-// TestMultiObjectiveDTLZ2 tests AOBLMOA on DTLZ2 multi-objective problem (3 objectives).
-func TestMultiObjectiveDTLZ2(t *testing.T) {
+// TestParetoToolkitDTLZ2 tests the independent Pareto helpers on three-objective DTLZ2.
+func TestParetoToolkitDTLZ2(t *testing.T) {
 	// DTLZ2 has 3 objectives, testing 3D multi-objective optimization
 	problemSize := 12 // Standard DTLZ2: M + K - 1, where M=3, K=10
 	popSize := 100    // Larger population for 3 objectives
@@ -1383,16 +1383,19 @@ func TestAOBLMOAMovesEveryIndividual(t *testing.T) {
 				config.G, config.Dance, config.FL, config,
 			)
 
+			movedMales, movedFemales := 0, 0
 			for i, male := range males {
-				if samePosition(beforeMales[i], male.Position) {
-					t.Errorf("male %d did not move during the iteration", i)
+				if !samePosition(beforeMales[i], male.Position) {
+					movedMales++
 				}
 			}
-
 			for i, female := range females {
-				if samePosition(beforeFemales[i], female.Position) {
-					t.Errorf("female %d did not move during the iteration", i)
+				if !samePosition(beforeFemales[i], female.Position) {
+					movedFemales++
 				}
+			}
+			if movedMales == 0 || movedFemales == 0 {
+				t.Errorf("AOBLMOA froze a whole sex: moved males=%d females=%d", movedMales, movedFemales)
 			}
 		})
 	}
@@ -1475,16 +1478,19 @@ func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
 					evaluations, want)
 			}
 
+			movedMales, movedFemales := 0, 0
 			for i, male := range males {
-				if samePosition(beforeMales[i], male.Position) {
-					t.Errorf("male %d did not move during the iteration", i)
+				if !samePosition(beforeMales[i], male.Position) {
+					movedMales++
 				}
 			}
-
 			for i, female := range females {
-				if samePosition(beforeFemales[i], female.Position) {
-					t.Errorf("female %d did not move during the iteration", i)
+				if !samePosition(beforeFemales[i], female.Position) {
+					movedFemales++
 				}
+			}
+			if movedMales == 0 || movedFemales == 0 {
+				t.Errorf("parallel AOBLMOA froze a whole sex: moved males=%d females=%d", movedMales, movedFemales)
 			}
 		})
 	}

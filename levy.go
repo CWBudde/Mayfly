@@ -18,13 +18,19 @@ import (
 )
 
 // levyFlight generates a Lévy flight random number using Mantegna's algorithm.
-// alpha is the Lévy stability parameter (0 < alpha <= 2)
+// alpha is the Lévy stability parameter (0 < alpha < 2). Mantegna's
+// closed form degenerates at alpha=2 and must not be used there.
 // beta is the Lévy scale parameter
 // rng must not be nil (ensured by caller)
 //
 // Mantegna's algorithm approximates Lévy distribution using normal distributions.
 // Returns a sanitized value (NaN/Inf checked by caller).
 func levyFlight(alpha, beta float64, rng *rand.Rand) float64 {
+	if rng == nil || math.IsNaN(alpha) || math.IsInf(alpha, 0) || alpha <= 0 || alpha >= 2 ||
+		math.IsNaN(beta) || math.IsInf(beta, 0) || beta <= 0 {
+		return 0
+	}
+
 	// Mantegna's algorithm for Lévy flight
 	// Calculate sigma_u and sigma_v
 	numerator := math.Gamma(1+alpha) * math.Sin(math.Pi*alpha/2)
@@ -37,20 +43,18 @@ func levyFlight(alpha, beta float64, rng *rand.Rand) float64 {
 	v := randn(rng) * sigmaV
 
 	// Avoid division by zero or very small values
-	if math.Abs(v) < 1e-10 {
-		v = 1e-10
-		if rng.Float64() < 0.5 {
-			v = -v
-		}
+	if math.Abs(v) < 1e-300 {
+		v = math.Copysign(1e-300, v)
 	}
 
 	// Calculate Lévy flight step
 	step := beta * u / math.Pow(math.Abs(v), 1/alpha)
 
-	// Sanitize: check for NaN/Inf from Gamma functions or pow operations
-	if math.IsNaN(step) || math.IsInf(step, 0) {
-		// Return a moderate random step as fallback
-		return beta * randn(rng)
+	if math.IsNaN(step) {
+		return 0
+	}
+	if math.IsInf(step, 0) {
+		return math.Copysign(math.MaxFloat64, step)
 	}
 
 	return step
@@ -59,6 +63,10 @@ func levyFlight(alpha, beta float64, rng *rand.Rand) float64 {
 // levyFlightVec generates a vector of Lévy flight random numbers.
 // rng must not be nil (ensured by caller).
 func levyFlightVec(size int, alpha, beta float64, rng *rand.Rand) []float64 {
+	if size <= 0 {
+		return nil
+	}
+
 	vec := make([]float64, size)
 	for i := range size {
 		vec[i] = levyFlight(alpha, beta, rng)

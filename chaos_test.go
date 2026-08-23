@@ -31,6 +31,7 @@ func TestLogisticMapNormalizesInvalidSeeds(t *testing.T) {
 		{name: "positive_fraction", seed: 1.25, want: 0.3},
 		{name: "negative_fraction", seed: -0.5, want: 0.314159},
 		{name: "positive_infinity", seed: math.Inf(1), want: 0.271828},
+		{name: "not_a_number", seed: math.NaN(), want: 0.314159},
 	}
 
 	for _, tt := range tests {

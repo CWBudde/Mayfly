@@ -35,7 +35,15 @@ type AnnealingScheduler struct {
 //   - coolingRate: cooling rate (0 < rate < 1, typically 0.8-0.99)
 //   - scheduleType: type of cooling schedule ("exponential", "linear", "logarithmic")
 func NewAnnealingScheduler(initialTemp, coolingRate float64, scheduleType string) *AnnealingScheduler {
-	if scheduleType == "" {
+	if math.IsNaN(initialTemp) || math.IsInf(initialTemp, 0) || initialTemp <= 0 {
+		initialTemp = 1
+	}
+	if math.IsNaN(coolingRate) || math.IsInf(coolingRate, 0) || coolingRate <= 0 || coolingRate >= 1 {
+		coolingRate = 0.95
+	}
+	switch scheduleType {
+	case CoolingExponential, CoolingLinear, CoolingLogarithmic:
+	default:
 		scheduleType = CoolingExponential
 	}
 
@@ -51,6 +59,10 @@ func NewAnnealingScheduler(initialTemp, coolingRate float64, scheduleType string
 // Update updates the temperature according to the cooling schedule.
 // This should be called once per iteration.
 func (as *AnnealingScheduler) Update() {
+	if as == nil {
+		return
+	}
+
 	as.Iteration++
 
 	switch as.ScheduleType {
@@ -60,14 +72,15 @@ func (as *AnnealingScheduler) Update() {
 		as.CurrentTemperature *= as.CoolingRate
 
 	case CoolingLinear:
-		// T(k) = T₀ - k * α
-		// Linear decrease, simpler but less effective
-		as.CurrentTemperature = as.InitialTemperature - float64(as.Iteration)*as.CoolingRate
+		// CoolingRate is consistently a retention factor across schedules.
+		// Linear cooling therefore subtracts T₀*(1-α) per iteration.
+		as.CurrentTemperature = as.InitialTemperature *
+			(1.0 - float64(as.Iteration)*(1.0-as.CoolingRate))
 		if as.CurrentTemperature < 0.01 {
 			as.CurrentTemperature = 0.01 // Minimum temperature
 		}
 
-	case "logarithmic":
+	case CoolingLogarithmic:
 		// T(k) = T₀ / (1 + α * log(1 + k))
 		// Slowest cooling, best for highly multimodal problems
 		as.CurrentTemperature = as.InitialTemperature / (1.0 + as.CoolingRate*math.Log(1.0+float64(as.Iteration)))
@@ -85,20 +98,35 @@ func (as *AnnealingScheduler) Update() {
 
 // GetTemperature returns the current temperature.
 func (as *AnnealingScheduler) GetTemperature() float64 {
+	if as == nil {
+		return math.NaN()
+	}
+
 	return as.CurrentTemperature
 }
 
 // Reset resets the scheduler to initial temperature.
 func (as *AnnealingScheduler) Reset() {
+	if as == nil {
+		return
+	}
+
 	as.CurrentTemperature = as.InitialTemperature
 	as.Iteration = 0
 }
 
 // Returns: acceptance probability in [0, 1].
 func acceptanceProbability(oldCost, newCost, temperature float64) float64 {
+	if math.IsNaN(oldCost) || math.IsNaN(newCost) {
+		return 0
+	}
+
 	// If new solution is better, always accept
-	if newCost < oldCost {
+	if newCost <= oldCost {
 		return 1.0
+	}
+	if math.IsNaN(temperature) || math.IsInf(temperature, 0) || temperature <= 0 {
+		return 0
 	}
 
 	// If new solution is worse, accept with probability exp(-ΔE/T)
@@ -116,6 +144,13 @@ func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 	prob := acceptanceProbability(oldCost, newCost, temperature)
 
 	// Accept if probability is greater than random number
+	if prob >= 1 {
+		return true
+	}
+	if rng == nil {
+		return false
+	}
+
 	return rng.Float64() < prob
 }
 
@@ -125,9 +160,16 @@ func shouldAccept(oldCost, newCost, temperature float64, rng *rand.Rand) bool {
 func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 	objectiveFunc ObjectiveFunction, rng *rand.Rand,
 ) (bool, int) {
+	if mayfly == nil || objectiveFunc == nil || len(candidatePos) != len(mayfly.Position) {
+		return false, 0
+	}
+
 	// Evaluate candidate
 	candidateCost := objectiveFunc(candidatePos)
 	funcEvals := 1
+	if math.IsNaN(candidateCost) || math.IsInf(candidateCost, 0) {
+		return false, funcEvals
+	}
 
 	// Decide acceptance using Metropolis criterion
 	if shouldAccept(mayfly.Cost, candidateCost, temperature, rng) {
@@ -165,6 +207,10 @@ func annealedUpdate(mayfly *Mayfly, candidatePos []float64, temperature float64,
 //
 // This helps prevent premature convergence or excessive wandering.
 func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, minRate, maxRate float64) {
+	if scheduler == nil || math.IsNaN(acceptanceRate) || math.IsInf(acceptanceRate, 0) ||
+		math.IsNaN(minRate) || math.IsInf(minRate, 0) || math.IsNaN(maxRate) || math.IsInf(maxRate, 0) {
+		return
+	}
 	if acceptanceRate < minRate {
 		// Too few acceptances: reheat to increase exploration
 		scheduler.CurrentTemperature *= 1.1
@@ -180,5 +226,9 @@ func adaptiveTemperatureControl(scheduler *AnnealingScheduler, acceptanceRate, m
 
 // Returns: true if candidate should be accepted.
 func simulatedAnnealingAcceptance(oldCost, newCost float64, scheduler *AnnealingScheduler, rng *rand.Rand) bool {
+	if scheduler == nil {
+		return false
+	}
+
 	return shouldAccept(oldCost, newCost, scheduler.GetTemperature(), rng)
 }

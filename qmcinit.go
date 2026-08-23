@@ -13,6 +13,7 @@
 package mayfly
 
 import (
+	"context"
 	"fmt"
 	"math/bits"
 	"math/rand"
@@ -77,6 +78,18 @@ func validateQMCInit(config *Config) error {
 // separately would place every female exactly on top of a male and halve the
 // initial coverage — the opposite of the point.
 func quasiRandomPositions(config *Config, rng *rand.Rand) ([][]float64, error) {
+	return quasiRandomPositionsContext(context.Background(), config, rng)
+}
+
+func quasiRandomPositionsContext(
+	ctx context.Context,
+	config *Config,
+	rng *rand.Rand,
+) ([][]float64, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	total := config.NPop + config.NPopF
 
 	if config.QMCInit == "" || config.QMCInit == QMCInitUniform {
@@ -94,6 +107,9 @@ func quasiRandomPositions(config *Config, rng *rand.Rand) ([][]float64, error) {
 	point := make([]float64, config.ProblemSize)
 
 	for i := range rows {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		seq.NextInto(point)
 
 		row := make([]float64, config.ProblemSize)

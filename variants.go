@@ -83,6 +83,7 @@ const (
 	nameOLCEMA     = "OLCE-MA"
 	nameEOBBMA     = "EOBBMA"
 	nameGSASMA     = "GSASMA"
+	nameHMMA       = "HMMA"
 	nameMPMA       = "MPMA"
 	nameAOBLMOA    = "AOBLMOA"
 )
@@ -95,6 +96,7 @@ var variantRegistry = map[string]AlgorithmVariant{
 	"olce-ma": &OLCEVariant{}, // alias
 	"eobbma":  &EOBBMAVariant{},
 	"gsasma":  &GSASMAVariant{},
+	"hmma":    &HMMAVariant{},
 	"mpma":    &MPMAVariant{},
 	"aoblmoa": &AOBLMOAVariant{},
 }
@@ -108,8 +110,9 @@ var variantRegistry = map[string]AlgorithmVariant{
 //   - "olce" or "olce-ma" - Orthogonal Learning and Chaotic Exploitation MA
 //   - "eobbma" - Elite Opposition-Based Bare Bones MA
 //   - "gsasma" - Golden Sine with Simulated Annealing MA
+//   - "hmma" - Hybrid Mutation Mayfly Algorithm
 //   - "mpma" - Median Position-Based MA
-//   - "aoblmoa" - Aquila Optimizer-Based Learning Multi-Objective Algorithm
+//   - "aoblmoa" - Aquila Optimizer and Opposition-Based Learning Mayfly Optimization Algorithm
 func NewVariant(name string) AlgorithmVariant {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if name == "standard" {
@@ -147,6 +150,7 @@ func GetAllVariants() []AlgorithmVariant {
 		variantRegistry["olce"],
 		variantRegistry["eobbma"],
 		variantRegistry["gsasma"],
+		variantRegistry["hmma"],
 		variantRegistry["mpma"],
 		variantRegistry["aoblmoa"],
 	}
@@ -324,7 +328,7 @@ func (v *OLCEVariant) ApplicableTo(characteristics ProblemCharacteristics) float
 }
 
 func (v *OLCEVariant) EstimatedOverhead() float64 {
-	return 1.12 // ~12% more evaluations
+	return 1.33 // Default orthogonal-learning evaluations add about 33%.
 }
 
 func (v *OLCEVariant) RecommendedFor() []string {
@@ -412,7 +416,40 @@ func (v *GSASMAVariant) FullName() string {
 }
 
 func (v *GSASMAVariant) Description() string {
-	return "Golden ratio + SA + hybrid mutation. 10-20% improvement with fast convergence on engineering problems."
+	return "Golden-sine search with simulated annealing, crossover, and mutation for fast scalar optimization."
+}
+
+// HMMAVariant represents the Hybrid Mutation Mayfly Algorithm.
+type HMMAVariant struct{}
+
+func (v *HMMAVariant) Name() string { return nameHMMA }
+
+func (v *HMMAVariant) FullName() string { return "Hybrid Mutation Mayfly Algorithm" }
+
+func (v *HMMAVariant) Description() string {
+	return "Adaptive Cauchy/Gaussian mutation with periodic opposition-based learning."
+}
+
+func (v *HMMAVariant) GetConfig() *Config { return NewHMMAConfig() }
+
+func (v *HMMAVariant) ApplicableTo(characteristics ProblemCharacteristics) float64 {
+	if characteristics.MultiObjective {
+		return 0.2
+	}
+	score := 0.5
+	if characteristics.Modality != Unimodal {
+		score += 0.2
+	}
+	if characteristics.Landscape == Rugged || characteristics.Landscape == Deceptive {
+		score += 0.2
+	}
+	return min(score, 1)
+}
+
+func (v *HMMAVariant) EstimatedOverhead() float64 { return 1.08 }
+
+func (v *HMMAVariant) RecommendedFor() []string {
+	return []string{"Rugged scalar-objective landscapes", "Stagnation escape", "Multimodal problems"}
 }
 
 func (v *GSASMAVariant) GetConfig() *Config {
@@ -444,7 +481,7 @@ func (v *GSASMAVariant) ApplicableTo(characteristics ProblemCharacteristics) flo
 }
 
 func (v *GSASMAVariant) EstimatedOverhead() float64 {
-	return 1.15 // ~15% more evaluations
+	return 1.07 // Default golden/annealing stages add about 7%.
 }
 
 func (v *GSASMAVariant) RecommendedFor() []string {
@@ -520,7 +557,8 @@ func (v *MPMAVariant) RecommendedFor() []string {
 // AOBLMOA Variant
 // =============================================================================
 
-// AOBLMOAVariant represents the Aquila Optimizer-Based Learning Multi-Objective Algorithm.
+// AOBLMOAVariant represents the Aquila Optimizer and Opposition-Based Learning
+// Mayfly Optimization Algorithm. It is a scalar-objective optimizer.
 type AOBLMOAVariant struct{}
 
 func (v *AOBLMOAVariant) Name() string {
@@ -528,7 +566,7 @@ func (v *AOBLMOAVariant) Name() string {
 }
 
 func (v *AOBLMOAVariant) FullName() string {
-	return "Aquila Optimizer-Based Learning Multi-Objective Algorithm"
+	return "Aquila Optimizer and Opposition-Based Learning Mayfly Optimization Algorithm"
 }
 
 func (v *AOBLMOAVariant) Description() string {
@@ -543,9 +581,9 @@ func (v *AOBLMOAVariant) GetConfig() *Config {
 func (v *AOBLMOAVariant) ApplicableTo(characteristics ProblemCharacteristics) float64 {
 	score := 0.5
 
-	// Essential for multi-objective problems
+	// This library does not currently expose a multi-objective optimizer.
 	if characteristics.MultiObjective {
-		score += 0.4
+		return 0.2
 	}
 
 	if characteristics.Modality == HighlyMultimodal {
@@ -565,10 +603,9 @@ func (v *AOBLMOAVariant) EstimatedOverhead() float64 {
 
 func (v *AOBLMOAVariant) RecommendedFor() []string {
 	return []string{
-		"Multi-objective optimization",
 		"Adaptive strategy switching",
 		"Complex multi-phase problems",
-		"Engineering design tradeoffs",
+		"Rugged scalar-objective landscapes",
 	}
 }
 
@@ -600,9 +637,16 @@ func NewBuilder(variantName string) *VariantBuilder {
 
 // NewBuilderFromVariant creates a builder from an existing variant instance.
 func NewBuilderFromVariant(variant AlgorithmVariant) *VariantBuilder {
+	if variant == nil {
+		return nil
+	}
+	config := variant.GetConfig()
+	if config == nil {
+		return nil
+	}
 	return &VariantBuilder{
 		variant: variant,
-		config:  variant.GetConfig(),
+		config:  cloneComparisonConfig(config),
 	}
 }
 
@@ -669,7 +713,7 @@ func (b *VariantBuilder) WithQMCInitialPopulation(sequence string) *VariantBuild
 //
 // Example: WithConfig(func(c *Config) { c.A1 = 2.0; c.Beta = 3.0 }).
 func (b *VariantBuilder) WithConfig(fn func(*Config)) *VariantBuilder {
-	if b == nil {
+	if b == nil || fn == nil {
 		return nil
 	}
 
@@ -692,7 +736,10 @@ func (b *VariantBuilder) Build() (*Config, error) {
 		return nil, errors.New("problem size must be positive")
 	}
 
-	return b.config, nil
+	if err := ValidateConfig(b.config); err != nil {
+		return nil, err
+	}
+	return cloneComparisonConfig(b.config), nil
 }
 
 // Optimize is a convenience method that builds the config and runs optimization.

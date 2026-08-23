@@ -226,8 +226,8 @@ func TestNewDefaultConfig(t *testing.T) {
 		t.Errorf("NewDefaultConfig() UseDESMA = %v, want false", config.UseDESMA)
 	}
 
-	if config.EliteCount != 5 {
-		t.Errorf("NewDefaultConfig() EliteCount = %v, want 5", config.EliteCount)
+	if config.EliteCount != 10 {
+		t.Errorf("NewDefaultConfig() EliteCount = %v, want 10", config.EliteCount)
 	}
 
 	if config.EnlargeFactor != 1.05 {
@@ -284,8 +284,8 @@ func TestNewDESMAConfig(t *testing.T) {
 	}
 
 	// Check DESMA-specific defaults
-	if config.EliteCount != 5 {
-		t.Errorf("NewDESMAConfig() EliteCount = %v, want 5", config.EliteCount)
+	if config.EliteCount != 10 {
+		t.Errorf("NewDESMAConfig() EliteCount = %v, want 10", config.EliteCount)
 	}
 
 	if config.EnlargeFactor != 1.05 {

@@ -10,7 +10,8 @@ import (
 func main() {
 	fmt.Println("=================================================================")
 	fmt.Println("   Mayfly Algorithm Selector - Intelligent Algorithm Selection")
-	fmt.Println("=================================================================\n")
+	fmt.Println("=================================================================")
+	fmt.Println()
 
 	// Example 1: Get recommendations for a highly multimodal problem
 	fmt.Println("Example 1: Rastrigin Function (Highly Multimodal)")

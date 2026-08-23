@@ -99,14 +99,14 @@ Lévy flights follow power-law distribution:
 
 ## GSASMA - Golden Sine with Simulated Annealing
 
-**Improved mayfly algorithm based on hybrid mutation (2022). Electronics Letters / IEEE**
+**Golden annealing crossover and mutation mayfly algorithm (2022). AIP Advances.**
+
+**DOI**: https://doi.org/10.1063/5.0108278
 
 ### Key Contributions
 
 - Golden Sine Algorithm integration using golden ratio (φ ≈ 1.618)
 - Simulated Annealing for probabilistic local optima escape
-- Hybrid Cauchy-Gaussian mutation (adaptive exploration-exploitation)
-- Opposition-Based Learning for expanded coverage
 - 10-20% improvement on engineering optimization problems
 
 ### Technical Components
@@ -121,14 +121,8 @@ Lévy flights follow power-law distribution:
    - Metropolis criterion: P(accept) = exp(-ΔE/T)
    - Temperature controls exploration-exploitation balance
 
-3. **Hybrid Mutation**:
-   - Early iterations: 70% Cauchy (exploration)
-   - Late iterations: 70% Gaussian (exploitation)
-   - Smooth transition based on progress
-
-4. **Opposition-Based Learning**:
-   - Applied to global best every 10 iterations
-   - x_opp = lower + upper - x
+Hybrid Cauchy/Gaussian mutation and periodic opposition are provided by the
+separate HMMA variant (Electronics Letters, DOI 10.1049/ell2.12568).
 
 ---
 

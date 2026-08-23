@@ -57,19 +57,17 @@ func TestAlgorithmSelector(t *testing.T) {
 func TestRecommendBest(t *testing.T) {
 	selector := NewAlgorithmSelector()
 
-	// Multi-objective should recommend AOBLMOA
+	// The selector must not present a scalar optimizer as multi-objective.
 	characteristics := ProblemCharacteristics{
 		MultiObjective: true,
 	}
 
 	best := selector.RecommendBest(characteristics)
-	if best.Variant.Name() != "AOBLMOA" {
-		t.Errorf("Expected AOBLMOA for multi-objective, got %s", best.Variant.Name())
+	if best.Variant != nil {
+		t.Errorf("Expected no multi-objective recommendation, got %s", best.Variant.Name())
 	}
-
-	// Check confidence is high
-	if best.Confidence < 0.9 {
-		t.Errorf("Expected high confidence (>0.9) for multi-objective, got %.2f", best.Confidence)
+	if best.Reasoning == "" {
+		t.Error("Expected an explanation for unavailable multi-objective support")
 	}
 }
 

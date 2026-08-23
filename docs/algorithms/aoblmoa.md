@@ -97,10 +97,9 @@ behavior of drawing the branch at random; it exists only to reproduce old runs.
 OBL is applied on the **offspring**, after crossover, to **every** offspring,
 with no gate:
 
-- **Opposition point**, Eq. (31): `x̃ = (lower + upper − x) × r`, `r ~ N(0, 1)`.
-  The Gaussian factor is essential; it is what distinguishes this from
-  Tizhoosh's plain reflection, and it means the result routinely leaves the
-  search bounds and is clamped back.
+- **Opposition point**, Eq. (31): `x̃ = (lower + upper − x) × r`, with one
+  `r ~ U(0, 1)` draw shared by the offspring vector. The paper's prose is
+  contradictory here; this interpretation follows the authors' implementation.
 - **Greedy selection**, Eq. (32): the better of the offspring and its opposition
   point survives.
 
@@ -120,7 +119,7 @@ to a single function with a comment saying exactly what to change to flip it:
 | ---------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------- |
 | Female branch inequality: Eq. (30) or the Algorithm 1 pseudocode?            | `aoblmoaFemaleTakesAttraction` | Eq. (30), matching `prepareStandardFemale`      |
 | Which sex gets which strategy pair? The equations and the abstract disagree. | `aoblmoaStrategyFor`           | The equations: males narrowed, females expanded |
-| Is Eq. (31)'s `r` drawn per solution or per dimension?                       | `stochasticOppositionPoint`    | Per dimension                                   |
+| Is Eq. (31)'s `r` drawn per solution or per dimension?                       | `stochasticOppositionPoint`    | One scalar per solution, matching author code   |
 
 ### 4. Multi-Objective Building Blocks
 
@@ -223,7 +222,7 @@ func main() {
 }
 ```
 
-### Multi-Objective Optimization Example
+### Scalarized Multiple-Criteria Example
 
 ```go
 package main
@@ -234,7 +233,7 @@ import (
     "github.com/cwbudde/mayfly"
 )
 
-// Multi-objective function: minimize both objectives
+// Scalarized function: combine two criteria into one cost.
 // Objective 1: Distance from origin (Sphere)
 // Objective 2: Rosenbrock function value
 func multiObjective(x []float64) float64 {
@@ -246,7 +245,7 @@ func multiObjective(x []float64) float64 {
 }
 
 func main() {
-    fmt.Println("=== Multi-Objective Optimization with AOBLMOA ===\n")
+    fmt.Println("=== Scalarized Multiple-Criteria Optimization with AOBLMOA ===")
 
     config := mayfly.NewAOBLMOAConfig()
     config.ObjectiveFunc = multiObjective
@@ -264,7 +263,7 @@ func main() {
 }
 ```
 
-### Real-World Example: Multi-Criteria Resource Allocation
+### Real-World Example: Scalarized Resource Allocation
 
 ```go
 package main
@@ -319,18 +318,15 @@ func resourceAllocation(allocation []float64) float64 {
 }
 
 func main() {
-    fmt.Println("=== Multi-Criteria Resource Allocation with AOBLMOA ===\n")
+    fmt.Println("=== Scalarized Resource Allocation with AOBLMOA ===")
 
-    // AOBLMOA excels at multi-criteria problems with conflicting objectives
+    // This is still a single-objective run: the function returns one weighted cost.
     config := mayfly.NewAOBLMOAConfig()
     config.ObjectiveFunc = resourceAllocation
     config.ProblemSize = 5  // 5 resources to allocate
     config.LowerBound = 0.0  // Minimum allocation
     config.UpperBound = 20.0 // Maximum allocation per resource
     config.MaxIterations = 600
-
-    // Larger archive for diverse Pareto solutions
-    config.ArchiveSize = 120
 
     result, err := mayfly.Optimize(config)
     if err != nil {
@@ -362,7 +358,10 @@ func main() {
 }
 ```
 
-**Note**: `Optimize` is single-objective. The Pareto helpers (`ParetoArchive`, `dominates`, NSGA-II selection, crowding distance, hypervolume, IGD) are exported building blocks you drive yourself; the optimizer does not maintain an archive during the run.
+**Important**: `Optimize` is single-objective. A weighted sum does not produce a
+Pareto front and AOBLMOA is not a multi-objective optimizer. The validated Pareto
+helpers are independent building blocks; a future MOMA implementation will need a
+multi-objective optimizer and result contract of its own.
 
 ## AOBLMOA Parameters
 

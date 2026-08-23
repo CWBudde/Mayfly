@@ -87,11 +87,12 @@ func aquilaExpandedExploration(current, best, mean []float64, currentIter, maxIt
 	lowerBound, upperBound float64, rng *rand.Rand,
 ) []float64 {
 	result := make([]float64, len(current))
-	t := float64(currentIter) / float64(maxIter)
+	t := aquilaProgress(currentIter, maxIter)
+	r := rng.Float64()
 
 	for i := range current {
 		// X1(t+1) = Xbest(t) * (1 - t/T) + (XM(t) - Xbest(t) * rand)
-		result[i] = best[i]*(1.0-t) + (mean[i] - best[i]*rng.Float64())
+		result[i] = best[i]*(1.0-t) + (mean[i] - best[i]*r)
 
 		// Apply bounds
 		if result[i] < lowerBound {
@@ -120,20 +121,31 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly,
 ) []float64 {
 	result := make([]float64, len(current))
 
-	// Generate Lévy flight multiplier
-	levyD := generateLevyFlight(1.5, rng)
+	// AO Eq. (4) is a D-dimensional Lévy vector with scale s=0.01.
+	levyD := levyFlightVec(len(current), 1.5, 0.01, rng)
 
 	// Select a random solution from population
 	randomIdx := rng.Intn(len(population))
 	xr := population[randomIdx].Position
 
+	// AO Eqs. (6)-(9) describe the spiral flight component. The reference
+	// implementation fixes r1 at 10, U at 0.00565, and omega at 0.005.
+	const (
+		spiralTurns = 10.0
+		spiralU     = 0.00565
+		spiralOmega = 0.005
+	)
+	r := rng.Float64()
+
 	for i := range current {
-		// Generate random position components
-		y := rng.Float64()*(upperBound-lowerBound) + lowerBound
-		x := rng.Float64()*(upperBound-lowerBound) + lowerBound
+		dimension := float64(i + 1)
+		radius := spiralTurns + spiralU*dimension
+		theta := -spiralOmega*dimension + 3.0*math.Pi/2.0
+		x := radius * math.Sin(theta)
+		y := radius * math.Cos(theta)
 
 		// X2(t+1) = Xbest(t) * Levy(D) + XR(t) + (y - x) * rand
-		result[i] = best[i]*levyD + xr[i] + (y-x)*rng.Float64()
+		result[i] = best[i]*levyD[i] + xr[i] + (y-x)*r
 
 		// Apply bounds
 		if result[i] < lowerBound {
@@ -161,18 +173,18 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 	lowerBound, upperBound float64, rng *rand.Rand,
 ) []float64 {
 	result := make([]float64, len(current))
-	t := float64(currentIter) / float64(maxIter)
+	_ = currentIter
+	_ = maxIter
 
-	// α decreases from 2 to 0 over iterations
-	alpha := 2.0 * (1.0 - t)
-
-	// δ is a small value for fine-tuning
-	delta := 0.1
+	// AO fixes both exploitation parameters at 0.1.
+	const alpha, delta = 0.1, 0.1
+	r1 := rng.Float64()
+	r2 := rng.Float64()
 
 	for i := range current {
 		// X3(t+1) = (Xbest(t) - XM(t)) * α - rand + ((UB - LB) * rand + LB) * δ
-		exploration := ((upperBound-lowerBound)*rng.Float64() + lowerBound) * delta
-		result[i] = (best[i]-mean[i])*alpha - rng.Float64() + exploration
+		exploration := ((upperBound-lowerBound)*r2 + lowerBound) * delta
+		result[i] = (best[i]-mean[i])*alpha - r1 + exploration
 
 		// Apply bounds
 		if result[i] < lowerBound {
@@ -199,23 +211,27 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter in
 	lowerBound, upperBound float64, rng *rand.Rand,
 ) []float64 {
 	result := make([]float64, len(current))
-	t := float64(currentIter) / float64(maxIter)
+	t := aquilaProgress(currentIter, maxIter)
 
-	// QF is quality function: QF(t) = t^((2*rand - 1))
-	qf := math.Pow(t, 2.0*rng.Float64()-1.0)
+	// QF(t) = t^((2*rand-1)/(1-T)^2). A one-iteration run has no
+	// meaningful quality schedule, so its neutral value is one.
+	qf := 1.0
+	if maxIter > 1 {
+		exponent := (2.0*rng.Float64() - 1.0) / math.Pow(1.0-float64(maxIter), 2)
+		qf = math.Pow(float64(currentIter+1), exponent)
+	}
 
-	// G1 decreases from 2 to 0
-	g1 := 2.0 * rng.Float64() * (1.0 - t)
-
-	// G2 is a random value in [0, 1]
+	// G1 is signed in [-1,1]; G2 decreases from 2 to 0.
+	g1 := 2.0*rng.Float64() - 1.0
 	g2 := 2.0 * (1.0 - t)
+	r1 := rng.Float64()
+	r2 := rng.Float64()
 
-	// Generate Lévy flight
-	levyD := generateLevyFlight(1.5, rng)
+	levyD := levyFlightVec(len(current), 1.5, 0.01, rng)
 
 	for i := range current {
 		// X4(t+1) = QF * Xbest(t) - (G1 * X(t) * rand) - G2 * Levy(D) + rand * G1
-		result[i] = qf*best[i] - (g1 * current[i] * rng.Float64()) - g2*levyD + rng.Float64()*g1
+		result[i] = qf*best[i] - g1*current[i]*r1 - g2*levyD[i] + r2*g1
 
 		// Apply bounds
 		if result[i] < lowerBound {
@@ -228,6 +244,16 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter in
 	}
 
 	return result
+}
+
+// aquilaProgress converts the optimizer's zero-based iteration index to the
+// paper's one-based t/T schedule and clamps defensive direct calls.
+func aquilaProgress(currentIter, maxIter int) float64 {
+	if maxIter <= 0 {
+		return 1
+	}
+
+	return min(max(float64(currentIter+1)/float64(maxIter), 0), 1)
 }
 
 // applyAquilaStrategy applies the selected Aquila Optimizer strategy to update a mayfly's position.

@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 
 	"github.com/cwbudde/mayfly"
 )
@@ -24,11 +23,8 @@ func variantKey(variant mayfly.AlgorithmVariant) string {
 
 // configFor builds a fresh configuration for one run.
 //
-// Fresh is load-bearing, not defensive: Optimize writes back into the config it
-// is given — it installs a Rand when the field is nil, and fills in NM, VelMax
-// and VelMin when they are zero. A cached config would therefore carry the
-// previous run's advanced RNG state into the next one, and "run it again with
-// the same seed" would quietly stop reproducing.
+// A fresh config keeps each UI run independent. Optimize treats it as immutable,
+// and Config.Seed makes the reproducibility metadata truthful.
 func configFor(variantName, benchmarkName string, dimensions, iterations, npop, npopf int, seed int64,
 	lower, upper float64,
 ) (*mayfly.Config, error) {
@@ -50,7 +46,7 @@ func configFor(variantName, benchmarkName string, dimensions, iterations, npop, 
 	config.MaxIterations = iterations
 	config.NPop = npop
 	config.NPopF = npopf
-	config.Rand = rand.New(rand.NewSource(seed)) //nolint:gosec // Reproducibility is the point; this is not a security context.
+	config.Seed = &seed
 
 	// Goroutines under js/wasm are cooperatively scheduled onto the single
 	// browser thread, so the worker pool buys nothing and costs coordination.

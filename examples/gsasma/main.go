@@ -9,12 +9,12 @@ import (
 )
 
 func main() {
-	fmt.Println("=== GSASMA (Golden Sine Algorithm with Simulated Annealing MA) Example ===\n")
-	fmt.Println("GSASMA combines four powerful optimization techniques:")
+	fmt.Println("=== GSASMA (Golden Sine Algorithm with Simulated Annealing MA) Example ===")
+	fmt.Println()
+	fmt.Println("GSASMA combines two optimization techniques:")
 	fmt.Println("1. Golden Sine Algorithm - Adaptive exploration using golden ratio")
 	fmt.Println("2. Simulated Annealing - Probabilistic acceptance to escape local optima")
-	fmt.Println("3. Hybrid Mutation - Cauchy (exploration) + Gaussian (exploitation)")
-	fmt.Println("4. Opposition-Based Learning - Expanded search space coverage\n")
+	fmt.Println()
 
 	// Create a fixed random seed for reproducibility
 	seed := int64(12345)
@@ -123,9 +123,11 @@ func main() {
 	}
 
 	// Detailed GSASMA demonstration on a single problem
-	fmt.Println("\n=== Detailed GSASMA Demonstration ===\n")
+	fmt.Println("\n=== Detailed GSASMA Demonstration ===")
+	fmt.Println()
 	fmt.Println("Running GSASMA on Rastrigin function (highly multimodal)")
-	fmt.Println("This demonstrates all GSASMA components working together\n")
+	fmt.Println("This demonstrates all GSASMA components working together")
+	fmt.Println()
 
 	config := mayfly.NewGSASMAConfig()
 	config.ObjectiveFunc = mayfly.Rastrigin
@@ -140,9 +142,7 @@ func main() {
 	fmt.Printf("  Initial Temperature: %.1f\n", config.InitialTemperature)
 	fmt.Printf("  Cooling Rate:        %.3f\n", config.CoolingRate)
 	fmt.Printf("  Cooling Schedule:    %s\n", config.CoolingSchedule)
-	fmt.Printf("  Cauchy Mutation Rate: %.2f\n", config.CauchyMutationRate)
 	fmt.Printf("  Golden Factor:       %.1f\n", config.GoldenFactor)
-	fmt.Printf("  Apply OBL to GlobalBest: %v\n", config.ApplyOBLToGlobalBest)
 	fmt.Println()
 
 	result, err := mayfly.Optimize(config)
@@ -172,17 +172,18 @@ func main() {
 	fmt.Println()
 
 	// Tips for using GSASMA
-	fmt.Println("=== Tips for Using GSASMA ===\n")
+	fmt.Println("=== Tips for Using GSASMA ===")
+	fmt.Println()
 	fmt.Println("GSASMA is best suited for:")
 	fmt.Println("  • Engineering optimization problems")
 	fmt.Println("  • Problems with many local optima")
 	fmt.Println("  • Cases where fast convergence is critical")
-	fmt.Println("  • Complex multimodal landscapes\n")
+	fmt.Println("  • Complex multimodal landscapes")
+	fmt.Println()
 
 	fmt.Println("Parameter Tuning Guidelines:")
 	fmt.Println("  • InitialTemperature: Higher (100-1000) for more exploration")
 	fmt.Println("  • CoolingRate: Higher (0.95-0.99) for gradual cooling")
-	fmt.Println("  • CauchyMutationRate: Higher (0.4-0.6) for more exploration")
 	fmt.Println("  • GoldenFactor: 0.5-2.0, higher values = larger search steps")
 	fmt.Println("  • CoolingSchedule: 'exponential' (fast), 'logarithmic' (slow)")
 	fmt.Println()
@@ -191,7 +192,6 @@ func main() {
 	fmt.Println("  • 10-20% improvement on engineering problems")
 	fmt.Println("  • Better escape from local optima via SA")
 	fmt.Println("  • ~15% overhead in function evaluations")
-	fmt.Println("  • Adaptive exploration-to-exploitation transition")
 	fmt.Println()
 }
 

@@ -386,7 +386,8 @@ All variants maintain research fidelity to original papers:
 2. **DESMA**: _PLOS One_, 2022
 3. **OLCE-MA**: Zhou et al. (2022). _International Journal of Machine Learning and Cybernetics_, 13, 3625–3643
 4. **EOBBMA**: _Arabian Journal for Science and Engineering_, 2024
-5. **GSASMA**: _Electronics Letters / IEEE_, 2022
+5. **GSASMA**: _AIP Advances_, 2022, DOI 10.1063/5.0108278
+6. **HMMA**: _Electronics Letters_, 2022, DOI 10.1049/ell2.12568
 6. **MPMA**: _IEEE Access_, 2022
 7. **AOBLMOA**: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
 

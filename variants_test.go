@@ -21,6 +21,7 @@ func TestNewVariant(t *testing.T) {
 		{"OLCE alias", "olce-ma", "OLCE-MA"},
 		{"EOBBMA", "eobbma", "EOBBMA"},
 		{"GSASMA", "gsasma", "GSASMA"},
+		{"HMMA", "hmma", "HMMA"},
 		{"MPMA", "mpma", "MPMA"},
 		{"AOBLMOA", "aoblmoa", "AOBLMOA"},
 		{"Case insensitive", "DESMA", "DESMA"},
@@ -51,15 +52,15 @@ func TestNewVariant(t *testing.T) {
 func TestListVariants(t *testing.T) {
 	variants := ListVariants()
 
-	// Should have exactly 7 variants (excluding aliases)
-	if len(variants) != 7 {
-		t.Errorf("Expected 7 variants, got %d", len(variants))
+	// Should have exactly 8 variants (excluding aliases)
+	if len(variants) != 8 {
+		t.Errorf("Expected 8 variants, got %d", len(variants))
 	}
 
 	// Check for required variants
 	required := map[string]bool{
 		"ma": false, "desma": false, "olce": false, "eobbma": false,
-		"gsasma": false, "mpma": false, "aoblmoa": false,
+		"gsasma": false, "hmma": false, "mpma": false, "aoblmoa": false,
 	}
 
 	for _, name := range variants {
@@ -76,9 +77,9 @@ func TestListVariants(t *testing.T) {
 func TestGetAllVariants(t *testing.T) {
 	variants := GetAllVariants()
 
-	// Should have exactly 7 unique variants
-	if len(variants) != 7 {
-		t.Errorf("Expected 7 variants, got %d", len(variants))
+	// Should have exactly 8 unique variants, including the HMMA split.
+	if len(variants) != 8 {
+		t.Errorf("Expected 8 variants, got %d", len(variants))
 	}
 
 	// Each should have valid methods
@@ -143,15 +144,15 @@ func TestVariantApplicability(t *testing.T) {
 		t.Errorf("MPMA should score high (>0.8) for stable convergence, got %.2f", score)
 	}
 
-	// AOBLMOA essential for multi-objective
+	// AOBLMOA is a scalar-objective algorithm despite the ambiguous acronym.
 	aoblmoa := NewVariant("aoblmoa")
 	multiObj := ProblemCharacteristics{
 		MultiObjective: true,
 	}
 
 	score = aoblmoa.ApplicableTo(multiObj)
-	if score < 0.9 {
-		t.Errorf("AOBLMOA should score very high (>0.9) for multi-objective, got %.2f", score)
+	if score > 0.2 {
+		t.Errorf("AOBLMOA should not be recommended for multi-objective work, got %.2f", score)
 	}
 }
 

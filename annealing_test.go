@@ -25,7 +25,7 @@ func TestAnnealingSchedulerSchedulesAndReset(t *testing.T) {
 			name:         "linear",
 			scheduleType: CoolingLinear,
 			initial:      10,
-			coolingRate:  2,
+			coolingRate:  0.8,
 			want:         8,
 		},
 		{
@@ -67,7 +67,7 @@ func TestAnnealingSchedulerSchedulesAndReset(t *testing.T) {
 }
 
 func TestAnnealingSchedulerTemperatureFloors(t *testing.T) {
-	linear := NewAnnealingScheduler(0.02, 1, CoolingLinear)
+	linear := NewAnnealingScheduler(0.02, 0.1, CoolingLinear)
 	linear.Update()
 
 	if linear.GetTemperature() != 0.01 {
@@ -79,6 +79,20 @@ func TestAnnealingSchedulerTemperatureFloors(t *testing.T) {
 
 	if exponential.GetTemperature() != 1e-10 {
 		t.Errorf("absolute floor = %v, want 1e-10", exponential.GetTemperature())
+	}
+}
+
+func TestAnnealingNormalizesInvalidDirectInputs(t *testing.T) {
+	scheduler := NewAnnealingScheduler(math.NaN(), math.Inf(1), "unknown")
+	if scheduler.InitialTemperature != 1 || scheduler.CoolingRate != 0.95 ||
+		scheduler.ScheduleType != CoolingExponential {
+		t.Fatalf("normalized scheduler = %+v", scheduler)
+	}
+	if probability := acceptanceProbability(1, math.NaN(), 1); probability != 0 {
+		t.Errorf("NaN candidate probability = %v, want 0", probability)
+	}
+	if probability := acceptanceProbability(1, 2, math.NaN()); probability != 0 {
+		t.Errorf("invalid-temperature probability = %v, want 0", probability)
 	}
 }
 

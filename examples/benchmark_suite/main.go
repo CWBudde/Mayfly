@@ -9,7 +9,8 @@ import (
 func main() {
 	fmt.Println("=================================================================")
 	fmt.Println("      Comprehensive Mayfly Algorithm Benchmark Suite")
-	fmt.Println("=================================================================\n")
+	fmt.Println("=================================================================")
+	fmt.Println()
 
 	// Configuration
 	runs := 20 // Number of runs for statistical significance
@@ -86,8 +87,6 @@ func main() {
 	// Example 3: Compare variants with recommended algorithms
 	fmt.Println("\n\n\nExample 3: Automatic Algorithm Selection and Comparison")
 	fmt.Println("=================================================================")
-
-	selector := mayfly.NewAlgorithmSelector()
 
 	for _, benchmark := range benchmarks {
 		fmt.Printf("\n--- %s Function ---\n", benchmark.name)

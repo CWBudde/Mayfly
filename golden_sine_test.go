@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"math/rand"
+	"reflect"
 	"testing"
 )
 
@@ -163,11 +164,10 @@ func TestGSASMAGoldenFactorIsNotInert(t *testing.T) {
 	}
 }
 
-// TestParallelGoldenSineAdvancesSectionOncePerBatch guards the batch semantics
-// of the parallel Golden Sine step: every candidate is generated from one
-// section snapshot, so the interval must be narrowed exactly one step for the
-// whole batch instead of once per candidate.
-func TestParallelGoldenSineAdvancesSectionOncePerBatch(t *testing.T) {
+// TestParallelGoldenSineMatchesSequentialRecurrence guards the canonical
+// recurrence: candidate i+1 observes the section update from candidate i, so
+// this stage stays sequential even when other evaluations use a worker pool.
+func TestParallelGoldenSineMatchesSequentialRecurrence(t *testing.T) {
 	pool := newEvaluationPool(sphere, 2)
 	defer pool.close()
 
@@ -180,14 +180,18 @@ func TestParallelGoldenSineAdvancesSectionOncePerBatch(t *testing.T) {
 		males[i].Best.Cost = males[i].Cost
 	}
 
+	sequentialMales := make([]*Mayfly, len(males))
+	for i, male := range males {
+		sequentialMales[i] = male.clone()
+	}
 	section := newGoldenSection()
-	initial := section.snapshot()
-
-	improved, worse := initial, initial
-	improved.update(true)
-	worse.update(false)
-
+	sequentialSection := newGoldenSection()
 	globalBest := Best{Position: []float64{0, 0}, Cost: 0}
+	sequentialBest, _ := applyGSASMAToEliteMalesWithEvaluator(
+		sequentialMales, 1, globalBest, 1, -5, 5,
+		NewAnnealingScheduler(100, 0.95, "exponential"), sequentialSection,
+		newConstraintEvaluator(sphere, nil), rand.New(rand.NewSource(7)),
+	)
 
 	_, err := evaluateParallelGoldenSine(
 		context.Background(),
@@ -205,9 +209,9 @@ func TestParallelGoldenSineAdvancesSectionOncePerBatch(t *testing.T) {
 		t.Fatalf("evaluateParallelGoldenSine: %v", err)
 	}
 
-	got := section.snapshot()
-	if got != improved && got != worse {
-		t.Errorf("section = %+v, want one single step from %+v (improved=%+v, worse=%+v)",
-			got, initial, improved, worse)
+	if section.snapshot() != sequentialSection.snapshot() ||
+		!reflect.DeepEqual(globalBest, sequentialBest) || !reflect.DeepEqual(males, sequentialMales) {
+		t.Fatalf("parallel wrapper changed golden recurrence:\nparallel=%+v %+v\nsequential=%+v %+v",
+			section.snapshot(), globalBest, sequentialSection.snapshot(), sequentialBest)
 	}
 }

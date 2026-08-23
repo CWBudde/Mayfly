@@ -2,6 +2,7 @@ package mayfly
 
 import (
 	"math/rand"
+	"reflect"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func TestOrthogonalLearningZeroFactorSpendsNoEvaluations(t *testing.T) {
 		wantCalls int
 	}{
 		{name: "disabled", factor: 0, wantCalls: 0},
-		{name: "enabled", factor: 0.3, wantCalls: len(L4Array)},
+		{name: "enabled", factor: 0.3, wantCalls: len(OrthogonalArray(3)) + 1},
 	}
 
 	for _, testCase := range testCases {
@@ -126,10 +127,50 @@ func TestOptimizeOrthogonalFactorZeroDoesNotGrowBudget(t *testing.T) {
 
 			numElite := olceEliteCount(10)
 
-			wantSaved := 20 * numElite * len(L4Array)
+			wantSaved := 20 * numElite * (len(OrthogonalArray(4)) + 1)
 			if saved := enabled.FuncEvalCount - disabled.FuncEvalCount; saved != wantSaved {
 				t.Errorf("saved evaluations = %d, want %d", saved, wantSaved)
 			}
 		})
+	}
+}
+
+func TestOrthogonalArrayHasDistinctBalancedColumns(t *testing.T) {
+	for _, dimensions := range []int{1, 3, 4, 7, 12} {
+		array := OrthogonalArray(dimensions)
+		if len(array) == 0 {
+			t.Fatalf("OrthogonalArray(%d) returned no rows", dimensions)
+		}
+
+		for left := range dimensions {
+			ones := 0
+			for row := range array {
+				ones += array[row][left]
+			}
+			if ones*2 != len(array) {
+				t.Errorf("D=%d column %d has %d ones in %d rows", dimensions, left, ones, len(array))
+			}
+
+			for right := left + 1; right < dimensions; right++ {
+				counts := [2][2]int{}
+				for row := range array {
+					counts[array[row][left]][array[row][right]]++
+				}
+				want := len(array) / 4
+				if counts != [2][2]int{{want, want}, {want, want}} {
+					t.Errorf("D=%d columns %d/%d are not pairwise balanced: %v",
+						dimensions, left, right, counts)
+				}
+			}
+		}
+	}
+}
+
+func TestOrthogonalArrayReturnsDefensiveCopy(t *testing.T) {
+	first := OrthogonalArray(4)
+	first[0][0] = 99
+	second := OrthogonalArray(4)
+	if reflect.DeepEqual(first, second) || second[0][0] != 0 {
+		t.Fatalf("OrthogonalArray shares mutable state: first=%v second=%v", first, second)
 	}
 }

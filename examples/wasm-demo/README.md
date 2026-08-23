@@ -7,7 +7,7 @@ compiled to `js/wasm`:
   populations flying over it, scrubbable frame by frame, next to the convergence
   curve, the swarm's diversity, and the population's cost distribution.
 - **`benchmark.html` — Variant Shootout.** The library's `ComparisonRunner`
-  across all seven variants: descriptive statistics, ranks, pairwise Wilcoxon
+  across all eight variants: descriptive statistics, ranks, pairwise Wilcoxon
   signed-rank tests, and a Friedman test.
 
 The organising rule is that **no optimization logic lives in JavaScript**. Every
@@ -43,7 +43,7 @@ a stale copy fails at runtime in ways that look like demo bugs.
   is built on. The Swarm Lab is its first consumer.
 - **Reproducibility.** _Same seed_ re-runs the identical trail and final cost,
   because `Config.Rand` makes a run deterministic.
-- **All seven variants.** Try DESMA against standard MA at one seed on Rastrigin
+- **All eight variants.** Try DESMA against standard MA at one seed on Rastrigin
   in 10 dimensions, where DESMA's elite probes pay for themselves; on Sphere in
   two dimensions they do not.
 - **The comparison framework.** Paired runs, `WithSeed`, and the significance

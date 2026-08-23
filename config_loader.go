@@ -1,10 +1,15 @@
 package mayfly
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math"
 	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -20,7 +25,10 @@ const (
 	PresetHighDimensional   ConfigPreset = "high_dimensional"
 	PresetFastConvergence   ConfigPreset = "fast_convergence"
 	PresetStableConvergence ConfigPreset = "stable_convergence"
-	PresetMultiObjective    ConfigPreset = "multi_objective"
+	// PresetMultiObjective is retained only so callers receive a clear error
+	// instead of a compile failure. Mayfly has no multi-objective optimizer.
+	// Deprecated: no replacement is available yet.
+	PresetMultiObjective ConfigPreset = "multi_objective"
 )
 
 // LoadConfigFromFile loads a Config from a JSON file.
@@ -32,10 +40,18 @@ func LoadConfigFromFile(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	config := &Config{}
-
-	err = json.Unmarshal(data, config)
+	err = rejectDuplicateJSONFields(data)
 	if err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	config := &Config{}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(config); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+	if err = ensureJSONEOF(decoder); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
@@ -69,6 +85,18 @@ func SaveConfigToFile(config *Config, path string) error {
 func ValidateConfig(config *Config) error {
 	if config == nil {
 		return errors.New("config is nil")
+	}
+	value := reflect.ValueOf(*config)
+	typeInfo := value.Type()
+	for i := 0; i < value.NumField(); i++ {
+		if value.Field(i).Kind() != reflect.Float64 {
+			continue
+		}
+		number := value.Field(i).Float()
+		if math.IsNaN(number) || math.IsInf(number, 0) {
+			name := strings.Split(typeInfo.Field(i).Tag.Get("json"), ",")[0]
+			return fmt.Errorf("%s must be finite (got %v)", name, number)
+		}
 	}
 
 	// Check required fields (note: ObjectiveFunc can be nil if loaded from file)
@@ -105,6 +133,17 @@ func ValidateConfig(config *Config) error {
 
 	if config.MaxWorkers < 0 {
 		return fmt.Errorf("max_workers must be non-negative (got %d)", config.MaxWorkers)
+	}
+
+	if config.Seed != nil && config.Rand != nil {
+		return errors.New("seed and Rand are mutually exclusive")
+	}
+
+	if (config.VelMax == 0) != (config.VelMin == 0) {
+		return errors.New("vel_min and vel_max must both be zero (automatic) or both be explicit")
+	}
+	if config.VelMax != 0 && config.VelMin >= config.VelMax {
+		return fmt.Errorf("vel_min (%f) must be less than vel_max (%f)", config.VelMin, config.VelMax)
 	}
 
 	// The pairing, mating and mutation-rate checks live beside Optimize's
@@ -168,8 +207,8 @@ func ValidateConfig(config *Config) error {
 	}
 
 	if config.UseEOBBMA {
-		if config.LevyAlpha <= 0 || config.LevyAlpha > 2 {
-			return fmt.Errorf("levy_alpha should be in (0,2] (got %f)", config.LevyAlpha)
+		if config.LevyAlpha <= 0 || config.LevyAlpha >= 2 {
+			return fmt.Errorf("levy_alpha should be in (0,2) for Mantegna sampling (got %f)", config.LevyAlpha)
 		}
 
 		if config.LevyBeta <= 0 {
@@ -186,9 +225,11 @@ func ValidateConfig(config *Config) error {
 			return fmt.Errorf("median_weight should be in [0,1] (got %f)", config.MedianWeight)
 		}
 
-		validGravityTypes := map[string]bool{GravityLinear: true, GravityExponential: true, GravitySigmoid: true}
+		validGravityTypes := map[string]bool{
+			GravityPaper: true, GravityLinear: true, GravityExponential: true, GravitySigmoid: true,
+		}
 		if !validGravityTypes[config.GravityType] {
-			return fmt.Errorf("gravity_type must be 'linear', 'exponential', or 'sigmoid' (got '%s')", config.GravityType)
+			return fmt.Errorf("gravity_type must be 'paper', 'linear', 'exponential', or 'sigmoid' (got '%s')", config.GravityType)
 		}
 	}
 
@@ -201,15 +242,14 @@ func ValidateConfig(config *Config) error {
 			return fmt.Errorf("cooling_rate should be in (0,1) (got %f)", config.CoolingRate)
 		}
 
-		if config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1 {
-			return fmt.Errorf("cauchy_mutation_rate should be in [0,1] (got %f)", config.CauchyMutationRate)
-		}
-
 		validSchedules := map[string]bool{CoolingExponential: true, CoolingLinear: true, CoolingLogarithmic: true}
 		if !validSchedules[config.CoolingSchedule] {
 			return fmt.Errorf("cooling_schedule must be 'exponential', 'linear', or 'logarithmic' (got '%s')",
 				config.CoolingSchedule)
 		}
+	}
+	if config.UseHMMA && (config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1) {
+		return fmt.Errorf("cauchy_mutation_rate should be in [0,1] (got %f)", config.CauchyMutationRate)
 	}
 
 	if config.UseAOBLMOA {
@@ -253,6 +293,10 @@ func ValidateConfig(config *Config) error {
 	}
 
 	if config.UseGSASMA {
+		activeVariants++
+	}
+
+	if config.UseHMMA {
 		activeVariants++
 	}
 
@@ -309,10 +353,6 @@ func NewPresetConfig(preset ConfigPreset) (*Config, error) {
 		// MPMA for stable convergence
 		config = NewMPMAConfig()
 
-	case PresetMultiObjective:
-		// AOBLMOA for multi-objective
-		config = NewAOBLMOAConfig()
-
 	default:
 		return nil, fmt.Errorf("unknown preset: %s", preset)
 	}
@@ -331,7 +371,6 @@ func ListPresets() map[ConfigPreset]string {
 		PresetHighDimensional:   "OLCE-MA - For high-dimensional problems (20D+)",
 		PresetFastConvergence:   "GSASMA - For problems requiring fast convergence",
 		PresetStableConvergence: "MPMA - For problems requiring stable, robust convergence",
-		PresetMultiObjective:    "AOBLMOA - For multi-objective optimization",
 	}
 }
 
@@ -390,94 +429,123 @@ func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
 		}
 	}
 
-	if config.UseAOBLMOA {
-		if characteristics.MultiObjective {
-			config.ArchiveSize = 200 // Larger archive for multi-objective
-		}
-	}
 }
 
-// ExportConfigTemplate creates a template JSON configuration file with all parameters and comments.
+// ExportConfigTemplate writes a complete, strict-JSON configuration for a
+// named variant. The result can be loaded without first removing comments or
+// filling fields that the variant constructor left at their zero values.
 func ExportConfigTemplate(path, variant string) error {
-	var config *Config
-
-	// Create config based on variant
 	v := NewVariant(variant)
-	if v != nil {
-		config = v.GetConfig()
-	} else {
-		config = NewDefaultConfig()
+	if v == nil {
+		return fmt.Errorf("unknown variant: %s", variant)
 	}
 
-	// Create a map to include comments (not supported by direct JSON marshal)
-	// We'll create a formatted JSON manually with comments
+	config := v.GetConfig()
+	if config == nil {
+		return fmt.Errorf("variant %s returned a nil config", variant)
+	}
+	config.ProblemSize = 10
+	config.LowerBound = -10
+	config.UpperBound = 10
+	return writeJSONAtomic(config, path)
+}
 
-	file, err := os.Create(path)
+func ensureJSONEOF(decoder *json.Decoder) error {
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return errors.New("multiple JSON values are not allowed")
+		}
+		return err
+	}
+	return nil
+}
+
+func rejectDuplicateJSONFields(data []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var walk func() error
+	walk = func() error {
+		token, err := decoder.Token()
+		if err != nil {
+			return err
+		}
+		delim, ok := token.(json.Delim)
+		if !ok {
+			return nil
+		}
+		switch delim {
+		case '{':
+			seen := make(map[string]struct{})
+			for decoder.More() {
+				keyToken, keyErr := decoder.Token()
+				if keyErr != nil {
+					return keyErr
+				}
+				key, ok := keyToken.(string)
+				if !ok {
+					return errors.New("object key is not a string")
+				}
+				if _, exists := seen[key]; exists {
+					return fmt.Errorf("duplicate field %q", key)
+				}
+				seen[key] = struct{}{}
+				if err := walk(); err != nil {
+					return err
+				}
+			}
+			_, err = decoder.Token()
+			return err
+		case '[':
+			for decoder.More() {
+				if err := walk(); err != nil {
+					return err
+				}
+			}
+			_, err = decoder.Token()
+			return err
+		default:
+			return fmt.Errorf("unexpected JSON delimiter %q", delim)
+		}
+	}
+	return walk()
+}
+
+func writeJSONAtomic(value any, path string) error {
+	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to create template file: %w", err)
+		return fmt.Errorf("marshal JSON: %w", err)
 	}
-	defer file.Close()
+	data = append(data, '\n')
 
-	// Write JSON with inline comments (JSON5 style, but parseable as standard JSON)
-	fmt.Fprintf(file, "{\n")
-	fmt.Fprintf(file, "  // Problem parameters\n")
-	fmt.Fprintf(file, "  \"problem_size\": %d,\n", config.ProblemSize)
-	fmt.Fprintf(file, "  \"lower_bound\": %f,\n", config.LowerBound)
-	fmt.Fprintf(file, "  \"upper_bound\": %f,\n", config.UpperBound)
-	fmt.Fprintf(file, "\n")
-	fmt.Fprintf(file, "  // Algorithm parameters\n")
-	fmt.Fprintf(file, "  \"max_iterations\": %d,\n", config.MaxIterations)
-	fmt.Fprintf(file, "  \"npop\": %d,\n", config.NPop)
-	fmt.Fprintf(file, "  \"npopf\": %d,\n", config.NPopF)
-	fmt.Fprintf(file, "  \"g\": %f,\n", config.G)
-	fmt.Fprintf(file, "  \"g_damp\": %f,\n", config.GDamp)
-	fmt.Fprintf(file, "  \"a1\": %f,\n", config.A1)
-	fmt.Fprintf(file, "  \"a2\": %f,\n", config.A2)
-	fmt.Fprintf(file, "  \"a3\": %f,\n", config.A3)
-	fmt.Fprintf(file, "  \"beta\": %f,\n", config.Beta)
-	fmt.Fprintf(file, "  \"dance\": %f,\n", config.Dance)
-	fmt.Fprintf(file, "  \"fl\": %f,\n", config.FL)
-	fmt.Fprintf(file, "  \"dance_damp\": %f,\n", config.DanceDamp)
-	fmt.Fprintf(file, "  \"fl_damp\": %f,\n", config.FLDamp)
-	fmt.Fprintf(file, "\n")
-	fmt.Fprintf(file, "  // Mating parameters\n")
-	fmt.Fprintf(file, "  \"nc\": %d,\n", config.NC)
-	fmt.Fprintf(file, "  // nc_ratio scales nc with npop when nc is -1 (NCAuto);\n")
-	fmt.Fprintf(file, "  // write a literal nc to pin the count instead\n")
-	fmt.Fprintf(file, "  \"nc_ratio\": %f,\n", config.NCRatio)
-	fmt.Fprintf(file, "  \"nm\": %d,\n", config.NM)
-	fmt.Fprintf(file, "  \"mu\": %f,\n", config.Mu)
-	fmt.Fprintf(file, "  // crossover_gamma widens the blend-crossover coefficient to\n")
-	fmt.Fprintf(file, "  // U(-gamma, 1+gamma); 0 falls back to the reference default of 0.4\n")
-	fmt.Fprintf(file, "  \"crossover_gamma\": %f,\n", config.CrossoverGamma)
-	fmt.Fprintf(file, "  // selection is \"tournament\" or \"rank\"\n")
-	fmt.Fprintf(file, "  \"selection\": \"%s\",\n", config.Selection)
-	fmt.Fprintf(file, "  \"tournament_size\": %d,\n", config.TournamentSize)
-	fmt.Fprintf(file, "\n")
-	fmt.Fprintf(file, "  // Parallel objective evaluation\n")
-	fmt.Fprintf(file, "  \"enable_parallel\": %t,\n", config.EnableParallel)
-	fmt.Fprintf(file, "  \"max_workers\": %d,\n", config.MaxWorkers)
-	fmt.Fprintf(file, "\n")
-	fmt.Fprintf(file, "  // Velocity limits (0 = auto-calculated)\n")
-	fmt.Fprintf(file, "  \"vel_max\": %f,\n", config.VelMax)
-	fmt.Fprintf(file, "  \"vel_min\": %f,\n", config.VelMin)
-	fmt.Fprintf(file, "\n")
-	fmt.Fprintf(file, "  // Initial population: \"uniform\", \"sobol\" or \"halton\"\n")
-	fmt.Fprintf(file, "  // (qmc_seed 0 draws the scramble seed from the run's RNG)\n")
-	fmt.Fprintf(file, "  \"qmc_init\": \"%s\",\n", config.QMCInit)
-	fmt.Fprintf(file, "  \"qmc_seed\": %d,\n", config.QMCSeed)
-	fmt.Fprintf(file, "\n")
-	fmt.Fprintf(file, "  // Variant flags (only one should be true)\n")
-	fmt.Fprintf(file, "  \"use_desma\": %t,\n", config.UseDESMA)
-	fmt.Fprintf(file, "  \"use_olce\": %t,\n", config.UseOLCE)
-	fmt.Fprintf(file, "  \"use_eobbma\": %t,\n", config.UseEOBBMA)
-	fmt.Fprintf(file, "  \"use_mpma\": %t,\n", config.UseMPMA)
-	fmt.Fprintf(file, "  \"use_gsasma\": %t,\n", config.UseGSASMA)
-	fmt.Fprintf(file, "  \"use_aoblmoa\": %t\n", config.UseAOBLMOA)
-	fmt.Fprintf(file, "}\n")
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".mayfly-config-*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temporary JSON file: %w", err)
+	}
+	tmpName := tmp.Name()
+	removeTemp := true
+	defer func() {
+		if removeTemp {
+			_ = os.Remove(tmpName)
+		}
+	}()
 
-	fmt.Fprintf(file, "\n// Note: This template contains comments for readability.\n")
-	fmt.Fprintf(file, "// Remove comments before loading with LoadConfigFromFile().\n")
-
+	if err = tmp.Chmod(0o600); err == nil {
+		_, err = tmp.Write(data)
+	}
+	if err == nil {
+		err = tmp.Sync()
+	}
+	closeErr := tmp.Close()
+	if err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		return fmt.Errorf("write temporary JSON file: %w", err)
+	}
+	if err = os.Rename(tmpName, path); err != nil {
+		return fmt.Errorf("replace JSON file: %w", err)
+	}
+	removeTemp = false
 	return nil
 }

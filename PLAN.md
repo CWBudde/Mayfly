@@ -120,6 +120,68 @@
 > - [x] Reconcile `ClassifyProblem`'s answers with the hard-coded `RecommendForBenchmark`
 >       table, which is the de facto expected output
 
+> ## ⚠️ Correctness audit — release blocker for v0.7.0
+>
+> A repository-wide adversarial review completed 2026-08-24 found that the green root
+> test suite overstates the library's readiness. The optimizer can discard a superior
+> female solution, parallel execution can follow a different algorithm from sequential
+> execution, and several named variants materially differ from their cited papers.
+> AOBLMOA is also described as multi-objective even though the public optimizer accepts
+> only a scalar objective. Historical seeded results for corrected algorithms must not be
+> compared as though they came from the same implementation.
+>
+> ### Core correctness
+>
+> - [x] Include both populations in initialization, global-best updates, stopping, and reporting
+> - [x] Sort populations before the first rank-dependent update
+> - [x] Preserve offspring sex and generate mutations separately from incumbent males/females
+> - [x] Give sequential and parallel execution one deterministic proposal/evaluate/commit model
+> - [x] Treat configuration as immutable and report only truthful reproducibility metadata
+> - [x] Centralize finite-value, bounds, velocity, variant, and cancellation validation
+>
+> ### Algorithm fidelity
+>
+> - [x] Restore the published scalar-distance and genetic stages of standard MA
+> - [x] Correct MPMA ranked median, nonlinear gravity, application sites, and citation
+> - [x] Correct AOBLMOA Aquila strategies, crossover, stochastic opposition, and naming
+> - [x] Reimplement EOBBMA's fitness-dependent updates and mirror boundary handling
+> - [x] Restore DESMA's dynamic elite schedule, replacement order, defaults, and no-op behavior
+> - [ ] Move OLCE orthogonal/chaotic operators to their published lifecycle stages and support D > 3
+> - [ ] Separate faithful GSASMA and HMMA implementations and citations
+>
+> ### Public API and tooling safety
+>
+> - [x] Remove fake multi-objective presets/recommendations; retain only honest Pareto utilities
+> - [x] Make Pareto archives nondominated, validated, dimension-safe, and alias-safe
+> - [x] Unify direct, builder, and JSON validation; make templates strict and round-trippable
+> - [x] Make classifier failures/budgets explicit and its stability statistic translation-invariant
+> - [x] Correct comparison targets, tied statistics, failed-run aggregation, and atomic export
+> - [ ] Replace panic-prone public helpers and mutable global tables with validated APIs/copies
+>
+> ### Verification and release
+>
+> - [x] Add independent equation-level fixtures and seeded sequential/parallel parity tests
+> - [x] Add non-finite, aliasing, cancellation, config-reuse, Pareto, and statistical regressions
+> - [x] Build, vet, and test every nested `go.mod`; fix currently excluded broken examples
+> - [ ] Pin the lint toolchain and run format, tidy, lint, unit, race, integration, and module checks
+> - [x] Publish v0.7.0 migration notes and invalidate pre-fix deterministic benchmark baselines
+>
+> ### Remaining audit follow-ups (recorded 2026-08-24)
+>
+> - [ ] Place OLCE's chaotic initialization and orthogonal-learning operator at the exact
+>       lifecycle points from the cited paper; the dimensional orthogonal array and factor
+>       analysis are fixed, but the runtime still applies both stages to elite incumbents.
+> - [ ] Validate GSASMA and HMMA end-to-end against their respective equations and lifecycle
+>       descriptions. They now have separate variants, configuration, registry entries, and
+>       documentation, but that separation alone is not proof of paper fidelity.
+> - [ ] Finish replacing panic-prone exported helpers with explicit errors. The mutable
+>       orthogonal-array global is gone and returned data is copied, but compatibility helpers
+>       still sanitize some invalid input instead of reporting it.
+> - [ ] Resolve the pinned golangci-lint v2.12.2 baseline (76 findings: 44 `wsl_v5`, plus
+>       context propagation, bounds analysis, complexity, shadowing, field alignment, unused
+>       helpers, formatting, and smaller style findings). Build, vet, tidy, unit, race,
+>       integration, and nested-module checks pass; lint is the only incomplete check above.
+
 ## High Priority
 
 ### Phase 1: Advanced Features

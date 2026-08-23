@@ -20,18 +20,7 @@ type LogisticMap struct {
 // If seed is outside this range, it will be normalized to (0, 1).
 // The control parameter r is set to 4.0 for fully chaotic behavior.
 func NewLogisticMap(seed float64) *LogisticMap {
-	// Ensure seed is in valid range (0, 1)
-	if seed <= 0.0 || seed >= 1.0 {
-		// Normalize to (0, 1) using simple hash-like function
-		seed = 0.1 + 0.8*(seed-float64(int(seed)))
-		if seed <= 0.0 {
-			seed = 0.314159 // Safe default
-		}
-
-		if seed >= 1.0 {
-			seed = 0.271828 // Safe default
-		}
-	}
+	seed = normalizeLogisticSeed(seed)
 
 	return &LogisticMap{
 		x: seed,
@@ -44,6 +33,13 @@ func NewLogisticMap(seed float64) *LogisticMap {
 // This method updates the internal state and should be called
 // sequentially to generate a chaotic sequence.
 func (lm *LogisticMap) Next() float64 {
+	if lm == nil {
+		return math.NaN()
+	}
+	if math.IsNaN(lm.x) || math.IsInf(lm.x, 0) {
+		lm.x = normalizeLogisticSeed(lm.x)
+	}
+
 	// Apply logistic map equation: x_{n+1} = r * x_n * (1 - x_n)
 	lm.x = lm.r * lm.x * (1.0 - lm.x)
 
@@ -66,6 +62,10 @@ func (lm *LogisticMap) Next() float64 {
 // This is useful for debugging or when you need to inspect the state
 // without modifying it.
 func (lm *LogisticMap) Current() float64 {
+	if lm == nil {
+		return math.NaN()
+	}
+
 	return lm.x
 }
 
@@ -73,19 +73,30 @@ func (lm *LogisticMap) Current() float64 {
 // This allows reusing the same LogisticMap instance with a different
 // starting point.
 func (lm *LogisticMap) Reset(seed float64) {
-	// Ensure seed is in valid range (0, 1)
-	if seed <= 0.0 || seed >= 1.0 {
-		seed = 0.1 + 0.8*(seed-float64(int(seed)))
-		if seed <= 0.0 {
-			seed = 0.314159
-		}
+	if lm != nil {
+		lm.x = normalizeLogisticSeed(seed)
+	}
+}
 
-		if seed >= 1.0 {
-			seed = 0.271828
-		}
+func normalizeLogisticSeed(seed float64) float64 {
+	switch {
+	case math.IsNaN(seed), math.IsInf(seed, -1):
+		return 0.314159
+	case math.IsInf(seed, 1):
+		return 0.271828
+	case seed > 0 && seed < 1:
+		return seed
 	}
 
-	lm.x = seed
+	seed = 0.1 + 0.8*(seed-math.Trunc(seed))
+	if seed <= 0 || math.IsNaN(seed) {
+		return 0.314159
+	}
+	if seed >= 1 {
+		return 0.271828
+	}
+
+	return seed
 }
 
 // olceElitePercent is the fraction of the sorted male population that the

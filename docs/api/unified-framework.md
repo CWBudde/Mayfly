@@ -27,8 +27,9 @@ config := variant.GetConfig()
 - `"olce"` - Orthogonal Learning & Chaotic Exploitation MA
 - `"eobbma"` - Elite Opposition-Based Bare Bones MA
 - `"gsasma"` - Golden Sine with Simulated Annealing MA
+- `"hmma"` - Hybrid Mutation MA
 - `"mpma"` - Median Position-Based MA
-- `"aoblmoa"` - Aquila Optimizer-Based Learning MO Algorithm
+- `"aoblmoa"` - Aquila Optimizer and Opposition-Based Learning MA
 
 ## Fluent Builder API
 
@@ -214,7 +215,8 @@ result, err := mayfly.Optimize(config)
 | `PresetHighDimensional`   | OLCE-MA     | High-D problems (larger population) |
 | `PresetFastConvergence`   | GSASMA      | Quick results needed                |
 | `PresetStableConvergence` | MPMA        | Robust optimization                 |
-| `PresetMultiObjective`    | AOBLMOA     | Multi-objective problems            |
+`PresetMultiObjective` is deprecated and returns an error: no registered
+variant implements a multi-objective optimizer.
 
 ## Configuration Files
 

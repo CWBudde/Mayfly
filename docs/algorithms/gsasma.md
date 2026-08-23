@@ -2,11 +2,14 @@
 
 ## Research Reference
 
-**Improved mayfly algorithm based on hybrid mutation (2022). Electronics Letters / IEEE**
+**Golden annealing crossover and mutation mayfly algorithm (2022). AIP Advances.**
+DOI: [10.1063/5.0108278](https://doi.org/10.1063/5.0108278)
 
 ## Overview
 
-GSASMA combines four powerful optimization techniques to achieve faster convergence and better escape from local optima. This variant is particularly effective for engineering optimization problems requiring quick convergence.
+GSASMA combines golden-sine search with simulated-annealing acceptance. Hybrid
+Cauchy/Gaussian mutation and periodic opposition belong to HMMA and are not
+part of this variant.
 
 ## Key Innovations
 
@@ -94,7 +97,12 @@ T(k) = T₀ / (1 + α * log(1 + k))
 
 **Applied to**: Golden Sine updates (accepts/rejects GSA-generated positions)
 
-### 3. Hybrid Cauchy-Gaussian Mutation
+### HMMA is a separate variant
+
+The material previously documented below as GSASMA belongs to HMMA. Use
+`NewHMMAConfig` for adaptive Cauchy/Gaussian mutation and periodic opposition.
+
+<!-- Legacy explanation retained temporarily for migration context.
 
 Combines two distributions for **adaptive exploration/exploitation**:
 
@@ -128,7 +136,7 @@ Explores the **opposite region** of the search space:
 - **Application frequency**: Every 10 iterations on global best
 - **Rationale**: If x is far from optimum, opposite might be closer
 
-**Applied to**: Global best solution periodically
+**Applied to**: Global best solution periodically -->
 
 ## Usage Examples
 
@@ -184,14 +192,8 @@ func main() {
     config.InitialTemperature = 500.0  // Higher temp for more exploration
     config.CoolingRate = 0.98           // Slower cooling
 
-    // Adjust mutation balance
-    config.CauchyMutationRate = 0.4  // More Cauchy for exploration
-
     // Tune Golden Sine influence
     config.GoldenFactor = 1.5  // More aggressive updates
-
-    // Enable OBL
-    config.ApplyOBLToGlobalBest = true
 
     result, err := mayfly.Optimize(config)
     if err != nil {
@@ -317,18 +319,15 @@ func main() {
 - `UseGSASMA`: Enable GSASMA variant (default: false)
 - `InitialTemperature`: Starting temperature for SA (default: 100)
 - `CoolingRate`: Temperature decay rate (default: 0.95 for exponential)
-- `CauchyMutationRate`: Base Cauchy mutation probability (default: 0.3)
 - `GoldenFactor`: GSA influence factor (default: 1.0, range: 0.5-2.0)
 - `CoolingSchedule`: Temperature schedule type (default: "exponential")
   - Options: "exponential", "linear", "logarithmic"
-- `ApplyOBLToGlobalBest`: Enable OBL on global best (default: true)
 
 ## Benefits
 
 - **10-20% improvement** on engineering optimization problems
 - **Faster convergence**: Reaches good solutions quicker than standard variants
 - **Better local optima escape**: SA acceptance prevents premature convergence
-- **Adaptive mutation**: Automatically transitions from exploration to exploitation
 - **Minimal tuning required**: Sensible defaults work well out-of-the-box
 - **~15% overhead**: Slightly more function evaluations for significantly better quality
 
@@ -379,17 +378,9 @@ config.CoolingSchedule = "exponential"
 
 ### Mutation Balance
 
-**More Exploration**:
-
-```go
-config.CauchyMutationRate = 0.5  // 50% Cauchy even in late phase
-```
-
-**More Exploitation**:
-
-```go
-config.CauchyMutationRate = 0.1  // Only 10% Cauchy in late phase
-```
+GSASMA uses the standard Gaussian mutation. Adaptive Cauchy/Gaussian mutation is
+an HMMA feature; see [HMMA](hmma.md) and `NewHMMAConfig` for
+`CauchyMutationRate`.
 
 ### Golden Sine Scaling
 
@@ -438,9 +429,7 @@ config.GoldenFactor = 0.5  // More conservative updates
 | ----------------------- | ------------------------------------------------ | ---------------------------- |
 | **Golden Sine**         | Adaptive exploration using golden ratio          | Elite males (top 20%)        |
 | **Simulated Annealing** | Escape local optima via probabilistic acceptance | After GSA updates            |
-| **Cauchy Mutation**     | Heavy-tailed jumps for exploration               | Early iterations (70%)       |
-| **Gaussian Mutation**   | Fine-grained search for exploitation             | Late iterations (70%)        |
-| **Opposition Learning** | Expand search coverage                           | Global best (every 10 iters) |
+| **Gaussian Mutation**   | Fine-grained search for exploitation             | Offspring mutants            |
 
 ## Related Documentation
 

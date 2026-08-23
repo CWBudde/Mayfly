@@ -37,11 +37,20 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	if ctx == nil {
 		return nil, errNilContext
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	// Validate required parameters
 	if config == nil {
 		return nil, errors.New("config cannot be nil")
 	}
+
+	// A run resolves automatic values and owns its fallback RNG. Keep those
+	// mutations off the caller's Config so the same value can safely be reused
+	// with different bounds or by another goroutine.
+	runConfig := *config
+	config = &runConfig
 
 	if config.ObjectiveFunc == nil {
 		return nil, errors.New("ObjectiveFunc is required")
@@ -159,9 +168,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			return nil, fmt.Errorf("GSASMA CoolingRate must be in (0, 1), got %v", config.CoolingRate)
 		}
 
-		if config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1 {
-			return nil, fmt.Errorf("GSASMA CauchyMutationRate must be in [0, 1], got %v", config.CauchyMutationRate)
-		}
+	}
+
+	if config.UseHMMA && (config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1) {
+		return nil, fmt.Errorf("HMMA CauchyMutationRate must be in [0, 1], got %v", config.CauchyMutationRate)
 	}
 
 	if config.UseMPMA {
@@ -194,6 +204,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	if updatePhaseErr != nil {
 		return nil, updatePhaseErr
 	}
+	if err := ValidateConfig(config); err != nil {
+		return nil, err
+	}
 
 	run, err := resolveRunOptions(options)
 	if err != nil {
@@ -205,30 +218,34 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		return nil, initialPopulationErr
 	}
 
-	logOptimizationStarted(ctx, run.logger, config)
-
 	if config.VelMax == 0 {
 		config.VelMax = 0.1 * (config.UpperBound - config.LowerBound)
 		config.VelMin = -config.VelMax
 	}
 
-	// Initialize random number generator if not provided
+	// Initialize the run-local random number generator. A caller-provided
+	// *rand.Rand is intentionally reported with no seed: math/rand does not
+	// expose the seed used to construct it.
 	rng := config.Rand
-	// The seed is only tracked for reporting; a caller-provided *rand.Rand does
-	// not expose its seed, so we record the time-based fallback in that case.
-	seed := time.Now().UnixNano()
-
+	var seed *int64
 	if rng == nil {
-		rng = rand.New(rand.NewSource(seed))
-		// Share the fallback generator with the helpers that read config.Rand
-		// directly, such as the sequential AOBLMOA path.
+		seedValue := time.Now().UnixNano()
+		if config.Seed != nil {
+			seedValue = *config.Seed
+		}
+		seed = &seedValue
+		rng = rand.New(rand.NewSource(seedValue))
+		// Some variant helpers read Config.Rand directly. This is the run-local
+		// copy, not the caller's configuration.
 		config.Rand = rng
 	}
+
+	logOptimizationStarted(ctx, run.logger, config)
 
 	// The quasi-random block, if one was asked for, comes off the generator
 	// before anything else consumes it, so that the population's coverage does
 	// not depend on how much randomness the setup above happened to use.
-	qmcPositions, qmcErr := quasiRandomPositions(config, rng)
+	qmcPositions, qmcErr := quasiRandomPositionsContext(ctx, config, rng)
 	if qmcErr != nil {
 		return nil, qmcErr
 	}
@@ -304,12 +321,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			sanitizeVec(females[i].Position, config.LowerBound, config.UpperBound, rng)
 		}
 
-		_, evaluationErr = evaluator.evaluate(ctx, females, true, false)
+		femaleBest, evaluationErr := evaluator.evaluate(ctx, females, true, true)
 		if evaluationErr != nil {
 			return nil, evaluationErr
 		}
 
 		funcCount += len(females)
+		mergeBest(&globalBest, femaleBest, candidateEvaluator)
 	} else {
 		// Initialize male population sequentially for backward compatibility.
 		for i := range config.NPop {
@@ -357,7 +375,18 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			candidateEvaluator.evaluateMayfly(females[i], true)
 
 			funcCount++
+			if candidateEvaluator.betterMayflyThanBest(females[i], globalBest) {
+				copyMayflyToBest(&globalBest, females[i])
+			}
 		}
+	}
+
+	// Pairing, weighted ranks and several variants assume best-first input on
+	// the very first iteration, not only after the first update.
+	sortMayflies(males, candidateEvaluator)
+	sortMayflies(females, candidateEvaluator)
+	if globalBest.Cost == math.MaxFloat64 {
+		return nil, ErrNoFiniteObjectiveValue
 	}
 
 	bestSolution := make([]float64, config.MaxIterations)
@@ -417,6 +446,19 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			return nil, iterationErr
 		}
 
+		iterationGravity := g
+		if config.UseMPMA {
+			iterationGravity = calculateGravityCoefficient(config.GravityType, it+1, config.MaxIterations)
+		}
+		if config.UseDESMA {
+			const (
+				desmaGravityMax = 0.9
+				desmaGravityMin = 0.4
+			)
+			progress := float64(it+1) / float64(config.MaxIterations)
+			iterationGravity = desmaGravityMax - (desmaGravityMax-desmaGravityMin)*progress
+		}
+
 		// AOBLMOA: Use hybrid Mayfly-Aquila updates with opposition-based learning
 		switch {
 		case config.UseAOBLMOA:
@@ -448,133 +490,54 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				)
 			}
 
-			// Update global best from updated populations
-			for i := range config.NPop {
-				if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
-					copyMayflyToBest(&globalBest, males[i])
-				}
-			}
 		case config.UseEOBBMA:
+			prepareEOBBMAFemales(females, males, config, rng, candidateEvaluator)
 			if evaluator != nil {
-				prepareEOBBMAFemales(females, males, config, rng)
-
 				_, femaleEvaluationErr := evaluator.evaluate(ctx, females, false, false)
 				if femaleEvaluationErr != nil {
 					return nil, femaleEvaluationErr
 				}
+			} else {
+				for _, female := range females {
+					candidateEvaluator.evaluateMayfly(female, false)
+				}
+			}
+			funcCount += len(females)
 
-				funcCount += len(females)
-				phaseBest := cloneBest(globalBest)
-				prepareEOBBMAMales(males, phaseBest, config, rng)
-
+			phaseBest := cloneBest(globalBest)
+			prepareEOBBMAMales(males, phaseBest, config, rng)
+			if evaluator != nil {
 				maleBest, maleEvaluationErr := evaluator.evaluate(ctx, males, false, true)
 				if maleEvaluationErr != nil {
 					return nil, maleEvaluationErr
 				}
-
-				funcCount += len(males)
-				updatePersonalBests(males, candidateEvaluator)
 				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
-				// Update females with Gaussian sampling around best males.
-				for i := range config.NPopF {
-					if rng.Float64() < 0.5 {
-						newPos := gaussianUpdate(females[i].Position, males[i].Position,
-							config.LowerBound, config.UpperBound, rng)
-						copy(females[i].Position, newPos)
-					} else {
-						levyStep := levyFlightVec(config.ProblemSize, config.LevyAlpha, config.LevyBeta, rng)
-						for j := range config.ProblemSize {
-							females[i].Position[j] += levyStep[j] * (config.UpperBound - config.LowerBound) * 0.01
-						}
-
-						maxVec(females[i].Position, config.LowerBound)
-						minVec(females[i].Position, config.UpperBound)
-					}
-
-					candidateEvaluator.evaluateMayfly(females[i], false)
-
-					funcCount++
-				}
-
-				// Update males with Gaussian sampling around personal and global best.
-				for i := range config.NPop {
-					if rng.Float64() < 0.5 {
-						newPos := gaussianUpdate(males[i].Position, males[i].Best.Position,
-							config.LowerBound, config.UpperBound, rng)
-						copy(males[i].Position, newPos)
-					} else {
-						newPos := gaussianUpdate(males[i].Position, globalBest.Position,
-							config.LowerBound, config.UpperBound, rng)
-						copy(males[i].Position, newPos)
-					}
-
-					candidateEvaluator.evaluateMayfly(males[i], false)
-
-					funcCount++
-
-					if candidateEvaluator.better(
-						evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best),
-					) {
-						copy(males[i].Best.Position, males[i].Position)
-						males[i].Best.Cost = males[i].Cost
-						males[i].Best.ConstraintViolation = males[i].ConstraintViolation
-
-						if candidateEvaluator.better(
-							evaluationFromBest(males[i].Best), evaluationFromBest(globalBest),
-						) {
-							globalBest = cloneBest(males[i].Best)
-						}
-					}
+				for _, male := range males {
+					candidateEvaluator.evaluateMayfly(male, false)
 				}
 			}
+			funcCount += len(males)
+			updatePersonalBests(males, candidateEvaluator)
 		default:
 			// Standard velocity-based updates
+			prepareStandardFemales(females, males, iterationGravity, fl, config, rng, candidateEvaluator)
 			if evaluator != nil {
-				prepareStandardFemales(females, males, g, fl, config, rng, candidateEvaluator)
-
 				_, femaleEvaluationErr := evaluator.evaluate(ctx, females, false, false)
 				if femaleEvaluationErr != nil {
 					return nil, femaleEvaluationErr
 				}
-
-				funcCount += len(females)
 			} else {
-				// Update females sequentially for backward compatibility.
-				for i := range config.NPopF {
-					e := unifrndVec(-1, 1, config.ProblemSize, rng)
-
-					if candidateEvaluator.betterMayfly(males[i], females[i]) {
-						for j := range config.ProblemSize {
-							rmf := males[i].Position[j] - females[i].Position[j]
-							females[i].Velocity[j] = g*females[i].Velocity[j] +
-								config.A3*math.Exp(-config.Beta*rmf*rmf)*(males[i].Position[j]-females[i].Position[j])
-						}
-					} else {
-						for j := range config.ProblemSize {
-							females[i].Velocity[j] = g*females[i].Velocity[j] + fl*e[j]
-						}
-					}
-
-					maxVec(females[i].Velocity, config.VelMin)
-					minVec(females[i].Velocity, config.VelMax)
-
-					for j := range config.ProblemSize {
-						females[i].Position[j] += females[i].Velocity[j]
-					}
-
-					maxVec(females[i].Position, config.LowerBound)
-					minVec(females[i].Position, config.UpperBound)
-					candidateEvaluator.evaluateMayfly(females[i], false)
-
-					funcCount++
+				for _, female := range females {
+					candidateEvaluator.evaluateMayfly(female, false)
 				}
 			}
+			funcCount += len(females)
 
 			// MPMA: Calculate median position if enabled
 			var medianPos []float64
 
-			var mpmaG float64 // MPMA-specific gravity coefficient
+			mpmaG := iterationGravity
 
 			if config.UseMPMA {
 				if config.UseWeightedMedian {
@@ -626,104 +589,34 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						medianPos = calculateMedianPosition(males)
 					}
 				}
-				// Calculate non-linear gravity coefficient
-				mpmaG = calculateGravityCoefficient(config.GravityType, it, config.MaxIterations)
+				// Alternative gravity schedules are explicit MPMA extensions.
+				mpmaG = calculateGravityCoefficient(config.GravityType, it+1, config.MaxIterations)
 			}
 
+			phaseBest := cloneBest(globalBest)
+			prepareStandardMales(
+				males, phaseBest, medianPos, iterationGravity, dance, mpmaG, config, rng, candidateEvaluator,
+			)
 			if evaluator != nil {
-				phaseBest := cloneBest(globalBest)
-				prepareStandardMales(
-					males, phaseBest, medianPos, g, dance, mpmaG, config, rng, candidateEvaluator,
-				)
-
 				maleBest, maleEvaluationErr := evaluator.evaluate(ctx, males, false, true)
 				if maleEvaluationErr != nil {
 					return nil, maleEvaluationErr
 				}
-
-				funcCount += len(males)
-				updatePersonalBests(males, candidateEvaluator)
 				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
-				// Update males sequentially for backward compatibility.
-				for i := range config.NPop {
-					e := unifrndVec(-1, 1, config.ProblemSize, rng)
-
-					if candidateEvaluator.better(
-						evaluationFromBest(globalBest), evaluationFromMayfly(males[i]),
-					) {
-						// Update velocity with personal and global best
-						if config.UseMPMA {
-							// MPMA: Include median position in velocity update
-							for j := range config.ProblemSize {
-								rpbest := males[i].Best.Position[j] - males[i].Position[j]
-								rgbest := globalBest.Position[j] - males[i].Position[j]
-								rmedian := medianPos[j] - males[i].Position[j]
-
-								// Modified velocity update with median position and non-linear gravity
-								males[i].Velocity[j] = mpmaG*males[i].Velocity[j] +
-									config.A1*math.Exp(-config.Beta*rpbest*rpbest)*(males[i].Best.Position[j]-males[i].Position[j]) +
-									config.A2*math.Exp(-config.Beta*rgbest*rgbest)*(globalBest.Position[j]-males[i].Position[j]) +
-									config.MedianWeight*math.Exp(-config.Beta*rmedian*rmedian)*(medianPos[j]-males[i].Position[j])
-							}
-						} else {
-							// Standard velocity update
-							for j := range config.ProblemSize {
-								rpbest := males[i].Best.Position[j] - males[i].Position[j]
-								rgbest := globalBest.Position[j] - males[i].Position[j]
-								males[i].Velocity[j] = g*males[i].Velocity[j] +
-									config.A1*math.Exp(-config.Beta*rpbest*rpbest)*(males[i].Best.Position[j]-males[i].Position[j]) +
-									config.A2*math.Exp(-config.Beta*rgbest*rgbest)*(globalBest.Position[j]-males[i].Position[j])
-							}
-						}
-					} else {
-						// Nuptial dance
-						gVal := g
-						if config.UseMPMA {
-							gVal = mpmaG // Use MPMA gravity for dance too
-						}
-
-						for j := range config.ProblemSize {
-							males[i].Velocity[j] = gVal*males[i].Velocity[j] + dance*e[j]
-						}
-					}
-
-					// Apply velocity limits
-					maxVec(males[i].Velocity, config.VelMin)
-					minVec(males[i].Velocity, config.VelMax)
-
-					// Update position
-					for j := range config.ProblemSize {
-						males[i].Position[j] += males[i].Velocity[j]
-					}
-
-					// Apply position limits
-					maxVec(males[i].Position, config.LowerBound)
-					minVec(males[i].Position, config.UpperBound)
-
-					// Evaluate
-					candidateEvaluator.evaluateMayfly(males[i], false)
-
-					funcCount++
-
-					// Update personal best
-					if candidateEvaluator.better(
-						evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best),
-					) {
-						copy(males[i].Best.Position, males[i].Position)
-						males[i].Best.Cost = males[i].Cost
-						males[i].Best.ConstraintViolation = males[i].ConstraintViolation
-
-						// Update global best
-						if candidateEvaluator.better(
-							evaluationFromBest(males[i].Best), evaluationFromBest(globalBest),
-						) {
-							globalBest = cloneBest(males[i].Best)
-						}
-					}
+				for _, male := range males {
+					candidateEvaluator.evaluateMayfly(male, false)
 				}
 			}
+			funcCount += len(males)
+			updatePersonalBests(males, candidateEvaluator)
 		}
+
+		// Females are evaluated candidates too. Historically only males were
+		// allowed to update GlobalBest, which could make Optimize return a worse
+		// point than one it had already evaluated.
+		mergePopulationBest(&globalBest, males, candidateEvaluator)
+		mergePopulationBest(&globalBest, females, candidateEvaluator)
 
 		// Sort populations by cost
 		sortMayflies(males, candidateEvaluator)
@@ -777,8 +670,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 						rng,
 					)
 
-					// Each elite male generates 4 candidates (L4 array).
-					funcCount += numElite * len(L4Array)
+					// Each elite evaluates a dimension-sized orthogonal array and
+					// one factor-analysis prediction.
+					funcCount += numElite * (len(orthogonalArray(config.ProblemSize)) + 1)
 				}
 
 				refined = true
@@ -955,7 +849,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		} else {
 			nc := effectiveNC(config)
 			gamma := effectiveCrossoverGamma(config)
-			offspring = make([]*Mayfly, 0, nc)
+			maleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
+			femaleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 
 			for k := range nc / 2 {
 				p1, p2 := selectParents(males, females, k, config, rng)
@@ -999,11 +894,16 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				off2.Best.Cost = off2.Cost
 				off2.Best.ConstraintViolation = off2.ConstraintViolation
 
-				offspring = append(offspring, off1, off2)
+				maleOffspring = append(maleOffspring, off1)
+				femaleOffspring = append(femaleOffspring, off2)
 			}
 
+			offspring = make([]*Mayfly, 0, len(maleOffspring)+len(femaleOffspring))
+			offspring = append(offspring, maleOffspring...)
+			offspring = append(offspring, femaleOffspring...)
+
 			// Offspring refinement: AOBLMOA applies stochastic
-			// opposition-based learning, GSASMA a hybrid Cauchy-Gaussian
+			// opposition-based learning, HMMA a hybrid Cauchy-Gaussian
 			// mutation, everything else the ordinary Gaussian mutation.
 			switch {
 			case config.UseAOBLMOA:
@@ -1032,78 +932,52 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					}
 				}
 
-			case config.UseGSASMA:
-				// Apply hybrid mutation with adaptive Cauchy probability
+			case config.UseHMMA:
+				// Produce the configured number of mutants for each sex, using
+				// parents from that sex's incumbent population.
 				for range effectiveNM(config) {
-					// Select parent from offspring
-					i := rng.Intn(len(offspring))
-					p := offspring[i]
-
-					mut := newMayfly(config.ProblemSize)
-
-					// Calculate adaptive Cauchy probability based on iteration progress
-					iterRatio := float64(it) / float64(config.MaxIterations)
-
-					var cauchyProb float64
-
-					switch {
-					case iterRatio < 0.33:
-						cauchyProb = 0.7 // Early: high exploration
-					case iterRatio < 0.66:
-						cauchyProb = 0.5 // Middle: balanced
-					default:
-						cauchyProb = config.CauchyMutationRate // Late: configured rate (default 0.3)
-					}
-
-					// Apply hybrid mutation
-					mut.Position = HybridMutate(
-						p.Position,
-						config.Mu,
-						config.LowerBound,
-						config.UpperBound,
-						cauchyProb,
-						rng,
+					maleParent := males[rng.Intn(len(males))]
+					femaleParent := females[rng.Intn(len(females))]
+					maleMutant := prepareGeneticMutant(
+						maleParent, it, config, rng,
 					)
-
-					candidateEvaluator.evaluateMayfly(mut, false)
-
-					funcCount++
-
-					if candidateEvaluator.betterMayflyThanBest(mut, globalBest) {
-						copyMayflyToBest(&globalBest, mut)
-					}
-
-					copy(mut.Best.Position, mut.Position)
-					mut.Best.Cost = mut.Cost
-					mut.Best.ConstraintViolation = mut.ConstraintViolation
-
-					offspring = append(offspring, mut)
+					femaleMutant := prepareGeneticMutant(
+						femaleParent, it, config, rng,
+					)
+					candidateEvaluator.evaluateMayfly(maleMutant, false)
+					candidateEvaluator.evaluateMayfly(femaleMutant, false)
+					funcCount += 2
+					initializeOffspringBests([]*Mayfly{maleMutant, femaleMutant})
+					mergePopulationBest(&globalBest, []*Mayfly{maleMutant, femaleMutant}, candidateEvaluator)
+					maleOffspring = append(maleOffspring, maleMutant)
+					femaleOffspring = append(femaleOffspring, femaleMutant)
 				}
 
 			default:
-				// Standard mutation
+				// Standard mutation, independently for the two populations.
 				for range effectiveNM(config) {
-					// Select parent from offspring
-					i := rng.Intn(len(offspring))
-					p := offspring[i]
-
-					mut := newMayfly(config.ProblemSize)
-					mut.Position = Mutate(p.Position, config.Mu, config.LowerBound, config.UpperBound, rng)
-
-					candidateEvaluator.evaluateMayfly(mut, false)
-
-					funcCount++
-
-					if candidateEvaluator.betterMayflyThanBest(mut, globalBest) {
-						copyMayflyToBest(&globalBest, mut)
-					}
-
-					copy(mut.Best.Position, mut.Position)
-					mut.Best.Cost = mut.Cost
-					mut.Best.ConstraintViolation = mut.ConstraintViolation
-
-					offspring = append(offspring, mut)
+					maleParent := males[rng.Intn(len(males))]
+					femaleParent := females[rng.Intn(len(females))]
+					maleMutant := prepareGeneticMutant(
+						maleParent, it, config, rng,
+					)
+					femaleMutant := prepareGeneticMutant(
+						femaleParent, it, config, rng,
+					)
+					candidateEvaluator.evaluateMayfly(maleMutant, false)
+					candidateEvaluator.evaluateMayfly(femaleMutant, false)
+					funcCount += 2
+					initializeOffspringBests([]*Mayfly{maleMutant, femaleMutant})
+					mergePopulationBest(&globalBest, []*Mayfly{maleMutant, femaleMutant}, candidateEvaluator)
+					maleOffspring = append(maleOffspring, maleMutant)
+					femaleOffspring = append(femaleOffspring, femaleMutant)
 				}
+			}
+
+			if !config.UseAOBLMOA {
+				offspring = offspring[:0]
+				offspring = append(offspring, maleOffspring...)
+				offspring = append(offspring, femaleOffspring...)
 			}
 		}
 
@@ -1151,7 +1025,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					return nil, evaluationErr
 				}
 			} else {
-				eliteMayfly, eliteFuncCount = generateEliteMayfliesWithEvaluator(
+				var improved bool
+				eliteMayfly, eliteFuncCount, improved = generateImprovedEliteMayfliesWithEvaluator(
 					globalBest,
 					searchRange,
 					config.EliteCount,
@@ -1161,12 +1036,15 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					candidateEvaluator,
 					rng,
 				)
+				if !improved {
+					eliteMayfly = nil
+				}
 			}
 
 			funcCount += eliteFuncCount
 
 			// Replace worst male if elite is better
-			if candidateEvaluator.betterMayfly(eliteMayfly, males[config.NPop-1]) {
+			if eliteMayfly != nil && candidateEvaluator.betterMayfly(eliteMayfly, males[config.NPop-1]) {
 				males[config.NPop-1] = eliteMayfly
 				sortMayflies(males, candidateEvaluator) // Re-sort after replacement
 
@@ -1179,8 +1057,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			lastGlobalBest = cloneBest(globalBest)
 		}
 
-		// GSASMA: Apply Opposition-Based Learning to global best
-		if config.UseGSASMA && config.ApplyOBLToGlobalBest {
+		// HMMA: Apply Opposition-Based Learning to global best.
+		if config.UseHMMA && config.ApplyOBLToGlobalBest {
 			// Apply OBL every 10 iterations to avoid excessive function evaluations
 			if it%10 == 0 {
 				updatedGlobalBest, improved := applyOBLToGlobalBestWithEvaluator(

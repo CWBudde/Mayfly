@@ -5,39 +5,67 @@ import (
 	"math/rand"
 )
 
-func prepareEOBBMAFemales(females, males []*Mayfly, config *Config, rng *rand.Rand) {
+func prepareEOBBMAFemales(
+	females, males []*Mayfly,
+	config *Config,
+	rng *rand.Rand,
+	evaluator *constraintEvaluator,
+) {
+	femaleSnapshot := cloneMayflies(females)
+	maleSnapshot := cloneMayflies(males)
 	for i := range females {
-		if rng.Float64() < 0.5 {
-			newPosition := gaussianUpdate(females[i].Position, males[i].Position,
-				config.LowerBound, config.UpperBound, rng)
-			copy(females[i].Position, newPosition)
-
-			continue
+		female := &femaleSnapshot[i]
+		male := &maleSnapshot[i]
+		var position, center []float64
+		if evaluator.betterMayfly(male, female) {
+			position, center = eobbmaGaussianFemalePosition(female.Position, male.Position, rng)
+		} else {
+			position = eobbmaLevyPosition(female.Position, config.LevyAlpha, config.LevyBeta, rng)
+			center = female.Position
 		}
-
-		levyStep := levyFlightVec(config.ProblemSize, config.LevyAlpha, config.LevyBeta, rng)
-		for j := range config.ProblemSize {
-			females[i].Position[j] += levyStep[j] * (config.UpperBound - config.LowerBound) * 0.01
-		}
-
-		maxVec(females[i].Position, config.LowerBound)
-		minVec(females[i].Position, config.UpperBound)
+		copy(females[i].Position, eobbmaRepairPosition(
+			position, center, config.LowerBound, config.UpperBound,
+		))
 	}
 }
 
 func prepareEOBBMAMales(males []*Mayfly, globalBest Best, config *Config, rng *rand.Rand) {
-	for _, male := range males {
-		var target []float64
-		if rng.Float64() < 0.5 {
-			target = male.Best.Position
+	snapshot := cloneMayflies(males)
+	for i := range males {
+		male := &snapshot[i]
+		var position, center []float64
+		if i == 0 {
+			position = eobbmaLevyPosition(male.Position, config.LevyAlpha, config.LevyBeta, rng)
+			center = male.Position
 		} else {
-			target = globalBest.Position
+			peer1, peer2 := eobbmaDistinctPeers(snapshot, i, rng)
+			position, center = eobbmaGaussianMalePosition(
+				male.Best.Position, globalBest.Position, peer1, peer2,
+				male.Cost, globalBest.Cost, rng,
+			)
 		}
-
-		newPosition := gaussianUpdate(male.Position, target,
-			config.LowerBound, config.UpperBound, rng)
-		copy(male.Position, newPosition)
+		copy(males[i].Position, eobbmaRepairPosition(
+			position, center, config.LowerBound, config.UpperBound,
+		))
 	}
+}
+
+func eobbmaDistinctPeers(population []Mayfly, excluded int, rng *rand.Rand) ([]float64, []float64) {
+	indices := make([]int, 0, len(population)-1)
+	for i := range population {
+		if i != excluded {
+			indices = append(indices, i)
+		}
+	}
+	if len(indices) < 2 {
+		return population[excluded].Position, population[excluded].Best.Position
+	}
+	firstOffset := rng.Intn(len(indices))
+	first := indices[firstOffset]
+	indices[firstOffset] = indices[len(indices)-1]
+	indices = indices[:len(indices)-1]
+	second := indices[rng.Intn(len(indices))]
+	return population[first].Position, population[second].Position
 }
 
 func prepareStandardFemales(
@@ -81,10 +109,16 @@ func prepareStandardFemale(
 // It mirrors prepareAttractedMale and, like it, only writes the velocity; the
 // caller clamps it and moves the individual through applyVelocityAndMove.
 func prepareAttractedFemale(female, male *Mayfly, g float64, config *Config) {
+	distanceSquared := 0.0
+	for j := range config.ProblemSize {
+		delta := male.Position[j] - female.Position[j]
+		distanceSquared += delta * delta
+	}
+	attraction := config.A3 * math.Exp(-config.Beta*distanceSquared)
 	for j := range config.ProblemSize {
 		distance := male.Position[j] - female.Position[j]
 		female.Velocity[j] = g*female.Velocity[j] +
-			config.A3*math.Exp(-config.Beta*distance*distance)*distance
+			attraction*distance
 	}
 }
 
@@ -167,6 +201,22 @@ func prepareAttractedMale(
 	config *Config,
 ) {
 	useMedian := useMedianPosition(medianPosition, config)
+	personalDistanceSquared := 0.0
+	globalDistanceSquared := 0.0
+	medianDistanceSquared := 0.0
+	for j := range config.ProblemSize {
+		personalDelta := male.Best.Position[j] - male.Position[j]
+		globalDelta := globalBest.Position[j] - male.Position[j]
+		personalDistanceSquared += personalDelta * personalDelta
+		globalDistanceSquared += globalDelta * globalDelta
+		if useMedian {
+			medianDelta := medianPosition[j] - male.Position[j]
+			medianDistanceSquared += medianDelta * medianDelta
+		}
+	}
+	personalAttraction := config.A1 * math.Exp(-config.Beta*personalDistanceSquared)
+	globalAttraction := config.A2 * math.Exp(-config.Beta*globalDistanceSquared)
+	medianAttraction := config.MedianWeight * math.Exp(-config.Beta*medianDistanceSquared)
 
 	for j := range config.ProblemSize {
 		personalDistance := male.Best.Position[j] - male.Position[j]
@@ -175,16 +225,16 @@ func prepareAttractedMale(
 		if useMedian {
 			medianDistance := medianPosition[j] - male.Position[j]
 			male.Velocity[j] = mpmaG*male.Velocity[j] +
-				config.A1*math.Exp(-config.Beta*personalDistance*personalDistance)*personalDistance +
-				config.A2*math.Exp(-config.Beta*globalDistance*globalDistance)*globalDistance +
-				config.MedianWeight*math.Exp(-config.Beta*medianDistance*medianDistance)*medianDistance
+				personalAttraction*personalDistance +
+				globalAttraction*globalDistance +
+				medianAttraction*medianDistance
 
 			continue
 		}
 
 		male.Velocity[j] = g*male.Velocity[j] +
-			config.A1*math.Exp(-config.Beta*personalDistance*personalDistance)*personalDistance +
-			config.A2*math.Exp(-config.Beta*globalDistance*globalDistance)*globalDistance
+			personalAttraction*personalDistance +
+			globalAttraction*globalDistance
 	}
 }
 

@@ -1,6 +1,8 @@
 package mayfly
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -8,6 +10,14 @@ import (
 	"strings"
 	"time"
 )
+
+// ClassificationOptions controls the cost and reproducibility of objective
+// sampling. A zero MaxEvaluations means no explicit budget.
+type ClassificationOptions struct {
+	Rand           *rand.Rand
+	MaxEvaluations int
+	ScanOnly       bool
+}
 
 // AlgorithmRecommendation represents a recommended algorithm variant with a confidence score.
 type AlgorithmRecommendation struct {
@@ -32,6 +42,9 @@ func NewAlgorithmSelector() *AlgorithmSelector {
 // RecommendAlgorithms returns ranked algorithm recommendations for the given problem.
 // The results are sorted by score (highest first).
 func (s *AlgorithmSelector) RecommendAlgorithms(characteristics ProblemCharacteristics) []AlgorithmRecommendation {
+	if characteristics.MultiObjective {
+		return nil
+	}
 	recommendations := make([]AlgorithmRecommendation, 0, len(s.variants))
 
 	for _, variant := range s.variants {
@@ -59,6 +72,12 @@ func (s *AlgorithmSelector) RecommendAlgorithms(characteristics ProblemCharacter
 func (s *AlgorithmSelector) RecommendBest(characteristics ProblemCharacteristics) AlgorithmRecommendation {
 	recommendations := s.RecommendAlgorithms(characteristics)
 	if len(recommendations) == 0 {
+		if characteristics.MultiObjective {
+			return AlgorithmRecommendation{
+				Reasoning:  "No multi-objective optimizer is implemented",
+				Confidence: 1,
+			}
+		}
 		// Fallback to standard MA
 		return AlgorithmRecommendation{
 			Variant:    &StandardMAVariant{},
@@ -76,15 +95,6 @@ func (s *AlgorithmSelector) calculateConfidence(characteristics ProblemCharacter
 	variant AlgorithmVariant,
 ) float64 {
 	confidence := 0.7 // Base confidence
-
-	// Higher confidence for specific characteristics
-	if characteristics.MultiObjective {
-		if variant.Name() == nameAOBLMOA {
-			confidence = 0.95 // Very confident for multi-objective
-		} else {
-			confidence = 0.3 // Low confidence for non-MO algorithms on MO problems
-		}
-	}
 
 	if characteristics.Landscape == Deceptive && variant.Name() == nameEOBBMA {
 		confidence = 0.9 // EOBBMA is proven on deceptive functions
@@ -113,10 +123,6 @@ func (s *AlgorithmSelector) generateReasoning(characteristics ProblemCharacteris
 	reasons := make([]string, 0, 3)
 
 	// Analyze key characteristics
-	if characteristics.MultiObjective && variant.Name() == nameAOBLMOA {
-		reasons = append(reasons, "Multi-objective support required")
-	}
-
 	if characteristics.Modality == HighlyMultimodal {
 		if variant.Name() == nameOLCEMA {
 			reasons = append(reasons, "Highly multimodal problem benefits from orthogonal learning")
@@ -241,20 +247,93 @@ func ClassifyProblem(
 	lower, upper float64,
 	rng *rand.Rand,
 ) ProblemCharacteristics {
+	result, _ := ClassifyProblemContext(context.Background(), fn, size, lower, upper,
+		ClassificationOptions{Rand: rng})
+	return result
+}
+
+// ClassifyProblemContext is the validated, cancelable classifier entry point.
+// It reports objective panics, non-finite samples, cancellation, and exhausted
+// budgets instead of silently classifying failed probes as a smooth landscape.
+func ClassifyProblemContext(
+	ctx context.Context,
+	fn ObjectiveFunction,
+	size int,
+	lower, upper float64,
+	options ClassificationOptions,
+) (ProblemCharacteristics, error) {
+	if ctx == nil {
+		return ProblemCharacteristics{}, errors.New("classification context is nil")
+	}
+	if fn == nil {
+		return ProblemCharacteristics{}, errors.New("classification objective function is nil")
+	}
+	if size <= 0 {
+		return ProblemCharacteristics{}, fmt.Errorf("classification size must be positive, got %d", size)
+	}
+	if !isFinite(lower) || !isFinite(upper) || lower >= upper {
+		return ProblemCharacteristics{}, errors.New("classification bounds must be finite and increasing")
+	}
+	if options.MaxEvaluations < 0 {
+		return ProblemCharacteristics{}, errors.New("classification evaluation budget must be non-negative")
+	}
+	if err := ctx.Err(); err != nil {
+		return ProblemCharacteristics{}, err
+	}
+	rng := options.Rand
 	if rng == nil {
 		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 	}
 
-	turningPoints, roughness := lineScanStatistics(fn, size, lower, upper, rng)
-	stability := estimateStability(fn, size, lower, upper, rng)
-
-	return ProblemCharacteristics{
-		Dimensionality: size,
-		Modality:       modalityFromTurningPoints(turningPoints),
-		Landscape:      landscapeFromRoughness(roughness),
-		// Low stability means the outcome depends heavily on the seed.
-		RequiresStableConvergence: stability < 0.5,
+	evaluations := 0
+	sampleMin, sampleMax := math.Inf(1), math.Inf(-1)
+	var evaluationErr error
+	checked := func(position []float64) (value float64) {
+		if evaluationErr != nil {
+			return math.NaN()
+		}
+		if err := ctx.Err(); err != nil {
+			evaluationErr = err
+			return math.NaN()
+		}
+		if options.MaxEvaluations > 0 && evaluations >= options.MaxEvaluations {
+			evaluationErr = fmt.Errorf("classification evaluation budget of %d exhausted", options.MaxEvaluations)
+			return math.NaN()
+		}
+		evaluations++
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				evaluationErr = fmt.Errorf("classification objective panicked: %v", recovered)
+				value = math.NaN()
+			}
+		}()
+		value = fn(position)
+		if !isFinite(value) {
+			evaluationErr = fmt.Errorf("classification objective returned non-finite value at evaluation %d", evaluations)
+			return math.NaN()
+		}
+		sampleMin = math.Min(sampleMin, value)
+		sampleMax = math.Max(sampleMax, value)
+		return value
 	}
+
+	turningPoints, roughness := lineScanStatistics(checked, size, lower, upper, rng)
+	if evaluationErr != nil {
+		return ProblemCharacteristics{}, evaluationErr
+	}
+	stability := 1.0
+	if !options.ScanOnly {
+		stability = estimateStabilityAgainstScale(checked, size, lower, upper, rng, sampleMax-sampleMin)
+		if evaluationErr != nil {
+			return ProblemCharacteristics{}, evaluationErr
+		}
+	}
+	return ProblemCharacteristics{
+		Dimensionality:            size,
+		Modality:                  modalityFromTurningPoints(turningPoints),
+		Landscape:                 landscapeFromRoughness(roughness),
+		RequiresStableConvergence: stability < 0.5,
+	}, nil
 }
 
 // modalityFromTurningPoints maps the average number of direction changes per
@@ -419,6 +498,48 @@ func estimateStability(
 	cv := stdDev / (math.Abs(mean) + 1e-10)
 
 	return 1.0 / (1.0 + cv)
+}
+
+func estimateStabilityAgainstScale(
+	fn ObjectiveFunction,
+	size int,
+	lower, upper float64,
+	rng *rand.Rand,
+	objectiveRange float64,
+) float64 {
+	costs := make([]float64, 0, classifyRuns)
+	for range classifyRuns {
+		config := NewDefaultConfig()
+		config.ObjectiveFunc = fn
+		config.ProblemSize = size
+		config.LowerBound = lower
+		config.UpperBound = upper
+		config.MaxIterations = classifyIterations
+		config.NPop = classifyPopulation
+		config.NPopF = classifyPopulation
+		config.Rand = rand.New(rand.NewSource(rng.Int63()))
+		result, err := Optimize(config)
+		if err != nil || !isFinite(result.GlobalBest.Cost) {
+			continue
+		}
+		costs = append(costs, result.GlobalBest.Cost)
+	}
+	if len(costs) == 0 {
+		return 0
+	}
+	if objectiveRange <= 0 {
+		return 1
+	}
+	sortedCosts := append([]float64(nil), costs...)
+	sort.Float64s(sortedCosts)
+	median := sortedCosts[len(sortedCosts)/2]
+	deviations := make([]float64, len(costs))
+	for i, cost := range costs {
+		deviations[i] = math.Abs(cost - median)
+	}
+	sort.Float64s(deviations)
+	mad := deviations[len(deviations)/2]
+	return 1 / (1 + mad/objectiveRange)
 }
 
 // meanAndStdDev returns the mean and the population standard deviation of

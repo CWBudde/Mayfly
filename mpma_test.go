@@ -17,6 +17,14 @@ func TestGravityCoefficient(t *testing.T) {
 		checkMonotonic bool       // should decrease monotonically
 	}{
 		{
+			name:           "MPMA paper gravity",
+			gravityType:    GravityPaper,
+			iteration:      250,
+			maxIterations:  500,
+			expectedRange:  [2]float64{0.832, 0.834},
+			checkMonotonic: true,
+		},
+		{
 			name:           "linear decay",
 			gravityType:    "linear",
 			iteration:      250,
@@ -76,6 +84,15 @@ func TestGravityCoefficient(t *testing.T) {
 	}
 }
 
+func TestMPMAPaperGravityEndpoints(t *testing.T) {
+	if got := calculateGravityCoefficient(GravityPaper, 0, 100); math.Abs(got-0.9) > 1e-15 {
+		t.Errorf("paper gravity at t=0 = %v, want 0.9", got)
+	}
+	if got := calculateGravityCoefficient(GravityPaper, 100, 100); math.Abs(got-0.4) > 1e-15 {
+		t.Errorf("paper gravity at t=T = %v, want 0.4", got)
+	}
+}
+
 // TestGravityCoefficientInvalidType tests handling of invalid gravity types.
 func TestGravityCoefficientInvalidType(t *testing.T) {
 	// Should default to linear for unknown types
@@ -102,7 +119,7 @@ func TestNewMPMAConfig(t *testing.T) {
 	}
 
 	// Verify default gravity type
-	validTypes := []string{GravityLinear, GravityExponential, GravitySigmoid}
+	validTypes := []string{GravityPaper, GravityLinear, GravityExponential, GravitySigmoid}
 
 	if !slices.Contains(validTypes, config.GravityType) {
 		t.Errorf("expected GravityType to be one of %v, got %s", validTypes, config.GravityType)
@@ -156,6 +173,15 @@ func TestCalculateMedianPosition(t *testing.T) {
 		population []*Mayfly
 		expected   []float64
 	}{
+		{
+			name: "fitness-ranked median is not coordinate median",
+			population: []*Mayfly{
+				{Position: []float64{0.0, 100.0}, Cost: 1},
+				{Position: []float64{100.0, 100.0}, Cost: 2},
+				{Position: []float64{50.0, 0.0}, Cost: 3},
+			},
+			expected: []float64{100.0, 100.0},
+		},
 		{
 			name: "odd number of mayflies",
 			population: []*Mayfly{

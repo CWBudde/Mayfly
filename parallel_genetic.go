@@ -20,7 +20,8 @@ func evaluateParallelGeneticOperators(
 ) ([]*Mayfly, Best, int, error) {
 	geneticBest := Best{Cost: math.Inf(1), ConstraintViolation: math.Inf(1)}
 	nc := effectiveNC(config)
-	offspring := make([]*Mayfly, 0, 2*(nc/2)+effectiveNM(config))
+	maleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
+	femaleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 
 	gamma := effectiveCrossoverGamma(config)
 
@@ -48,8 +49,10 @@ func evaluateParallelGeneticOperators(
 		off2 := newMayfly(config.ProblemSize)
 		copy(off2.Position, off2Pos)
 
-		offspring = append(offspring, off1, off2)
+		maleOffspring = append(maleOffspring, off1)
+		femaleOffspring = append(femaleOffspring, off2)
 	}
+	offspring := append(append(make([]*Mayfly, 0, nc), maleOffspring...), femaleOffspring...)
 
 	crossoverBest, err := evaluator.evaluate(ctx, offspring, false, true)
 	if err != nil {
@@ -78,42 +81,23 @@ func evaluateParallelGeneticOperators(
 		geneticBest = crossoverBest
 	}
 
-	mutationStart := len(offspring)
-
 	for range effectiveNM(config) {
 		contextErr := ctx.Err()
 		if contextErr != nil {
 			return nil, Best{}, 0, contextErr
 		}
 
-		parent := offspring[rng.Intn(len(offspring))]
-		mutant := newMayfly(config.ProblemSize)
-
-		if config.UseGSASMA {
-			mutant.Position = HybridMutate(
-				parent.Position,
-				config.Mu,
-				config.LowerBound,
-				config.UpperBound,
-				adaptiveCauchyProbability(iteration, config),
-				rng,
-			)
-		} else {
-			mutant.Position = Mutate(
-				parent.Position,
-				config.Mu,
-				config.LowerBound,
-				config.UpperBound,
-				rng,
-			)
-		}
-
-		// Append immediately so later mutants retain the existing ability to
-		// select an earlier mutant as their parent.
-		offspring = append(offspring, mutant)
+		maleParent := males[rng.Intn(len(males))]
+		femaleParent := females[rng.Intn(len(females))]
+		maleOffspring = append(maleOffspring,
+			prepareGeneticMutant(maleParent, iteration, config, rng))
+		femaleOffspring = append(femaleOffspring,
+			prepareGeneticMutant(femaleParent, iteration, config, rng))
 	}
 
-	mutants := offspring[mutationStart:]
+	mutants := make([]*Mayfly, 0, 2*effectiveNM(config))
+	mutants = append(mutants, maleOffspring[len(maleOffspring)-effectiveNM(config):]...)
+	mutants = append(mutants, femaleOffspring[len(femaleOffspring)-effectiveNM(config):]...)
 
 	mutationBest, err := evaluator.evaluate(ctx, mutants, false, true)
 	if err != nil {
@@ -126,7 +110,42 @@ func evaluateParallelGeneticOperators(
 		geneticBest = mutationBest
 	}
 
+	offspring = make([]*Mayfly, 0, len(maleOffspring)+len(femaleOffspring))
+	offspring = append(offspring, maleOffspring...)
+	offspring = append(offspring, femaleOffspring...)
+
 	return offspring, geneticBest, len(offspring), nil
+}
+
+func prepareGeneticMutant(
+	parent *Mayfly,
+	iteration int,
+	config *Config,
+	rng *rand.Rand,
+) *Mayfly {
+	mutant := newMayfly(config.ProblemSize)
+	if config.UseHMMA {
+		mutant.Position = HybridMutate(
+			parent.Position,
+			config.Mu,
+			config.LowerBound,
+			config.UpperBound,
+			adaptiveCauchyProbability(iteration, config),
+			rng,
+		)
+
+		return mutant
+	}
+
+	mutant.Position = Mutate(
+		parent.Position,
+		config.Mu,
+		config.LowerBound,
+		config.UpperBound,
+		rng,
+	)
+
+	return mutant
 }
 
 // applyParallelStochasticOBL runs the AOBLMOA opposition stage over the worker

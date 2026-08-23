@@ -88,9 +88,7 @@ func jsRun(opts js.Value) any {
 		"lower":             lower,
 		"upper":             upper,
 
-		// Result.Seed holds a time.Now() value that was never used once a
-		// caller supplies its own *rand.Rand, so reporting it would be a lie.
-		// This is the seed the run actually used.
+		// configFor used Config.Seed, so this is also the non-nil Result.Seed.
 		"seed": float64(seed),
 	}
 

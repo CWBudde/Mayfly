@@ -5,7 +5,7 @@ import (
 )
 
 // GSASMA (Golden Sine Algorithm with Simulated Annealing Mayfly Algorithm)
-// is an enhanced variant that combines three powerful optimization techniques:
+// is an enhanced variant that combines two optimization techniques:
 //
 // 1. Golden Sine Algorithm (GSA): For adaptive exploration using golden ratio
 // 2. Simulated Annealing (SA): For escaping local optima via probabilistic acceptance

@@ -19,27 +19,47 @@
 package mayfly
 
 import (
+	"math"
+	"math/bits"
 	"math/rand"
+	"sort"
 )
 
-// L4Array is a standard L4(2^3) orthogonal array.
-// This is a 4x3 matrix where each column contains two 0s and two 1s,
-// and all pairs of columns are balanced (each (0,0), (0,1), (1,0), (1,1)
-// combination appears exactly once).
-//
-// This orthogonal array is used to systematically explore the parameter
-// space with minimal experiments while maintaining statistical balance.
-var L4Array = [][]int{
-	{0, 0, 0},
-	{0, 1, 1},
-	{1, 0, 1},
-	{1, 1, 0},
+// OrthogonalArray returns a fresh two-level orthogonal array with at least
+// dimensions pairwise-balanced columns. The returned matrix may be modified
+// by the caller without affecting subsequent calls.
+func OrthogonalArray(dimensions int) [][]int {
+	return orthogonalArray(dimensions)
+}
+
+// orthogonalArray constructs a regular two-level array from all non-zero
+// binary interaction columns. With 2^k rows there are 2^k-1 balanced,
+// pairwise-orthogonal columns, so no dimensions have to alias an L4 column.
+func orthogonalArray(dimensions int) [][]int {
+	if dimensions <= 0 {
+		return nil
+	}
+
+	rows := 2
+	for rows-1 < dimensions {
+		rows *= 2
+	}
+
+	array := make([][]int, rows)
+	for row := range rows {
+		array[row] = make([]int, dimensions)
+		for column := range dimensions {
+			array[row][column] = bits.OnesCount(uint(row&(column+1))) & 1
+		}
+	}
+
+	return array
 }
 
 // ApplyOrthogonalLearning applies orthogonal learning to a male mayfly.
-// This creates 4 candidate solutions using the L4 orthogonal array to
-// systematically explore the space between the mayfly's current position,
-// personal best, and global best.
+// This creates a dimension-sized orthogonal design plus one factor-analysis
+// candidate to explore the space between the mayfly's current position,
+// personal best, and global best without aliased columns.
 //
 // The orthogonal learning strategy increases population diversity and
 // reduces oscillatory movement by testing balanced combinations of
@@ -62,6 +82,10 @@ var L4Array = [][]int{
 func ApplyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float64,
 	lb, ub []float64, objFunc func([]float64) float64, rng *rand.Rand,
 ) *Mayfly {
+	if !validOrthogonalInputs(male, pbest, gbest, factor, lb, ub) || objFunc == nil {
+		return male
+	}
+
 	return applyOrthogonalLearning(
 		male, pbest, gbest, factor, lb, ub, newConstraintEvaluator(objFunc, nil), rng,
 	)
@@ -78,32 +102,27 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 	}
 
 	dim := len(male.Position)
-	candidates := make([]*Mayfly, len(L4Array))
+	array := orthogonalArray(dim)
+	candidates := make([]*Mayfly, len(array))
+	_ = rng // The paper's orthogonal design is deterministic once its factors are fixed.
 
 	// Generate candidates using orthogonal array
-	for i := range L4Array {
+	for i := range array {
 		candidate := newMayfly(dim)
 
 		// For each dimension
 		for j := range dim {
-			// Select dimension mapping using modulo for dimensions > 3
-			arrayCol := j % 3
-
 			// Based on orthogonal array entry, choose between three positions
 			// Entry 0: Use current position with factor towards pbest
 			// Entry 1: Use current position with factor towards gbest
 			var pos float64
-			if L4Array[i][arrayCol] == 0 {
+			if array[i][j] == 0 {
 				// Blend current position with personal best
 				pos = male.Position[j] + factor*(pbest[j]-male.Position[j])
 			} else {
 				// Blend current position with global best
 				pos = male.Position[j] + factor*(gbest[j]-male.Position[j])
 			}
-
-			// Add small random perturbation for diversity
-			perturbation := (rng.Float64()*2.0 - 1.0) * factor * 0.1
-			pos += perturbation * (ub[j] - lb[j])
 
 			// Apply bounds
 			if pos < lb[j] {
@@ -122,6 +141,43 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 		candidates[i] = candidate
 	}
 
+	// Factor analysis: rank the experiments, total each level's ranks for
+	// every dimension, and assemble the preferred level of each factor into
+	// one predicted best combination. Ranking retains the evaluator's
+	// constraint semantics and avoids overflow from summing raw objective
+	// values with unrelated magnitudes.
+	ranked := append([]*Mayfly(nil), candidates...)
+	sort.SliceStable(ranked, func(i, j int) bool {
+		return evaluator.betterMayfly(ranked[i], ranked[j])
+	})
+	rankByCandidate := make(map[*Mayfly]float64, len(ranked))
+	for rank, candidate := range ranked {
+		rankByCandidate[candidate] = float64(rank + 1)
+	}
+
+	predicted := newMayfly(dim)
+	for dimension := range dim {
+		levelScores := [2]float64{}
+		for experiment, candidate := range candidates {
+			levelScores[array[experiment][dimension]] += rankByCandidate[candidate]
+		}
+
+		level := 0
+		if levelScores[1] < levelScores[0] {
+			level = 1
+		}
+		if level == 0 {
+			predicted.Position[dimension] = male.Position[dimension] +
+				factor*(pbest[dimension]-male.Position[dimension])
+		} else {
+			predicted.Position[dimension] = male.Position[dimension] +
+				factor*(gbest[dimension]-male.Position[dimension])
+		}
+		predicted.Position[dimension] = min(max(predicted.Position[dimension], lb[dimension]), ub[dimension])
+	}
+	evaluator.evaluateMayfly(predicted, false)
+	candidates = append(candidates, predicted)
+
 	// Select best candidate
 	best := candidates[0]
 	for i := 1; i < len(candidates); i++ {
@@ -134,11 +190,38 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 	if evaluator.betterMayfly(best, male) {
 		// Copy velocity from original male (maintain momentum)
 		copy(best.Velocity, male.Velocity)
+		copy(best.Best.Position, male.Best.Position)
+		best.Best.Cost = male.Best.Cost
+		best.Best.ConstraintViolation = male.Best.ConstraintViolation
+		if evaluator.better(evaluationFromMayfly(best), evaluationFromBest(best.Best)) {
+			copy(best.Best.Position, best.Position)
+			best.Best.Cost = best.Cost
+			best.Best.ConstraintViolation = best.ConstraintViolation
+		}
 		return best
 	}
 
 	// If no improvement, return original male
 	return male
+}
+
+func validOrthogonalInputs(male *Mayfly, pbest, gbest []float64, factor float64, lb, ub []float64) bool {
+	if male == nil || math.IsNaN(factor) || math.IsInf(factor, 0) || factor < 0 {
+		return false
+	}
+
+	dim := len(male.Position)
+	if dim == 0 || len(pbest) != dim || len(gbest) != dim || len(lb) != dim || len(ub) != dim {
+		return false
+	}
+
+	for i := range dim {
+		if math.IsNaN(lb[i]) || math.IsInf(lb[i], 0) || math.IsNaN(ub[i]) || math.IsInf(ub[i], 0) || lb[i] > ub[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // ApplyOrthogonalLearningToElite applies orthogonal learning to the
@@ -162,6 +245,10 @@ func ApplyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	gbest []float64, factor float64, lb, ub []float64,
 	objFunc func([]float64) float64, rng *rand.Rand,
 ) {
+	if len(males) == 0 || objFunc == nil || math.IsNaN(topPercent) || math.IsInf(topPercent, 0) || topPercent <= 0 {
+		return
+	}
+
 	applyOrthogonalLearningToElite(
 		males, topPercent, gbest, factor, lb, ub, newConstraintEvaluator(objFunc, nil), rng,
 	)
@@ -172,7 +259,7 @@ func applyOrthogonalLearningToElite(males []*Mayfly, topPercent float64,
 	evaluator *constraintEvaluator, rng *rand.Rand,
 ) {
 	// A zero factor cannot move any male, so skip the stage entirely.
-	if factor <= 0 {
+	if factor <= 0 || len(males) == 0 || topPercent <= 0 {
 		return
 	}
 

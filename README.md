@@ -5,7 +5,7 @@ A Go implementation of the Mayfly Optimization Algorithm (MA), a nature-inspired
 [![Go Reference](https://pkg.go.dev/badge/github.com/cwbudde/mayfly.svg)](https://pkg.go.dev/github.com/cwbudde/mayfly)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cwbudde/mayfly)](https://goreportcard.com/report/github.com/cwbudde/mayfly)
 
-**[Try it in your browser →](https://cwbudde.github.io/mayfly/)** — watch the swarm search, and compare all seven variants, with the library itself compiled to WebAssembly.
+**[Try it in your browser →](https://cwbudde.github.io/mayfly/)** — watch the swarm search, and compare all eight variants, with the library itself compiled to WebAssembly.
 
 ## Overview
 
@@ -117,6 +117,7 @@ fmt.Printf("Cost: %f, violation: %g\n",
 | **[OLCE-MA](docs/algorithms/olce-ma.md)**         | Highly multimodal    | +15-30%     | Orthogonal learning + chaos       |
 | **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes | +55%        | Lévy flights, Bare Bones          |
 | **[GSASMA](docs/algorithms/gsasma.md)**           | Fast convergence     | +10-20%     | Golden Sine + Simulated Annealing |
+| **HMMA**                                          | Adaptive mutation    | Variable    | Cauchy/Gaussian mutation + OBL    |
 | **[MPMA](docs/algorithms/mpma.md)**               | Stable convergence   | +10-30%     | Median guidance, robust           |
 | **[AOBLMOA](docs/algorithms/aoblmoa.md)**         | Adaptive             | Variable    | 4 hunting strategies + opposition |
 
@@ -137,6 +138,9 @@ config := mayfly.NewEOBBMAConfig()
 
 // GSASMA (fastest convergence)
 config := mayfly.NewGSASMAConfig()
+
+// HMMA (adaptive hybrid mutation)
+config := mayfly.NewHMMAConfig()
 
 // MPMA (most stable)
 config := mayfly.NewMPMAConfig()
@@ -236,6 +240,7 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 
 - **[Getting Started Guide](docs/getting-started.md)** - Tutorial and examples
 - **[Configuration Guide](docs/api/configuration.md)** - Complete parameter reference
+- **[v0.7 Migration Guide](docs/migration-v0.7.md)** - Correctness and API changes
 - **[Benchmark Functions](docs/benchmarks.md)** - Test functions and expected results
 
 ### Algorithms
@@ -245,6 +250,7 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 - **[OLCE-MA](docs/algorithms/olce-ma.md)** - Orthogonal Learning & Chaotic Exploitation
 - **[EOBBMA](docs/algorithms/eobbma.md)** - Elite Opposition-Based Bare Bones
 - **[GSASMA](docs/algorithms/gsasma.md)** - Golden Sine with Simulated Annealing
+- **[HMMA](docs/algorithms/hmma.md)** - Hybrid Cauchy/Gaussian mutation + opposition
 - **[MPMA](docs/algorithms/mpma.md)** - Median Position-Based
 - **[AOBLMOA](docs/algorithms/aoblmoa.md)** - Aquila Optimizer + opposition-based learning
 
@@ -282,7 +288,7 @@ A browser demo of the library lives in [`examples/wasm-demo`](examples/wasm-demo
 and is published to <https://cwbudde.github.io/Mayfly/>. It has two pages: a
 **Swarm Lab** that animates both populations over a benchmark landscape, and a
 **Variant Shootout** that runs the statistical comparison framework across all
-seven variants. Everything it shows is computed by this library compiled to
+eight variants. Everything it shows is computed by this library compiled to
 `js/wasm` — there is no JavaScript reimplementation of the algorithm.
 
 ```bash
@@ -338,7 +344,8 @@ Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orth
 
 - DESMA: _PLOS One_, 2022
 - EOBBMA: _Arabian Journal for Science and Engineering_, 2024
-- GSASMA: _Electronics Letters / IEEE_, 2022
+- GSASMA: _AIP Advances_, 2022, DOI 10.1063/5.0108278
+- HMMA: _Electronics Letters_, 2022, DOI 10.1049/ell2.12568
 - MPMA: _IEEE Access_, 2022
 - AOBLMOA: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
 
@@ -399,7 +406,7 @@ for worker-count selection and the cheap-versus-expensive benchmark command.
 
 ## Development Status
 
-**Current:** Phase 1 complete - All 7 variants implemented
+**Current:** v0.7 correctness remediation in progress - 8 registered variants
 
 **Future:** See [PLAN.md](PLAN.md) for roadmap
 

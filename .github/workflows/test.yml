@@ -55,7 +55,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          version: v2.12.2
           args: --config ./.golangci.toml --timeout 5m
 
   test:
@@ -140,3 +140,23 @@ jobs:
         with:
           name: benchmark-results
           path: benchmark.txt
+
+  modules:
+    name: Nested modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up just
+        uses: extractions/setup-just@v2
+
+      - name: Build, vet, and test every module
+        run: just test-modules

@@ -290,7 +290,7 @@ func main() {
 
 - `UseMPMA`: Enable MPMA variant (default: false)
 - `MedianWeight`: Influence of median position on velocity (default: 0.5, range: 0-1)
-- `GravityType`: Type of gravity coefficient (default: "linear")
+- `GravityType`: Type of gravity coefficient (default: "paper")
   - Options: "linear", "exponential", "sigmoid"
 - `UseWeightedMedian`: Use fitness-weighted median (default: false)
 
@@ -339,7 +339,7 @@ config.MedianWeight = 0.2  // Weak median influence
 **Linear** (default - most problems):
 
 ```go
-config.GravityType = "linear"
+config.GravityType = "paper"
 ```
 
 - Predictable, balanced exploration-exploitation

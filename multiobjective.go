@@ -1,6 +1,8 @@
 package mayfly
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"sort"
 )
@@ -17,6 +19,18 @@ type ParetoSolution struct {
 	Rank               int
 	CrowdingDistance   float64
 	DominationCount    int
+}
+
+// Dominates reports whether a Pareto objective vector dominates another under
+// minimization. Both vectors must be non-empty, finite, and equally sized.
+func Dominates(a, b []float64) (bool, error) {
+	if err := validateObjectiveVector(a, 0); err != nil {
+		return false, fmt.Errorf("first objective vector: %w", err)
+	}
+	if err := validateObjectiveVector(b, len(a)); err != nil {
+		return false, fmt.Errorf("second objective vector: %w", err)
+	}
+	return dominates(a, b), nil
 }
 
 // For minimization: a[i] <= b[i] for all i, and a[j] < b[j] for at least one j.
@@ -120,6 +134,15 @@ func fastNonDominatedSort(solutions []*ParetoSolution) [][]int {
 	return fronts
 }
 
+// FastNonDominatedSort validates and sorts a Pareto population into fronts.
+// It updates Rank and domination metadata on the supplied solutions.
+func FastNonDominatedSort(solutions []*ParetoSolution) ([][]int, error) {
+	if _, err := validateParetoSolutions(solutions, false); err != nil {
+		return nil, err
+	}
+	return fastNonDominatedSort(solutions), nil
+}
+
 // calculateCrowdingDistance calculates the crowding distance for solutions in a front.
 // Crowding distance measures how close a solution is to its neighbors.
 // Higher values indicate more isolated solutions (better diversity).
@@ -185,6 +208,25 @@ func calculateCrowdingDistance(solutions []*ParetoSolution, frontIndices []int) 
 			}
 		}
 	}
+}
+
+// CalculateCrowdingDistance validates a front and updates crowding distances.
+func CalculateCrowdingDistance(solutions []*ParetoSolution, frontIndices []int) error {
+	if _, err := validateParetoSolutions(solutions, false); err != nil {
+		return err
+	}
+	seen := make(map[int]struct{}, len(frontIndices))
+	for _, index := range frontIndices {
+		if index < 0 || index >= len(solutions) {
+			return fmt.Errorf("front index %d is outside [0,%d)", index, len(solutions))
+		}
+		if _, exists := seen[index]; exists {
+			return fmt.Errorf("front index %d is duplicated", index)
+		}
+		seen[index] = struct{}{}
+	}
+	calculateCrowdingDistance(solutions, frontIndices)
+	return nil
 }
 
 // crowdingDistanceComparison compares two solutions based on crowding distance.
@@ -256,6 +298,21 @@ func calculateHypervolume(solutions []*ParetoSolution, referencePoint []float64)
 	return hypervolume
 }
 
+// CalculateHypervolume returns the dominated hypervolume of a finite 2D front.
+func CalculateHypervolume(solutions []*ParetoSolution, referencePoint []float64) (float64, error) {
+	dimension, err := validateParetoSolutions(solutions, true)
+	if err != nil {
+		return 0, err
+	}
+	if dimension != 2 {
+		return 0, fmt.Errorf("hypervolume supports exactly 2 objectives, got %d", dimension)
+	}
+	if err := validateObjectiveVector(referencePoint, dimension); err != nil {
+		return 0, fmt.Errorf("reference point: %w", err)
+	}
+	return calculateHypervolume(solutions, referencePoint), nil
+}
+
 // calculateIGD calculates the Inverted Generational Distance (IGD) metric.
 // IGD measures both convergence and diversity by computing the average
 // distance from each point in the true Pareto front to the nearest
@@ -302,6 +359,19 @@ func calculateIGD(obtainedFront, trueFront []*ParetoSolution) float64 {
 
 	// Average distance
 	return totalDistance / float64(len(trueFront))
+}
+
+// CalculateIGD returns the inverted generational distance between finite,
+// non-empty fronts with matching objective dimensions.
+func CalculateIGD(obtainedFront, trueFront []*ParetoSolution) (float64, error) {
+	dimension, err := validateParetoSolutions(obtainedFront, true)
+	if err != nil {
+		return 0, fmt.Errorf("obtained front: %w", err)
+	}
+	if _, err = validateParetoSolutionsWithDimension(trueFront, dimension, true); err != nil {
+		return 0, fmt.Errorf("true front: %w", err)
+	}
+	return calculateIGD(obtainedFront, trueFront), nil
 }
 
 // selectByNSGA2 selects the best N solutions using NSGA-II selection.
@@ -359,4 +429,85 @@ func selectByNSGA2(solutions []*ParetoSolution, n int) []*ParetoSolution {
 	}
 
 	return selected
+}
+
+// SelectByNSGA2 returns defensive copies of the selected solutions.
+func SelectByNSGA2(solutions []*ParetoSolution, targetSize int) ([]*ParetoSolution, error) {
+	if targetSize < 0 {
+		return nil, fmt.Errorf("target size must be non-negative, got %d", targetSize)
+	}
+	if _, err := validateParetoSolutions(solutions, false); err != nil {
+		return nil, err
+	}
+	selected := selectByNSGA2(cloneParetoSolutions(solutions), targetSize)
+	return cloneParetoSolutions(selected), nil
+}
+
+func validateObjectiveVector(values []float64, expectedDimension int) error {
+	if len(values) == 0 {
+		return errors.New("objective vector is empty")
+	}
+	if expectedDimension > 0 && len(values) != expectedDimension {
+		return fmt.Errorf("objective dimension is %d, want %d", len(values), expectedDimension)
+	}
+	for i, value := range values {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return fmt.Errorf("objective %d is not finite", i)
+		}
+	}
+	return nil
+}
+
+func validateParetoSolutions(solutions []*ParetoSolution, requireNonEmpty bool) (int, error) {
+	return validateParetoSolutionsWithDimension(solutions, 0, requireNonEmpty)
+}
+
+func validateParetoSolutionsWithDimension(
+	solutions []*ParetoSolution,
+	expectedDimension int,
+	requireNonEmpty bool,
+) (int, error) {
+	if len(solutions) == 0 {
+		if requireNonEmpty {
+			return 0, errors.New("front is empty")
+		}
+		return expectedDimension, nil
+	}
+	dimension := expectedDimension
+	for i, solution := range solutions {
+		if solution == nil {
+			return 0, fmt.Errorf("solution %d is nil", i)
+		}
+		if dimension == 0 {
+			dimension = len(solution.ObjectiveValues)
+		}
+		if err := validateObjectiveVector(solution.ObjectiveValues, dimension); err != nil {
+			return 0, fmt.Errorf("solution %d: %w", i, err)
+		}
+		for j, coordinate := range solution.Position {
+			if math.IsNaN(coordinate) || math.IsInf(coordinate, 0) {
+				return 0, fmt.Errorf("solution %d position %d is not finite", i, j)
+			}
+		}
+	}
+	return dimension, nil
+}
+
+func cloneParetoSolution(solution *ParetoSolution) *ParetoSolution {
+	if solution == nil {
+		return nil
+	}
+	clone := *solution
+	clone.Position = append([]float64(nil), solution.Position...)
+	clone.ObjectiveValues = append([]float64(nil), solution.ObjectiveValues...)
+	clone.DominatedSolutions = append([]int(nil), solution.DominatedSolutions...)
+	return &clone
+}
+
+func cloneParetoSolutions(solutions []*ParetoSolution) []*ParetoSolution {
+	clones := make([]*ParetoSolution, len(solutions))
+	for i, solution := range solutions {
+		clones[i] = cloneParetoSolution(solution)
+	}
+	return clones
 }

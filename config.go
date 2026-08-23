@@ -4,6 +4,7 @@ import "runtime"
 
 // Gravity coefficient decay schedules for MPMA (Config.GravityType).
 const (
+	GravityPaper       = "paper"
 	GravityLinear      = "linear"
 	GravityExponential = "exponential"
 	GravitySigmoid     = "sigmoid"
@@ -52,7 +53,7 @@ func NewDefaultConfig() *Config {
 		MaxWorkers:     defaultMaxWorkers(),
 		// DESMA defaults
 		UseDESMA:        false,
-		EliteCount:      5,
+		EliteCount:      10,
 		SearchRange:     0, // Will be auto-calculated
 		EnlargeFactor:   1.05,
 		ReductionFactor: 0.95,
@@ -133,13 +134,13 @@ func NewEOBBMAConfig() *Config {
 // resistance to premature convergence on multimodal problems.
 //
 // Reference: An Improved Mayfly Optimization Algorithm Based on Median Position (2022),
-// IEEE Access, DOI: 10.1109/ACCESS.2022.XXXXXXX.
+// IEEE Access, DOI: 10.1109/ACCESS.2022.3160714.
 func NewMPMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseMPMA = true
-	config.MedianWeight = 0.5          // Balanced influence of median vs global best
-	config.GravityType = GravityLinear // Linear decay by default (simplest)
-	config.UseWeightedMedian = false   // Standard median by default
+	config.MedianWeight = 0.5         // Balanced influence of median vs global best
+	config.GravityType = GravityPaper // Published nonlinear gravity schedule
+	config.UseWeightedMedian = false  // Standard median by default
 
 	return config
 }
@@ -151,8 +152,6 @@ func NewMPMAConfig() *Config {
 // GSASMA enhances the standard Mayfly Algorithm with:
 // - Golden Sine Algorithm for adaptive exploration using golden ratio and sine function
 // - Simulated Annealing for probabilistic acceptance to escape local optima
-// - Hybrid Cauchy-Gaussian mutation for balanced exploration/exploitation
-// - Opposition-Based Learning on global best for expanded search coverage
 //
 // This variant is particularly effective for:
 // - Engineering optimization problems with many local optima
@@ -162,20 +161,33 @@ func NewMPMAConfig() *Config {
 // Key advantages:
 // - 10-20% improvement in convergence speed on engineering problems
 // - Better escape from local optima through SA acceptance
-// - Adaptive mutation strategy that transitions from exploration to exploitation
 // - Minimal tuning required with sensible defaults
 //
-// Reference: Improved mayfly algorithm based on hybrid mutation (2022),
-// Electronics Letters / IEEE.
+// Reference: Golden annealing crossover and mutation mayfly algorithm (2022),
+// AIP Advances, DOI: 10.1063/5.0108278.
 func NewGSASMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseGSASMA = true
 	config.InitialTemperature = 100.0           // High initial temp for early exploration
 	config.CoolingRate = 0.95                   // Gradual cooling (95% per iteration)
-	config.CauchyMutationRate = 0.3             // 30% Cauchy, 70% Gaussian by late phase
 	config.GoldenFactor = 1.0                   // Standard golden sine influence
 	config.CoolingSchedule = CoolingExponential // Fast early cooling, slow late cooling
-	config.ApplyOBLToGlobalBest = true          // Enable OBL for better coverage
+
+	return config
+}
+
+// NewHMMAConfig creates a default configuration for the Hybrid Mutation
+// Mayfly Algorithm. HMMA owns the adaptive Cauchy/Gaussian mutation and
+// periodic opposition stages that were incorrectly attributed to GSASMA in
+// releases through v0.6.0.
+//
+// Reference: An improved mayfly optimization algorithm based on hybrid
+// mutation (2022), Electronics Letters, DOI: 10.1049/ell2.12568.
+func NewHMMAConfig() *Config {
+	config := NewDefaultConfig()
+	config.UseHMMA = true
+	config.CauchyMutationRate = 0.3
+	config.ApplyOBLToGlobalBest = true
 
 	return config
 }

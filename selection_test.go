@@ -86,6 +86,7 @@ func TestEveryVariantConfigScalesItsOffspringCount(t *testing.T) {
 		"eobbma":  NewEOBBMAConfig,
 		"mpma":    NewMPMAConfig,
 		"gsasma":  NewGSASMAConfig,
+		"hmma":    NewHMMAConfig,
 		"aoblmoa": NewAOBLMOAConfig,
 	}
 

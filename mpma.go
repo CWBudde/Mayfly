@@ -6,46 +6,63 @@ import (
 	"sort"
 )
 
-// calculateMedianPosition calculates the median position across all mayflies in the population.
-// For each dimension, it computes the median value across all mayflies.
+// calculateMedianPosition returns the position of the median fitness-ranked
+// mayfly. The caller must supply the population in fitness order, as MPMA does.
+// For an even population the two middle ranked position vectors are averaged.
+// This deliberately does not calculate coordinate-wise medians: doing so can
+// synthesize a point that no middle-ranked mayfly represents.
 func calculateMedianPosition(population []*Mayfly) []float64 {
-	if len(population) == 0 {
+	if !validPopulationDimensions(population) {
 		return nil
 	}
 
-	// Get problem size from first mayfly
 	size := len(population[0].Position)
 	median := make([]float64, size)
+	middle := len(population) / 2
+	if len(population)%2 == 1 {
+		copy(median, population[middle].Position)
 
-	// For each dimension, calculate the median
-	for dim := range size {
-		// Collect values for this dimension
-		values := make([]float64, len(population))
-		for i, mayfly := range population {
-			values[i] = mayfly.Position[dim]
-		}
+		return median
+	}
 
-		// Sort values to find median
-		sort.Float64s(values)
-
-		// Calculate median
-		n := len(values)
-		if n%2 == 1 {
-			// Odd number: take middle value
-			median[dim] = values[n/2]
-		} else {
-			// Even number: average of two middle values
-			median[dim] = (values[n/2-1] + values[n/2]) / 2.0
-		}
+	for dimension := range size {
+		median[dimension] = (population[middle-1].Position[dimension] +
+			population[middle].Position[dimension]) / 2
 	}
 
 	return median
 }
 
+func validPopulationDimensions(population []*Mayfly) bool {
+	if len(population) == 0 || population[0] == nil || len(population[0].Position) == 0 {
+		return false
+	}
+
+	size := len(population[0].Position)
+	for _, mayfly := range population {
+		if mayfly == nil || len(mayfly.Position) != size {
+			return false
+		}
+	}
+
+	return true
+}
+
 // calculateWeightedMedianPosition calculates the weighted median position.
 // Higher weights give more influence to certain positions (typically better solutions).
 func calculateWeightedMedianPosition(population []*Mayfly, weights []float64) []float64 {
-	if len(population) == 0 || len(weights) != len(population) {
+	if !validPopulationDimensions(population) || len(weights) != len(population) {
+		return nil
+	}
+
+	maxWeight := 0.0
+	for _, weight := range weights {
+		if math.IsNaN(weight) || math.IsInf(weight, 0) || weight < 0 {
+			return nil
+		}
+		maxWeight = max(maxWeight, weight)
+	}
+	if maxWeight == 0 {
 		return nil
 	}
 
@@ -66,9 +83,9 @@ func calculateWeightedMedianPosition(population []*Mayfly, weights []float64) []
 		for i, mayfly := range population {
 			pairs[i] = valueWeight{
 				value:  mayfly.Position[dim],
-				weight: weights[i],
+				weight: weights[i] / maxWeight,
 			}
-			totalWeight += weights[i]
+			totalWeight += pairs[i].weight
 		}
 
 		// Sort by value
@@ -97,7 +114,7 @@ func calculateMedianPositionParallel(
 	population []*Mayfly,
 	maxWorkers int,
 ) ([]float64, error) {
-	if len(population) == 0 {
+	if !validPopulationDimensions(population) {
 		return nil, nil
 	}
 
@@ -105,21 +122,15 @@ func calculateMedianPositionParallel(
 	median := make([]float64, size)
 
 	err := parallelFor(ctx, size, maxWorkers, func(dimension int) {
-		values := make([]float64, len(population))
-		for i, mayfly := range population {
-			values[i] = mayfly.Position[dimension]
-		}
-
-		sort.Float64s(values)
-
-		middle := len(values) / 2
-		if len(values)%2 == 1 {
-			median[dimension] = values[middle]
+		middle := len(population) / 2
+		if len(population)%2 == 1 {
+			median[dimension] = population[middle].Position[dimension]
 
 			return
 		}
 
-		median[dimension] = (values[middle-1] + values[middle]) / 2
+		median[dimension] = (population[middle-1].Position[dimension] +
+			population[middle].Position[dimension]) / 2
 	})
 	if err != nil {
 		return nil, err
@@ -134,7 +145,18 @@ func calculateWeightedMedianPositionParallel(
 	weights []float64,
 	maxWorkers int,
 ) ([]float64, error) {
-	if len(population) == 0 || len(weights) != len(population) {
+	if !validPopulationDimensions(population) || len(weights) != len(population) {
+		return nil, nil
+	}
+
+	maxWeight := 0.0
+	for _, weight := range weights {
+		if math.IsNaN(weight) || math.IsInf(weight, 0) || weight < 0 {
+			return nil, nil
+		}
+		maxWeight = max(maxWeight, weight)
+	}
+	if maxWeight == 0 {
 		return nil, nil
 	}
 
@@ -151,8 +173,9 @@ func calculateWeightedMedianPositionParallel(
 		totalWeight := 0.0
 
 		for i, mayfly := range population {
-			pairs[i] = valueWeight{value: mayfly.Position[dimension], weight: weights[i]}
-			totalWeight += weights[i]
+			weight := weights[i] / maxWeight
+			pairs[i] = valueWeight{value: mayfly.Position[dimension], weight: weight}
+			totalWeight += weight
 		}
 
 		sort.Slice(pairs, func(i, j int) bool {
@@ -182,10 +205,18 @@ func calculateWeightedMedianPositionParallel(
 // that controls exploration-exploitation balance.
 // Returns a value that typically decreases from 1.0 to 0.0 over iterations.
 func calculateGravityCoefficient(gravityType string, iteration, maxIterations int) float64 {
+	if maxIterations <= 0 {
+		return math.NaN()
+	}
+
 	// Normalize iteration to [0, 1]
-	t := float64(iteration) / float64(maxIterations)
+	t := min(max(float64(iteration)/float64(maxIterations), 0), 1)
 
 	switch gravityType {
+	case GravityPaper:
+		// MPMA Eq. (17): g(t) = 0.5*sqrt(1-(t/T)^2) + 0.4.
+		return 0.5*math.Sqrt(max(1.0-t*t, 0)) + 0.4
+
 	case GravityExponential:
 		// Exponential decay: g = e^(-4t)
 		// Decays faster than linear, good for quick convergence

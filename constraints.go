@@ -1,9 +1,14 @@
 package mayfly
 
 import (
+	"errors"
 	"fmt"
 	"math"
 )
+
+// ErrNoFiniteObjectiveValue reports that initialization could not establish a
+// meaningful incumbent because every objective evaluation was non-finite.
+var ErrNoFiniteObjectiveValue = errors.New("initial population produced no finite objective value")
 
 // ConstraintEvaluation describes the aggregate constraint state of a
 // position. A zero violation is feasible.
@@ -180,12 +185,14 @@ func newConstraintEvaluator(objective ObjectiveFunction, constraints *Constraint
 	return &constraintEvaluator{objective: objective, constraints: constraints}
 }
 
-func (evaluator *constraintEvaluator) evaluate(position []float64, sanitize bool) CandidateEvaluation {
+func (evaluator *constraintEvaluator) evaluate(position []float64, _ bool) CandidateEvaluation {
 	constraint := EvaluateConstraints(position, evaluator.constraints)
 
 	cost := evaluator.objective(position)
-	if sanitize {
-		cost = sanitizeCost(cost)
+	if !isFinite(cost) {
+		// This package only minimizes. NaN and both infinities are invalid
+		// evaluations, never evidence that a candidate is exceptionally good.
+		cost = math.MaxFloat64
 	}
 
 	return CandidateEvaluation{

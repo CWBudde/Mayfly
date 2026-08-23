@@ -52,7 +52,7 @@ func TestGetAllVariantsHasStableCanonicalOrder(t *testing.T) {
 		names[i] = variant.Name()
 	}
 
-	want := []string{"MA", "DESMA", "OLCE-MA", "EOBBMA", "GSASMA", "MPMA", "AOBLMOA"}
+	want := []string{"MA", "DESMA", "OLCE-MA", "EOBBMA", "GSASMA", "HMMA", "MPMA", "AOBLMOA"}
 	if !reflect.DeepEqual(names, want) {
 		t.Fatalf("GetAllVariants names = %v, want %v", names, want)
 	}

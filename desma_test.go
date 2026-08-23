@@ -422,3 +422,22 @@ func TestGenerateEliteMayfliesZeroElites(t *testing.T) {
 			elite.Cost, currentBest.Cost)
 	}
 }
+
+func TestDESMAImprovedEliteHelperReportsTrueNoOps(t *testing.T) {
+	currentBest := Best{Position: []float64{1, 1}, Cost: 1}
+	evaluator := newConstraintEvaluator(func([]float64) float64 { return 1 }, nil)
+
+	elite, evaluations, improved := generateImprovedEliteMayfliesWithEvaluator(
+		currentBest, 0.5, 0, 2, -10, 10, evaluator, rand.New(rand.NewSource(42)),
+	)
+	if elite != nil || evaluations != 0 || improved {
+		t.Fatalf("zero elites = (%v, %d, %t), want (nil, 0, false)", elite, evaluations, improved)
+	}
+
+	elite, evaluations, improved = generateImprovedEliteMayfliesWithEvaluator(
+		currentBest, 0.5, 4, 2, -10, 10, evaluator, rand.New(rand.NewSource(42)),
+	)
+	if elite != nil || evaluations != 4 || improved {
+		t.Fatalf("unimproved elites = (%v, %d, %t), want (nil, 4, false)", elite, evaluations, improved)
+	}
+}

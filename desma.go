@@ -4,8 +4,8 @@
 //
 // Reference:
 // Du, P., Wang, J., Hao, Y., Niu, T., & Yang, W. (2022). Dynamic elite strategy
-// mayfly algorithm. PLOS One, 17(8), e0272766.
-// DOI: 10.1371/journal.pone.0272766
+// mayfly algorithm. PLOS One, 17(8), e0273155.
+// DOI: 10.1371/journal.pone.0273155
 // PMC: https://pmc.ncbi.nlm.nih.gov/articles/PMC9409577/
 //
 // DESMA enhances the standard Mayfly Algorithm with:
@@ -36,14 +36,35 @@ func generateEliteMayfliesWithEvaluator(
 	evaluator *constraintEvaluator,
 	rng *rand.Rand,
 ) (*Mayfly, int) {
-	bestElite := newMayfly(problemSize)
-	copy(bestElite.Position, currentBest.Position)
-	bestElite.Cost = currentBest.Cost
-	bestElite.ConstraintViolation = currentBest.ConstraintViolation
-	copy(bestElite.Best.Position, currentBest.Position)
-	bestElite.Best.Cost = currentBest.Cost
-	bestElite.Best.ConstraintViolation = currentBest.ConstraintViolation
+	bestElite, funcEvals, _ := generateImprovedEliteMayfliesWithEvaluator(
+		currentBest, searchRange, eliteCount, problemSize, lowerBound, upperBound,
+		evaluator, rng,
+	)
+	if bestElite != nil {
+		return bestElite, funcEvals
+	}
 
+	return mayflyFromBest(currentBest, problemSize), funcEvals
+}
+
+// generateImprovedEliteMayfliesWithEvaluator performs the DESMA elite search
+// while explicitly reporting whether it found a strict improvement. This lets
+// the optimizer make EliteCount==0 and unsuccessful searches true no-ops
+// instead of replacing an unrelated population member with a clone of gbest.
+func generateImprovedEliteMayfliesWithEvaluator(
+	currentBest Best,
+	searchRange float64,
+	eliteCount, problemSize int,
+	lowerBound, upperBound float64,
+	evaluator *constraintEvaluator,
+	rng *rand.Rand,
+) (*Mayfly, int, bool) {
+	if eliteCount <= 0 {
+		return nil, 0, false
+	}
+
+	bestElite := mayflyFromBest(currentBest, problemSize)
+	improved := false
 	funcEvals := 0
 
 	// Generate elite mayflies around current best
@@ -57,25 +78,35 @@ func generateEliteMayfliesWithEvaluator(
 			elite.Position[j] = currentBest.Position[j] + r1*searchRange
 		}
 
-		// Apply boundary constraints
 		maxVec(elite.Position, lowerBound)
 		minVec(elite.Position, upperBound)
-
-		// Evaluate elite mayfly
 		evaluator.evaluateMayfly(elite, false)
-
 		funcEvals++
 
-		// Update best elite if this one is better
 		if evaluator.betterMayfly(elite, bestElite) {
-			copy(bestElite.Position, elite.Position)
-			bestElite.Cost = elite.Cost
-			bestElite.ConstraintViolation = elite.ConstraintViolation
+			bestElite = elite
 			copy(bestElite.Best.Position, elite.Position)
 			bestElite.Best.Cost = elite.Cost
 			bestElite.Best.ConstraintViolation = elite.ConstraintViolation
+			improved = true
 		}
 	}
 
-	return bestElite, funcEvals
+	if !improved {
+		return nil, funcEvals, false
+	}
+
+	return bestElite, funcEvals, true
+}
+
+func mayflyFromBest(currentBest Best, problemSize int) *Mayfly {
+	bestElite := newMayfly(problemSize)
+	copy(bestElite.Position, currentBest.Position)
+	bestElite.Cost = currentBest.Cost
+	bestElite.ConstraintViolation = currentBest.ConstraintViolation
+	copy(bestElite.Best.Position, currentBest.Position)
+	bestElite.Best.Cost = currentBest.Cost
+	bestElite.Best.ConstraintViolation = currentBest.ConstraintViolation
+
+	return bestElite
 }

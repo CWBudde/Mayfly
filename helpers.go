@@ -76,11 +76,55 @@ func sortMayflies(mayflies []*Mayfly, evaluators ...*constraintEvaluator) {
 // effectiveNM reports the mutant count Optimize will actually use, resolving
 // the "0 means 5% of NPop" default the same way the main loop does.
 func effectiveNM(config *Config) int {
+	// AOBLMOA replaces offspring mutation with stochastic opposition-based
+	// learning, so NM is inert under it. Reporting zero here keeps that
+	// visible to callers and to validateOffspring instead of leaving NM to
+	// silently size a stage that never runs.
+	if config.UseAOBLMOA {
+		return 0
+	}
+
 	if config.NM != 0 {
 		return config.NM
 	}
 
 	return int(math.Round(0.05 * float64(config.NPop)))
+}
+
+// effectiveStrategySwitch reports the first iteration of the Aquila
+// exploitation phase.
+//
+// A positive StrategySwitch is taken literally; anything else defers to two
+// thirds of MaxIterations, the split the Aquila Optimizer paper prescribes.
+// The value is never written back, so a Config reused with a different
+// MaxIterations rescales instead of keeping the first run's split.
+//
+// A StrategySwitch of MaxIterations or more is legal and means the run never
+// leaves exploration; validation only rejects negative values.
+func effectiveStrategySwitch(config *Config) int {
+	if config.StrategySwitch > 0 {
+		return config.StrategySwitch
+	}
+
+	return (config.MaxIterations * 2) / 3
+}
+
+// effectiveAquilaWeight reports the deprecated AOBLMOA AquilaWeight override.
+//
+// The second result says whether an override is in force at all. At the
+// default of AquilaWeightAuto it is false and the branch is chosen the way the
+// paper chooses it, by a deterministic fitness test. Any other value restores
+// the pre-v0.6.0 behaviour of drawing the branch at random with that
+// probability.
+//
+// Like effectiveNC it never writes back, so the sentinel survives a run and a
+// reused Config keeps meaning what its author wrote.
+func effectiveAquilaWeight(config *Config) (float64, bool) {
+	if config.AquilaWeight == AquilaWeightAuto {
+		return 0, false
+	}
+
+	return config.AquilaWeight, true
 }
 
 // effectiveNC reports the offspring count Optimize will actually use.

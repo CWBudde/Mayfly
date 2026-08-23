@@ -94,6 +94,15 @@ type ConvergenceConfig struct {
 // "produce no offspring" and a caller who asked for that must keep getting it.
 const NCAuto = -1
 
+// AquilaWeightAuto makes the AOBLMOA update phase pick each individual's branch
+// the way the source paper picks it -- by a deterministic fitness test -- rather
+// than by a random draw against Config.AquilaWeight. It is the default.
+//
+// It is a distinct sentinel rather than the zero value because zero is a
+// meaningful probability ("never take an Aquila step"), and a caller who wrote
+// it must keep getting it. See effectiveAquilaWeight.
+const AquilaWeightAuto = -1.0
+
 // SelectionStrategy names the rule that pairs parents for crossover.
 type SelectionStrategy string
 
@@ -158,24 +167,29 @@ type Config struct {
 	OppositionRate        float64            `json:"opposition_rate"`
 	EliteOppositionCount  int                `json:"elite_opposition_count"`
 	OppositionProbability float64            `json:"opposition_probability"`
-	AquilaWeight          float64            `json:"aquila_weight"`
-	MedianWeight          float64            `json:"median_weight"`
-	LowerBound            float64            `json:"lower_bound"`
-	ProblemSize           int                `json:"problem_size"`
-	MaxWorkers            int                `json:"max_workers"`
-	GoldenFactor          float64            `json:"golden_factor"`
-	InitialTemperature    float64            `json:"initial_temperature"`
-	CoolingRate           float64            `json:"cooling_rate"`
-	CauchyMutationRate    float64            `json:"cauchy_mutation_rate"`
-	UseGSASMA             bool               `json:"use_gsasma"`
-	UseWeightedMedian     bool               `json:"use_weighted_median"`
-	ApplyOBLToGlobalBest  bool               `json:"apply_obl_to_global_best"`
-	UseAOBLMOA            bool               `json:"use_aoblmoa"`
-	UseMPMA               bool               `json:"use_mpma"`
-	UseEOBBMA             bool               `json:"use_eobbma"`
-	UseOLCE               bool               `json:"use_olce"`
-	UseDESMA              bool               `json:"use_desma"`
-	EnableParallel        bool               `json:"enable_parallel"`
+	// Deprecated: the AOBLMOA paper has no such knob. Its update phase moves
+	// every individual by Mayfly attraction or by an Aquila strategy, decided
+	// by a fitness test, not by chance. Leave this at AquilaWeightAuto for the
+	// published algorithm; set a probability in [0, 1] only to approximate the
+	// pre-v0.6.0 behaviour, which drew the branch at random.
+	AquilaWeight         float64 `json:"aquila_weight"`
+	MedianWeight         float64 `json:"median_weight"`
+	LowerBound           float64 `json:"lower_bound"`
+	ProblemSize          int     `json:"problem_size"`
+	MaxWorkers           int     `json:"max_workers"`
+	GoldenFactor         float64 `json:"golden_factor"`
+	InitialTemperature   float64 `json:"initial_temperature"`
+	CoolingRate          float64 `json:"cooling_rate"`
+	CauchyMutationRate   float64 `json:"cauchy_mutation_rate"`
+	UseGSASMA            bool    `json:"use_gsasma"`
+	UseWeightedMedian    bool    `json:"use_weighted_median"`
+	ApplyOBLToGlobalBest bool    `json:"apply_obl_to_global_best"`
+	UseAOBLMOA           bool    `json:"use_aoblmoa"`
+	UseMPMA              bool    `json:"use_mpma"`
+	UseEOBBMA            bool    `json:"use_eobbma"`
+	UseOLCE              bool    `json:"use_olce"`
+	UseDESMA             bool    `json:"use_desma"`
+	EnableParallel       bool    `json:"enable_parallel"`
 }
 
 // TerminationReason describes why an optimization run ended.

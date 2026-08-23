@@ -33,13 +33,31 @@ const (
 	NarrowedExploitation                       // X4: Walk and grab
 )
 
-// selectAquilaStrategy determines which hunting strategy to use based on iteration progress.
-// The first 2/3 of iterations use exploration strategies (X1, X2),
-// the last 1/3 uses exploitation strategies (X3, X4).
-func selectAquilaStrategy(currentIter, maxIter int, rng *rand.Rand) AquilaStrategy {
-	t := float64(currentIter) / float64(maxIter)
+// aquilaExplorationPhase reports whether iteration currentIter still belongs to
+// the exploration phase, which is the half of the strategy choice that does not
+// depend on chance.
+//
+// strategySwitch is the first iteration of the exploitation phase; resolve it
+// from a Config with effectiveStrategySwitch, which defaults it to two thirds
+// of MaxIterations. A strategySwitch of MaxIterations or more is legal and
+// means "never exploit".
+//
+// Note the off-by-one: Optimize iterates over [0, MaxIterations), so the last
+// iteration is MaxIterations-1 and the progress ratio never reaches 1.
+func aquilaExplorationPhase(currentIter, strategySwitch int) bool {
+	return currentIter < strategySwitch
+}
 
-	if t <= 2.0/3.0 {
+// selectAquilaStrategy determines which hunting strategy to use based on
+// iteration progress: exploration strategies (X1, X2) before strategySwitch,
+// exploitation strategies (X3, X4) from it onwards, with a fair coin deciding
+// between the two members of the active pair.
+//
+// This is the plain Aquila Optimizer rule. AOBLMOA does not use it: there the
+// sex of the individual fixes the strategy within the phase, so no coin is
+// flipped. See aoblmoaStrategyFor.
+func selectAquilaStrategy(currentIter, strategySwitch int, rng *rand.Rand) AquilaStrategy {
+	if aquilaExplorationPhase(currentIter, strategySwitch) {
 		// Exploration phase: use X1 or X2
 		if rng.Float64() < 0.5 {
 			return ExpandedExploration
@@ -222,11 +240,13 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter in
 //   - strategy: Which Aquila hunting strategy to use
 //   - currentIter, maxIter: Iteration progress
 //   - config: Algorithm configuration
+//   - rng: The generator to draw from; passed explicitly so a caller running on
+//     its own goroutine never has to copy Config to swap Config.Rand.
 //
 // Returns:
 //   - New position for the mayfly
 func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
-	strategy AquilaStrategy, currentIter, maxIter int, config *Config,
+	strategy AquilaStrategy, currentIter, maxIter int, config *Config, rng *rand.Rand,
 ) []float64 {
 	// Calculate mean position of population
 	mean := make([]float64, config.ProblemSize)
@@ -245,19 +265,19 @@ func applyAquilaStrategy(mayfly *Mayfly, globalBest Best, population []*Mayfly,
 	switch strategy {
 	case ExpandedExploration:
 		return aquilaExpandedExploration(mayfly.Position, globalBest.Position, mean,
-			currentIter, maxIter, config.LowerBound, config.UpperBound, config.Rand)
+			currentIter, maxIter, config.LowerBound, config.UpperBound, rng)
 
 	case NarrowedExploration:
 		return aquilaNarrowedExploration(mayfly.Position, globalBest.Position, population,
-			config.LowerBound, config.UpperBound, config.Rand)
+			config.LowerBound, config.UpperBound, rng)
 
 	case ExpandedExploitation:
 		return aquilaExpandedExploitation(mayfly.Position, globalBest.Position, mean,
-			currentIter, maxIter, config.LowerBound, config.UpperBound, config.Rand)
+			currentIter, maxIter, config.LowerBound, config.UpperBound, rng)
 
 	case NarrowedExploitation:
 		return aquilaNarrowedExploitation(mayfly.Position, globalBest.Position,
-			currentIter, maxIter, config.LowerBound, config.UpperBound, config.Rand)
+			currentIter, maxIter, config.LowerBound, config.UpperBound, rng)
 
 	default:
 		// Should never happen, but return current position as fallback

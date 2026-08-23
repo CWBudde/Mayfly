@@ -208,8 +208,10 @@ func ValidateConfig(config *Config) error {
 	}
 
 	if config.UseAOBLMOA {
-		if config.AquilaWeight < 0 || config.AquilaWeight > 1 {
-			return fmt.Errorf("aquila_weight should be in [0,1] (got %f)", config.AquilaWeight)
+		if config.AquilaWeight != AquilaWeightAuto &&
+			(config.AquilaWeight < 0 || config.AquilaWeight > 1) {
+			return fmt.Errorf("aquila_weight should be in [0,1] or AquilaWeightAuto (%v) (got %f)",
+				AquilaWeightAuto, config.AquilaWeight)
 		}
 
 		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
@@ -218,6 +220,12 @@ func ValidateConfig(config *Config) error {
 
 		if config.ArchiveSize < 0 {
 			return fmt.Errorf("archive_size must be non-negative (got %d)", config.ArchiveSize)
+		}
+
+		// Legal at or beyond max_iterations: the run then never leaves the
+		// Aquila exploration phase.
+		if config.StrategySwitch < 0 {
+			return fmt.Errorf("strategy_switch must be non-negative (got %d)", config.StrategySwitch)
 		}
 	}
 

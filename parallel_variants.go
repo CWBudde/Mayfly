@@ -385,7 +385,7 @@ func evaluateParallelAOBLMOA(
 	comparisonBatch := make([]*Mayfly, 0, 2*(len(males)+len(females)))
 
 	aquilaCandidateFor := func(target *Mayfly, population []*Mayfly, isMale bool) aquilaCandidate {
-		strategy := selectAquilaStrategy(currentIteration, maxIterations, rng)
+		strategy := selectAquilaStrategy(currentIteration, effectiveStrategySwitch(config), rng)
 		position := applyAquilaStrategy(
 			target,
 			*globalBest,
@@ -394,6 +394,7 @@ func evaluateParallelAOBLMOA(
 			currentIteration,
 			maxIterations,
 			&strategyConfig,
+			rng,
 		)
 
 		original := newMayfly(config.ProblemSize)

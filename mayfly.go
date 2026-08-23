@@ -166,12 +166,22 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	if config.UseAOBLMOA {
-		if config.AquilaWeight < 0 || config.AquilaWeight > 1 {
-			return nil, fmt.Errorf("AOBLMOA AquilaWeight must be in [0, 1], got %v", config.AquilaWeight)
+		if config.AquilaWeight != AquilaWeightAuto &&
+			(config.AquilaWeight < 0 || config.AquilaWeight > 1) {
+			return nil, fmt.Errorf(
+				"AOBLMOA AquilaWeight must be in [0, 1] or AquilaWeightAuto (%v), got %v",
+				AquilaWeightAuto, config.AquilaWeight,
+			)
 		}
 
 		if config.OppositionProbability < 0 || config.OppositionProbability > 1 {
 			return nil, fmt.Errorf("AOBLMOA OppositionProbability must be in [0, 1], got %v", config.OppositionProbability)
+		}
+
+		// A StrategySwitch at or beyond MaxIterations is deliberately legal:
+		// it keeps the run in the Aquila exploration phase throughout.
+		if config.StrategySwitch < 0 {
+			return nil, fmt.Errorf("AOBLMOA StrategySwitch must be non-negative, got %d", config.StrategySwitch)
 		}
 	}
 

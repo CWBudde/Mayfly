@@ -160,22 +160,61 @@ func TestAquilaNarrowedExploitation(t *testing.T) {
 func TestSelectAquilaStrategy(t *testing.T) {
 	rng := rand.New(rand.NewSource(42))
 
-	maxIter := 100
+	// Two thirds of 100 iterations, the default effectiveStrategySwitch
+	// resolves for MaxIterations = 100.
+	strategySwitch := 66
 
-	// Test exploration phase (first 2/3 of iterations)
+	// Test exploration phase (before the switch point)
 	earlyIter := 30
-	strategy := selectAquilaStrategy(earlyIter, maxIter, rng)
+	strategy := selectAquilaStrategy(earlyIter, strategySwitch, rng)
 
 	if strategy != ExpandedExploration && strategy != NarrowedExploration {
 		t.Errorf("Expected exploration strategy in early iteration %d, got %v", earlyIter, strategy)
 	}
 
-	// Test exploitation phase (last 1/3 of iterations)
+	// Test exploitation phase (from the switch point onwards)
 	lateIter := 80
-	strategy = selectAquilaStrategy(lateIter, maxIter, rng)
+	strategy = selectAquilaStrategy(lateIter, strategySwitch, rng)
 
 	if strategy != ExpandedExploitation && strategy != NarrowedExploitation {
 		t.Errorf("Expected exploitation strategy in late iteration %d, got %v", lateIter, strategy)
+	}
+}
+
+// TestEffectiveStrategySwitchHonoursConfig pins StrategySwitch as a live knob.
+// It was declared, defaulted, documented and tested as a tunable through
+// v0.5.1, but nothing ever read it: the phase split was hard-coded at 2/3.
+func TestEffectiveStrategySwitchHonoursConfig(t *testing.T) {
+	for _, testCase := range []struct {
+		name           string
+		maxIterations  int
+		strategySwitch int
+		want           int
+	}{
+		{name: "unset falls back to two thirds", maxIterations: 90, strategySwitch: 0, want: 60},
+		{name: "explicit value wins", maxIterations: 90, strategySwitch: 10, want: 10},
+		{name: "never exploit is legal", maxIterations: 90, strategySwitch: 500, want: 500},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			config := NewAOBLMOAConfig()
+			config.MaxIterations = testCase.maxIterations
+			config.StrategySwitch = testCase.strategySwitch
+
+			if got := effectiveStrategySwitch(config); got != testCase.want {
+				t.Errorf("effectiveStrategySwitch = %d, want %d", got, testCase.want)
+			}
+
+			// The resolution must not be written back, so the same Config
+			// reused with a different budget rescales.
+			if config.StrategySwitch != testCase.strategySwitch {
+				t.Errorf("effectiveStrategySwitch wrote back StrategySwitch = %d, want %d",
+					config.StrategySwitch, testCase.strategySwitch)
+			}
+		})
+	}
+
+	if !aquilaExplorationPhase(89, effectiveStrategySwitch(&Config{MaxIterations: 90, StrategySwitch: 500})) {
+		t.Error("a StrategySwitch beyond MaxIterations must keep the whole run in exploration")
 	}
 }
 
@@ -254,7 +293,7 @@ func TestApplyAquilaStrategy(t *testing.T) {
 	}
 
 	for _, strategy := range strategies {
-		result := applyAquilaStrategy(mayfly, globalBest, population, strategy, currentIter, maxIter, config)
+		result := applyAquilaStrategy(mayfly, globalBest, population, strategy, currentIter, maxIter, config, config.Rand)
 
 		// Check that result has correct length
 		if len(result) != config.ProblemSize {

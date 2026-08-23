@@ -31,9 +31,9 @@ func aquilaPosition(
 	config *Config,
 	evaluator *constraintEvaluator,
 ) ([]float64, int) {
-	strategy := selectAquilaStrategy(currentIter, maxIter, config.Rand)
+	strategy := selectAquilaStrategy(currentIter, effectiveStrategySwitch(config), config.Rand)
 	newPosition := applyAquilaStrategy(mayfly, globalBest, population,
-		strategy, currentIter, maxIter, config)
+		strategy, currentIter, maxIter, config, config.Rand)
 
 	// Apply opposition-based learning with probability OppositionProbability.
 	if config.Rand.Float64() >= config.OppositionProbability {

@@ -532,7 +532,8 @@ func (v *AOBLMOAVariant) FullName() string {
 }
 
 func (v *AOBLMOAVariant) Description() string {
-	return "Hybrid Mayfly-Aquila with 4 hunting strategies. Adaptive multi-phase optimization + multi-objective support."
+	return "Mayfly with the dance and flight branches replaced by Aquila hunting " +
+		"strategies, and offspring mutation replaced by stochastic opposition-based learning."
 }
 
 func (v *AOBLMOAVariant) GetConfig() *Config {

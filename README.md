@@ -110,15 +110,15 @@ fmt.Printf("Cost: %f, violation: %g\n",
 
 ## Algorithm Variants
 
-| Variant                                           | Best For                 | Improvement | Key Features                      |
-| ------------------------------------------------- | ------------------------ | ----------- | --------------------------------- |
-| **[Standard MA](docs/algorithms/standard-ma.md)** | General problems         | Baseline    | Balanced, well-tested             |
-| **[DESMA](docs/algorithms/desma.md)**             | Multimodal               | +70%        | Adaptive elite search             |
-| **[OLCE-MA](docs/algorithms/olce-ma.md)**         | Highly multimodal        | +15-30%     | Orthogonal learning + chaos       |
-| **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes     | +55%        | Lévy flights, Bare Bones          |
-| **[GSASMA](docs/algorithms/gsasma.md)**           | Fast convergence         | +10-20%     | Golden Sine + Simulated Annealing |
-| **[MPMA](docs/algorithms/mpma.md)**               | Stable convergence       | +10-30%     | Median guidance, robust           |
-| **[AOBLMOA](docs/algorithms/aoblmoa.md)**         | Adaptive/Multi-objective | Variable    | 4 hunting strategies              |
+| Variant                                           | Best For             | Improvement | Key Features                      |
+| ------------------------------------------------- | -------------------- | ----------- | --------------------------------- |
+| **[Standard MA](docs/algorithms/standard-ma.md)** | General problems     | Baseline    | Balanced, well-tested             |
+| **[DESMA](docs/algorithms/desma.md)**             | Multimodal           | +70%        | Adaptive elite search             |
+| **[OLCE-MA](docs/algorithms/olce-ma.md)**         | Highly multimodal    | +15-30%     | Orthogonal learning + chaos       |
+| **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes | +55%        | Lévy flights, Bare Bones          |
+| **[GSASMA](docs/algorithms/gsasma.md)**           | Fast convergence     | +10-20%     | Golden Sine + Simulated Annealing |
+| **[MPMA](docs/algorithms/mpma.md)**               | Stable convergence   | +10-30%     | Median guidance, robust           |
+| **[AOBLMOA](docs/algorithms/aoblmoa.md)**         | Adaptive             | Variable    | 4 hunting strategies + opposition |
 
 ### Using Variants
 
@@ -224,7 +224,7 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 - **[EOBBMA](docs/algorithms/eobbma.md)** - Elite Opposition-Based Bare Bones
 - **[GSASMA](docs/algorithms/gsasma.md)** - Golden Sine with Simulated Annealing
 - **[MPMA](docs/algorithms/mpma.md)** - Median Position-Based
-- **[AOBLMOA](docs/algorithms/aoblmoa.md)** - Aquila Optimizer-Based Learning
+- **[AOBLMOA](docs/algorithms/aoblmoa.md)** - Aquila Optimizer + opposition-based learning
 
 ### API Reference
 
@@ -318,7 +318,7 @@ Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orth
 - EOBBMA: _Arabian Journal for Science and Engineering_, 2024
 - GSASMA: _Electronics Letters / IEEE_, 2022
 - MPMA: _IEEE Access_, 2022
-- AOBLMOA: _PubMed / Various journals_, 2023
+- AOBLMOA: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
 
 See [Research References](docs/research.md) for complete citations.
 
@@ -346,7 +346,7 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 - **EOBBMA** = Standard MA + `levy.go` + `opposition.go` + Bare Bones framework
 - **GSASMA** = Standard MA + `golden_sine.go` + `annealing.go` + `cauchy.go` + `opposition.go`
 - **MPMA** = Standard MA + median position guidance
-- **AOBLMOA** = Standard MA + `aquila.go` + `opposition.go` + multi-objective framework
+- **AOBLMOA** = Standard MA with the dance/flight branches replaced by `aquila.go` strategies and mutation replaced by stochastic opposition from `opposition.go`
 
 ## Performance
 

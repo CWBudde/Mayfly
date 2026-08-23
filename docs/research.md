@@ -162,37 +162,50 @@ Lévy flights follow power-law distribution:
 
 ---
 
-## AOBLMOA - Aquila Optimizer-Based Learning
+## AOBLMOA - Aquila Optimizer and Opposition-Based Learning Mayfly Algorithm
 
-**AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023). PubMed / Various journals**
+Zhao, Y.; Huang, C.; Zhang, M.; Cui, Y. "AOBLMOA: A Hybrid Biomimetic
+Optimization Algorithm for Numerical Optimization and Engineering Design
+Problems." _Biomimetics_ **2023**, 8(4), 381. DOI:
+[10.3390/biomimetics8040381](https://doi.org/10.3390/biomimetics8040381).
+Open access (PMC10452254).
 
 ### Key Contributions
 
-- Hybrid algorithm combining Mayfly and Aquila Optimizer
-- Four adaptive hunting strategies (X1, X2, X3, X4)
-- Built-in multi-objective optimization (Pareto dominance)
-- Automatic strategy switching based on iteration progress
-- Opposition-Based Learning framework
+- Replaces the Mayfly nuptial dance (males) and random flight (females) with
+  Aquila Optimizer hunting strategies, keeping the attraction branches intact
+- Decides the branch by a deterministic fitness test, Eq. (29) and Eq. (30)
+- Fixes the hunting strategy by the individual's sex and the iteration phase,
+  rather than flipping a coin as plain AO does
+- Replaces Gaussian offspring mutation with stochastic opposition-based
+  learning, Eq. (31), and greedy selection, Eq. (32)
 
 ### Aquila Optimizer Strategies
 
 1. **X1 - Expanded Exploration**: High soar with vertical stoop
    - Uses population mean for global search
-   - First 1/3 of iterations
+   - Females, exploration phase
 
 2. **X2 - Narrowed Exploration**: Contour flight with short glide
    - Lévy flight for focused exploration
-   - Iterations 1/3 to 2/3
+   - Males, exploration phase
 
 3. **X3 - Expanded Exploitation**: Low flight with slow descent
    - Convergence with controlled exploration
-   - Last 1/3 of iterations
+   - Females, exploitation phase
 
 4. **X4 - Narrowed Exploitation**: Walk and grab
    - Intensive local search with quality function
-   - Final iterations
+   - Males, exploitation phase
 
-### Multi-Objective Framework
+The sex-to-strategy mapping above follows the paper's equations. Its abstract
+states the opposite assignment; see `aoblmoaStrategyFor`, which carries that
+open question.
+
+### Multi-Objective Helpers
+
+`Optimize` is single-objective. The package exports a Pareto toolkit for
+callers who want a front:
 
 - **Pareto dominance**: Solution A dominates B if no worse in all objectives and better in ≥1
 - **Crowding distance**: Measures solution density in objective space

@@ -247,15 +247,19 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 
 ### AOBLMOA Parameters
 
-| Parameter               | Type      | Default | Description                             |
-| ----------------------- | --------- | ------- | --------------------------------------- |
-| `UseAOBLMOA`            | `bool`    | false   | Enable AOBLMOA variant                  |
-| `AquilaWeight`          | `float64` | 0.5     | Aquila vs Mayfly blend (0-1)            |
-| `OppositionProbability` | `float64` | 0.3     | OBL application probability (0-1)       |
-| `ArchiveSize`           | `int`     | 100     | Max Pareto archive size                 |
-| `StrategySwitch`        | `int`     | Auto\*  | Iteration threshold for strategy switch |
+| Parameter               | Type      | Default            | Description                                                                   |
+| ----------------------- | --------- | ------------------ | ----------------------------------------------------------------------------- |
+| `UseAOBLMOA`            | `bool`    | false              | Enable AOBLMOA variant                                                        |
+| `StrategySwitch`        | `int`     | Auto\*             | First iteration of the Aquila exploitation phase                              |
+| `AquilaWeight`          | `float64` | `AquilaWeightAuto` | **Deprecated.** Restores the pre-v0.6.0 random branch draw when set to [0, 1] |
+| `OppositionProbability` | `float64` | 0.3                | Unused by AOBLMOA, which opposes every offspring                              |
+| `ArchiveSize`           | `int`     | 100                | Max size of a `ParetoArchive` the caller builds                               |
 
-\*Auto: 2/3 of MaxIterations
+\*Auto: `0` resolves to 2/3 of `MaxIterations` per run and is never written
+back. A value at or beyond `MaxIterations` is legal and means "never exploit".
+
+Note that `NM` is inert under AOBLMOA: stochastic opposition-based learning
+takes the slot Gaussian mutation occupies in the plain algorithm.
 
 ## Advanced Parameters
 

@@ -1,12 +1,27 @@
-# AOBLMOA - Aquila Optimizer-Based Learning Multi-Objective Algorithm
+# AOBLMOA - Aquila Optimizer and Opposition-Based Learning Mayfly Optimization Algorithm
 
 ## Research Reference
 
-**AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023). PubMed / Various journals**
+Zhao, Y.; Huang, C.; Zhang, M.; Cui, Y. "AOBLMOA: A Hybrid Biomimetic Optimization
+Algorithm for Numerical Optimization and Engineering Design Problems."
+_Biomimetics_ **2023**, 8(4), 381. DOI:
+[10.3390/biomimetics8040381](https://doi.org/10.3390/biomimetics8040381).
 
 ## Overview
 
-AOBLMOA is a powerful hybrid metaheuristic that combines the social behavior of the Mayfly Algorithm with the hunting strategies of the Aquila Optimizer. This variant excels at complex single-objective problems and provides built-in support for multi-objective optimization with Pareto dominance.
+AOBLMOA takes the Mayfly Algorithm and changes exactly two of its stages: the
+position update, where the Aquila Optimizer's hunting strategies replace the
+nuptial dance and the random flight, and the offspring stage, where stochastic
+opposition-based learning replaces Gaussian mutation.
+
+Everything else — attraction, crossover, sorting, truncation selection — is the
+plain Mayfly Algorithm.
+
+> **Changed in v0.6.0.** Through v0.5.1 this variant did not implement the
+> paper: the branch was a probability rather than a fitness test, opposition
+> ran inside the update phase rather than on the offspring, and `StrategySwitch`
+> was never read. Results recorded under earlier releases were produced by a
+> different algorithm. See the CHANGELOG.
 
 ## Key Innovations
 
@@ -42,51 +57,70 @@ The **Aquila Optimizer** mimics the hunting behavior of eagles (Aquila genus) wi
 - **Formula**: `X₄ = QF * Xbest - (G1 * X * rand) - G2 * Levy(D)`
 - **Behavior**: Fine-tunes solutions with quality function
 
-**Adaptive Strategy Switching**:
+**Which strategy applies**: there are two phases, not three, and no coin flip
+inside a phase. The individual's sex picks the pair; the phase picks the member.
 
 ```
-Iteration Progress     Strategy    Mode
-───────────────────────────────────────────
-0-33%                 X1/X2       Exploration
-33-66%                X2/X3       Transition
-66-100%               X3/X4       Exploitation
+Iteration            Males              Females
+──────────────────────────────────────────────────────────
+before StrategySwitch   X2 (narrowed expl.)  X1 (expanded expl.)
+from StrategySwitch on  X4 (narrowed expt.)  X3 (expanded expt.)
 ```
 
-### 2. Hybrid Operator Switching
+`StrategySwitch` defaults to two thirds of `MaxIterations`. See
+`aoblmoaStrategyFor`, which carries one of the paper's open contradictions
+(below).
 
-AOBLMOA creates a **hybrid** between Mayfly and Aquila behaviors:
+### 2. The Mayfly/Aquila branch is a fitness test
 
-- **AquilaWeight** parameter controls the blend (default: 1.0)
-- Each mayfly has probability `AquilaWeight` of using Aquila strategies
-- Otherwise it takes the standard Mayfly velocity and position update
-- Every individual moves every iteration, whichever branch it takes
-- **Best of both worlds**: Mayfly's social learning + Aquila's hunting intelligence
+Every individual moves every iteration. Which branch it takes is decided by
+fitness, not by chance:
 
-**Example with AquilaWeight = 0.5**:
+- A **male** keeps the Mayfly attraction term while the global best dominates
+  him — Eq. (29). Otherwise he hunts as an Aquila. The Aquila step replaces the
+  nuptial dance, nothing else.
+- A **female** keeps the attraction term while her paired male dominates her —
+  Eq. (30). Otherwise she hunts. The Aquila step replaces the random flight.
 
-```
-50% of mayflies → Use Aquila hunting strategies (adaptive)
-50% of mayflies → Use Mayfly velocity updates (social)
-```
+The Aquila branch is a position formula, so it leaves the individual's velocity
+untouched.
 
-The published algorithm has no `AquilaWeight`. It moves every individual either
-by Mayfly attraction or by an Aquila strategy chosen from the iteration phase,
-so `AquilaWeight = 1.0` is the closest match to the paper and is the default.
+`AquilaWeight` is **deprecated**. The paper has no such knob, and its old
+default of `1.0` sent the whole swarm down the Aquila branch every iteration,
+so the Mayfly attraction terms — the half of the hybrid the variant is named
+for — never ran. It now defaults to `AquilaWeightAuto`, which selects the
+fitness test. Setting a probability in `[0, 1]` restores the pre-v0.6.0
+behavior of drawing the branch at random; it exists only to reproduce old runs.
 
-### 3. Opposition-Based Learning Framework
+### 3. Stochastic opposition-based learning replaces mutation
 
-**Opposition-Based Learning** (OBL) expands search coverage:
+OBL is applied on the **offspring**, after crossover, to **every** offspring,
+with no gate:
 
-- **Opposition Point**: `x_opp = lower + upper - x`
-- **Applied with probability**: `OppositionProbability` (default: 0.3)
-- **Evaluation**: If opposition point is better, accept it
-- **Benefit**: Searches both sides of space simultaneously
+- **Opposition point**, Eq. (31): `x̃ = (lower + upper − x) × r`, `r ~ N(0, 1)`.
+  The Gaussian factor is essential; it is what distinguishes this from
+  Tizhoosh's plain reflection, and it means the result routinely leaves the
+  search bounds and is clamped back.
+- **Greedy selection**, Eq. (32): the better of the offspring and its opposition
+  point survives.
 
-**When Applied**:
+This stage takes the slot Gaussian mutation occupies in the plain algorithm, so
+**`NM` is inert under AOBLMOA** — `effectiveNM` reports `0` for it.
+`OppositionProbability` is likewise unread by AOBLMOA; it is kept because the
+other opposition-based variants use it.
 
-- After Aquila strategy updates
-- Before accepting new positions
-- Only to solutions selected by probability threshold
+The evaluation budget per iteration is `NPop + NPopF + 2·nc`.
+
+### 3a. Open questions in the paper
+
+The paper is ambiguous or self-contradictory at three points. Each is isolated
+to a single function with a comment saying exactly what to change to flip it:
+
+| Question                                                                     | Carried by                     | Current choice                                  |
+| ---------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------- |
+| Female branch inequality: Eq. (30) or the Algorithm 1 pseudocode?            | `aoblmoaFemaleTakesAttraction` | Eq. (30), matching `prepareStandardFemale`      |
+| Which sex gets which strategy pair? The equations and the abstract disagree. | `aoblmoaStrategyFor`           | The equations: males narrowed, females expanded |
+| Is Eq. (31)'s `r` drawn per solution or per dimension?                       | `stochasticOppositionPoint`    | Per dimension                                   |
 
 ### 4. Multi-Objective Building Blocks
 
@@ -168,17 +202,11 @@ func main() {
     config.UpperBound = 500
     config.MaxIterations = 1000
 
-    // More Aquila for aggressive exploration
-    config.AquilaWeight = 0.7  // 70% Aquila, 30% Mayfly
+    // Stay in the Aquila exploration phase longer than the default 2/3
+    config.StrategySwitch = 800  // Exploit only over the last 200 iterations
 
-    // Aggressive opposition learning
-    config.OppositionProbability = 0.4
-
-    // Larger archive for diverse solutions
+    // Larger archive for a Pareto front you build yourself
     config.ArchiveSize = 150
-
-    // Custom strategy switch point (default is 2/3 of iterations)
-    config.StrategySwitch = 600  // Switch at iteration 600
 
     // Larger population for complex landscape
     config.NPop = 50
@@ -301,12 +329,6 @@ func main() {
     config.UpperBound = 20.0 // Maximum allocation per resource
     config.MaxIterations = 600
 
-    // Balanced Aquila/Mayfly blend
-    config.AquilaWeight = 0.5
-
-    // Moderate opposition
-    config.OppositionProbability = 0.3
-
     // Larger archive for diverse Pareto solutions
     config.ArchiveSize = 120
 
@@ -345,19 +367,22 @@ func main() {
 ## AOBLMOA Parameters
 
 - `UseAOBLMOA`: Enable AOBLMOA variant (default: false)
-- `AquilaWeight`: Probability of using Aquila strategies vs Mayfly (default: 1.0, range: 0-1)
-- `OppositionProbability`: Probability of applying OBL (default: 0.3, range: 0-1)
-- `ArchiveSize`: Maximum size for a `ParetoArchive` the caller builds (default: 100). The optimizer no longer maintains one.
-- `StrategySwitch`: Iteration threshold for strategy switching (default: auto-set to 2/3 of MaxIterations)
+- `StrategySwitch`: First iteration of the Aquila exploitation phase (default: `0`, which resolves to 2/3 of `MaxIterations` per run and is never written back). A value at or beyond `MaxIterations` is legal and means "never exploit". Negative values are rejected.
+- `AquilaWeight`: **Deprecated.** Default `AquilaWeightAuto` (`-1`) selects the paper's fitness test. A probability in `[0, 1]` restores the pre-v0.6.0 random branch draw.
+- `OppositionProbability`: Unused by AOBLMOA, which opposes every offspring. Kept for the other opposition-based variants.
+- `NM`: Inert under AOBLMOA; opposition replaces mutation.
+- `ArchiveSize`: Maximum size for a `ParetoArchive` the caller builds (default: 100). The optimizer does not maintain one.
 
 ## Benefits
 
-- **Adaptive Strategy**: Four distinct strategies for different search phases
+- **Adaptive Strategy**: Four Aquila strategies split across sexes and phases
 - **Better Exploration**: Aquila strategies prevent premature convergence
-- **Multi-Objective Native**: No additional code needed for MO problems
-- **Flexible Hybrid**: AquilaWeight parameter controls algorithm balance
+- **Fitness-Directed Hybrid**: Only individuals a better solution dominates keep the social attraction term; the rest hunt
 - **Robust Performance**: Works well across diverse problem types
-- **Moderate Overhead**: ~20-30% more function evaluations for better solutions
+- **Predictable Budget**: `NPop + NPopF + 2·nc` evaluations per iteration
+
+Note that `Optimize` is single-objective. The Pareto helpers are exported
+building blocks for callers who want a front; the search does not read one.
 
 ## When to Use AOBLMOA
 
@@ -369,74 +394,50 @@ func main() {
 
 ## Parameter Tuning Guide
 
-### Aquila Weight Settings
+### Strategy Switch Settings
 
-**Balanced Hybrid** (default):
+`StrategySwitch` is the only phase knob AOBLMOA has, and the one the paper
+actually defines. It is the first iteration of the exploitation phase.
 
-```go
-config.AquilaWeight = 0.5  // 50% Aquila, 50% Mayfly
-```
-
-- Best starting point for most problems
-- Combines strengths of both algorithms
-
-**More Aquila** (aggressive exploration):
+**Default** (two thirds of the budget):
 
 ```go
-config.AquilaWeight = 0.7  // 70% Aquila, 30% Mayfly
+config.StrategySwitch = 0  // resolves to MaxIterations * 2 / 3
 ```
 
-- Use when: Problem has many deceptive local optima
-- Use when: Need strong exploration capability
-- Trade-off: May converge slower
+Leaving it at `0` means a `Config` reused with a different `MaxIterations`
+rescales, because the resolution is never written back.
 
-**More Mayfly** (social learning):
+**Exploit earlier** (smooth or unimodal landscapes):
 
 ```go
-config.AquilaWeight = 0.3  // 30% Aquila, 70% Mayfly
+config.StrategySwitch = config.MaxIterations / 3
 ```
 
-- Use when: Problem benefits from swarm intelligence
-- Use when: Social learning is effective (smooth landscapes)
-- Trade-off: Less adaptive strategy switching
-
-**Pure Strategies**:
+**Never exploit** (pure exploration, legal and occasionally useful as a
+baseline):
 
 ```go
-config.AquilaWeight = 1.0  // 100% Aquila (pure Aquila Optimizer)
-config.AquilaWeight = 0.0  // 100% Mayfly (standard Mayfly Algorithm)
+config.StrategySwitch = config.MaxIterations
 ```
 
-### Opposition Probability Settings
+### Aquila Weight (deprecated)
 
-**Moderate Opposition** (default):
+`AquilaWeight` has no counterpart in the paper. Leave it at its default:
 
 ```go
-config.OppositionProbability = 0.3  // 30% of updates use OBL
+config.AquilaWeight = mayfly.AquilaWeightAuto  // the default
 ```
 
-- Balanced exploration of opposite regions
-- Minimal computational overhead
-
-**Aggressive Opposition**:
+Set a probability only to reproduce a run recorded before v0.6.0:
 
 ```go
-config.OppositionProbability = 0.5  // 50% of updates use OBL
+config.AquilaWeight = 1.0  // the pre-v0.6.0 default: every individual hunts
+config.AquilaWeight = 0.0  // every individual takes the standard Mayfly update
 ```
 
-- Use when: Search space is large and sparsely sampled
-- Use when: Initial solutions are far from optimum
-- Caution: Doubles function evaluations for OBL
-
-**Conservative Opposition**:
-
-```go
-config.OppositionProbability = 0.1  // 10% of updates use OBL
-```
-
-- Use when: Function evaluations are expensive
-- Use when: Initial population is well-distributed
-- Lower overhead, less exploration
+Note that even with the override the offspring stage is the paper's, so a
+pre-v0.6.0 run is not reproduced exactly.
 
 ### Archive Size (Multi-Objective)
 

@@ -1,55 +1,88 @@
 package mayfly
 
-// AOBLMOA - Aquila Optimizer-Based Learning Multi-Objective Algorithm
+import "math/rand"
+
+// AOBLMOA - Aquila Optimizer and Opposition-Based Learning Mayfly Optimization
+// Algorithm.
 //
-// This file implements the AOBLMOA variant, which hybridizes the Mayfly Algorithm
-// with the Aquila Optimizer and adds opposition-based learning.
+// This file implements the AOBLMOA variant, which hybridizes the Mayfly
+// Algorithm with the Aquila Optimizer and replaces offspring mutation with
+// stochastic opposition-based learning.
 //
-// Key Features:
-// 1. Hybrid operator switching between Mayfly and Aquila strategies
-// 2. Opposition-based learning for expanded search space
-// 3. Multi-objective optimization support (Pareto dominance)
-// 4. Adaptive strategy selection based on iteration progress
+// Structure of one iteration, following the paper:
+//
+//  1. Update phase. Every individual either keeps the Mayfly attraction term
+//     or takes an Aquila step. The choice is a deterministic fitness test, not
+//     a probability: a male is attracted while the global best dominates him
+//     and hunts otherwise; a female is attracted while her paired male
+//     dominates her and hunts otherwise. The Aquila strategy is fixed by the
+//     individual's sex and by the iteration phase, so no coin is flipped
+//     inside a phase.
+//  2. Crossover, unchanged.
+//  3. Stochastic opposition-based learning on every offspring, Eq. (31),
+//     followed by greedy selection, Eq. (32). This replaces Gaussian mutation,
+//     which the paper does not have.
 //
 // Reference:
-// AOBLMOA: A Hybrid Biomimetic Optimization Algorithm (2023)
+// Zhao, Y.; Huang, C.; Zhang, M.; Cui, Y. AOBLMOA: A Hybrid Biomimetic
+// Optimization Algorithm for Numerical Optimization and Engineering Design
+// Problems. Biomimetics 2023, 8(4), 381. DOI: 10.3390/biomimetics8040381.
 
-// aquilaPosition returns an Aquila-Optimizer candidate position for the mayfly,
-// optionally refined by opposition-based learning.
+// aoblmoaMaleTakesAttraction reports whether a male keeps the ordinary Mayfly
+// attraction term this iteration instead of taking an Aquila step.
 //
-// The caller decides whether the individual takes the Aquila branch at all;
-// an individual that does not must still receive the ordinary Mayfly velocity
-// and position update. See applyAOBLMOAToPopulationWithEvaluator.
-//
-// It returns the candidate position and the number of objective evaluations it
-// consumed (two when opposition-based learning fired, zero otherwise).
-func aquilaPosition(
-	mayfly *Mayfly,
-	globalBest Best,
-	population []*Mayfly,
-	currentIter, maxIter int,
-	config *Config,
-	evaluator *constraintEvaluator,
-) ([]float64, int) {
-	strategy := selectAquilaStrategy(currentIter, maxIter, config.Rand)
-	newPosition := applyAquilaStrategy(mayfly, globalBest, population,
-		strategy, currentIter, maxIter, config)
+// Eq. (29): the male is attracted while the global best dominates him, and
+// hunts otherwise. This is exactly the test prepareStandardMale applies before
+// its nuptial dance, which is the branch AOBLMOA replaces.
+func aoblmoaMaleTakesAttraction(male *Mayfly, globalBest Best, evaluator *constraintEvaluator) bool {
+	return evaluator.better(evaluationFromBest(globalBest), evaluationFromMayfly(male))
+}
 
-	// Apply opposition-based learning with probability OppositionProbability.
-	if config.Rand.Float64() >= config.OppositionProbability {
-		return newPosition, 0
+// aoblmoaFemaleTakesAttraction reports whether a female keeps the ordinary
+// Mayfly attraction term this iteration instead of taking an Aquila step.
+//
+// OPEN PAPER QUESTION (resolved, but deliberately one line to flip).
+// The paper contradicts itself: Eq. (30) attracts the female while her paired
+// male dominates her, whereas the Algorithm 1 pseudocode states the opposite
+// inequality. Resolved in favor of Eq. (30), because AOBLMOA replaces
+// branches of the plain Mayfly Algorithm and prepareStandardFemale attracts on
+// exactly this test.
+//
+// To adopt the pseudocode reading instead, invert this one return and change
+// nothing else.
+func aoblmoaFemaleTakesAttraction(female, male *Mayfly, evaluator *constraintEvaluator) bool {
+	return evaluator.betterMayfly(male, female)
+}
+
+// aoblmoaStrategyFor maps an individual to its Aquila hunting strategy.
+//
+// OPEN PAPER QUESTION.
+// The paper contradicts itself about which sex gets which pair of strategies.
+// Its equations give males the narrowed strategies (X2 contour flight, X4 walk
+// and grab) and females the expanded ones (X1 high soar, X3 low flight); its
+// abstract swaps them. Both readings are internally coherent. The equations
+// win here, because a formal specification outranks prose and its terms can be
+// checked one by one against aquila.go.
+//
+// To adopt the abstract's reading instead, swap the two returned pairs and
+// change nothing else.
+//
+// Note that AOBLMOA, unlike plain AO, does not flip a coin within a phase: the
+// sex fixes the strategy, so this decision consumes no randomness.
+func aoblmoaStrategyFor(isMale, exploration bool) AquilaStrategy {
+	if isMale {
+		if exploration {
+			return NarrowedExploration
+		}
+
+		return NarrowedExploitation
 	}
 
-	oppositionPos := oppositionPoint(newPosition, config.LowerBound, config.UpperBound)
-
-	original := evaluator.evaluate(newPosition, false)
-	opposition := evaluator.evaluate(oppositionPos, false)
-
-	if evaluator.better(opposition, original) {
-		newPosition = oppositionPos
+	if exploration {
+		return ExpandedExploration
 	}
 
-	return newPosition, 2
+	return ExpandedExploitation
 }
 
 // snapshotPopulation freezes the position and fitness of a population at the
@@ -91,16 +124,129 @@ func applyAOBLMOAToPopulation(males, females []*Mayfly, globalBest Best,
 	)
 }
 
-// applyAOBLMOAToPopulationWithEvaluator moves and evaluates every male and
-// female exactly once.
+// applyAOBLMOAMoves moves every male and every female exactly once and
+// evaluates nothing.
 //
-// Each individual either takes an Aquila-Optimizer step (with probability
-// config.AquilaWeight) or the ordinary Mayfly velocity and position update.
-// Both branches move the individual: nobody is skipped. The Aquila strategy
-// itself already switches on iteration progress, matching the paper's
-// two-thirds exploration / one-third exploitation split.
+// It is the single implementation of the AOBLMOA update phase. Both the
+// sequential and the parallel path call it and then evaluate the swarm their
+// own way, which is what makes the two paths bit-identical by construction
+// rather than by two hand-synchronized copies of the same branch cascade --
+// the arrangement that let them drift apart twice before.
 //
-// It returns the number of objective evaluations consumed.
+// Every branch test reads the frozen snapshots, so the outcome cannot depend
+// on how far the loop has already progressed.
+//
+// dance and flight are consumed only by the deprecated AquilaWeight override.
+// The published algorithm replaces the nuptial-dance and random-flight
+// branches wholesale, so under the default neither coefficient can reach the
+// update.
+//
+// Note that the Aquila branch deliberately leaves the velocity untouched.
+// Branches two and three of Eq. (29) and Eq. (30) are position formulas, not
+// velocity formulas: the individual is teleported by the hunting strategy and
+// keeps the velocity it carried into the iteration.
+func applyAOBLMOAMoves(
+	males, females []*Mayfly,
+	globalBest Best,
+	currentIter, maxIter int,
+	g, dance, flight float64,
+	config *Config,
+	rng *rand.Rand,
+	evaluator *constraintEvaluator,
+) {
+	// Every individual is updated against the state the swarm had when the
+	// iteration began, so the result does not depend on the update order.
+	frozenMales := snapshotPopulation(males)
+	frozenFemales := snapshotPopulation(females)
+
+	exploration := aquilaExplorationPhase(currentIter, effectiveStrategySwitch(config))
+	weight, overridden := effectiveAquilaWeight(config)
+
+	for i, male := range males {
+		// The deprecated AquilaWeight override draws once per individual,
+		// before the branch and in the order the pre-v0.6.0 code drew, and
+		// falls back to the complete standard update -- attraction or nuptial
+		// dance -- so a caller who sets it gets the old behavior back rather
+		// than an approximation of it. dance and flight reach nothing else.
+		if overridden {
+			if rng.Float64() >= weight {
+				prepareStandardMale(male, globalBest, nil, g, dance, g, config, rng, evaluator)
+
+				continue
+			}
+
+			aoblmoaAquilaStep(male, globalBest, frozenMales, true, exploration,
+				currentIter, maxIter, config, rng)
+
+			continue
+		}
+
+		if aoblmoaMaleTakesAttraction(frozenMales[i], globalBest, evaluator) {
+			prepareAttractedMale(male, globalBest, nil, g, g, config)
+			applyVelocityAndMove(male, config)
+
+			continue
+		}
+
+		aoblmoaAquilaStep(male, globalBest, frozenMales, true, exploration,
+			currentIter, maxIter, config, rng)
+	}
+
+	for i, female := range females {
+		if overridden {
+			if rng.Float64() >= weight {
+				prepareStandardFemale(female, frozenMales[i], g, flight, config, rng, evaluator)
+
+				continue
+			}
+
+			aoblmoaAquilaStep(female, globalBest, frozenFemales, false, exploration,
+				currentIter, maxIter, config, rng)
+
+			continue
+		}
+
+		if aoblmoaFemaleTakesAttraction(frozenFemales[i], frozenMales[i], evaluator) {
+			prepareAttractedFemale(female, frozenMales[i], g, config)
+			applyVelocityAndMove(female, config)
+
+			continue
+		}
+
+		aoblmoaAquilaStep(female, globalBest, frozenFemales, false, exploration,
+			currentIter, maxIter, config, rng)
+	}
+}
+
+// aoblmoaAquilaStep replaces an individual's position with the one its Aquila
+// hunting strategy prescribes, clamped to the search bounds. The velocity is
+// left as it was; see applyAOBLMOAMoves.
+func aoblmoaAquilaStep(
+	target *Mayfly,
+	globalBest Best,
+	frozen []*Mayfly,
+	isMale, exploration bool,
+	currentIter, maxIter int,
+	config *Config,
+	rng *rand.Rand,
+) {
+	position := applyAquilaStrategy(
+		target, globalBest, frozen, aoblmoaStrategyFor(isMale, exploration),
+		currentIter, maxIter, config, rng,
+	)
+
+	copy(target.Position, position)
+	maxVec(target.Position, config.LowerBound)
+	minVec(target.Position, config.UpperBound)
+}
+
+// applyAOBLMOAToPopulationWithEvaluator runs one sequential AOBLMOA update
+// phase: it moves every male and female exactly once, evaluates each of them
+// once and refreshes the males' personal bests.
+//
+// It returns the number of objective evaluations consumed, which is always the
+// population size: opposition-based learning has moved to the offspring stage,
+// where the paper puts it, so the update phase spends nothing extra.
 func applyAOBLMOAToPopulationWithEvaluator(
 	males, females []*Mayfly,
 	globalBest Best,
@@ -109,93 +255,59 @@ func applyAOBLMOAToPopulationWithEvaluator(
 	config *Config,
 	evaluator *constraintEvaluator,
 ) int {
-	evaluations := 0
-
-	// Every individual is updated against the state the swarm had when the
-	// iteration began, so the result does not depend on the update order.
-	frozenMales := snapshotPopulation(males)
-	frozenFemales := snapshotPopulation(females)
+	applyAOBLMOAMoves(males, females, globalBest, currentIter, maxIter, g, dance, flight,
+		config, config.Rand, evaluator)
 
 	for _, male := range males {
-		if config.Rand.Float64() < config.AquilaWeight {
-			newPos, oblEvals := aquilaPosition(
-				male, globalBest, frozenMales, currentIter, maxIter, config, evaluator,
-			)
-			evaluations += oblEvals
-
-			copy(male.Position, newPos)
-			maxVec(male.Position, config.LowerBound)
-			minVec(male.Position, config.UpperBound)
-		} else {
-			prepareStandardMale(
-				male, globalBest, nil, g, dance, g, config, config.Rand, evaluator,
-			)
-		}
-
 		evaluator.evaluateMayfly(male, false)
-
-		evaluations++
-
-		if evaluator.better(evaluationFromMayfly(male), evaluationFromBest(male.Best)) {
-			male.Best.Cost = male.Cost
-			male.Best.ConstraintViolation = male.ConstraintViolation
-			copy(male.Best.Position, male.Position)
-		}
 	}
 
-	for i, female := range females {
-		if config.Rand.Float64() < config.AquilaWeight {
-			newPos, oblEvals := aquilaPosition(
-				female, globalBest, frozenFemales, currentIter, maxIter, config, evaluator,
-			)
-			evaluations += oblEvals
-
-			copy(female.Position, newPos)
-			maxVec(female.Position, config.LowerBound)
-			minVec(female.Position, config.UpperBound)
-		} else {
-			prepareStandardFemale(
-				female, frozenMales[i], g, flight, config, config.Rand, evaluator,
-			)
-		}
-
+	for _, female := range females {
 		evaluator.evaluateMayfly(female, false)
-
-		evaluations++
 	}
 
-	return evaluations
+	updatePersonalBests(males, evaluator)
+
+	return len(males) + len(females)
 }
 
-// initializeAOBLMOA initializes AOBLMOA-specific parameters.
-// This is called once at the start of optimization.
-func initializeAOBLMOA(config *Config) {
-	// Set strategy switch point if not already set
-	if config.StrategySwitch == 0 {
-		config.StrategySwitch = (config.MaxIterations * 2) / 3
+// prepareStochasticOBL builds the stochastic opposition point of every
+// offspring, Eq. (31). It draws every random number the stage needs and
+// evaluates nothing, so the sequential and the parallel path can share it
+// verbatim and differ only in how they evaluate the result.
+func prepareStochasticOBL(offspring []*Mayfly, config *Config, rng *rand.Rand) []*Mayfly {
+	opposites := make([]*Mayfly, len(offspring))
+
+	for i, child := range offspring {
+		opposite := newMayfly(len(child.Position))
+		opposite.Position = stochasticOppositionPoint(
+			child.Position, config.LowerBound, config.UpperBound, rng,
+		)
+		opposites[i] = opposite
 	}
 
-	// Ensure opposition probability is in valid range
-	if config.OppositionProbability < 0 {
-		config.OppositionProbability = 0
-	}
+	return opposites
+}
 
-	if config.OppositionProbability > 1 {
-		config.OppositionProbability = 1
-	}
+// commitStochasticOBL applies the greedy selection of Eq. (32): each offspring
+// is replaced by its opposition point when that point is the better of the
+// two, and keeps its own position otherwise.
+//
+// Both slices must already be evaluated.
+func commitStochasticOBL(offspring, opposites []*Mayfly, evaluator *constraintEvaluator) {
+	for i, child := range offspring {
+		opposite := opposites[i]
+		if !evaluator.betterMayfly(opposite, child) {
+			continue
+		}
 
-	// Ensure Aquila weight is in valid range
-	if config.AquilaWeight < 0 {
-		config.AquilaWeight = 0
-	}
+		copy(child.Position, opposite.Position)
+		child.Cost = opposite.Cost
+		child.ConstraintViolation = opposite.ConstraintViolation
 
-	if config.AquilaWeight > 1 {
-		config.AquilaWeight = 1
-	}
-
-	// Ensure archive size is positive
-	if config.ArchiveSize <= 0 {
-		config.ArchiveSize = 100
+		copy(child.Best.Position, child.Position)
+		child.Best.Cost = child.Cost
+		child.Best.ConstraintViolation = child.ConstraintViolation
 	}
 }
 

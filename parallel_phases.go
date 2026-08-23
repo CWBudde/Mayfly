@@ -65,26 +65,27 @@ func prepareStandardFemale(
 	randomFlight := unifrndVec(-1, 1, config.ProblemSize, rng)
 
 	if evaluator.betterMayfly(male, female) {
-		for j := range config.ProblemSize {
-			distance := male.Position[j] - female.Position[j]
-			female.Velocity[j] = g*female.Velocity[j] +
-				config.A3*math.Exp(-config.Beta*distance*distance)*distance
-		}
+		prepareAttractedFemale(female, male, g, config)
 	} else {
 		for j := range config.ProblemSize {
 			female.Velocity[j] = g*female.Velocity[j] + flight*randomFlight[j]
 		}
 	}
 
-	maxVec(female.Velocity, config.VelMin)
-	minVec(female.Velocity, config.VelMax)
+	applyVelocityAndMove(female, config)
+}
 
+// prepareAttractedFemale applies the female attraction term of the Mayfly
+// velocity update: the female is drawn toward the male she is paired with.
+//
+// It mirrors prepareAttractedMale and, like it, only writes the velocity; the
+// caller clamps it and moves the individual through applyVelocityAndMove.
+func prepareAttractedFemale(female, male *Mayfly, g float64, config *Config) {
 	for j := range config.ProblemSize {
-		female.Position[j] += female.Velocity[j]
+		distance := male.Position[j] - female.Position[j]
+		female.Velocity[j] = g*female.Velocity[j] +
+			config.A3*math.Exp(-config.Beta*distance*distance)*distance
 	}
-
-	maxVec(female.Position, config.LowerBound)
-	minVec(female.Position, config.UpperBound)
 }
 
 func prepareStandardMales(
@@ -136,15 +137,26 @@ func prepareStandardMale(
 		}
 	}
 
-	maxVec(male.Velocity, config.VelMin)
-	minVec(male.Velocity, config.VelMax)
+	applyVelocityAndMove(male, config)
+}
+
+// applyVelocityAndMove clamps a mayfly's velocity to the configured limits,
+// steps its position by that velocity and clamps the position to the search
+// bounds.
+//
+// It is the tail every Mayfly-style position update shares, extracted so that
+// the attraction branches can be reused by variants that replace only the
+// random branch.
+func applyVelocityAndMove(mayfly *Mayfly, config *Config) {
+	maxVec(mayfly.Velocity, config.VelMin)
+	minVec(mayfly.Velocity, config.VelMax)
 
 	for j := range config.ProblemSize {
-		male.Position[j] += male.Velocity[j]
+		mayfly.Position[j] += mayfly.Velocity[j]
 	}
 
-	maxVec(male.Position, config.LowerBound)
-	minVec(male.Position, config.UpperBound)
+	maxVec(mayfly.Position, config.LowerBound)
+	minVec(mayfly.Position, config.UpperBound)
 }
 
 func prepareAttractedMale(

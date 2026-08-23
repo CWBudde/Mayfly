@@ -9,6 +9,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `AquilaWeightAuto`, the sentinel that selects AOBLMOA's published branch rule.
+  See the Changed and Deprecated entries below.
 - `WithPopulationObserver` reports both populations after every completed
   iteration, as a `PopulationSnapshot` of deep copies. `WithProgressObserver`
   only ever carried the global best, so there was no way to watch the swarm
@@ -23,6 +25,81 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   variants. Everything shown is computed by this library compiled to `js/wasm`;
   no part of the algorithm is reimplemented in JavaScript. `just run-wasm-demo`
   builds and serves it locally.
+
+### Changed
+
+- **AOBLMOA now implements its source paper.** This is a behavior change, not a
+  fix: results for a given seed differ from every prior release, and
+  **recorded AOBLMOA results should be regarded as produced by a different
+  algorithm.** Three structural deviations from Zhao, Y.; Huang, C.; Zhang, M.;
+  Cui, Y., "AOBLMOA: A Hybrid Biomimetic Optimization Algorithm for Numerical
+  Optimization and Engineering Design Problems", _Biomimetics_ 2023, 8(4), 381
+  ([10.3390/biomimetics8040381](https://doi.org/10.3390/biomimetics8040381)):
+  - The Mayfly/Aquila switch was a probability; it is a deterministic fitness
+    test. The paper keeps the attraction branches of the Mayfly Algorithm
+    verbatim and replaces only the nuptial dance (males, Eq. 29) and the random
+    flight (females, Eq. 30). Which branch an individual takes follows from
+    whether a better solution dominates it. At the old default of
+    `AquilaWeight = 1.0` the attraction terms — the Mayfly half of the hybrid —
+    never ran at all. Measured before the change on D=8 Sphere over 500
+    iterations and 15 seeds: median `6.66e-05` at weight 1.0 against
+    `2.12e-82` at weight 0.0.
+  - Opposition-based learning was in the wrong pipeline slot. It fired at
+    `p = 0.3` on a post-Aquila candidate inside the update phase, used the plain
+    reflection `lb + ub − x`, and left Gaussian mutation in place. The paper
+    replaces _offspring mutation_ with stochastic opposition on every offspring
+    after crossover, ungated: Eq. (31) `x̃ = (lb + ub − x) × r` with
+    `r ~ N(0,1)` — the `× r` is essential — followed by the greedy selection of
+    Eq. (32). Gaussian mutation is removed rather than gated, so `NM` is inert
+    under AOBLMOA; `effectiveNM` reports `0` for it. `OppositionProbability` is
+    likewise unread by AOBLMOA. The evaluation budget per iteration is now
+    `NPop + NPopF + 2·nc`.
+  - Within a phase, the Aquila strategy is fixed by the individual's sex rather
+    than by a coin flip, so AOBLMOA consumes no randomness on that decision.
+
+  `StrategySwitch` was declared, defaulted, documented and tested as a tunable
+  through v0.5.1, but nothing read it: the phase split was hard-coded at two
+  thirds. It is now honored. `0` still resolves to `MaxIterations * 2 / 3`, and
+  the resolution is never written back, so a `Config` reused with a different
+  budget rescales. A value at or beyond `MaxIterations` is legal and means
+  "never exploit"; negative values are rejected by both `Optimize` and
+  `ValidateConfig`.
+
+  `initializeAOBLMOA` is gone. It mutated the `Config` in place on the first
+  iteration, which would have clamped the new `AquilaWeightAuto` sentinel away —
+  the same reused-`Config` hazard `NCAuto` already forbids. Validation covers
+  every range it clamped.
+
+  Both AOBLMOA paths now share one move function that evaluates nothing, so the
+  sequential and parallel implementations agree by construction rather than by
+  two hand-maintained copies of the same branch cascade — the arrangement that
+  drifted twice before.
+
+  **Three points where the paper is ambiguous or self-contradictory** are each
+  isolated to one function, with a comment naming the question and saying
+  exactly what to change to flip it:
+  - The female branch inequality — Eq. (30) or the Algorithm 1 pseudocode,
+    which states the opposite? Carried by `aoblmoaFemaleTakesAttraction`.
+    Resolved for Eq. (30), which matches `prepareStandardFemale`: AOBLMOA
+    replaces branches of exactly that algorithm.
+  - Which sex gets which strategy pair? The equations give males X2/X4 and
+    females X1/X3; the abstract swaps them. Carried by `aoblmoaStrategyFor`.
+    **Open**; it follows the equations, because a formal specification outranks
+    prose.
+  - Is Eq. (31)'s `r` drawn per solution or per dimension? The subscript
+    notation is inconsistent. Carried by `stochasticOppositionPoint`.
+    **Open**; per dimension.
+
+### Deprecated
+
+- `Config.AquilaWeight`. The published AOBLMOA has no such knob; the branch is a
+  fitness test. The field now defaults to the `AquilaWeightAuto` sentinel
+  (`-1`), which selects the paper's behavior, and both `Optimize` and
+  `ValidateConfig` accept it. Setting a probability in `[0, 1]` restores the
+  pre-v0.6.0 random branch draw, complete with the standard update's own dance
+  and flight branches. Note that it restores the branch choice only: the
+  offspring stage is the paper's either way, so a pre-v0.6.0 run is not
+  reproduced exactly.
 
 ### Fixed
 

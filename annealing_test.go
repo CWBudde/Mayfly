@@ -88,9 +88,11 @@ func TestAnnealingNormalizesInvalidDirectInputs(t *testing.T) {
 		scheduler.ScheduleType != CoolingExponential {
 		t.Fatalf("normalized scheduler = %+v", scheduler)
 	}
+
 	if probability := acceptanceProbability(1, math.NaN(), 1); probability != 0 {
 		t.Errorf("NaN candidate probability = %v, want 0", probability)
 	}
+
 	if probability := acceptanceProbability(1, 2, math.NaN()); probability != 0 {
 		t.Errorf("invalid-temperature probability = %v, want 0", probability)
 	}

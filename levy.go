@@ -53,6 +53,7 @@ func levyFlight(alpha, beta float64, rng *rand.Rand) float64 {
 	if math.IsNaN(step) {
 		return 0
 	}
+
 	if math.IsInf(step, 0) {
 		return math.Copysign(math.MaxFloat64, step)
 	}

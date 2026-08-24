@@ -13,9 +13,11 @@ func prepareEOBBMAFemales(
 ) {
 	femaleSnapshot := cloneMayflies(females)
 	maleSnapshot := cloneMayflies(males)
+
 	for i := range females {
 		female := &femaleSnapshot[i]
 		male := &maleSnapshot[i]
+
 		var position, center []float64
 		if evaluator.betterMayfly(male, female) {
 			position, center = eobbmaGaussianFemalePosition(female.Position, male.Position, rng)
@@ -23,6 +25,7 @@ func prepareEOBBMAFemales(
 			position = eobbmaLevyPosition(female.Position, config.LevyAlpha, config.LevyBeta, rng)
 			center = female.Position
 		}
+
 		copy(females[i].Position, eobbmaRepairPosition(
 			position, center, config.LowerBound, config.UpperBound,
 		))
@@ -33,6 +36,7 @@ func prepareEOBBMAMales(males []*Mayfly, globalBest Best, config *Config, rng *r
 	snapshot := cloneMayflies(males)
 	for i := range males {
 		male := &snapshot[i]
+
 		var position, center []float64
 		if i == 0 {
 			position = eobbmaLevyPosition(male.Position, config.LevyAlpha, config.LevyBeta, rng)
@@ -44,6 +48,7 @@ func prepareEOBBMAMales(males []*Mayfly, globalBest Best, config *Config, rng *r
 				male.Cost, globalBest.Cost, rng,
 			)
 		}
+
 		copy(males[i].Position, eobbmaRepairPosition(
 			position, center, config.LowerBound, config.UpperBound,
 		))
@@ -57,14 +62,17 @@ func eobbmaDistinctPeers(population []Mayfly, excluded int, rng *rand.Rand) ([]f
 			indices = append(indices, i)
 		}
 	}
+
 	if len(indices) < 2 {
 		return population[excluded].Position, population[excluded].Best.Position
 	}
+
 	firstOffset := rng.Intn(len(indices))
 	first := indices[firstOffset]
 	indices[firstOffset] = indices[len(indices)-1]
 	indices = indices[:len(indices)-1]
 	second := indices[rng.Intn(len(indices))]
+
 	return population[first].Position, population[second].Position
 }
 
@@ -110,10 +118,12 @@ func prepareStandardFemale(
 // caller clamps it and moves the individual through applyVelocityAndMove.
 func prepareAttractedFemale(female, male *Mayfly, g float64, config *Config) {
 	distanceSquared := 0.0
+
 	for j := range config.ProblemSize {
 		delta := male.Position[j] - female.Position[j]
 		distanceSquared += delta * delta
 	}
+
 	attraction := config.A3 * math.Exp(-config.Beta*distanceSquared)
 	for j := range config.ProblemSize {
 		distance := male.Position[j] - female.Position[j]
@@ -204,16 +214,19 @@ func prepareAttractedMale(
 	personalDistanceSquared := 0.0
 	globalDistanceSquared := 0.0
 	medianDistanceSquared := 0.0
+
 	for j := range config.ProblemSize {
 		personalDelta := male.Best.Position[j] - male.Position[j]
 		globalDelta := globalBest.Position[j] - male.Position[j]
 		personalDistanceSquared += personalDelta * personalDelta
 		globalDistanceSquared += globalDelta * globalDelta
+
 		if useMedian {
 			medianDelta := medianPosition[j] - male.Position[j]
 			medianDistanceSquared += medianDelta * medianDelta
 		}
 	}
+
 	personalAttraction := config.A1 * math.Exp(-config.Beta*personalDistanceSquared)
 	globalAttraction := config.A2 * math.Exp(-config.Beta*globalDistanceSquared)
 	medianAttraction := config.MedianWeight * math.Exp(-config.Beta*medianDistanceSquared)

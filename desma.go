@@ -81,6 +81,7 @@ func generateImprovedEliteMayfliesWithEvaluator(
 		maxVec(elite.Position, lowerBound)
 		minVec(elite.Position, upperBound)
 		evaluator.evaluateMayfly(elite, false)
+
 		funcEvals++
 
 		if evaluator.betterMayfly(elite, bestElite) {

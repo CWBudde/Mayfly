@@ -184,6 +184,7 @@ func TestParallelGoldenSineMatchesSequentialRecurrence(t *testing.T) {
 	for i, male := range males {
 		sequentialMales[i] = male.clone()
 	}
+
 	section := newGoldenSection()
 	sequentialSection := newGoldenSection()
 	globalBest := Best{Position: []float64{0, 0}, Cost: 0}

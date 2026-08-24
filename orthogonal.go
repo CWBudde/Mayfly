@@ -150,6 +150,7 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 	sort.SliceStable(ranked, func(i, j int) bool {
 		return evaluator.betterMayfly(ranked[i], ranked[j])
 	})
+
 	rankByCandidate := make(map[*Mayfly]float64, len(ranked))
 	for rank, candidate := range ranked {
 		rankByCandidate[candidate] = float64(rank + 1)
@@ -166,6 +167,7 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 		if levelScores[1] < levelScores[0] {
 			level = 1
 		}
+
 		if level == 0 {
 			predicted.Position[dimension] = male.Position[dimension] +
 				factor*(pbest[dimension]-male.Position[dimension])
@@ -173,8 +175,10 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 			predicted.Position[dimension] = male.Position[dimension] +
 				factor*(gbest[dimension]-male.Position[dimension])
 		}
+
 		predicted.Position[dimension] = min(max(predicted.Position[dimension], lb[dimension]), ub[dimension])
 	}
+
 	evaluator.evaluateMayfly(predicted, false)
 	candidates = append(candidates, predicted)
 
@@ -192,12 +196,14 @@ func applyOrthogonalLearning(male *Mayfly, pbest, gbest []float64, factor float6
 		copy(best.Velocity, male.Velocity)
 		copy(best.Best.Position, male.Best.Position)
 		best.Best.Cost = male.Best.Cost
+
 		best.Best.ConstraintViolation = male.Best.ConstraintViolation
 		if evaluator.better(evaluationFromMayfly(best), evaluationFromBest(best.Best)) {
 			copy(best.Best.Position, best.Position)
 			best.Best.Cost = best.Cost
 			best.Best.ConstraintViolation = best.ConstraintViolation
 		}
+
 		return best
 	}
 

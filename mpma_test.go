@@ -88,6 +88,7 @@ func TestMPMAPaperGravityEndpoints(t *testing.T) {
 	if got := calculateGravityCoefficient(GravityPaper, 0, 100); math.Abs(got-0.9) > 1e-15 {
 		t.Errorf("paper gravity at t=0 = %v, want 0.9", got)
 	}
+
 	if got := calculateGravityCoefficient(GravityPaper, 100, 100); math.Abs(got-0.4) > 1e-15 {
 		t.Errorf("paper gravity at t=T = %v, want 0.4", got)
 	}

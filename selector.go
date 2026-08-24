@@ -45,6 +45,7 @@ func (s *AlgorithmSelector) RecommendAlgorithms(characteristics ProblemCharacter
 	if characteristics.MultiObjective {
 		return nil
 	}
+
 	recommendations := make([]AlgorithmRecommendation, 0, len(s.variants))
 
 	for _, variant := range s.variants {
@@ -249,6 +250,7 @@ func ClassifyProblem(
 ) ProblemCharacteristics {
 	result, _ := ClassifyProblemContext(context.Background(), fn, size, lower, upper,
 		ClassificationOptions{Rand: rng})
+
 	return result
 }
 
@@ -265,21 +267,28 @@ func ClassifyProblemContext(
 	if ctx == nil {
 		return ProblemCharacteristics{}, errors.New("classification context is nil")
 	}
+
 	if fn == nil {
 		return ProblemCharacteristics{}, errors.New("classification objective function is nil")
 	}
+
 	if size <= 0 {
 		return ProblemCharacteristics{}, fmt.Errorf("classification size must be positive, got %d", size)
 	}
+
 	if !isFinite(lower) || !isFinite(upper) || lower >= upper {
 		return ProblemCharacteristics{}, errors.New("classification bounds must be finite and increasing")
 	}
+
 	if options.MaxEvaluations < 0 {
 		return ProblemCharacteristics{}, errors.New("classification evaluation budget must be non-negative")
 	}
-	if err := ctx.Err(); err != nil {
+
+	err := ctx.Err()
+	if err != nil {
 		return ProblemCharacteristics{}, err
 	}
+
 	rng := options.Rand
 	if rng == nil {
 		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -287,47 +296,61 @@ func ClassifyProblemContext(
 
 	evaluations := 0
 	sampleMin, sampleMax := math.Inf(1), math.Inf(-1)
+
 	var evaluationErr error
+
 	checked := func(position []float64) (value float64) {
 		if evaluationErr != nil {
 			return math.NaN()
 		}
-		if err := ctx.Err(); err != nil {
+
+		err := ctx.Err()
+		if err != nil {
 			evaluationErr = err
 			return math.NaN()
 		}
+
 		if options.MaxEvaluations > 0 && evaluations >= options.MaxEvaluations {
 			evaluationErr = fmt.Errorf("classification evaluation budget of %d exhausted", options.MaxEvaluations)
 			return math.NaN()
 		}
+
 		evaluations++
+
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				evaluationErr = fmt.Errorf("classification objective panicked: %v", recovered)
 				value = math.NaN()
 			}
 		}()
+
 		value = fn(position)
 		if !isFinite(value) {
 			evaluationErr = fmt.Errorf("classification objective returned non-finite value at evaluation %d", evaluations)
 			return math.NaN()
 		}
+
 		sampleMin = math.Min(sampleMin, value)
 		sampleMax = math.Max(sampleMax, value)
+
 		return value
 	}
 
 	turningPoints, roughness := lineScanStatistics(checked, size, lower, upper, rng)
+
 	if evaluationErr != nil {
 		return ProblemCharacteristics{}, evaluationErr
 	}
+
 	stability := 1.0
 	if !options.ScanOnly {
 		stability = estimateStabilityAgainstScale(checked, size, lower, upper, rng, sampleMax-sampleMin)
+
 		if evaluationErr != nil {
 			return ProblemCharacteristics{}, evaluationErr
 		}
 	}
+
 	return ProblemCharacteristics{
 		Dimensionality:            size,
 		Modality:                  modalityFromTurningPoints(turningPoints),
@@ -518,27 +541,35 @@ func estimateStabilityAgainstScale(
 		config.NPop = classifyPopulation
 		config.NPopF = classifyPopulation
 		config.Rand = rand.New(rand.NewSource(rng.Int63()))
+
 		result, err := Optimize(config)
 		if err != nil || !isFinite(result.GlobalBest.Cost) {
 			continue
 		}
+
 		costs = append(costs, result.GlobalBest.Cost)
 	}
+
 	if len(costs) == 0 {
 		return 0
 	}
+
 	if objectiveRange <= 0 {
 		return 1
 	}
+
 	sortedCosts := append([]float64(nil), costs...)
 	sort.Float64s(sortedCosts)
 	median := sortedCosts[len(sortedCosts)/2]
+
 	deviations := make([]float64, len(costs))
 	for i, cost := range costs {
 		deviations[i] = math.Abs(cost - median)
 	}
+
 	sort.Float64s(deviations)
 	mad := deviations[len(deviations)/2]
+
 	return 1 / (1 + mad/objectiveRange)
 }
 

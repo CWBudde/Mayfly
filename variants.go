@@ -436,13 +436,16 @@ func (v *HMMAVariant) ApplicableTo(characteristics ProblemCharacteristics) float
 	if characteristics.MultiObjective {
 		return 0.2
 	}
+
 	score := 0.5
 	if characteristics.Modality != Unimodal {
 		score += 0.2
 	}
+
 	if characteristics.Landscape == Rugged || characteristics.Landscape == Deceptive {
 		score += 0.2
 	}
+
 	return min(score, 1)
 }
 
@@ -640,10 +643,12 @@ func NewBuilderFromVariant(variant AlgorithmVariant) *VariantBuilder {
 	if variant == nil {
 		return nil
 	}
+
 	config := variant.GetConfig()
 	if config == nil {
 		return nil
 	}
+
 	return &VariantBuilder{
 		variant: variant,
 		config:  cloneComparisonConfig(config),
@@ -736,9 +741,11 @@ func (b *VariantBuilder) Build() (*Config, error) {
 		return nil, errors.New("problem size must be positive")
 	}
 
-	if err := ValidateConfig(b.config); err != nil {
+	err := ValidateConfig(b.config)
+	if err != nil {
 		return nil, err
 	}
+
 	return cloneComparisonConfig(b.config), nil
 }
 

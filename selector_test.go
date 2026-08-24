@@ -66,6 +66,7 @@ func TestRecommendBest(t *testing.T) {
 	if best.Variant != nil {
 		t.Errorf("Expected no multi-objective recommendation, got %s", best.Variant.Name())
 	}
+
 	if best.Reasoning == "" {
 		t.Error("Expected an explanation for unavailable multi-objective support")
 	}

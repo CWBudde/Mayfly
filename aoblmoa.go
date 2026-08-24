@@ -317,16 +317,12 @@ func commitStochasticOBL(offspring, opposites []*Mayfly, evaluator *constraintEv
 
 // ParetoArchive maintains a set of non-dominated solutions for multi-objective problems.
 type ParetoArchive struct {
-	// Deprecated: this is a defensive snapshot kept for source compatibility.
-	// Archive operations never trust mutations made through it.
-	Solutions []*ParetoSolution
-	// Deprecated: use Capacity. Mutating this field does not resize the archive.
-	MaxSize int
-
+	initErr            error
+	Solutions          []*ParetoSolution
 	solutions          []*ParetoSolution
+	MaxSize            int
 	maxSize            int
 	objectiveDimension int
-	initErr            error
 }
 
 // NewParetoArchive creates a new Pareto archive with specified maximum size.
@@ -335,10 +331,13 @@ func NewParetoArchive(maxSize int) *ParetoArchive {
 	if maxSize <= 0 {
 		archive.initErr = fmt.Errorf("Pareto archive capacity must be positive, got %d", maxSize)
 		archive.maxSize = 0
+
 		return archive
 	}
+
 	archive.solutions = make([]*ParetoSolution, 0, maxSize)
 	archive.syncSnapshot()
+
 	return archive
 }
 
@@ -349,10 +348,13 @@ func NewParetoArchiveWithObjectives(maxSize, objectiveDimension int) (*ParetoArc
 	if archive.initErr != nil {
 		return nil, archive.initErr
 	}
+
 	if objectiveDimension <= 0 {
 		return nil, fmt.Errorf("objective dimension must be positive, got %d", objectiveDimension)
 	}
+
 	archive.objectiveDimension = objectiveDimension
+
 	return archive, nil
 }
 
@@ -362,19 +364,25 @@ func (pa *ParetoArchive) Add(solution *ParetoSolution) (bool, error) {
 	if pa == nil {
 		return false, errors.New("Pareto archive is nil")
 	}
+
 	if pa.initErr != nil {
 		return false, pa.initErr
 	}
+
 	if solution == nil {
 		return false, errors.New("Pareto solution is nil")
 	}
+
 	dimension := pa.objectiveDimension
 	if dimension == 0 {
 		dimension = len(solution.ObjectiveValues)
 	}
-	if err := validateObjectiveVector(solution.ObjectiveValues, dimension); err != nil {
+
+	err := validateObjectiveVector(solution.ObjectiveValues, dimension)
+	if err != nil {
 		return false, err
 	}
+
 	for i, coordinate := range solution.Position {
 		if !isFinite(coordinate) {
 			return false, fmt.Errorf("position %d is not finite", i)
@@ -385,6 +393,7 @@ func (pa *ParetoArchive) Add(solution *ParetoSolution) (bool, error) {
 		if objectiveVectorsEqual(incumbent.ObjectiveValues, solution.ObjectiveValues) {
 			return false, nil
 		}
+
 		if dominates(incumbent.ObjectiveValues, solution.ObjectiveValues) {
 			return false, nil
 		}
@@ -396,13 +405,16 @@ func (pa *ParetoArchive) Add(solution *ParetoSolution) (bool, error) {
 			kept = append(kept, incumbent)
 		}
 	}
+
 	kept = append(kept, cloneParetoSolution(solution))
 	if len(kept) > pa.maxSize {
 		kept = selectByNSGA2(kept, pa.maxSize)
 	}
+
 	pa.solutions = kept
 	pa.objectiveDimension = dimension
 	pa.syncSnapshot()
+
 	return true, nil
 }
 
@@ -412,6 +424,7 @@ func (pa *ParetoArchive) AddFromMayfly(mayfly *Mayfly) (bool, error) {
 	if mayfly == nil {
 		return false, errors.New("mayfly is nil")
 	}
+
 	solution := &ParetoSolution{
 		Position:         make([]float64, len(mayfly.Position)),
 		ObjectiveValues:  []float64{mayfly.Cost},
@@ -419,6 +432,7 @@ func (pa *ParetoArchive) AddFromMayfly(mayfly *Mayfly) (bool, error) {
 		CrowdingDistance: 0,
 	}
 	copy(solution.Position, mayfly.Position)
+
 	return pa.Add(solution)
 }
 
@@ -444,6 +458,7 @@ func (pa *ParetoArchive) GetSolutions() []*ParetoSolution {
 	if pa == nil {
 		return nil
 	}
+
 	return cloneParetoSolutions(pa.solutions)
 }
 
@@ -452,6 +467,7 @@ func (pa *ParetoArchive) Capacity() int {
 	if pa == nil {
 		return 0
 	}
+
 	return pa.maxSize
 }
 
@@ -473,6 +489,7 @@ func (pa *ParetoArchive) UpdateFromPopulation(males, females []*Mayfly) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -484,10 +501,12 @@ func objectiveVectorsEqual(a, b []float64) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
 	}
+
 	return true
 }

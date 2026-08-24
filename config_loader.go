@@ -48,9 +48,11 @@ func LoadConfigFromFile(path string) (*Config, error) {
 	config := &Config{}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
+
 	if err = decoder.Decode(config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
+
 	if err = ensureJSONEOF(decoder); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
@@ -86,12 +88,15 @@ func ValidateConfig(config *Config) error {
 	if config == nil {
 		return errors.New("config is nil")
 	}
+
 	value := reflect.ValueOf(*config)
+
 	typeInfo := value.Type()
 	for i := 0; i < value.NumField(); i++ {
 		if value.Field(i).Kind() != reflect.Float64 {
 			continue
 		}
+
 		number := value.Field(i).Float()
 		if math.IsNaN(number) || math.IsInf(number, 0) {
 			name := strings.Split(typeInfo.Field(i).Tag.Get("json"), ",")[0]
@@ -142,6 +147,7 @@ func ValidateConfig(config *Config) error {
 	if (config.VelMax == 0) != (config.VelMin == 0) {
 		return errors.New("vel_min and vel_max must both be zero (automatic) or both be explicit")
 	}
+
 	if config.VelMax != 0 && config.VelMin >= config.VelMax {
 		return fmt.Errorf("vel_min (%f) must be less than vel_max (%f)", config.VelMin, config.VelMax)
 	}
@@ -248,6 +254,7 @@ func ValidateConfig(config *Config) error {
 				config.CoolingSchedule)
 		}
 	}
+
 	if config.UseHMMA && (config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1) {
 		return fmt.Errorf("cauchy_mutation_rate should be in [0,1] (got %f)", config.CauchyMutationRate)
 	}
@@ -428,7 +435,6 @@ func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
 			config.OrthogonalFactor = 0.4 // Increase diversity
 		}
 	}
-
 }
 
 // ExportConfigTemplate writes a complete, strict-JSON configuration for a
@@ -444,69 +450,90 @@ func ExportConfigTemplate(path, variant string) error {
 	if config == nil {
 		return fmt.Errorf("variant %s returned a nil config", variant)
 	}
+
 	config.ProblemSize = 10
 	config.LowerBound = -10
 	config.UpperBound = 10
+
 	return writeJSONAtomic(config, path)
 }
 
 func ensureJSONEOF(decoder *json.Decoder) error {
 	var trailing any
-	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+	err := decoder.Decode(&trailing)
+	if !errors.Is(err, io.EOF) {
 		if err == nil {
 			return errors.New("multiple JSON values are not allowed")
 		}
+
 		return err
 	}
+
 	return nil
 }
 
 func rejectDuplicateJSONFields(data []byte) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
+
 	var walk func() error
+
 	walk = func() error {
 		token, err := decoder.Token()
 		if err != nil {
 			return err
 		}
+
 		delim, ok := token.(json.Delim)
 		if !ok {
 			return nil
 		}
+
 		switch delim {
 		case '{':
 			seen := make(map[string]struct{})
+
 			for decoder.More() {
 				keyToken, keyErr := decoder.Token()
 				if keyErr != nil {
 					return keyErr
 				}
+
 				key, ok := keyToken.(string)
 				if !ok {
 					return errors.New("object key is not a string")
 				}
+
 				if _, exists := seen[key]; exists {
 					return fmt.Errorf("duplicate field %q", key)
 				}
+
 				seen[key] = struct{}{}
-				if err := walk(); err != nil {
+
+				err := walk()
+				if err != nil {
 					return err
 				}
 			}
+
 			_, err = decoder.Token()
+
 			return err
 		case '[':
 			for decoder.More() {
-				if err := walk(); err != nil {
+				err := walk()
+				if err != nil {
 					return err
 				}
 			}
+
 			_, err = decoder.Token()
+
 			return err
 		default:
 			return fmt.Errorf("unexpected JSON delimiter %q", delim)
 		}
 	}
+
 	return walk()
 }
 
@@ -515,15 +542,19 @@ func writeJSONAtomic(value any, path string) error {
 	if err != nil {
 		return fmt.Errorf("marshal JSON: %w", err)
 	}
+
 	data = append(data, '\n')
 
 	dir := filepath.Dir(path)
+
 	tmp, err := os.CreateTemp(dir, ".mayfly-config-*.tmp")
 	if err != nil {
 		return fmt.Errorf("create temporary JSON file: %w", err)
 	}
+
 	tmpName := tmp.Name()
 	removeTemp := true
+
 	defer func() {
 		if removeTemp {
 			_ = os.Remove(tmpName)
@@ -533,19 +564,25 @@ func writeJSONAtomic(value any, path string) error {
 	if err = tmp.Chmod(0o600); err == nil {
 		_, err = tmp.Write(data)
 	}
+
 	if err == nil {
 		err = tmp.Sync()
 	}
+
 	closeErr := tmp.Close()
 	if err == nil {
 		err = closeErr
 	}
+
 	if err != nil {
 		return fmt.Errorf("write temporary JSON file: %w", err)
 	}
+
 	if err = os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("replace JSON file: %w", err)
 	}
+
 	removeTemp = false
+
 	return nil
 }

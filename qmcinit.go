@@ -107,9 +107,11 @@ func quasiRandomPositionsContext(
 	point := make([]float64, config.ProblemSize)
 
 	for i := range rows {
-		if err := ctx.Err(); err != nil {
+		err := ctx.Err()
+		if err != nil {
 			return nil, err
 		}
+
 		seq.NextInto(point)
 
 		row := make([]float64, config.ProblemSize)

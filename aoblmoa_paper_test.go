@@ -223,6 +223,7 @@ func TestStochasticOppositionPointUsesOneUniformScalar(t *testing.T) {
 
 	// Replay the one draw to spell out the formula independently.
 	replay := rand.New(rand.NewSource(seed))
+
 	r := replay.Float64()
 	for i, x := range position {
 		want := (lower + upper - x) * r
@@ -368,13 +369,16 @@ func TestAOBLMOAReplacesMutationWithOpposition(t *testing.T) {
 func TestAOBLMOAHonoursStrategySwitch(t *testing.T) {
 	config := NewAOBLMOAConfig()
 	config.MaxIterations = 30
+
 	config.StrategySwitch = 0
 	if got := effectiveStrategySwitch(config); got != 20 {
 		t.Fatalf("default strategy switch = %d, want 20", got)
 	}
+
 	if !aquilaExplorationPhase(10, effectiveStrategySwitch(config)) {
 		t.Fatal("default switch leaves exploration too early")
 	}
+
 	config.StrategySwitch = 1
 	if aquilaExplorationPhase(10, effectiveStrategySwitch(config)) {
 		t.Fatal("configured switch is ignored")
@@ -400,6 +404,7 @@ func TestAOBLMOAAquilaWeightOverrideChangesTheBranch(t *testing.T) {
 		best := Best{Position: append([]float64(nil), males[0].Position...), Cost: males[0].Cost}
 		applyAOBLMOAToPopulation(males, females, best, 10, config.MaxIterations,
 			config.G, config.Dance, config.FL, config)
+
 		return append(snapshotPositions(males), snapshotPositions(females)...)
 	}
 
@@ -407,13 +412,16 @@ func TestAOBLMOAAquilaWeightOverrideChangesTheBranch(t *testing.T) {
 		if len(left) != len(right) {
 			return false
 		}
+
 		for i := range left {
 			if !samePosition(left[i], right[i]) {
 				return false
 			}
 		}
+
 		return true
 	}
+
 	paper := run(AquilaWeightAuto)
 	if equal(paper, run(0)) {
 		t.Error("AquilaWeight = 0 matches the paper default; the override is not read")

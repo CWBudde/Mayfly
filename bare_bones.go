@@ -20,6 +20,7 @@ func eobbmaGaussianMalePosition(
 	position := make([]float64, len(pbest))
 	mean := make([]float64, len(pbest))
 	fitnessFactor := math.Exp(globalBestCost - currentCost)
+
 	for dimension := range pbest {
 		mean[dimension] = (globalBest[dimension] + pbest[dimension]) / 2
 		disturbance := rng.Float64() * math.Abs(peer1[dimension]-peer2[dimension]) * fitnessFactor
@@ -39,6 +40,7 @@ func eobbmaGaussianFemalePosition(female, pairedMale []float64, rng *rand.Rand) 
 	}
 
 	position := make([]float64, len(female))
+
 	mean := make([]float64, len(female))
 	for dimension := range female {
 		mean[dimension] = (female[dimension] + pairedMale[dimension]) / 2
@@ -58,6 +60,7 @@ func eobbmaLevyPosition(position []float64, alpha, beta float64, rng *rand.Rand)
 	}
 
 	step := levyFlightVec(len(position), alpha, beta, rng)
+
 	result := make([]float64, len(position))
 	for dimension := range position {
 		result[dimension] = position[dimension] + position[dimension]*step[dimension]
@@ -81,10 +84,12 @@ func eobbmaRepairPosition(position, mean []float64, lowerBound, upperBound float
 		}
 
 		center := min(max(mean[dimension], lowerBound), upperBound)
+
 		border := lowerBound
 		if coordinate > upperBound || math.IsInf(coordinate, 1) {
 			border = upperBound
 		}
+
 		denominator := coordinate - center
 		if denominator == 0 || math.IsNaN(denominator) {
 			repaired[dimension] = center
@@ -95,6 +100,7 @@ func eobbmaRepairPosition(position, mean []float64, lowerBound, upperBound float
 		if !isFinite(repaired[dimension]) {
 			repaired[dimension] = center
 		}
+
 		repaired[dimension] = min(max(repaired[dimension], lowerBound), upperBound)
 	}
 

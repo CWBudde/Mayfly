@@ -18,6 +18,7 @@ func calculateMedianPosition(population []*Mayfly) []float64 {
 
 	size := len(population[0].Position)
 	median := make([]float64, size)
+
 	middle := len(population) / 2
 	if len(population)%2 == 1 {
 		copy(median, population[middle].Position)
@@ -56,12 +57,15 @@ func calculateWeightedMedianPosition(population []*Mayfly, weights []float64) []
 	}
 
 	maxWeight := 0.0
+
 	for _, weight := range weights {
 		if math.IsNaN(weight) || math.IsInf(weight, 0) || weight < 0 {
 			return nil
 		}
+
 		maxWeight = max(maxWeight, weight)
 	}
+
 	if maxWeight == 0 {
 		return nil
 	}
@@ -150,12 +154,15 @@ func calculateWeightedMedianPositionParallel(
 	}
 
 	maxWeight := 0.0
+
 	for _, weight := range weights {
 		if math.IsNaN(weight) || math.IsInf(weight, 0) || weight < 0 {
 			return nil, nil
 		}
+
 		maxWeight = max(maxWeight, weight)
 	}
+
 	if maxWeight == 0 {
 		return nil, nil
 	}

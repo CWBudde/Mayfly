@@ -97,6 +97,7 @@ func evaluateParallelDESMAElites(
 			improved = true
 		}
 	}
+
 	if !improved {
 		return nil, len(elites), nil
 	}
@@ -125,11 +126,13 @@ func evaluateParallelOrthogonalLearning(
 	_ = rng // The published orthogonal design is deterministic.
 
 	for i := range numElite {
-		if err := ctx.Err(); err != nil {
+		err := ctx.Err()
+		if err != nil {
 			return 0, err
 		}
 
 		male := males[i]
+
 		for _, row := range array {
 			candidate := newMayfly(dim)
 
@@ -140,6 +143,7 @@ func evaluateParallelOrthogonalLearning(
 				} else {
 					position = male.Position[j] + factor*(globalBest[j]-male.Position[j])
 				}
+
 				candidate.Position[j] = min(max(position, lowerBounds[j]), upperBounds[j])
 			}
 
@@ -160,18 +164,21 @@ func evaluateParallelOrthogonalLearning(
 		sort.SliceStable(ranked, func(left, right int) bool {
 			return evaluator.evaluator.betterMayfly(ranked[left], ranked[right])
 		})
+
 		rankByCandidate := make(map[*Mayfly]float64, len(ranked))
 		for rank, candidate := range ranked {
 			rankByCandidate[candidate] = float64(rank + 1)
 		}
 
 		male := males[i]
+
 		candidate := newMayfly(dim)
 		for dimension := range dim {
 			levelScores := [2]float64{}
 			for experiment, rowCandidate := range group {
 				levelScores[array[experiment][dimension]] += rankByCandidate[rowCandidate]
 			}
+
 			if levelScores[1] < levelScores[0] {
 				candidate.Position[dimension] = male.Position[dimension] +
 					factor*(globalBest[dimension]-male.Position[dimension])
@@ -179,10 +186,12 @@ func evaluateParallelOrthogonalLearning(
 				candidate.Position[dimension] = male.Position[dimension] +
 					factor*(male.Best.Position[dimension]-male.Position[dimension])
 			}
+
 			candidate.Position[dimension] = min(
 				max(candidate.Position[dimension], lowerBounds[dimension]), upperBounds[dimension],
 			)
 		}
+
 		predicted[i] = candidate
 	}
 
@@ -193,6 +202,7 @@ func evaluateParallelOrthogonalLearning(
 
 	for i := range numElite {
 		start := i * len(array)
+
 		bestCandidate := predicted[i]
 		for _, candidate := range candidates[start : start+len(array)] {
 			if evaluator.evaluator.betterMayfly(candidate, bestCandidate) {
@@ -300,7 +310,8 @@ func evaluateParallelGoldenSine(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 ) (int, error) {
-	if err := ctx.Err(); err != nil {
+	err := ctx.Err()
+	if err != nil {
 		return 0, err
 	}
 	// Golden-section state is recurrent: candidate i+1 is generated from the
@@ -313,9 +324,12 @@ func evaluateParallelGoldenSine(
 		scheduler, section, evaluator.evaluator, rng,
 	)
 	*globalBest = updatedBest
-	if err := ctx.Err(); err != nil {
+
+	err := ctx.Err()
+	if err != nil {
 		return 0, err
 	}
+
 	return evaluations, nil
 }
 

@@ -36,6 +36,7 @@ func (lm *LogisticMap) Next() float64 {
 	if lm == nil {
 		return math.NaN()
 	}
+
 	if math.IsNaN(lm.x) || math.IsInf(lm.x, 0) {
 		lm.x = normalizeLogisticSeed(lm.x)
 	}
@@ -92,6 +93,7 @@ func normalizeLogisticSeed(seed float64) float64 {
 	if seed <= 0 || math.IsNaN(seed) {
 		return 0.314159
 	}
+
 	if seed >= 1 {
 		return 0.271828
 	}

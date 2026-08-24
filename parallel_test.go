@@ -788,6 +788,7 @@ func TestParallelInitializationRejectsAllInvalidCosts(t *testing.T) {
 	if !errors.Is(err, ErrNoFiniteObjectiveValue) {
 		t.Fatalf("Optimize error = %v, want %v", err, ErrNoFiniteObjectiveValue)
 	}
+
 	if result != nil {
 		t.Fatalf("Optimize returned result for all-invalid initialization: %+v", result)
 	}

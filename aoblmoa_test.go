@@ -1384,16 +1384,19 @@ func TestAOBLMOAMovesEveryIndividual(t *testing.T) {
 			)
 
 			movedMales, movedFemales := 0, 0
+
 			for i, male := range males {
 				if !samePosition(beforeMales[i], male.Position) {
 					movedMales++
 				}
 			}
+
 			for i, female := range females {
 				if !samePosition(beforeFemales[i], female.Position) {
 					movedFemales++
 				}
 			}
+
 			if movedMales == 0 || movedFemales == 0 {
 				t.Errorf("AOBLMOA froze a whole sex: moved males=%d females=%d", movedMales, movedFemales)
 			}
@@ -1479,16 +1482,19 @@ func TestAOBLMOAParallelMovesEveryIndividual(t *testing.T) {
 			}
 
 			movedMales, movedFemales := 0, 0
+
 			for i, male := range males {
 				if !samePosition(beforeMales[i], male.Position) {
 					movedMales++
 				}
 			}
+
 			for i, female := range females {
 				if !samePosition(beforeFemales[i], female.Position) {
 					movedFemales++
 				}
 			}
+
 			if movedMales == 0 || movedFemales == 0 {
 				t.Errorf("parallel AOBLMOA froze a whole sex: moved males=%d females=%d", movedMales, movedFemales)
 			}

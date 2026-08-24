@@ -135,6 +135,7 @@ func aquilaNarrowedExploration(current, best []float64, population []*Mayfly,
 		spiralU     = 0.00565
 		spiralOmega = 0.005
 	)
+
 	r := rng.Float64()
 
 	for i := range current {
@@ -178,6 +179,7 @@ func aquilaExpandedExploitation(current, best, mean []float64, currentIter, maxI
 
 	// AO fixes both exploitation parameters at 0.1.
 	const alpha, delta = 0.1, 0.1
+
 	r1 := rng.Float64()
 	r2 := rng.Float64()
 
@@ -216,6 +218,7 @@ func aquilaNarrowedExploitation(current, best []float64, currentIter, maxIter in
 	// QF(t) = t^((2*rand-1)/(1-T)^2). A one-iteration run has no
 	// meaningful quality schedule, so its neutral value is one.
 	qf := 1.0
+
 	if maxIter > 1 {
 		exponent := (2.0*rng.Float64() - 1.0) / math.Pow(1.0-float64(maxIter), 2)
 		qf = math.Pow(float64(currentIter+1), exponent)

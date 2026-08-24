@@ -24,12 +24,16 @@ type ParetoSolution struct {
 // Dominates reports whether a Pareto objective vector dominates another under
 // minimization. Both vectors must be non-empty, finite, and equally sized.
 func Dominates(a, b []float64) (bool, error) {
-	if err := validateObjectiveVector(a, 0); err != nil {
+	err := validateObjectiveVector(a, 0)
+	if err != nil {
 		return false, fmt.Errorf("first objective vector: %w", err)
 	}
-	if err := validateObjectiveVector(b, len(a)); err != nil {
+
+	err := validateObjectiveVector(b, len(a))
+	if err != nil {
 		return false, fmt.Errorf("second objective vector: %w", err)
 	}
+
 	return dominates(a, b), nil
 }
 
@@ -140,6 +144,7 @@ func FastNonDominatedSort(solutions []*ParetoSolution) ([][]int, error) {
 	if _, err := validateParetoSolutions(solutions, false); err != nil {
 		return nil, err
 	}
+
 	return fastNonDominatedSort(solutions), nil
 }
 
@@ -215,17 +220,22 @@ func CalculateCrowdingDistance(solutions []*ParetoSolution, frontIndices []int) 
 	if _, err := validateParetoSolutions(solutions, false); err != nil {
 		return err
 	}
+
 	seen := make(map[int]struct{}, len(frontIndices))
 	for _, index := range frontIndices {
 		if index < 0 || index >= len(solutions) {
 			return fmt.Errorf("front index %d is outside [0,%d)", index, len(solutions))
 		}
+
 		if _, exists := seen[index]; exists {
 			return fmt.Errorf("front index %d is duplicated", index)
 		}
+
 		seen[index] = struct{}{}
 	}
+
 	calculateCrowdingDistance(solutions, frontIndices)
+
 	return nil
 }
 
@@ -304,12 +314,15 @@ func CalculateHypervolume(solutions []*ParetoSolution, referencePoint []float64)
 	if err != nil {
 		return 0, err
 	}
+
 	if dimension != 2 {
 		return 0, fmt.Errorf("hypervolume supports exactly 2 objectives, got %d", dimension)
 	}
+
 	if err := validateObjectiveVector(referencePoint, dimension); err != nil {
 		return 0, fmt.Errorf("reference point: %w", err)
 	}
+
 	return calculateHypervolume(solutions, referencePoint), nil
 }
 
@@ -368,9 +381,11 @@ func CalculateIGD(obtainedFront, trueFront []*ParetoSolution) (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("obtained front: %w", err)
 	}
+
 	if _, err = validateParetoSolutionsWithDimension(trueFront, dimension, true); err != nil {
 		return 0, fmt.Errorf("true front: %w", err)
 	}
+
 	return calculateIGD(obtainedFront, trueFront), nil
 }
 
@@ -436,10 +451,13 @@ func SelectByNSGA2(solutions []*ParetoSolution, targetSize int) ([]*ParetoSoluti
 	if targetSize < 0 {
 		return nil, fmt.Errorf("target size must be non-negative, got %d", targetSize)
 	}
+
 	if _, err := validateParetoSolutions(solutions, false); err != nil {
 		return nil, err
 	}
+
 	selected := selectByNSGA2(cloneParetoSolutions(solutions), targetSize)
+
 	return cloneParetoSolutions(selected), nil
 }
 
@@ -447,14 +465,17 @@ func validateObjectiveVector(values []float64, expectedDimension int) error {
 	if len(values) == 0 {
 		return errors.New("objective vector is empty")
 	}
+
 	if expectedDimension > 0 && len(values) != expectedDimension {
 		return fmt.Errorf("objective dimension is %d, want %d", len(values), expectedDimension)
 	}
+
 	for i, value := range values {
 		if math.IsNaN(value) || math.IsInf(value, 0) {
 			return fmt.Errorf("objective %d is not finite", i)
 		}
 	}
+
 	return nil
 }
 
@@ -471,25 +492,33 @@ func validateParetoSolutionsWithDimension(
 		if requireNonEmpty {
 			return 0, errors.New("front is empty")
 		}
+
 		return expectedDimension, nil
 	}
+
 	dimension := expectedDimension
+
 	for i, solution := range solutions {
 		if solution == nil {
 			return 0, fmt.Errorf("solution %d is nil", i)
 		}
+
 		if dimension == 0 {
 			dimension = len(solution.ObjectiveValues)
 		}
-		if err := validateObjectiveVector(solution.ObjectiveValues, dimension); err != nil {
+
+		err := validateObjectiveVector(solution.ObjectiveValues, dimension)
+		if err != nil {
 			return 0, fmt.Errorf("solution %d: %w", i, err)
 		}
+
 		for j, coordinate := range solution.Position {
 			if math.IsNaN(coordinate) || math.IsInf(coordinate, 0) {
 				return 0, fmt.Errorf("solution %d position %d is not finite", i, j)
 			}
 		}
 	}
+
 	return dimension, nil
 }
 
@@ -497,10 +526,12 @@ func cloneParetoSolution(solution *ParetoSolution) *ParetoSolution {
 	if solution == nil {
 		return nil
 	}
+
 	clone := *solution
 	clone.Position = append([]float64(nil), solution.Position...)
 	clone.ObjectiveValues = append([]float64(nil), solution.ObjectiveValues...)
 	clone.DominatedSolutions = append([]int(nil), solution.DominatedSolutions...)
+
 	return &clone
 }
 
@@ -509,5 +540,6 @@ func cloneParetoSolutions(solutions []*ParetoSolution) []*ParetoSolution {
 	for i, solution := range solutions {
 		clones[i] = cloneParetoSolution(solution)
 	}
+
 	return clones
 }

@@ -33,6 +33,7 @@ func minimalCoreConfig(objective ObjectiveFunction) *Config {
 
 func TestFemaleCandidateCanBecomeGlobalBest(t *testing.T) {
 	config := minimalCoreConfig(sphere)
+
 	result, err := OptimizeContext(
 		context.Background(),
 		config,
@@ -49,6 +50,7 @@ func TestFemaleCandidateCanBecomeGlobalBest(t *testing.T) {
 
 func TestOptimizeDoesNotResolveDefaultsIntoCallerConfig(t *testing.T) {
 	config := minimalCoreConfig(sphere)
+
 	config.Rand = nil
 	if config.VelMin != 0 || config.VelMax != 0 {
 		t.Fatal("test requires automatic velocity bounds")
@@ -75,13 +77,16 @@ func TestExplicitSeedIsTruthfulAndReusable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first Optimize: %v", err)
 	}
+
 	second, err := Optimize(config)
 	if err != nil {
 		t.Fatalf("second Optimize: %v", err)
 	}
+
 	if first.Seed == nil || *first.Seed != seed || second.Seed == nil || *second.Seed != seed {
 		t.Fatalf("reported seeds = %v and %v, want %d", first.Seed, second.Seed, seed)
 	}
+
 	if !reflect.DeepEqual(first.GlobalBest, second.GlobalBest) ||
 		!reflect.DeepEqual(first.ConvergenceCurve, second.ConvergenceCurve) {
 		t.Fatal("reusing an explicitly seeded Config changed the run")
@@ -90,10 +95,12 @@ func TestExplicitSeedIsTruthfulAndReusable(t *testing.T) {
 
 func TestOpaqueRandHasNoReportedSeed(t *testing.T) {
 	config := minimalCoreConfig(sphere)
+
 	result, err := Optimize(config)
 	if err != nil {
 		t.Fatalf("Optimize: %v", err)
 	}
+
 	if result.Seed != nil {
 		t.Fatalf("Result.Seed = %v for caller-owned Rand, want nil", *result.Seed)
 	}
@@ -102,6 +109,7 @@ func TestOpaqueRandHasNoReportedSeed(t *testing.T) {
 func TestSeedAndRandAreMutuallyExclusive(t *testing.T) {
 	config := minimalCoreConfig(sphere)
 	seed := int64(1)
+
 	config.Seed = &seed
 	if _, err := Optimize(config); err == nil {
 		t.Fatal("Optimize accepted both Config.Seed and Config.Rand")
@@ -117,6 +125,7 @@ func TestNegativeInfinityObjectiveIsInvalidNotOptimal(t *testing.T) {
 		return position[0] * position[0]
 	}
 	config := minimalCoreConfig(objective)
+
 	result, err := OptimizeContext(
 		context.Background(),
 		config,
@@ -133,10 +142,12 @@ func TestNegativeInfinityObjectiveIsInvalidNotOptimal(t *testing.T) {
 
 func TestAllNonFiniteInitialObjectivesReturnError(t *testing.T) {
 	config := minimalCoreConfig(func([]float64) float64 { return math.NaN() })
+
 	result, err := OptimizeContext(context.Background(), config)
 	if !errors.Is(err, ErrNoFiniteObjectiveValue) {
 		t.Fatalf("OptimizeContext error = %v, want %v", err, ErrNoFiniteObjectiveValue)
 	}
+
 	if result != nil {
 		t.Fatalf("OptimizeContext returned result with invalid initialization: %+v", result)
 	}
@@ -165,14 +176,17 @@ func TestParallelGeneticMutationPreservesSex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("evaluateParallelGeneticOperators: %v", err)
 	}
+
 	if len(offspring) != 4 {
 		t.Fatalf("offspring count = %d, want two mutants per sex", len(offspring))
 	}
+
 	for i, child := range offspring[:2] {
 		if child.Position[0] >= 0 {
 			t.Errorf("male mutant %d inherited female position %v", i, child.Position)
 		}
 	}
+
 	for i, child := range offspring[2:] {
 		if child.Position[0] <= 0 {
 			t.Errorf("female mutant %d inherited male position %v", i, child.Position)
@@ -183,6 +197,7 @@ func TestParallelGeneticMutationPreservesSex(t *testing.T) {
 func TestStandardSequentialAndParallelRunsMatchExactly(t *testing.T) {
 	run := func(parallel bool) *Result {
 		t.Helper()
+
 		config := NewDefaultConfig()
 		config.ObjectiveFunc = sphere
 		config.ProblemSize = 4
@@ -206,6 +221,7 @@ func TestStandardSequentialAndParallelRunsMatchExactly(t *testing.T) {
 	}
 
 	sequential := run(false)
+
 	parallel := run(true)
 	if !reflect.DeepEqual(sequential.GlobalBest, parallel.GlobalBest) ||
 		!reflect.DeepEqual(sequential.ConvergenceCurve, parallel.ConvergenceCurve) ||

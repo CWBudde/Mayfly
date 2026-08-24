@@ -52,6 +52,7 @@ func evaluateParallelGeneticOperators(
 		maleOffspring = append(maleOffspring, off1)
 		femaleOffspring = append(femaleOffspring, off2)
 	}
+
 	offspring := append(append(make([]*Mayfly, 0, nc), maleOffspring...), femaleOffspring...)
 
 	crossoverBest, err := evaluator.evaluate(ctx, offspring, false, true)

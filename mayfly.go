@@ -37,6 +37,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	if ctx == nil {
 		return nil, errNilContext
 	}
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -167,7 +168,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		if config.CoolingRate <= 0 || config.CoolingRate >= 1 {
 			return nil, fmt.Errorf("GSASMA CoolingRate must be in (0, 1), got %v", config.CoolingRate)
 		}
-
 	}
 
 	if config.UseHMMA && (config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1) {
@@ -204,6 +204,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	if updatePhaseErr != nil {
 		return nil, updatePhaseErr
 	}
+
 	if err := ValidateConfig(config); err != nil {
 		return nil, err
 	}
@@ -227,12 +228,15 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	// *rand.Rand is intentionally reported with no seed: math/rand does not
 	// expose the seed used to construct it.
 	rng := config.Rand
+
 	var seed *int64
+
 	if rng == nil {
 		seedValue := time.Now().UnixNano()
 		if config.Seed != nil {
 			seedValue = *config.Seed
 		}
+
 		seed = &seedValue
 		rng = rand.New(rand.NewSource(seedValue))
 		// Some variant helpers read Config.Rand directly. This is the run-local
@@ -327,6 +331,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		}
 
 		funcCount += len(females)
+
 		mergeBest(&globalBest, femaleBest, candidateEvaluator)
 	} else {
 		// Initialize male population sequentially for backward compatibility.
@@ -375,6 +380,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			candidateEvaluator.evaluateMayfly(females[i], true)
 
 			funcCount++
+
 			if candidateEvaluator.betterMayflyThanBest(females[i], globalBest) {
 				copyMayflyToBest(&globalBest, females[i])
 			}
@@ -385,6 +391,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	// the very first iteration, not only after the first update.
 	sortMayflies(males, candidateEvaluator)
 	sortMayflies(females, candidateEvaluator)
+
 	if globalBest.Cost == math.MaxFloat64 {
 		return nil, ErrNoFiniteObjectiveValue
 	}
@@ -450,11 +457,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		if config.UseMPMA {
 			iterationGravity = calculateGravityCoefficient(config.GravityType, it+1, config.MaxIterations)
 		}
+
 		if config.UseDESMA {
 			const (
 				desmaGravityMax = 0.9
 				desmaGravityMin = 0.4
 			)
+
 			progress := float64(it+1) / float64(config.MaxIterations)
 			iterationGravity = desmaGravityMax - (desmaGravityMax-desmaGravityMin)*progress
 		}
@@ -492,6 +501,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 		case config.UseEOBBMA:
 			prepareEOBBMAFemales(females, males, config, rng, candidateEvaluator)
+
 			if evaluator != nil {
 				_, femaleEvaluationErr := evaluator.evaluate(ctx, females, false, false)
 				if femaleEvaluationErr != nil {
@@ -502,26 +512,31 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					candidateEvaluator.evaluateMayfly(female, false)
 				}
 			}
+
 			funcCount += len(females)
 
 			phaseBest := cloneBest(globalBest)
 			prepareEOBBMAMales(males, phaseBest, config, rng)
+
 			if evaluator != nil {
 				maleBest, maleEvaluationErr := evaluator.evaluate(ctx, males, false, true)
 				if maleEvaluationErr != nil {
 					return nil, maleEvaluationErr
 				}
+
 				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
 				for _, male := range males {
 					candidateEvaluator.evaluateMayfly(male, false)
 				}
 			}
+
 			funcCount += len(males)
 			updatePersonalBests(males, candidateEvaluator)
 		default:
 			// Standard velocity-based updates
 			prepareStandardFemales(females, males, iterationGravity, fl, config, rng, candidateEvaluator)
+
 			if evaluator != nil {
 				_, femaleEvaluationErr := evaluator.evaluate(ctx, females, false, false)
 				if femaleEvaluationErr != nil {
@@ -532,6 +547,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					candidateEvaluator.evaluateMayfly(female, false)
 				}
 			}
+
 			funcCount += len(females)
 
 			// MPMA: Calculate median position if enabled
@@ -597,17 +613,20 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			prepareStandardMales(
 				males, phaseBest, medianPos, iterationGravity, dance, mpmaG, config, rng, candidateEvaluator,
 			)
+
 			if evaluator != nil {
 				maleBest, maleEvaluationErr := evaluator.evaluate(ctx, males, false, true)
 				if maleEvaluationErr != nil {
 					return nil, maleEvaluationErr
 				}
+
 				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
 				for _, male := range males {
 					candidateEvaluator.evaluateMayfly(male, false)
 				}
 			}
+
 			funcCount += len(males)
 			updatePersonalBests(males, candidateEvaluator)
 		}
@@ -944,9 +963,12 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					femaleMutant := prepareGeneticMutant(
 						femaleParent, it, config, rng,
 					)
+
 					candidateEvaluator.evaluateMayfly(maleMutant, false)
 					candidateEvaluator.evaluateMayfly(femaleMutant, false)
+
 					funcCount += 2
+
 					initializeOffspringBests([]*Mayfly{maleMutant, femaleMutant})
 					mergePopulationBest(&globalBest, []*Mayfly{maleMutant, femaleMutant}, candidateEvaluator)
 					maleOffspring = append(maleOffspring, maleMutant)
@@ -964,9 +986,12 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					femaleMutant := prepareGeneticMutant(
 						femaleParent, it, config, rng,
 					)
+
 					candidateEvaluator.evaluateMayfly(maleMutant, false)
 					candidateEvaluator.evaluateMayfly(femaleMutant, false)
+
 					funcCount += 2
+
 					initializeOffspringBests([]*Mayfly{maleMutant, femaleMutant})
 					mergePopulationBest(&globalBest, []*Mayfly{maleMutant, femaleMutant}, candidateEvaluator)
 					maleOffspring = append(maleOffspring, maleMutant)
@@ -1026,6 +1051,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				}
 			} else {
 				var improved bool
+
 				eliteMayfly, eliteFuncCount, improved = generateImprovedEliteMayfliesWithEvaluator(
 					globalBest,
 					searchRange,

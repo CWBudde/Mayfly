@@ -80,14 +80,14 @@ type FriedmanTestResult struct {
 // limits concurrent optimization runs; any Config-level parallel evaluation is
 // an independent inner limit.
 type ComparisonRunner struct {
+	TargetCost    *float64
 	Variants      []AlgorithmVariant
-	Runs          int      // Number of runs per algorithm
-	TargetCost    *float64 // Success threshold; nil disables success tracking
-	MaxIterations int      // Max iterations per run
-	Verbose       bool     // Print progress
-	Parallel      bool     // Run independent algorithm trials concurrently
-	MaxWorkers    int      // Maximum concurrent optimization runs
-	Seed          int64    // Base seed used to derive paired run seeds
+	Runs          int
+	MaxIterations int
+	MaxWorkers    int
+	Seed          int64
+	Verbose       bool
+	Parallel      bool
 }
 
 // NewComparisonRunner creates a new comparison runner.
@@ -424,6 +424,7 @@ func (cr *ComparisonRunner) validate(
 	if cr.MaxWorkers < 0 {
 		return fmt.Errorf("comparison MaxWorkers must be non-negative, got %d", cr.MaxWorkers)
 	}
+
 	if cr.TargetCost != nil && (math.IsNaN(*cr.TargetCost) || math.IsInf(*cr.TargetCost, 0)) {
 		return errors.New("comparison target cost must be finite")
 	}
@@ -534,6 +535,7 @@ func calculateAlgorithmStatistics(runs []RunResult, targetCost float64) Algorith
 	if targetCost != 0 {
 		target = &targetCost
 	}
+
 	return calculateAlgorithmStatisticsWithTarget(runs, target)
 }
 
@@ -551,6 +553,7 @@ func calculateAlgorithmStatisticsWithTarget(runs []RunResult, targetCost *float6
 		if run.Error != "" || math.IsNaN(run.BestCost) || math.IsInf(run.BestCost, 0) {
 			continue
 		}
+
 		costs = append(costs, run.BestCost)
 		funcEvals += float64(run.FuncEvals)
 		execTime += run.ExecutionTime
@@ -559,6 +562,7 @@ func calculateAlgorithmStatisticsWithTarget(runs []RunResult, targetCost *float6
 			successCount++
 		}
 	}
+
 	if len(costs) == 0 {
 		return AlgorithmStatistics{FailedRuns: len(runs)}
 	}
@@ -630,6 +634,7 @@ func rankAlgorithms(statistics []AlgorithmStatistics) []int {
 		if stat.AvailableRuns == 0 && stat.FailedRuns > 0 {
 			mean = math.Inf(1)
 		}
+
 		indexed[i] = indexedStat{index: i, mean: mean}
 	}
 
@@ -645,9 +650,11 @@ func rankAlgorithms(statistics []AlgorithmStatistics) []int {
 		for end < len(indexed) && indexed[end].mean == indexed[start].mean {
 			end++
 		}
+
 		for _, item := range indexed[start:end] {
 			rankings[item.index] = start + 1
 		}
+
 		start = end
 	}
 
@@ -674,6 +681,7 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 			!isFinite(runs1[i].BestCost) || !isFinite(runs2[i].BestCost) {
 			continue
 		}
+
 		diff := runs1[i].BestCost - runs2[i].BestCost
 		if math.Abs(diff) > 1e-10 { // Ignore ties
 			differences = append(differences, diff)
@@ -715,11 +723,13 @@ func wilcoxonSignedRankTest(name1, name2 string, runs1, runs2 []RunResult) Wilco
 
 	nEffective := float64(len(differences))
 	meanW := nEffective * (nEffective + 1) / 4.0
+
 	var pValue float64
 	if len(differences) <= 20 {
 		pValue = exactWilcoxonPValue(ranks, w)
 	} else {
 		variance := nEffective * (nEffective + 1) * (2*nEffective + 1) / 24.0
+
 		variance -= wilcoxonTieCorrection(absDifferences) / 48.0
 		if variance <= 0 {
 			pValue = 1
@@ -756,35 +766,44 @@ func exactWilcoxonPValue(ranks []float64, observedW float64) float64 {
 	for _, rank := range ranks {
 		total += rank
 	}
+
 	assignments := uint64(1) << len(ranks)
 	extreme := uint64(0)
-	for mask := uint64(0); mask < assignments; mask++ {
+
+	for mask := range assignments {
 		positive := 0.0
+
 		for i, rank := range ranks {
 			if mask&(uint64(1)<<i) != 0 {
 				positive += rank
 			}
 		}
+
 		if min(positive, total-positive) <= observedW+1e-12 {
 			extreme++
 		}
 	}
+
 	return float64(extreme) / float64(assignments)
 }
 
 func wilcoxonTieCorrection(values []float64) float64 {
 	sorted := append([]float64(nil), values...)
 	sort.Float64s(sorted)
+
 	correction := 0.0
+
 	for start := 0; start < len(sorted); {
 		end := start + 1
 		for end < len(sorted) && math.Abs(sorted[end]-sorted[start]) < 1e-10 {
 			end++
 		}
+
 		tie := float64(end - start)
 		correction += tie*tie*tie - tie
 		start = end
 	}
+
 	return correction
 }
 
@@ -797,23 +816,29 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 	k := len(runResults) // Number of algorithms
 	ranks := make([][]float64, 0, len(runResults[0]))
 	tieSum := 0.0
+
 	for run := range len(runResults[0]) {
 		costs := make([]float64, k)
 		valid := true
+
 		for alg := range k {
 			if run >= len(runResults[alg]) || runResults[alg][run].Error != "" ||
 				!isFinite(runResults[alg][run].BestCost) {
 				valid = false
 				break
 			}
+
 			costs[alg] = runResults[alg][run].BestCost
 		}
+
 		if !valid {
 			continue
 		}
+
 		ranks = append(ranks, rankValues(costs))
 		tieSum += friedmanTieSum(costs)
 	}
+
 	n := len(ranks)
 	if n == 0 {
 		return nil
@@ -836,6 +861,7 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 
 	chiSquare := (12.0 / (float64(n) * float64(k) * float64(k+1))) * sumSquaredRanks
 	chiSquare -= 3.0 * float64(n) * float64(k+1)
+
 	tieCorrection := 1.0 - tieSum/(float64(n)*float64(k*k*k-k))
 	if tieCorrection <= 0 {
 		chiSquare = 0
@@ -861,16 +887,20 @@ func friedmanTest(runResults [][]RunResult) *FriedmanTestResult {
 func friedmanTieSum(values []float64) float64 {
 	sorted := append([]float64(nil), values...)
 	sort.Float64s(sorted)
+
 	sum := 0.0
+
 	for start := 0; start < len(sorted); {
 		end := start + 1
 		for end < len(sorted) && math.Abs(sorted[end]-sorted[start]) < 1e-10 {
 			end++
 		}
+
 		tie := float64(end - start)
 		sum += tie*tie*tie - tie
 		start = end
 	}
+
 	return sum
 }
 
@@ -1192,6 +1222,7 @@ func (cr *ComparisonResult) ExportToJSON(path string) error {
 	if err != nil {
 		return err
 	}
+
 	return writeJSONAtomic(cr, path)
 }
 
@@ -1199,6 +1230,7 @@ func cloneComparisonConfig(config *Config) *Config {
 	if config == nil {
 		return nil
 	}
+
 	clone := *config
 	if config.Convergence != nil {
 		convergence := *config.Convergence
@@ -1206,14 +1238,17 @@ func cloneComparisonConfig(config *Config) *Config {
 			target := *config.Convergence.TargetCost
 			convergence.TargetCost = &target
 		}
+
 		clone.Convergence = &convergence
 	}
+
 	if config.Constraints != nil {
 		constraints := *config.Constraints
 		constraints.Inequalities = append([]ConstraintFunction(nil), config.Constraints.Inequalities...)
 		constraints.Equalities = append([]ConstraintFunction(nil), config.Constraints.Equalities...)
 		clone.Constraints = &constraints
 	}
+
 	return &clone
 }
 

@@ -147,6 +147,7 @@ func TestOrthogonalArrayHasDistinctBalancedColumns(t *testing.T) {
 			for row := range array {
 				ones += array[row][left]
 			}
+
 			if ones*2 != len(array) {
 				t.Errorf("D=%d column %d has %d ones in %d rows", dimensions, left, ones, len(array))
 			}
@@ -156,6 +157,7 @@ func TestOrthogonalArrayHasDistinctBalancedColumns(t *testing.T) {
 				for row := range array {
 					counts[array[row][left]][array[row][right]]++
 				}
+
 				want := len(array) / 4
 				if counts != [2][2]int{{want, want}, {want, want}} {
 					t.Errorf("D=%d columns %d/%d are not pairwise balanced: %v",
@@ -169,6 +171,7 @@ func TestOrthogonalArrayHasDistinctBalancedColumns(t *testing.T) {
 func TestOrthogonalArrayReturnsDefensiveCopy(t *testing.T) {
 	first := OrthogonalArray(4)
 	first[0][0] = 99
+
 	second := OrthogonalArray(4)
 	if reflect.DeepEqual(first, second) || second[0][0] != 0 {
 		t.Fatalf("OrthogonalArray shares mutable state: first=%v second=%v", first, second)

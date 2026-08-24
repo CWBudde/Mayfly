@@ -43,11 +43,11 @@ func gaussianUpdate(current, best []float64, lowerBound, upperBound float64, rng
 
 	for i := range current {
 		// Mean is the midpoint between current and best
-		mean := (current[i] + best[i]) / 2.0
+		mean := (current[i] + best[i]) * 0.5
 
 		// Standard deviation is half the distance between current and best
 		// If they're the same, use a small exploration factor
-		stddev := (current[i] - best[i]) / 2.0
+		stddev := (current[i] - best[i]) * 0.5
 		if stddev < 0 {
 			stddev = -stddev
 		}

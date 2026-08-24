@@ -98,7 +98,7 @@ func calculateWeightedMedianPosition(population []*Mayfly, weights []float64) []
 		})
 
 		// Find weighted median (smallest value where cumulative weight >= 50%)
-		halfWeight := totalWeight / 2.0
+		halfWeight := totalWeight * 0.5
 		cumWeight := 0.0
 
 		for _, pair := range pairs {

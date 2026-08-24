@@ -219,42 +219,44 @@ func loadCECInstance(data fs.FS, year, function, internal, dimension int) (*cecI
 
 	matrixCount := components * dimension * dimension
 
-	rotation, err := readCECFloatFile(data, fmt.Sprintf("M_%d_D%d.txt", internal, dimension), matrixCount)
+	rotation, err := readCECFloatFile(
+		data,
+		fmt.Sprintf("M_%d_D%d.txt", internal, dimension),
+		matrixCount,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("load CEC%d F%d rotation: %w", year, function, err)
 	}
 
-	shift, err := readCECShiftFile(data, fmt.Sprintf("shift_data_%d.txt", internal), components, dimension)
+	shift, err := readCECShiftFile(
+		data,
+		fmt.Sprintf("shift_data_%d.txt", internal),
+		components,
+		dimension,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("load CEC%d F%d shift: %w", year, function, err)
 	}
 
-	shuffleCount := 0
-
-	if year == 2017 {
-		if internal >= 11 && internal <= 20 {
-			shuffleCount = dimension
-		} else if internal == 29 || internal == 30 {
-			shuffleCount = 10 * dimension
-		}
-	} else {
-		if internal == 4 || internal == 6 || (internal >= 11 && internal <= 20) {
-			shuffleCount = dimension
-		} else if internal == 29 || internal == 30 {
-			shuffleCount = 10 * dimension
-		}
-	}
+	shuffleCount := cecShuffleCount(year, internal, dimension)
 
 	var shuffle []int
 	if shuffleCount > 0 {
-		shuffle, err = readCECIntFile(data, fmt.Sprintf("shuffle_data_%d_D%d.txt", internal, dimension), shuffleCount)
+		shuffle, err = readCECIntFile(
+			data,
+			fmt.Sprintf("shuffle_data_%d_D%d.txt", internal, dimension),
+			shuffleCount,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("load CEC%d F%d shuffle: %w", year, function, err)
 		}
 
 		for i, index := range shuffle {
 			if index < 1 || index > dimension {
-				return nil, fmt.Errorf("CEC%d F%d shuffle index %d at offset %d is outside 1..%d", year, function, index, i, dimension)
+				return nil, fmt.Errorf(
+					"CEC%d F%d shuffle index %d at offset %d is outside 1..%d",
+					year, function, index, i, dimension,
+				)
 			}
 		}
 	}
@@ -263,6 +265,18 @@ func loadCECInstance(data fs.FS, year, function, internal, dimension int) (*cecI
 		year: year, function: function, internal: internal, dimension: dimension,
 		shift: shift, rotation: rotation, shuffle: shuffle, components: components,
 	}, nil
+}
+
+func cecShuffleCount(year, internal, dimension int) int {
+	if internal == 29 || internal == 30 {
+		return 10 * dimension
+	}
+
+	if internal >= 11 && internal <= 20 || year != 2017 && (internal == 4 || internal == 6) {
+		return dimension
+	}
+
+	return 0
 }
 
 func readCECShiftFile(data fs.FS, name string, rows, dimension int) ([]float64, error) {
@@ -292,8 +306,8 @@ func readCECShiftFile(data fs.FS, name string, rows, dimension int) ([]float64, 
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, err
+	if scanErr := scanner.Err(); scanErr != nil {
+		return nil, scanErr
 	}
 
 	if len(result) != rows*dimension {

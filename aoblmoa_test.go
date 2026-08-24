@@ -1044,15 +1044,15 @@ func DTLZ2(x []float64) []float64 {
 	// Calculate objectives
 	objectives := make([]float64, m)
 
-	for i := range m {
+	for i := 0; i < m; i++ {
 		objectives[i] = 1.0 + g
 
-		for j := range m - i - 1 {
-			objectives[i] *= math.Cos(x[j] * math.Pi / 2.0)
+		for j := 0; j < m-i-1; j++ {
+			objectives[i] *= math.Cos(x[j] * math.Pi * 0.5)
 		}
 
 		if i > 0 {
-			objectives[i] *= math.Sin(x[m-i-1] * math.Pi / 2.0)
+			objectives[i] *= math.Sin(x[m-i-1] * math.Pi * 0.5)
 		}
 	}
 

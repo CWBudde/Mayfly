@@ -121,7 +121,7 @@ func TestCECProblemIsSafeForOptimizerUse(t *testing.T) {
 		t.Fatal("wrong-dimension objective should score +Inf")
 	}
 
-	if _, err := problem.Evaluate([]float64{101, 0, 0, 0, 0}); err == nil {
+	if _, evaluateErr := problem.Evaluate([]float64{101, 0, 0, 0, 0}); evaluateErr == nil {
 		t.Fatal("out-of-bounds physical position should be rejected")
 	}
 

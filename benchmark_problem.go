@@ -82,7 +82,10 @@ func (problem *BenchmarkCase) Evaluate(position []float64) (float64, error) {
 	}
 
 	if len(position) != problem.dimension {
-		return 0, fmt.Errorf("position dimension %d does not match benchmark dimension %d", len(position), problem.dimension)
+		return 0, fmt.Errorf(
+			"position dimension %d does not match benchmark dimension %d",
+			len(position), problem.dimension,
+		)
 	}
 
 	physical := append([]float64(nil), position...)
@@ -92,7 +95,10 @@ func (problem *BenchmarkCase) Evaluate(position []float64) (float64, error) {
 		}
 
 		if coordinate < problem.lower[i] || coordinate > problem.upper[i] {
-			return 0, fmt.Errorf("position %d=%v is outside [%v,%v]", i, coordinate, problem.lower[i], problem.upper[i])
+			return 0, fmt.Errorf(
+				"position %d=%v is outside [%v,%v]",
+				i, coordinate, problem.lower[i], problem.upper[i],
+			)
 		}
 	}
 
@@ -116,7 +122,10 @@ func (problem *BenchmarkCase) Decode(normalized []float64) ([]float64, error) {
 	}
 
 	if len(normalized) != problem.dimension {
-		return nil, fmt.Errorf("position dimension %d does not match benchmark dimension %d", len(normalized), problem.dimension)
+		return nil, fmt.Errorf(
+			"position dimension %d does not match benchmark dimension %d",
+			len(normalized), problem.dimension,
+		)
 	}
 
 	physical := make([]float64, problem.dimension)

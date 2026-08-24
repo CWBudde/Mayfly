@@ -635,7 +635,7 @@ func calculateAlgorithmStatisticsWithTarget(runs []RunResult, targetCost *float6
 	// Median
 	median := sortedCosts[len(sortedCosts)/2]
 	if len(sortedCosts)%2 == 0 {
-		median = (sortedCosts[len(sortedCosts)/2-1] + sortedCosts[len(sortedCosts)/2]) / 2.0
+		median = (sortedCosts[len(sortedCosts)/2-1] + sortedCosts[len(sortedCosts)/2]) * 0.5
 	}
 
 	// Standard deviation

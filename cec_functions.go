@@ -121,23 +121,7 @@ func cecEvaluateBase(kind cecBase, x, shift, rotation []float64) float64 {
 		return cecLunacekValue(x, shift, rotation, true)
 	}
 
-	rate := 1.0
-
-	switch kind {
-	case cecRosenbrock:
-		rate = 2.048 / 100
-	case cecRastrigin:
-		rate = 5.12 / 100
-	case cecWeierstrass:
-		rate = 0.5 / 100
-	case cecGriewank:
-		rate = 600.0 / 100
-	case cecSchwefel:
-		rate = 1000.0 / 100
-	case cecKatsuura, cecGriewankRosenbrock, cecHappyCat, cecHGBat:
-		rate = 5.0 / 100
-	}
-
+	rate := cecTransformRate(kind)
 	z := cecTransform(x, shift, rotation, rate)
 	if kind == cecSchafferF7 && len(rotation) == len(x)*len(x) {
 		// This intentionally follows the official evaluator, which computes
@@ -145,6 +129,29 @@ func cecEvaluateBase(kind cecBase, x, shift, rotation []float64) float64 {
 		z = cecTransform(x, shift, nil, rate)
 	}
 
+	return cecEvaluateTransformed(kind, z)
+}
+
+func cecTransformRate(kind cecBase) float64 {
+	switch kind {
+	case cecRosenbrock:
+		return 2.048 * 0.01
+	case cecRastrigin:
+		return 5.12 * 0.01
+	case cecWeierstrass:
+		return 0.5 * 0.01
+	case cecGriewank:
+		return 600.0 * 0.01
+	case cecSchwefel:
+		return 1000.0 * 0.01
+	case cecKatsuura, cecGriewankRosenbrock, cecHappyCat, cecHGBat:
+		return 5.0 * 0.01
+	default:
+		return 1
+	}
+}
+
+func cecEvaluateTransformed(kind cecBase, z []float64) float64 {
 	switch kind {
 	case cecSphere:
 		return cecSphereValue(z)
@@ -345,12 +352,12 @@ func cecSchwefelValue(x []float64) float64 {
 		case z > 500:
 			wrapped := 500 - math.Mod(z, 500)
 			result -= wrapped * math.Sin(math.Sqrt(math.Abs(wrapped)))
-			offset := (z - 500) / 100
+			offset := (z - 500) * 0.01
 			result += offset * offset / float64(len(x))
 		case z < -500:
 			wrapped := -500 + math.Mod(math.Abs(z), 500)
 			result -= wrapped * math.Sin(math.Sqrt(math.Abs(500-math.Mod(math.Abs(z), 500))))
-			offset := (z + 500) / 100
+			offset := (z + 500) * 0.01
 			result += offset * offset / float64(len(x))
 		default:
 			result -= z * math.Sin(math.Sqrt(math.Abs(z)))
@@ -531,15 +538,31 @@ var cec2017Hybrids = map[int]cecHybridSpec{
 	4:  {[]float64{0.2, 0.2, 0.2, 0.4}, []cecBase{cecElliptic, cecAckley, cecSchafferF7, cecRastrigin}, false},
 	5:  {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecBentCigar, cecHGBat, cecRastrigin, cecRosenbrock}, false},
 	6:  {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecExpandedSchaffer6, cecHGBat, cecRosenbrock, cecSchwefel}, false},
-	7:  {[]float64{0.1, 0.2, 0.2, 0.2, 0.3}, []cecBase{cecKatsuura, cecAckley, cecGriewankRosenbrock, cecSchwefel, cecRastrigin}, false},
+	7: {
+		[]float64{0.1, 0.2, 0.2, 0.2, 0.3},
+		[]cecBase{cecKatsuura, cecAckley, cecGriewankRosenbrock, cecSchwefel, cecRastrigin},
+		false,
+	},
 	8:  {[]float64{0.2, 0.2, 0.2, 0.2, 0.2}, []cecBase{cecElliptic, cecAckley, cecRastrigin, cecHGBat, cecDiscus}, false},
-	9:  {[]float64{0.2, 0.2, 0.2, 0.2, 0.2}, []cecBase{cecBentCigar, cecRastrigin, cecGriewankRosenbrock, cecWeierstrass, cecExpandedSchaffer6}, false},
-	10: {[]float64{0.1, 0.1, 0.2, 0.2, 0.2, 0.2}, []cecBase{cecHGBat, cecKatsuura, cecAckley, cecRastrigin, cecSchwefel, cecSchafferF7}, false},
+	9: {
+		[]float64{0.2, 0.2, 0.2, 0.2, 0.2},
+		[]cecBase{cecBentCigar, cecRastrigin, cecGriewankRosenbrock, cecWeierstrass, cecExpandedSchaffer6},
+		false,
+	},
+	10: {
+		[]float64{0.1, 0.1, 0.2, 0.2, 0.2, 0.2},
+		[]cecBase{cecHGBat, cecKatsuura, cecAckley, cecRastrigin, cecSchwefel, cecSchafferF7},
+		false,
+	},
 }
 
 var cec2020Hybrids = map[int]cecHybridSpec{
 	1: {[]float64{0.3, 0.3, 0.4}, []cecBase{cecSchwefel, cecRastrigin, cecElliptic}, true},
-	5: {[]float64{0.1, 0.2, 0.2, 0.2, 0.3}, []cecBase{cecExpandedSchaffer6, cecHGBat, cecRosenbrock, cecSchwefel, cecElliptic}, true},
+	5: {
+		[]float64{0.1, 0.2, 0.2, 0.2, 0.3},
+		[]cecBase{cecExpandedSchaffer6, cecHGBat, cecRosenbrock, cecSchwefel, cecElliptic},
+		true,
+	},
 	6: {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecExpandedSchaffer6, cecHGBat, cecRosenbrock, cecSchwefel}, true},
 }
 
@@ -595,13 +618,12 @@ func cecPartitionSizes(dimension int, proportions []float64, rightSized bool) []
 		}
 
 		sizes[0] = dimension - used
-		if dimension == 5 && len(sizes) == 5 {
+		switch {
+		case dimension == 5 && len(sizes) == 5:
 			for i := range sizes {
 				sizes[i] = 1
 			}
-		}
-
-		if dimension == 5 && len(sizes) == 4 {
+		case dimension == 5 && len(sizes) == 4:
 			sizes = []int{1, 1, 1, 2}
 		}
 
@@ -626,16 +648,68 @@ type cecComponent struct {
 }
 
 var cecCompositions = map[int][]cecComponent{
-	1:  {{base: cecRosenbrock, scale: 1, delta: 10}, {base: cecElliptic, scale: 1e4 / 1e10, delta: 20, bias: 100}, {base: cecRastrigin, scale: 1, delta: 30, bias: 200}},
-	2:  {{base: cecRastrigin, scale: 1, delta: 10}, {base: cecGriewank, scale: 1e3 / 100, delta: 20, bias: 100}, {base: cecSchwefel, scale: 1, delta: 30, bias: 200}},
-	3:  {{base: cecRosenbrock, scale: 1, delta: 10}, {base: cecAckley, scale: 1e3 / 100, delta: 20, bias: 100}, {base: cecSchwefel, scale: 1, delta: 30, bias: 200}, {base: cecRastrigin, scale: 1, delta: 40, bias: 300}},
-	4:  {{base: cecAckley, scale: 1e3 / 100, delta: 10}, {base: cecElliptic, scale: 1e4 / 1e10, delta: 20, bias: 100}, {base: cecGriewank, scale: 1e3 / 100, delta: 30, bias: 200}, {base: cecRastrigin, scale: 1, delta: 40, bias: 300}},
-	5:  {{base: cecRastrigin, scale: 1e4 / 1e3, delta: 10}, {base: cecHappyCat, scale: 1, delta: 20, bias: 100}, {base: cecAckley, scale: 1e3 / 100, delta: 30, bias: 200}, {base: cecDiscus, scale: 1e4 / 1e10, delta: 40, bias: 300}, {base: cecRosenbrock, scale: 1, delta: 50, bias: 400}},
-	6:  {{base: cecExpandedSchaffer6, scale: 1e4 / 2e7, delta: 10}, {base: cecSchwefel, scale: 1, delta: 20, bias: 100}, {base: cecGriewank, scale: 1e3 / 100, delta: 20, bias: 200}, {base: cecRosenbrock, scale: 1, delta: 30, bias: 300}, {base: cecRastrigin, scale: 1e4 / 1e3, delta: 40, bias: 400}},
-	7:  {{base: cecHGBat, scale: 1e4 / 1e3, delta: 10}, {base: cecRastrigin, scale: 1e4 / 1e3, delta: 20, bias: 100}, {base: cecSchwefel, scale: 1e4 / 4e3, delta: 30, bias: 200}, {base: cecBentCigar, scale: 1e4 / 1e30, delta: 40, bias: 300}, {base: cecElliptic, scale: 1e4 / 1e10, delta: 50, bias: 400}, {base: cecExpandedSchaffer6, scale: 1e4 / 2e7, delta: 60, bias: 500}},
-	8:  {{base: cecAckley, scale: 1e3 / 100, delta: 10}, {base: cecGriewank, scale: 1e3 / 100, delta: 20, bias: 100}, {base: cecDiscus, scale: 1e4 / 1e10, delta: 30, bias: 200}, {base: cecRosenbrock, scale: 1, delta: 40, bias: 300}, {base: cecHappyCat, scale: 1, delta: 50, bias: 400}, {base: cecExpandedSchaffer6, scale: 1e4 / 2e7, delta: 60, bias: 500}},
-	9:  {{hybrid: 5, scale: 1, delta: 10}, {hybrid: 6, scale: 1, delta: 30, bias: 100}, {hybrid: 7, scale: 1, delta: 50, bias: 200}},
-	10: {{hybrid: 5, scale: 1, delta: 10}, {hybrid: 8, scale: 1, delta: 30, bias: 100}, {hybrid: 9, scale: 1, delta: 50, bias: 200}},
+	1: {
+		{base: cecRosenbrock, scale: 1, delta: 10},
+		{base: cecElliptic, scale: 1e4 / 1e10, delta: 20, bias: 100},
+		{base: cecRastrigin, scale: 1, delta: 30, bias: 200},
+	},
+	2: {
+		{base: cecRastrigin, scale: 1, delta: 10},
+		{base: cecGriewank, scale: 1e3 * 0.01, delta: 20, bias: 100},
+		{base: cecSchwefel, scale: 1, delta: 30, bias: 200},
+	},
+	3: {
+		{base: cecRosenbrock, scale: 1, delta: 10},
+		{base: cecAckley, scale: 1e3 * 0.01, delta: 20, bias: 100},
+		{base: cecSchwefel, scale: 1, delta: 30, bias: 200},
+		{base: cecRastrigin, scale: 1, delta: 40, bias: 300},
+	},
+	4: {
+		{base: cecAckley, scale: 1e3 * 0.01, delta: 10},
+		{base: cecElliptic, scale: 1e4 / 1e10, delta: 20, bias: 100},
+		{base: cecGriewank, scale: 1e3 * 0.01, delta: 30, bias: 200},
+		{base: cecRastrigin, scale: 1, delta: 40, bias: 300},
+	},
+	5: {
+		{base: cecRastrigin, scale: 1e4 / 1e3, delta: 10},
+		{base: cecHappyCat, scale: 1, delta: 20, bias: 100},
+		{base: cecAckley, scale: 1e3 * 0.01, delta: 30, bias: 200},
+		{base: cecDiscus, scale: 1e4 / 1e10, delta: 40, bias: 300},
+		{base: cecRosenbrock, scale: 1, delta: 50, bias: 400},
+	},
+	6: {
+		{base: cecExpandedSchaffer6, scale: 1e4 / 2e7, delta: 10},
+		{base: cecSchwefel, scale: 1, delta: 20, bias: 100},
+		{base: cecGriewank, scale: 1e3 * 0.01, delta: 20, bias: 200},
+		{base: cecRosenbrock, scale: 1, delta: 30, bias: 300},
+		{base: cecRastrigin, scale: 1e4 / 1e3, delta: 40, bias: 400},
+	},
+	7: {
+		{base: cecHGBat, scale: 1e4 / 1e3, delta: 10},
+		{base: cecRastrigin, scale: 1e4 / 1e3, delta: 20, bias: 100},
+		{base: cecSchwefel, scale: 1e4 / 4e3, delta: 30, bias: 200},
+		{base: cecBentCigar, scale: 1e4 / 1e30, delta: 40, bias: 300},
+		{base: cecElliptic, scale: 1e4 / 1e10, delta: 50, bias: 400},
+		{base: cecExpandedSchaffer6, scale: 1e4 / 2e7, delta: 60, bias: 500},
+	},
+	8: {
+		{base: cecAckley, scale: 1e3 * 0.01, delta: 10},
+		{base: cecGriewank, scale: 1e3 * 0.01, delta: 20, bias: 100},
+		{base: cecDiscus, scale: 1e4 / 1e10, delta: 30, bias: 200},
+		{base: cecRosenbrock, scale: 1, delta: 40, bias: 300},
+		{base: cecHappyCat, scale: 1, delta: 50, bias: 400},
+		{base: cecExpandedSchaffer6, scale: 1e4 / 2e7, delta: 60, bias: 500},
+	},
+	9: {
+		{hybrid: 5, scale: 1, delta: 10},
+		{hybrid: 6, scale: 1, delta: 30, bias: 100},
+		{hybrid: 7, scale: 1, delta: 50, bias: 200},
+	},
+	10: {
+		{hybrid: 5, scale: 1, delta: 10},
+		{hybrid: 8, scale: 1, delta: 30, bias: 100},
+		{hybrid: 9, scale: 1, delta: 50, bias: 200},
+	},
 }
 
 func (instance *cecInstance) composition2017(number int, x []float64) float64 {

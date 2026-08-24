@@ -366,8 +366,8 @@ func TestParallelVariantEvaluationUsesVariantBatchCapacity(t *testing.T) {
 		},
 		{
 			// 2 initial + 2 update + 2 crossover + 2 mutations (one per
-			// sex) + 4 orthogonal rows + 1 factor-analysis candidate +
-			// 1 chaotic candidate.
+			// sex) + 4 orthogonal male-movement rows + 1 factor-analysis
+			// candidate + 1 chaotic best-crossover-offspring candidate.
 			name:                "OLCE candidates",
 			newConfig:           NewOLCEConfig,
 			malePopulation:      1,
@@ -464,9 +464,7 @@ func TestParallelExecutionIsDeterministicForSeedAcrossSchedules(t *testing.T) {
 		{name: "EOBBMA", newConfig: NewEOBBMAConfig, configure: func(config *Config) {
 			config.OppositionRate = 1
 		}},
-		{name: "GSASMA", newConfig: NewGSASMAConfig, configure: func(config *Config) {
-			config.ApplyOBLToGlobalBest = false
-		}},
+		{name: "GSASMA", newConfig: NewGSASMAConfig, configure: func(*Config) {}},
 		{name: "MPMA", newConfig: NewMPMAConfig, configure: func(config *Config) {
 			config.UseWeightedMedian = true
 		}},

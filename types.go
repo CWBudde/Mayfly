@@ -129,73 +129,87 @@ type Config struct {
 	Rand          *rand.Rand        `json:"-"`
 	// Seed asks Optimize to construct a reproducible run-local generator. It is
 	// mutually exclusive with Rand, whose original seed cannot be recovered.
-	Seed                  *int64             `json:"seed,omitempty"`
-	Convergence           *ConvergenceConfig `json:"convergence,omitempty"`
-	Constraints           *ConstraintConfig  `json:"constraints,omitempty"`
-	CoolingSchedule       string             `json:"cooling_schedule"`
-	GravityType           string             `json:"gravity_type"`
-	QMCInit               string             `json:"qmc_init"`
-	Selection             SelectionStrategy  `json:"selection"`
-	ReductionFactor       float64            `json:"reduction_factor"`
-	Dance                 float64            `json:"dance"`
-	NPop                  int                `json:"npop"`
-	NPopF                 int                `json:"npopf"`
-	G                     float64            `json:"g"`
-	GDamp                 float64            `json:"g_damp"`
-	A1                    float64            `json:"a1"`
-	A2                    float64            `json:"a2"`
-	A3                    float64            `json:"a3"`
-	ChaosFactor           float64            `json:"chaos_factor"`
-	OrthogonalFactor      float64            `json:"orthogonal_factor"`
-	FL                    float64            `json:"fl"`
-	DanceDamp             float64            `json:"dance_damp"`
-	FLDamp                float64            `json:"fl_damp"`
-	NC                    int                `json:"nc"`
-	NM                    int                `json:"nm"`
-	TournamentSize        int                `json:"tournament_size"`
-	NCRatio               float64            `json:"nc_ratio"`
-	CrossoverGamma        float64            `json:"crossover_gamma"` // 0 or negative: DefaultCrossoverGamma
-	Mu                    float64            `json:"mu"`
-	VelMax                float64            `json:"vel_max"`
-	VelMin                float64            `json:"vel_min"`
-	EliteCount            int                `json:"elite_count"`
-	SearchRange           float64            `json:"search_range"`
-	QMCSeed               uint64             `json:"qmc_seed"`
-	EnlargeFactor         float64            `json:"enlarge_factor"`
-	MaxIterations         int                `json:"max_iterations"`
-	UpperBound            float64            `json:"upper_bound"`
-	Beta                  float64            `json:"beta"`
-	LevyAlpha             float64            `json:"levy_alpha"`
-	StrategySwitch        int                `json:"strategy_switch"`
-	ArchiveSize           int                `json:"archive_size"`
-	LevyBeta              float64            `json:"levy_beta"`
-	OppositionRate        float64            `json:"opposition_rate"`
-	EliteOppositionCount  int                `json:"elite_opposition_count"`
-	OppositionProbability float64            `json:"opposition_probability"`
+	Seed        *int64             `json:"seed,omitempty"`
+	Convergence *ConvergenceConfig `json:"convergence,omitempty"`
+	Constraints *ConstraintConfig  `json:"constraints,omitempty"`
+	// CoolingSchedule, InitialTemperature, and CoolingRate are implementation
+	// extensions for GSASMA: the cited paper names T and a cooling coefficient
+	// but does not publish a temperature update equation or numerical defaults.
+	CoolingSchedule       string            `json:"cooling_schedule"`
+	GravityType           string            `json:"gravity_type"`
+	QMCInit               string            `json:"qmc_init"`
+	Selection             SelectionStrategy `json:"selection"`
+	ReductionFactor       float64           `json:"reduction_factor"`
+	Dance                 float64           `json:"dance"`
+	NPop                  int               `json:"npop"`
+	NPopF                 int               `json:"npopf"`
+	G                     float64           `json:"g"`
+	GDamp                 float64           `json:"g_damp"`
+	A1                    float64           `json:"a1"`
+	A2                    float64           `json:"a2"`
+	A3                    float64           `json:"a3"`
+	ChaosFactor           float64           `json:"chaos_factor"`
+	OrthogonalFactor      float64           `json:"orthogonal_factor"`
+	FL                    float64           `json:"fl"`
+	DanceDamp             float64           `json:"dance_damp"`
+	FLDamp                float64           `json:"fl_damp"`
+	NC                    int               `json:"nc"`
+	NM                    int               `json:"nm"`
+	TournamentSize        int               `json:"tournament_size"`
+	NCRatio               float64           `json:"nc_ratio"`
+	CrossoverGamma        float64           `json:"crossover_gamma"` // 0 or negative: DefaultCrossoverGamma
+	Mu                    float64           `json:"mu"`
+	VelMax                float64           `json:"vel_max"`
+	VelMin                float64           `json:"vel_min"`
+	EliteCount            int               `json:"elite_count"`
+	SearchRange           float64           `json:"search_range"`
+	QMCSeed               uint64            `json:"qmc_seed"`
+	EnlargeFactor         float64           `json:"enlarge_factor"`
+	MaxIterations         int               `json:"max_iterations"`
+	UpperBound            float64           `json:"upper_bound"`
+	Beta                  float64           `json:"beta"`
+	LevyAlpha             float64           `json:"levy_alpha"`
+	StrategySwitch        int               `json:"strategy_switch"`
+	ArchiveSize           int               `json:"archive_size"`
+	LevyBeta              float64           `json:"levy_beta"`
+	OppositionRate        float64           `json:"opposition_rate"`
+	EliteOppositionCount  int               `json:"elite_opposition_count"`
+	OppositionProbability float64           `json:"opposition_probability"`
 	// Deprecated: the AOBLMOA paper has no such knob. Its update phase moves
 	// every individual by Mayfly attraction or by an Aquila strategy, decided
 	// by a fitness test, not by chance. Leave this at AquilaWeightAuto for the
 	// published algorithm; set a probability in [0, 1] only to approximate the
 	// pre-v0.6.0 behavior, which drew the branch at random.
-	AquilaWeight         float64 `json:"aquila_weight"`
-	MedianWeight         float64 `json:"median_weight"`
-	LowerBound           float64 `json:"lower_bound"`
-	ProblemSize          int     `json:"problem_size"`
-	MaxWorkers           int     `json:"max_workers"`
-	GoldenFactor         float64 `json:"golden_factor"`
-	InitialTemperature   float64 `json:"initial_temperature"`
-	CoolingRate          float64 `json:"cooling_rate"`
-	CauchyMutationRate   float64 `json:"cauchy_mutation_rate"`
-	UseGSASMA            bool    `json:"use_gsasma"`
-	UseHMMA              bool    `json:"use_hmma"`
-	UseWeightedMedian    bool    `json:"use_weighted_median"`
-	ApplyOBLToGlobalBest bool    `json:"apply_obl_to_global_best"`
-	UseAOBLMOA           bool    `json:"use_aoblmoa"`
-	UseMPMA              bool    `json:"use_mpma"`
-	UseEOBBMA            bool    `json:"use_eobbma"`
-	UseOLCE              bool    `json:"use_olce"`
-	UseDESMA             bool    `json:"use_desma"`
-	EnableParallel       bool    `json:"enable_parallel"`
+	AquilaWeight float64 `json:"aquila_weight"`
+	MedianWeight float64 `json:"median_weight"`
+	LowerBound   float64 `json:"lower_bound"`
+	ProblemSize  int     `json:"problem_size"`
+	MaxWorkers   int     `json:"max_workers"`
+	// Deprecated: GSASMA Eq. (10) has no multiplicative influence factor.
+	// GoldenFactor is ignored and retained only for source/JSON compatibility.
+	GoldenFactor       float64 `json:"golden_factor"`
+	InitialTemperature float64 `json:"initial_temperature"`
+	CoolingRate        float64 `json:"cooling_rate"`
+	// Deprecated: HMMA does not choose between Cauchy and Gaussian offspring
+	// mutation. It uses the paper's scheduled OBL/Cauchy global-best mutation.
+	// This field remains for source compatibility with the exported generic
+	// HybridMutate operator.
+	CauchyMutationRate      float64 `json:"cauchy_mutation_rate"`
+	HMMAInformationExchange float64 `json:"hmma_information_exchange"`
+	HMMAScheduleOffset      float64 `json:"hmma_schedule_offset"`
+	HMMAArtificialMutation  float64 `json:"hmma_artificial_mutation"`
+	UseGSASMA               bool    `json:"use_gsasma"`
+	UseHMMA                 bool    `json:"use_hmma"`
+	UseWeightedMedian       bool    `json:"use_weighted_median"`
+	// Deprecated: faithful HMMA always executes its scheduled global-best
+	// mutation once per iteration.
+	ApplyOBLToGlobalBest bool `json:"apply_obl_to_global_best"`
+	UseAOBLMOA           bool `json:"use_aoblmoa"`
+	UseMPMA              bool `json:"use_mpma"`
+	UseEOBBMA            bool `json:"use_eobbma"`
+	UseOLCE              bool `json:"use_olce"`
+	UseDESMA             bool `json:"use_desma"`
+	EnableParallel       bool `json:"enable_parallel"`
 }
 
 // TerminationReason describes why an optimization run ended.

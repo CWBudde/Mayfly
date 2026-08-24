@@ -1,219 +1,164 @@
 package mayfly
 
 import (
+	"math"
 	"math/rand"
 )
 
-// GSASMA (Golden Sine Algorithm with Simulated Annealing Mayfly Algorithm)
-// is an enhanced variant that combines two optimization techniques:
-//
-// 1. Golden Sine Algorithm (GSA): For adaptive exploration using golden ratio
-// 2. Simulated Annealing (SA): For escaping local optima via probabilistic acceptance
-// 3. Hybrid Mutation: Combining Cauchy (exploration) and Gaussian (exploitation)
-// 4. Opposition-Based Learning (OBL): For expanding search space coverage
-//
-// This file contains integration logic specific to GSASMA that orchestrates
-// these components within the main Mayfly optimization loop.
+// GSASMA is the Golden Annealing Crossover-Mutation Mayfly Algorithm.
+// Simulated annealing controls its late-stage velocity branch and the fixed
+// golden-sine equation updates every male and female position.
 
-func applyGSASMAToEliteMalesWithEvaluator(
-	males []*Mayfly,
-	eliteRatio float64,
-	globalBest Best,
-	goldenFactor float64,
+func gsasmaAnnealedAttraction(
+	currentCost, previousCost, temperature float64,
+	rng *rand.Rand,
+) bool {
+	if currentCost < previousCost {
+		return true
+	}
+
+	eta := math.Exp(-(currentCost - previousCost) / temperature)
+
+	return rng.Float64() < eta
+}
+
+// gsasmaGoldenPosition implements Eq. (10) with fixed golden coefficients.
+// r1 and r2 are scalars drawn once per individual, as in the paper.
+func gsasmaGoldenPosition(
+	position, personalBest []float64,
 	lowerBound, upperBound float64,
+	rng *rand.Rand,
+) []float64 {
+	r1 := rng.Float64() * 2 * math.Pi
+	r2 := rng.Float64() * math.Pi
+	sinR1 := math.Sin(r1)
+	absSinR1 := math.Abs(sinR1)
+	c1 := -math.Pi + (1-goldenRatioConjugate)*2*math.Pi
+	c2 := -math.Pi + goldenRatioConjugate*2*math.Pi
+
+	updated := make([]float64, len(position))
+	for i := range position {
+		updated[i] = position[i]*absSinR1 -
+			r2*sinR1*math.Abs(c1*personalBest[i]-c2*position[i])
+	}
+	maxVec(updated, lowerBound)
+	minVec(updated, upperBound)
+
+	return updated
+}
+
+// gsasmaPositionStep composes the two GSASMA improvements in paper order:
+// first apply the selected velocity, then refine that moved position with Eq.
+// (10). Applying Eq. (10) to the old position would make the SA velocity stage
+// behaviorally inert.
+func gsasmaPositionStep(
+	position, velocity, personalBest []float64,
+	lowerBound, upperBound float64,
+	rng *rand.Rand,
+) []float64 {
+	stepped := make([]float64, len(position))
+	for i := range position {
+		stepped[i] = position[i] + velocity[i]
+	}
+	maxVec(stepped, lowerBound)
+	minVec(stepped, upperBound)
+
+	return gsasmaGoldenPosition(stepped, personalBest, lowerBound, upperBound, rng)
+}
+
+func prepareGSASMAPopulations(
+	males, females []*Mayfly,
+	globalBest Best,
+	previousCosts map[*Mayfly]float64,
+	iteration, maxIterations int,
+	g, dance, flight float64,
+	config *Config,
 	scheduler *AnnealingScheduler,
-	section *goldenSection,
 	evaluator *constraintEvaluator,
 	rng *rand.Rand,
-) (Best, int) {
-	numElite := min(max(int(float64(len(males))*eliteRatio), 1), len(males))
-	updatedGlobalBest := cloneBest(globalBest)
+) {
+	early := 2*iteration < maxIterations
+	temperature := scheduler.GetTemperature()
 
-	for i := range numElite {
-		candidate := newMayfly(len(males[i].Position))
-		candidate.Position = goldenSineUpdate(
-			males[i].Position,
-			globalBest.Position,
-			goldenFactor,
-			section.snapshot(),
-			lowerBound,
-			upperBound,
-			rng,
+	for i, female := range females {
+		currentCost := female.Cost
+		attracted := evaluator.betterMayfly(males[i], female)
+		if !early {
+			previousCost, ok := previousCosts[female]
+			if !ok {
+				previousCost = currentCost
+			}
+			attracted = gsasmaAnnealedAttraction(
+				currentCost, previousCost, temperature, rng,
+			)
+		}
+
+		if attracted {
+			prepareAttractedFemale(female, males[i], g, config)
+		} else {
+			randomFlight := unifrndVec(-1, 1, config.ProblemSize, rng)
+			for j := range config.ProblemSize {
+				female.Velocity[j] = g*female.Velocity[j] + flight*randomFlight[j]
+			}
+		}
+		maxVec(female.Velocity, config.VelMin)
+		minVec(female.Velocity, config.VelMax)
+		female.Position = gsasmaPositionStep(
+			female.Position, female.Velocity, males[i].Best.Position,
+			config.LowerBound, config.UpperBound, rng,
 		)
-		evaluator.evaluateMayfly(candidate, false)
+		previousCosts[female] = currentCost
+	}
 
-		// The golden section narrows on whether the candidate improved on the
-		// position it was generated from, independent of the annealing draw.
-		section.update(evaluator.betterMayfly(candidate, males[i]))
-
-		probability := evaluator.acceptanceProbability(
-			evaluationFromMayfly(males[i]), evaluationFromMayfly(candidate), scheduler.GetTemperature(),
+	for _, male := range males {
+		currentCost := male.Cost
+		attracted := evaluator.better(
+			evaluationFromBest(globalBest), evaluationFromMayfly(male),
 		)
-		if rng.Float64() >= probability {
-			continue
+		if !early {
+			previousCost, ok := previousCosts[male]
+			if !ok {
+				previousCost = currentCost
+			}
+			attracted = gsasmaAnnealedAttraction(
+				currentCost, previousCost, temperature, rng,
+			)
 		}
 
-		copy(males[i].Position, candidate.Position)
-		males[i].Cost = candidate.Cost
-		males[i].ConstraintViolation = candidate.ConstraintViolation
-
-		if evaluator.better(evaluationFromMayfly(males[i]), evaluationFromBest(males[i].Best)) {
-			copy(males[i].Best.Position, males[i].Position)
-			males[i].Best.Cost = males[i].Cost
-			males[i].Best.ConstraintViolation = males[i].ConstraintViolation
+		if attracted {
+			prepareAttractedMale(male, globalBest, nil, g, 0, config)
+		} else {
+			randomDance := unifrndVec(-1, 1, config.ProblemSize, rng)
+			for j := range config.ProblemSize {
+				male.Velocity[j] = g*male.Velocity[j] + dance*randomDance[j]
+			}
 		}
-
-		if evaluator.betterMayflyThanBest(males[i], updatedGlobalBest) {
-			copyMayflyToBest(&updatedGlobalBest, males[i])
-		}
-	}
-
-	return updatedGlobalBest, numElite
-}
-
-func applyOBLToGlobalBestWithEvaluator(
-	globalBest Best,
-	lowerBound, upperBound float64,
-	evaluator *constraintEvaluator,
-) (Best, bool) {
-	opposition := newMayfly(len(globalBest.Position))
-	opposition.Position = oppositionPoint(globalBest.Position, lowerBound, upperBound)
-	evaluator.evaluateMayfly(opposition, false)
-
-	if !evaluator.betterMayflyThanBest(opposition, globalBest) {
-		return globalBest, false
-	}
-
-	return bestFromMayfly(opposition), true
-}
-
-// Returns: mutated offspring.
-//
-//nolint:unused // reserved for the GSASMA variant; not wired into Optimize() yet.
-func applyHybridMutationGSASMA(offspring []*Mayfly, nMutants int, mutationRate float64,
-	currentIter, maxIter int, cauchyMutationRate, lowerBound, upperBound float64,
-	rng *rand.Rand,
-) []*Mayfly {
-	// Calculate adaptive Cauchy probability based on iteration progress
-	iterRatio := float64(currentIter) / float64(maxIter)
-
-	var cauchyProb float64
-
-	switch {
-	case iterRatio < 0.33:
-		// Early phase: high Cauchy for exploration
-		cauchyProb = 0.7
-	case iterRatio < 0.66:
-		// Middle phase: balanced
-		cauchyProb = 0.5
-	default:
-		// Late phase: low Cauchy for exploitation
-		cauchyProb = cauchyMutationRate // Use configured rate (default 0.3)
-	}
-
-	// Apply hybrid mutation to create mutants
-	for range nMutants {
-		// Select random parent from offspring
-		i := rng.Intn(len(offspring))
-		parent := offspring[i]
-
-		// Create mutant
-		mutant := newMayfly(len(parent.Position))
-
-		// Apply hybrid mutation
-		mutant.Position = HybridMutate(
-			parent.Position,
-			mutationRate,
-			lowerBound,
-			upperBound,
-			cauchyProb,
-			rng,
+		maxVec(male.Velocity, config.VelMin)
+		minVec(male.Velocity, config.VelMax)
+		male.Position = gsasmaPositionStep(
+			male.Position, male.Velocity, male.Best.Position,
+			config.LowerBound, config.UpperBound, rng,
 		)
-
-		// Note: Cost will be evaluated in main loop
-		// Setting to infinity to ensure it gets evaluated
-		mutant.Cost = parent.Cost // Placeholder, will be updated
-
-		offspring = append(offspring, mutant)
+		previousCosts[male] = currentCost
 	}
-
-	return offspring
 }
 
-// Returns: (updatedGlobalBest, updatedGlobalBestCost, improved).
-// The caller must account for the single evaluation of the opposition point.
-//
-//nolint:unused // retained for focused GSASMA helper compatibility.
-func applyOBLToGlobalBest(globalBest []float64, globalBestCost float64,
-	lowerBound, upperBound float64, objectiveFunc ObjectiveFunction,
-) ([]float64, float64, bool) {
-	// Generate opposition point
-	oppPos := oppositionPoint(globalBest, lowerBound, upperBound)
-
-	// Evaluate opposition point
-	oppCost := objectiveFunc(oppPos)
-
-	// If opposition is better, update global best
-	if oppCost < globalBestCost {
-		updatedGlobalBest := make([]float64, len(oppPos))
-		copy(updatedGlobalBest, oppPos)
-
-		return updatedGlobalBest, oppCost, true
-	}
-
-	// No improvement
-	return globalBest, globalBestCost, false
-}
-
-// Returns: adaptive Cauchy rate.
-//
-//nolint:unused // reserved for the GSASMA variant; not wired into Optimize() yet.
-func calculateAdaptiveCauchyRate(males []*Mayfly, baseCauchyRate float64) float64 {
-	if len(males) < 2 {
-		return baseCauchyRate
-	}
-
-	// Calculate population diversity (average std dev across dimensions)
-	problemSize := len(males[0].Position)
-	totalStdDev := 0.0
-
-	for dim := range problemSize {
-		// Calculate mean for this dimension
-		mean := 0.0
-		for _, m := range males {
-			mean += m.Position[dim]
+// retainGSASMAPreviousCosts preserves prior fitness for current survivors and
+// releases entries for discarded offspring, bounding state to O(population).
+func retainGSASMAPreviousCosts(
+	previousCosts map[*Mayfly]float64,
+	males, females []*Mayfly,
+) map[*Mayfly]float64 {
+	retained := make(map[*Mayfly]float64, len(males)+len(females))
+	for _, population := range [][]*Mayfly{males, females} {
+		for _, mayfly := range population {
+			previousCost, ok := previousCosts[mayfly]
+			if !ok {
+				previousCost = mayfly.Cost
+			}
+			retained[mayfly] = previousCost
 		}
-
-		mean /= float64(len(males))
-
-		// Calculate standard deviation
-		variance := 0.0
-
-		for _, m := range males {
-			diff := m.Position[dim] - mean
-			variance += diff * diff
-		}
-
-		variance /= float64(len(males))
-		stdDev := variance // Simplified: using variance as proxy
-
-		totalStdDev += stdDev
 	}
 
-	avgStdDev := totalStdDev / float64(problemSize)
-
-	// Normalize diversity (assume search space is [0, 1] normalized)
-	// Higher diversity → lower rate multiplier
-	// Lower diversity → higher rate multiplier
-	diversityFactor := 1.0 / (1.0 + avgStdDev)
-
-	// Adaptive rate: increase when diversity is low
-	adaptiveRate := baseCauchyRate * (1.0 + diversityFactor)
-
-	// Cap at 0.9 to prevent excessive mutation
-	if adaptiveRate > 0.9 {
-		adaptiveRate = 0.9
-	}
-
-	return adaptiveRate
+	return retained
 }

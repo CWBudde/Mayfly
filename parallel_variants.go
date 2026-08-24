@@ -14,8 +14,7 @@ func largestParallelEvaluationBatch(config *Config) int {
 	}
 
 	if config.UseOLCE {
-		numElite := min(max(int(float64(config.NPop)*0.2), 1), config.NPop)
-		largest = max(largest, numElite*len(orthogonalArray(config.ProblemSize)))
+		largest = max(largest, config.NPop*len(orthogonalArray(config.ProblemSize)))
 	}
 
 	if config.UseEOBBMA {
@@ -298,41 +297,6 @@ func evaluateParallelEOBBMAOpposition(
 	return len(evaluationBatch), nil
 }
 
-func evaluateParallelGoldenSine(
-	ctx context.Context,
-	males []*Mayfly,
-	eliteRatio float64,
-	globalBest *Best,
-	goldenFactor float64,
-	lowerBound, upperBound float64,
-	scheduler *AnnealingScheduler,
-	section *goldenSection,
-	rng *rand.Rand,
-	evaluator *evaluationPool,
-) (int, error) {
-	err := ctx.Err()
-	if err != nil {
-		return 0, err
-	}
-	// Golden-section state is recurrent: candidate i+1 is generated from the
-	// interval update caused by candidate i. Evaluating this stage as a batch
-	// changes the algorithm, so parallel mode deliberately uses the canonical
-	// sequential recurrence here while the other independent phases remain
-	// parallel.
-	updatedBest, evaluations := applyGSASMAToEliteMalesWithEvaluator(
-		males, eliteRatio, *globalBest, goldenFactor, lowerBound, upperBound,
-		scheduler, section, evaluator.evaluator, rng,
-	)
-	*globalBest = updatedBest
-
-	err = ctx.Err()
-	if err != nil {
-		return 0, err
-	}
-
-	return evaluations, nil
-}
-
 // evaluateParallelAOBLMOA runs one AOBLMOA update phase with the swarm
 // evaluated through the worker pool.
 //
@@ -373,13 +337,9 @@ func evaluateParallelAOBLMOA(
 	return len(batch), nil
 }
 
-// evaluateParallelChaoticExploitation runs the OLCE-MA chaotic exploitation
-// step on the leading elites of males through the worker pool.
-//
-// Candidate generation stays on the caller goroutine so the LogisticMap is
-// never shared, and acceptance is greedy: an elite only moves onto its chaotic
-// neighbor when the neighbor is not worse. It returns the number of
-// objective evaluations spent.
+// evaluateParallelChaoticExploitation is retained as an internal compatibility
+// helper. OLCE-MA applies chaos to the fittest offspring only, so numElite is
+// ignored and this function evaluates exactly one candidate.
 func evaluateParallelChaoticExploitation(
 	ctx context.Context,
 	males []*Mayfly,
@@ -389,30 +349,26 @@ func evaluateParallelChaoticExploitation(
 	iteration int,
 	evaluator *evaluationPool,
 ) (int, error) {
-	radius := chaoticExploitationRadius(config, iteration)
-	candidates := make([]*Mayfly, 0, numElite)
-
-	for i := range numElite {
-		contextErr := ctx.Err()
-		if contextErr != nil {
-			return 0, contextErr
-		}
-
-		candidate := newMayfly(len(males[i].Position))
-		chaoticExploitationCandidate(
-			candidate.Position, males[i].Position, config, chaosMap, radius,
-		)
-		candidates = append(candidates, candidate)
+	_ = numElite
+	if err := ctx.Err(); err != nil {
+		return 0, err
 	}
+	target := fittestMayfly(males, evaluator.evaluator)
+	if target == nil {
+		return 0, nil
+	}
+	candidate := newMayfly(len(target.Position))
+	chaoticExploitationCandidate(
+		candidate.Position, target.Position, config, chaosMap,
+		chaoticConstrictionFactor(config, iteration),
+	)
 
-	_, evaluationErr := evaluator.evaluate(ctx, candidates, false, false)
+	_, evaluationErr := evaluator.evaluate(ctx, []*Mayfly{candidate}, false, false)
 	if evaluationErr != nil {
 		return 0, evaluationErr
 	}
 
-	for i, candidate := range candidates {
-		acceptChaoticCandidate(males[i], candidate, evaluator.evaluator)
-	}
+	commitChaoticOffspring(target, candidate)
 
-	return len(candidates), nil
+	return 1, nil
 }

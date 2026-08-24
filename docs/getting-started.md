@@ -94,7 +94,7 @@ config := mayfly.NewOLCEConfig()
 // EOBBMA (best for deceptive landscapes)
 config := mayfly.NewEOBBMAConfig()
 
-// GSASMA (fastest convergence)
+// GSASMA (annealed velocity and golden-sine position updates)
 config := mayfly.NewGSASMAConfig()
 
 // MPMA (most stable)

@@ -122,13 +122,14 @@ func main() {
 	// ====================================================================
 	fmt.Println("\n\n=== OLCE-MA Configuration ===")
 	fmt.Printf("Orthogonal Factor: %.2f (controls learning strength)\n", olceConfig.OrthogonalFactor)
-	fmt.Printf("Chaos Factor: %.2f (controls perturbation strength)\n", olceConfig.ChaosFactor)
+	fmt.Printf("Chaos Factor: %.2f (offspring constriction multiplier)\n", olceConfig.ChaosFactor)
 	fmt.Println("\nOLCE-MA Features:")
 	fmt.Println("  • Orthogonal learning: Increases diversity, reduces oscillation")
 	fmt.Println("  • Chaotic exploitation: Improves local search with logistic map")
-	fmt.Println("  • Applied to top 20% of males and all offspring")
+	fmt.Println("  • Orthogonal learning augments male movement")
+	fmt.Println("  • Chaos forms the fittest crossover offspring position")
 	fmt.Println("\nTypical performance:")
 	fmt.Println("  • 15-30% improvement on multimodal functions")
-	fmt.Println("  • ~12% overhead in function evaluations")
+	fmt.Println("  • Orthogonal-learning overhead scales with dimension")
 	fmt.Println("  • Excellent for complex, high-dimensional problems")
 }

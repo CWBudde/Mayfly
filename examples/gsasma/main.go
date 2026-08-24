@@ -9,11 +9,11 @@ import (
 )
 
 func main() {
-	fmt.Println("=== GSASMA (Golden Sine Algorithm with Simulated Annealing MA) Example ===")
+	fmt.Println("=== GSASMA (Golden Annealing Crossover-Mutation MA) Example ===")
 	fmt.Println()
-	fmt.Println("GSASMA combines two optimization techniques:")
-	fmt.Println("1. Golden Sine Algorithm - Adaptive exploration using golden ratio")
-	fmt.Println("2. Simulated Annealing - Probabilistic acceptance to escape local optima")
+	fmt.Println("GSASMA combines two population-wide update techniques:")
+	fmt.Println("1. Simulated annealing selects late-stage velocity branches")
+	fmt.Println("2. The fixed golden-sine equation refines positions")
 	fmt.Println()
 
 	// Create a fixed random seed for reproducibility
@@ -142,7 +142,6 @@ func main() {
 	fmt.Printf("  Initial Temperature: %.1f\n", config.InitialTemperature)
 	fmt.Printf("  Cooling Rate:        %.3f\n", config.CoolingRate)
 	fmt.Printf("  Cooling Schedule:    %s\n", config.CoolingSchedule)
-	fmt.Printf("  Golden Factor:       %.1f\n", config.GoldenFactor)
 	fmt.Println()
 
 	result, err := mayfly.Optimize(config)
@@ -177,21 +176,14 @@ func main() {
 	fmt.Println("GSASMA is best suited for:")
 	fmt.Println("  • Engineering optimization problems")
 	fmt.Println("  • Problems with many local optima")
-	fmt.Println("  • Cases where fast convergence is critical")
 	fmt.Println("  • Complex multimodal landscapes")
 	fmt.Println()
 
 	fmt.Println("Parameter Tuning Guidelines:")
 	fmt.Println("  • InitialTemperature: Higher (100-1000) for more exploration")
 	fmt.Println("  • CoolingRate: Higher (0.95-0.99) for gradual cooling")
-	fmt.Println("  • GoldenFactor: 0.5-2.0, higher values = larger search steps")
 	fmt.Println("  • CoolingSchedule: 'exponential' (fast), 'logarithmic' (slow)")
-	fmt.Println()
-
-	fmt.Println("Expected Performance:")
-	fmt.Println("  • 10-20% improvement on engineering problems")
-	fmt.Println("  • Better escape from local optima via SA")
-	fmt.Println("  • ~15% overhead in function evaluations")
+	fmt.Println("  • Cooling controls are library extensions; the paper omits its recurrence")
 	fmt.Println()
 }
 

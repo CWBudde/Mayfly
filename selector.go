@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -41,6 +43,10 @@ func NewAlgorithmSelector() *AlgorithmSelector {
 
 // RecommendAlgorithms returns ranked algorithm recommendations for the given problem.
 // The results are sorted by score (highest first).
+//
+// Deprecated: use RecommendAlgorithmsChecked when characteristics are not
+// statically known. This compatibility method returns nil for unsupported
+// multi-objective input.
 func (s *AlgorithmSelector) RecommendAlgorithms(characteristics ProblemCharacteristics) []AlgorithmRecommendation {
 	if characteristics.MultiObjective {
 		return nil
@@ -69,7 +75,19 @@ func (s *AlgorithmSelector) RecommendAlgorithms(characteristics ProblemCharacter
 	return recommendations
 }
 
+// RecommendAlgorithmsChecked validates selector state and problem metadata.
+func (s *AlgorithmSelector) RecommendAlgorithmsChecked(
+	characteristics ProblemCharacteristics,
+) ([]AlgorithmRecommendation, error) {
+	if err := validateProblemCharacteristics(s, characteristics); err != nil {
+		return nil, err
+	}
+	return s.RecommendAlgorithms(characteristics), nil
+}
+
 // RecommendBest returns the single best algorithm for the given problem.
+// Deprecated: use RecommendBestChecked for an explicit unsupported-problem
+// error instead of a recommendation with a nil Variant.
 func (s *AlgorithmSelector) RecommendBest(characteristics ProblemCharacteristics) AlgorithmRecommendation {
 	recommendations := s.RecommendAlgorithms(characteristics)
 	if len(recommendations) == 0 {
@@ -89,6 +107,42 @@ func (s *AlgorithmSelector) RecommendBest(characteristics ProblemCharacteristics
 	}
 
 	return recommendations[0]
+}
+
+// RecommendBestChecked returns the best supported scalar-objective variant.
+func (s *AlgorithmSelector) RecommendBestChecked(
+	characteristics ProblemCharacteristics,
+) (AlgorithmRecommendation, error) {
+	recommendations, err := s.RecommendAlgorithmsChecked(characteristics)
+	if err != nil {
+		return AlgorithmRecommendation{}, err
+	}
+	if len(recommendations) == 0 {
+		return AlgorithmRecommendation{}, errors.New("algorithm selector has no variants")
+	}
+	return recommendations[0], nil
+}
+
+func validateProblemCharacteristics(s *AlgorithmSelector, characteristics ProblemCharacteristics) error {
+	if s == nil {
+		return errors.New("algorithm selector is nil")
+	}
+	if len(s.variants) == 0 {
+		return errors.New("algorithm selector has no variants")
+	}
+	if characteristics.Dimensionality < 0 {
+		return fmt.Errorf("problem dimensionality must be non-negative, got %d", characteristics.Dimensionality)
+	}
+	if characteristics.Modality < Unimodal || characteristics.Modality > HighlyMultimodal {
+		return fmt.Errorf("unknown problem modality %d", characteristics.Modality)
+	}
+	if characteristics.Landscape < Smooth || characteristics.Landscape > NarrowValley {
+		return fmt.Errorf("unknown problem landscape %d", characteristics.Landscape)
+	}
+	if characteristics.MultiObjective {
+		return errors.New("no multi-objective optimizer is implemented")
+	}
+	return nil
 }
 
 // calculateConfidence estimates how confident we are in the recommendation.
@@ -242,6 +296,9 @@ const (
 //
 // Pass a seeded generator as rng to make a classification reproducible; nil
 // draws a fresh one.
+//
+// Deprecated: use ClassifyProblemContext. This compatibility wrapper discards
+// validation, cancellation, budget, panic, and non-finite-objective errors.
 func ClassifyProblem(
 	fn ObjectiveFunction,
 	size int,
@@ -600,6 +657,7 @@ func meanAndStdDev(values []float64) (float64, float64) {
 }
 
 // RecommendForBenchmark provides recommendations for standard benchmark functions.
+// Deprecated: use RecommendForBenchmarkChecked for user-provided names.
 func RecommendForBenchmark(benchmarkName string) AlgorithmRecommendation {
 	selector := NewAlgorithmSelector()
 
@@ -699,20 +757,51 @@ func RecommendForBenchmark(benchmarkName string) AlgorithmRecommendation {
 	return selector.RecommendBest(characteristics)
 }
 
-// PrintRecommendations prints formatted recommendations to console.
-func PrintRecommendations(recommendations []AlgorithmRecommendation) {
-	fmt.Println("Algorithm Recommendations (ranked by score):")
-	fmt.Println("=" + strings.Repeat("=", 79))
-	fmt.Printf("%-12s | %-8s | %-10s | %s\n", "Algorithm", "Score", "Confidence", "Reasoning")
-	fmt.Println(strings.Repeat("-", 80))
-
-	for _, rec := range recommendations {
-		fmt.Printf("%-12s | %6.2f%% | %8.2f%% | %s\n",
-			rec.Variant.Name(),
-			rec.Score*100,
-			rec.Confidence*100,
-			rec.Reasoning)
+// RecommendForBenchmarkChecked rejects unknown benchmark names instead of
+// silently treating them as a generic multimodal problem.
+func RecommendForBenchmarkChecked(benchmarkName string) (AlgorithmRecommendation, error) {
+	switch benchmarkName {
+	case "Sphere", "Rastrigin", "Rosenbrock", "Ackley", "Griewank", "Schwefel", "BentCigar", "Discus":
+		return RecommendForBenchmark(benchmarkName), nil
+	default:
+		return AlgorithmRecommendation{}, fmt.Errorf("unknown benchmark %q", benchmarkName)
 	}
+}
 
-	fmt.Println(strings.Repeat("=", 80))
+// PrintRecommendations prints formatted recommendations to console.
+// Deprecated: use WriteRecommendations, which validates entries and reports
+// writer failures.
+func PrintRecommendations(recommendations []AlgorithmRecommendation) {
+	_ = WriteRecommendations(os.Stdout, recommendations)
+}
+
+// WriteRecommendations writes validated recommendation data to w.
+func WriteRecommendations(w io.Writer, recommendations []AlgorithmRecommendation) error {
+	if w == nil {
+		return errors.New("recommendation writer is nil")
+	}
+	for i, recommendation := range recommendations {
+		if recommendation.Variant == nil {
+			return fmt.Errorf("recommendation %d has a nil variant", i)
+		}
+		if !isFinite(recommendation.Score) || recommendation.Score < 0 || recommendation.Score > 1 {
+			return fmt.Errorf("recommendation %d score must be in [0,1]", i)
+		}
+		if !isFinite(recommendation.Confidence) || recommendation.Confidence < 0 || recommendation.Confidence > 1 {
+			return fmt.Errorf("recommendation %d confidence must be in [0,1]", i)
+		}
+	}
+	var builder strings.Builder
+	fmt.Fprintln(&builder, "Algorithm Recommendations (ranked by score):")
+	fmt.Fprintln(&builder, "="+strings.Repeat("=", 79))
+	fmt.Fprintf(&builder, "%-12s | %-8s | %-10s | %s\n", "Algorithm", "Score", "Confidence", "Reasoning")
+	fmt.Fprintln(&builder, strings.Repeat("-", 80))
+	for _, recommendation := range recommendations {
+		fmt.Fprintf(&builder, "%-12s | %6.2f%% | %8.2f%% | %s\n",
+			recommendation.Variant.Name(), recommendation.Score*100,
+			recommendation.Confidence*100, recommendation.Reasoning)
+	}
+	fmt.Fprintln(&builder, strings.Repeat("=", 80))
+	_, err := io.WriteString(w, builder.String())
+	return err
 }

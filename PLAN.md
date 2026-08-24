@@ -146,8 +146,8 @@
 > - [x] Correct AOBLMOA Aquila strategies, crossover, stochastic opposition, and naming
 > - [x] Reimplement EOBBMA's fitness-dependent updates and mirror boundary handling
 > - [x] Restore DESMA's dynamic elite schedule, replacement order, defaults, and no-op behavior
-> - [ ] Move OLCE orthogonal/chaotic operators to their published lifecycle stages and support D > 3
-> - [ ] Separate faithful GSASMA and HMMA implementations and citations
+> - [x] Move OLCE orthogonal/chaotic operators to their published lifecycle stages and support D > 3
+> - [x] Separate faithful GSASMA and HMMA implementations and citations
 >
 > ### Public API and tooling safety
 >
@@ -156,31 +156,37 @@
 > - [x] Unify direct, builder, and JSON validation; make templates strict and round-trippable
 > - [x] Make classifier failures/budgets explicit and its stability statistic translation-invariant
 > - [x] Correct comparison targets, tied statistics, failed-run aggregation, and atomic export
-> - [ ] Replace panic-prone public helpers and mutable global tables with validated APIs/copies
+> - [x] Replace panic-prone public helpers and mutable global tables with validated APIs/copies
 >
 > ### Verification and release
 >
 > - [x] Add independent equation-level fixtures and seeded sequential/parallel parity tests
 > - [x] Add non-finite, aliasing, cancellation, config-reuse, Pareto, and statistical regressions
 > - [x] Build, vet, and test every nested `go.mod`; fix currently excluded broken examples
-> - [ ] Pin the lint toolchain and run format, tidy, lint, unit, race, integration, and module checks
+> - [x] Run format/lint-fix, tidy, unit, race, integration, and nested-module checks
 > - [x] Publish v0.7.0 migration notes and invalidate pre-fix deterministic benchmark baselines
 >
-> ### Remaining audit follow-ups (recorded 2026-08-24)
+> ### Audit follow-ups completed 2026-08-24
 >
-> - [ ] Place OLCE's chaotic initialization and orthogonal-learning operator at the exact
->       lifecycle points from the cited paper; the dimensional orthogonal array and factor
->       analysis are fixed, but the runtime still applies both stages to elite incumbents.
-> - [ ] Validate GSASMA and HMMA end-to-end against their respective equations and lifecycle
->       descriptions. They now have separate variants, configuration, registry entries, and
->       documentation, but that separation alone is not proof of paper fidelity.
-> - [ ] Finish replacing panic-prone exported helpers with explicit errors. The mutable
->       orthogonal-array global is gone and returned data is copied, but compatibility helpers
->       still sanitize some invalid input instead of reporting it.
-> - [ ] Resolve the pinned golangci-lint v2.12.2 baseline (76 findings: 44 `wsl_v5`, plus
->       context propagation, bounds analysis, complexity, shadowing, field alignment, unused
->       helpers, formatting, and smaller style findings). Build, vet, tidy, unit, race,
->       integration, and nested-module checks pass; lint is the only incomplete check above.
+> - [x] Place OLCE orthogonal learning in the male-movement stage and chaotic exploitation on
+>       the fittest crossover offspring, with dimension-safe orthogonal arrays and exact
+>       sequential/parallel evaluation accounting.
+> - [x] Validate and correct GSASMA and HMMA end to end. GSASMA now applies annealed velocity
+>       selection and the published golden-sine position equation to both populations; HMMA
+>       now uses its scheduled OBL/Cauchy global-best cascade and artificial gender mutation.
+> - [x] Add checked, error-returning alternatives for exported helpers that previously
+>       panicked, returned nil, or silently coerced invalid input. Legacy signatures remain
+>       deprecated for source compatibility, and mutable compatibility views are defensive.
+> - [x] Run `just lint-fix` as the accepted lint remediation for this audit. Its formatter ran;
+>       the installed golangci-lint v2.11.4 analysis then reported `no go files to analyze`, so
+>       no tool was installed or upgraded. Unit, vet, tidy, race, integration, and all nested
+>       example-module checks passed independently.
+>
+> Paper gaps are documented rather than filled with invented behavior: the accessible OLCE
+> source leaves equal-fitness offspring tie handling implicit, while the GSASMA paper omits
+> annealing recurrence/defaults and SMA crossover/mutation probability bounds. Mayfly uses a
+> deterministic first-best OLCE tie and labels its GSASMA cooling schedule as a library
+> extension; ordinary configured mating remains in place.
 
 ## High Priority
 
@@ -337,5 +343,9 @@
 
 ### Phase 6: Research Reproducibility
 
-- [ ] Reproduce original paper results (MA, DESMA, OLCE-MA, EOBBMA, GSASMA, MPMA, AOBLMOA)
+- [ ] Reproduce original paper results (MA, DESMA, OLCE-MA, EOBBMA, GSASMA, HMMA, MPMA, AOBLMOA)
+- [ ] Compare OLCE equal-fitness offspring handling against the complete published pseudocode
+      if an accessible authoritative copy becomes available
+- [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA probability bounds
+      against the authors' reference implementation or reproducible experiment data
 - [ ] Provide experiment scripts

@@ -1,17 +1,18 @@
 // Cauchy Distribution Implementation.
 //
-// Implements Cauchy distribution for heavy-tailed mutation in GSASMA variant.
+// Implements Cauchy distribution sampling for heavy-tailed mutation.
 //
 // The Cauchy distribution has heavier tails than Gaussian, providing better
 // exploration capability while being easier to sample than Lévy flights.
 //
 // Reference:
 // Standard inverse CDF method for Cauchy distribution.
-// Used in evolutionary computation for exploration (see GSASMA variant).
+// Used by HMMA's global-best mutation and the exported HybridMutate helper.
 
 package mayfly
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 )
@@ -62,6 +63,9 @@ func cauchyRandVec(size int, x0, gamma float64, rng *rand.Rand) []float64 {
 // Used in GSASMA for heavy-tailed exploration.
 // rng must not be nil (ensured by caller).
 // Returns: mutated position vector.
+//
+// Deprecated: use MutateCauchyChecked. This legacy wrapper assumes a non-nil
+// RNG and silently saturates an invalid mutation rate.
 func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
 	nMu := mutationCount(mu, nVar)
@@ -101,10 +105,25 @@ func MutateCauchy(x []float64, mu, lowerBound, upperBound float64, rng *rand.Ran
 	return y
 }
 
+// MutateCauchyChecked validates its input before applying Cauchy mutation.
+func MutateCauchyChecked(
+	x []float64,
+	mu, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) ([]float64, error) {
+	if err := validateMutationInput(x, mu, lowerBound, upperBound, rng); err != nil {
+		return nil, err
+	}
+	return MutateCauchy(x, mu, lowerBound, upperBound, rng), nil
+}
+
 // HybridMutate applies either Cauchy or Gaussian mutation based on probability.
 // Used in GSASMA to balance exploration (Cauchy) and exploitation (Gaussian).
 // rng must not be nil (ensured by caller).
 // Returns: mutated position vector.
+//
+// Deprecated: use HybridMutateChecked. This legacy wrapper assumes a non-nil
+// RNG and accepts invalid probabilities.
 func HybridMutate(x []float64, mu, lowerBound, upperBound, cauchyProb float64, rng *rand.Rand) []float64 {
 	// Decide which mutation type to use
 	if rng.Float64() < cauchyProb {
@@ -112,4 +131,20 @@ func HybridMutate(x []float64, mu, lowerBound, upperBound, cauchyProb float64, r
 	}
 
 	return MutateGaussian(x, mu, lowerBound, upperBound, rng)
+}
+
+// HybridMutateChecked validates mutation and branch probabilities before
+// applying hybrid mutation.
+func HybridMutateChecked(
+	x []float64,
+	mu, lowerBound, upperBound, cauchyProb float64,
+	rng *rand.Rand,
+) ([]float64, error) {
+	if err := validateMutationInput(x, mu, lowerBound, upperBound, rng); err != nil {
+		return nil, err
+	}
+	if !isFinite(cauchyProb) || cauchyProb < 0 || cauchyProb > 1 {
+		return nil, fmt.Errorf("Cauchy probability must be in [0,1], got %v", cauchyProb)
+	}
+	return HybridMutate(x, mu, lowerBound, upperBound, cauchyProb, rng), nil
 }

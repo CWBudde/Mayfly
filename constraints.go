@@ -26,6 +26,9 @@ type CandidateEvaluation struct {
 
 // EvaluateConstraints evaluates and aggregates all configured constraints.
 // Non-finite constraint values produce an infinite violation.
+//
+// Deprecated: use EvaluateConstraintsChecked to distinguish invalid
+// constraints from a genuinely infeasible position.
 func EvaluateConstraints(position []float64, config *ConstraintConfig) ConstraintEvaluation {
 	if config == nil {
 		return ConstraintEvaluation{Feasible: true}
@@ -66,6 +69,53 @@ func EvaluateConstraints(position []float64, config *ConstraintConfig) Constrain
 	return ConstraintEvaluation{Violation: violation, Feasible: violation == 0}
 }
 
+// EvaluateConstraintsChecked evaluates constraints without converting nil,
+// panicking, or non-finite functions into an infinite-violation sentinel.
+func EvaluateConstraintsChecked(
+	position []float64,
+	config *ConstraintConfig,
+) (evaluation ConstraintEvaluation, returnErr error) {
+	if len(position) == 0 {
+		return evaluation, errors.New("constraint position is empty")
+	}
+	for i, coordinate := range position {
+		if !isFinite(coordinate) {
+			return evaluation, fmt.Errorf("constraint position %d is not finite", i)
+		}
+	}
+	if err := validateConstraintConfig(config); err != nil {
+		return evaluation, err
+	}
+	if config == nil {
+		return ConstraintEvaluation{Feasible: true}, nil
+	}
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			returnErr = fmt.Errorf("constraint function panicked: %v", recovered)
+			evaluation = ConstraintEvaluation{}
+		}
+	}()
+	violation := 0.0
+	for i, constraint := range config.Inequalities {
+		value := constraint(position)
+		if !isFinite(value) {
+			return ConstraintEvaluation{}, fmt.Errorf("inequality constraint %d returned a non-finite value", i)
+		}
+		violation += max(0, value)
+	}
+	for i, constraint := range config.Equalities {
+		value := constraint(position)
+		if !isFinite(value) {
+			return ConstraintEvaluation{}, fmt.Errorf("equality constraint %d returned a non-finite value", i)
+		}
+		violation += max(0, math.Abs(value)-config.EqualityTolerance)
+	}
+	if !isFinite(violation) {
+		return ConstraintEvaluation{}, errors.New("aggregate constraint violation overflowed")
+	}
+	return ConstraintEvaluation{Violation: violation, Feasible: violation == 0}, nil
+}
+
 // IsFeasible reports whether an aggregate constraint violation is zero.
 func IsFeasible(violation float64) bool {
 	return violation == 0
@@ -73,6 +123,7 @@ func IsFeasible(violation float64) bool {
 
 // PenalizedCost applies a linear or quadratic penalty to a raw objective cost.
 // An empty method defaults to quadratic.
+// Deprecated: use PenalizedCostChecked for validation.
 func PenalizedCost(cost, violation, factor float64, method PenaltyMethod) float64 {
 	if method == "" {
 		method = PenaltyQuadratic
@@ -85,8 +136,30 @@ func PenalizedCost(cost, violation, factor float64, method PenaltyMethod) float6
 	return cost + factor*violation*violation
 }
 
+// PenalizedCostChecked validates inputs and rejects overflow.
+func PenalizedCostChecked(cost, violation, factor float64, method PenaltyMethod) (float64, error) {
+	if !isFinite(cost) {
+		return 0, fmt.Errorf("cost must be finite, got %v", cost)
+	}
+	if !isFinite(violation) || violation < 0 {
+		return 0, fmt.Errorf("constraint violation must be finite and non-negative, got %v", violation)
+	}
+	if !isFinite(factor) || factor < 0 {
+		return 0, fmt.Errorf("penalty factor must be finite and non-negative, got %v", factor)
+	}
+	if method != "" && method != PenaltyLinear && method != PenaltyQuadratic {
+		return 0, fmt.Errorf("unknown penalty method %q", method)
+	}
+	result := PenalizedCost(cost, violation, factor, method)
+	if !isFinite(result) {
+		return 0, errors.New("penalized cost overflowed")
+	}
+	return result, nil
+}
+
 // BetterConstrainedCandidate reports whether candidate is preferred over
 // incumbent under config. A nil config uses ordinary objective minimization.
+// Deprecated: use BetterConstrainedCandidateChecked for validation.
 func BetterConstrainedCandidate(candidate, incumbent CandidateEvaluation, config *ConstraintConfig) bool {
 	if config == nil {
 		return candidate.Cost < incumbent.Cost
@@ -128,6 +201,28 @@ func BetterConstrainedCandidate(candidate, incumbent CandidateEvaluation, config
 	}
 
 	return candidate.Cost < incumbent.Cost
+}
+
+// BetterConstrainedCandidateChecked validates both candidates and the ranking
+// policy before comparing them.
+func BetterConstrainedCandidateChecked(
+	candidate, incumbent CandidateEvaluation,
+	config *ConstraintConfig,
+) (bool, error) {
+	if err := validateConstraintConfig(config); err != nil {
+		return false, err
+	}
+	for name, evaluation := range map[string]CandidateEvaluation{
+		"candidate": candidate, "incumbent": incumbent,
+	} {
+		if !isFinite(evaluation.Cost) {
+			return false, fmt.Errorf("%s cost must be finite", name)
+		}
+		if !isFinite(evaluation.ConstraintViolation) || evaluation.ConstraintViolation < 0 {
+			return false, fmt.Errorf("%s constraint violation must be finite and non-negative", name)
+		}
+	}
+	return BetterConstrainedCandidate(candidate, incumbent, config), nil
 }
 
 func validateConstraintConfig(config *ConstraintConfig) error {

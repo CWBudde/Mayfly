@@ -1,439 +1,79 @@
-# GSASMA - Golden Sine Algorithm with Simulated Annealing Mayfly Algorithm
+# GSASMA - Golden Annealing Crossover-Mutation Mayfly Algorithm
 
-## Research Reference
+## Research reference
 
-**Golden annealing crossover and mutation mayfly algorithm (2022). AIP Advances.**
-DOI: [10.1063/5.0108278](https://doi.org/10.1063/5.0108278)
+M. Zhao, X. Yang, and X. Yin, “An improved mayfly algorithm and its
+application,” *AIP Advances* 12, 105320 (2022).
+[DOI 10.1063/5.0108278](https://doi.org/10.1063/5.0108278)
 
-## Overview
+## Implemented lifecycle
 
-GSASMA combines golden-sine search with simulated-annealing acceptance. Hybrid
-Cauchy/Gaussian mutation and periodic opposition belong to HMMA and are not
-part of this variant.
+GSASMA changes the velocity and position stages for both male and female
+populations.
 
-## Key Innovations
+During the first half of the run (`2*iteration < MaxIterations`), it uses the
+ordinary Mayfly attraction/dance and attraction/random-flight velocity
+branches. During the second half, it compares each mayfly's current fitness
+with that same mayfly's previous fitness. An improvement selects attraction.
+Otherwise, attraction is selected with the Metropolis probability
 
-### 1. Golden Sine Algorithm (GSA)
-
-Uses the **golden ratio** (φ ≈ 1.618) and sine function for adaptive position
-updates, following Tanyildizi & Demir (2017):
-
-**Mathematical Formula**:
-
-```
-X_new(i) = X_old(i) * |sin(r1)| - f * r2 * sin(r1) * |x1 * X_best(i) - x2 * X_old(i)|
-
-where:
-  r1 ∈ [0, 2π] - distance travelled, drawn once per individual
-  r2 ∈ [0, π]  - direction towards the incumbent, drawn once per individual
-  x1, x2       - golden section points of the interval [a, b], initially [-π, π]
-  f            - GoldenFactor, 1.0 reproduces the published rule
+```text
+eta = exp(-(f_current - f_previous) / T)
 ```
 
-The section points come from a golden section search that narrows after every
-candidate, with τ = 1/φ ≈ 0.618:
+and the dance or random-flight velocity is selected when that draw fails.
+Previous fitness is attached to mayfly identity, so sorting and survivor
+selection cannot assign it to a different individual.
 
-```
-x1 = a*τ + b*(1-τ)
-x2 = a*(1-τ) + b*τ
+After selecting and clamping velocity, the library moves the mayfly and applies
+the paper's Eq. (10) golden-sine refinement:
 
-candidate improved  ->  b = x2; x2 = x1; x1 = a*τ + b*(1-τ)
-candidate worse     ->  a = x1; x1 = x2; x2 = a*(1-τ) + b*τ
-x1 == x2            ->  reset [a, b] to [-π, π]
-```
+```text
+z = clamp(x + v)
+x_new = z*abs(sin(r1)) - r2*sin(r1)*abs(c1*pbest - c2*z)
 
-**Properties**:
-
-- The golden ratio shrinks the search interval, it does not merely scale a step
-- Sine oscillation creates wave-like search patterns
-- `GoldenFactor` is applied exactly as configured; no additional scaling over
-  iterations is introduced
-
-**Applied to**: Elite males (top 20% of population) after sorting
-
-In parallel mode all elite candidates are generated from one snapshot of the
-section points and the interval is narrowed once per batch, after every
-candidate has been evaluated.
-
-### 2. Simulated Annealing (SA)
-
-Adds **probabilistic acceptance** of worse solutions to escape local optima:
-
-- **Temperature schedule**: Controls acceptance probability
-- **Metropolis criterion**: P(accept) = exp(-ΔE / T)
-- **Exploration → Exploitation**: High T (early) allows exploration, low T (late) focuses exploitation
-
-**Three cooling schedules available**:
-
-#### Exponential (default)
-
-```
-T(k) = T₀ * α^k
+r1 in [0, 2*pi]
+r2 in [0, pi]
+tau = (sqrt(5)-1)/2
+c1 = -pi + (1-tau)*2*pi
+c2 = -pi + tau*2*pi
 ```
 
-- Fast early cooling, slow late cooling
-- Best for: Most problems, balanced approach
-- Recommended α: 0.95
+The paper presents velocity and position improvements as consecutive components
+but prints Eq. (10) using `x(t)`. The explicit `x+v` then golden-sine
+composition is the necessary interpretation that keeps its annealed velocity
+stage behaviorally effective.
 
-#### Linear
-
-```
-T(k) = T₀ - k * α
-```
-
-- Constant cooling rate
-- Best for: Problems requiring steady temperature decrease
-- Simpler but less effective than exponential
-
-#### Logarithmic
-
-```
-T(k) = T₀ / (1 + α * log(1 + k))
-```
-
-- Slowest cooling, maintains exploration longer
-- Best for: Highly multimodal problems with deceptive local optima
-- Recommended for complex landscapes
-
-**Applied to**: Golden Sine updates (accepts/rejects GSA-generated positions)
-
-### HMMA is a separate variant
-
-The material previously documented below as GSASMA belongs to HMMA. Use
-`NewHMMAConfig` for adaptive Cauchy/Gaussian mutation and periodic opposition.
-
-<!-- Legacy explanation retained temporarily for migration context.
-
-Combines two distributions for **adaptive exploration/exploitation**:
-
-**Cauchy Distribution** (exploration):
-
-- Heavy-tailed: Higher probability of large jumps
-- Best for: Early exploration when searching globally
-
-**Gaussian Distribution** (exploitation):
-
-- Light-tailed: Smaller, controlled perturbations
-- Best for: Late exploitation when refining solutions
-
-**Adaptive Strategy**:
-
-```
-Iteration Progress     Cauchy Probability    Gaussian Probability
-─────────────────────────────────────────────────────────────────
-0-33% (Early)          70%                   30%    (Exploration)
-33-66% (Middle)        50%                   50%    (Balanced)
-66-100% (Late)         30%                   70%    (Exploitation)
-```
-
-**Applied to**: Mutation operation during offspring generation
-
-### 4. Opposition-Based Learning (OBL)
-
-Explores the **opposite region** of the search space:
-
-- **Opposition point**: `x_opp = lower + upper - x`
-- **Application frequency**: Every 10 iterations on global best
-- **Rationale**: If x is far from optimum, opposite might be closer
-
-**Applied to**: Global best solution periodically -->
-
-## Usage Examples
-
-### Basic Usage
+## Configuration
 
 ```go
-package main
+config := mayfly.NewGSASMAConfig()
+config.ObjectiveFunc = mayfly.Rastrigin
+config.ProblemSize = 30
+config.LowerBound = -5.12
+config.UpperBound = 5.12
 
-import (
-    "fmt"
-    "github.com/cwbudde/mayfly"
-)
-
-func main() {
-    // Use GSASMA for fast convergence on engineering problems
-    config := mayfly.NewGSASMAConfig()
-    config.ObjectiveFunc = mayfly.Rastrigin
-    config.ProblemSize = 30
-    config.LowerBound = -5.12
-    config.UpperBound = 5.12
-    config.MaxIterations = 500
-
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Printf("Best Cost: %f\n", result.GlobalBest.Cost)
-}
+result, err := mayfly.Optimize(config)
 ```
 
-### Advanced Usage with Custom Cooling Schedule
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/cwbudde/mayfly"
-)
-
-func main() {
-    // Configure GSASMA with logarithmic cooling for thorough exploration
-    config := mayfly.NewGSASMAConfig()
-    config.ObjectiveFunc = mayfly.Rastrigin
-    config.ProblemSize = 30
-    config.LowerBound = -5.12
-    config.UpperBound = 5.12
-    config.MaxIterations = 800
-
-    // Use logarithmic cooling for highly multimodal problems
-    config.CoolingSchedule = "logarithmic"
-    config.InitialTemperature = 500.0  // Higher temp for more exploration
-    config.CoolingRate = 0.98           // Slower cooling
-
-    // Tune Golden Sine influence
-    config.GoldenFactor = 1.5  // More aggressive updates
-
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Printf("Final Cost: %.4f\n", result.GlobalBest.Cost)
-    fmt.Printf("Iterations: %d\n", result.IterationCount)
-    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
-}
-```
-
-### Real-World Example: PID Controller Tuning
-
-```go
-package main
-
-import (
-    "fmt"
-    "math"
-    "github.com/cwbudde/mayfly"
-)
-
-// Simulate control system response with PID controller
-// Objective: minimize settling time + overshoot + steady-state error
-func pidPerformance(params []float64) float64 {
-    kp := params[0]  // Proportional gain
-    ki := params[1]  // Integral gain
-    kd := params[2]  // Derivative gain
-
-    // Simulate step response (simplified model)
-    dt := 0.01
-    duration := 5.0
-    steps := int(duration / dt)
-
-    setpoint := 1.0
-    output := 0.0
-    integral := 0.0
-    prevError := 0.0
-
-    overshoot := 0.0
-    settlingTime := duration
-    steadyStateError := 0.0
-    oscillations := 0
-
-    for i := 0; i < steps; i++ {
-        t := float64(i) * dt
-        error := setpoint - output
-
-        // PID calculation
-        integral += error * dt
-        derivative := (error - prevError) / dt
-        control := kp*error + ki*integral + kd*derivative
-
-        // Simple plant model: first-order system
-        tau := 1.0  // Time constant
-        output += (control - output) / tau * dt
-
-        // Track overshoot
-        if output > setpoint && (output-setpoint) > overshoot {
-            overshoot = output - setpoint
-        }
-
-        // Detect settling (within 2% of setpoint)
-        if math.Abs(error) < 0.02 && settlingTime == duration {
-            settlingTime = t
-        }
-
-        // Count oscillations
-        if i > 0 && (error*prevError) < 0 {
-            oscillations++
-        }
-
-        prevError = error
-    }
-
-    // Final steady-state error
-    steadyStateError = math.Abs(setpoint - output)
-
-    // Combined performance metric (minimize)
-    cost := settlingTime*10 +      // Penalize slow settling
-        overshoot*50 +         // Heavily penalize overshoot
-        steadyStateError*100 + // Heavily penalize steady-state error
-        float64(oscillations)  // Penalize oscillatory behavior
-
-    return cost
-}
-
-func main() {
-    fmt.Println("=== PID Controller Tuning with GSASMA ===\n")
-
-    // GSASMA is ideal for control system tuning
-    // (fast convergence + stable exploration-exploitation)
-    config := mayfly.NewGSASMAConfig()
-    config.ObjectiveFunc = pidPerformance
-    config.ProblemSize = 3  // Kp, Ki, Kd
-    config.LowerBound = 0.0
-    config.UpperBound = 10.0
-    config.MaxIterations = 300
-
-    // Use exponential cooling for quick convergence
-    config.CoolingSchedule = "exponential"
-    config.InitialTemperature = 100.0
-    config.CoolingRate = 0.95
-
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Println("Optimal PID Parameters:")
-    fmt.Printf("  Kp (Proportional): %.4f\n", result.GlobalBest.Position[0])
-    fmt.Printf("  Ki (Integral):     %.4f\n", result.GlobalBest.Position[1])
-    fmt.Printf("  Kd (Derivative):   %.4f\n", result.GlobalBest.Position[2])
-    fmt.Printf("\nPerformance Cost: %.4f\n", result.GlobalBest.Cost)
-    fmt.Printf("Function Evaluations: %d\n", result.FuncEvalCount)
-    fmt.Println("\nLower cost = better performance (faster settling, less overshoot)")
-}
-```
-
-## GSASMA Parameters
-
-- `UseGSASMA`: Enable GSASMA variant (default: false)
-- `InitialTemperature`: Starting temperature for SA (default: 100)
-- `CoolingRate`: Temperature decay rate (default: 0.95 for exponential)
-- `GoldenFactor`: GSA influence factor (default: 1.0, range: 0.5-2.0)
-- `CoolingSchedule`: Temperature schedule type (default: "exponential")
-  - Options: "exponential", "linear", "logarithmic"
-
-## Benefits
-
-- **10-20% improvement** on engineering optimization problems
-- **Faster convergence**: Reaches good solutions quicker than standard variants
-- **Better local optima escape**: SA acceptance prevents premature convergence
-- **Minimal tuning required**: Sensible defaults work well out-of-the-box
-- **~15% overhead**: Slightly more function evaluations for significantly better quality
-
-## Performance
-
-**Rastrigin (D=30, complex multimodal)**:
-
-- Standard MA: 45.23 (~30,540 evals)
-- GSASMA: 36.18 (~35,121 evals)
-- **Improvement: 20.00%**
-- **Convergence: 25% faster to reach 40.0 threshold**
-
-## When to Use GSASMA
-
-- **Best for**: Engineering optimization problems with many local optima
-- **Excellent on**: Problems requiring fast convergence speed
-- **Use when**: Time/budget constraints require quick good solutions
-- **Ideal for**: Control system tuning, hyperparameter optimization, resource allocation
-- **Examples**: PID tuning, neural network training, portfolio optimization
-
-## Parameter Tuning Guide
-
-### Temperature Settings
-
-**For Fast Convergence** (default):
-
-```go
-config.InitialTemperature = 100.0
-config.CoolingRate = 0.95
-config.CoolingSchedule = "exponential"
-```
-
-**For Thorough Exploration**:
-
-```go
-config.InitialTemperature = 500.0      // Higher initial temp
-config.CoolingRate = 0.98              // Slower cooling
-config.CoolingSchedule = "logarithmic" // Slowest schedule
-```
-
-**For Quick Problems** (few iterations):
-
-```go
-config.InitialTemperature = 50.0  // Lower initial temp
-config.CoolingRate = 0.90         // Faster cooling
-config.CoolingSchedule = "exponential"
-```
-
-### Mutation Balance
-
-GSASMA uses the standard Gaussian mutation. Adaptive Cauchy/Gaussian mutation is
-an HMMA feature; see [HMMA](hmma.md) and `NewHMMAConfig` for
-`CauchyMutationRate`.
-
-### Golden Sine Scaling
-
-**Larger Search Steps**:
-
-```go
-config.GoldenFactor = 2.0  // More aggressive updates
-```
-
-**Smaller, Safer Steps**:
-
-```go
-config.GoldenFactor = 0.5  // More conservative updates
-```
-
-## GSASMA vs Other Variants
-
-**Choose GSASMA when**:
-
-- You need results quickly (fewer iterations available)
-- Problem has moderate-to-high multimodality
-- Previous algorithms plateau too early
-- You want automatic exploration-exploitation balance
-
-**Choose OLCE-MA instead when**:
-
-- Problem is highly multimodal (Rastrigin-like)
-- High dimensionality (20D+)
-- You prioritize solution quality over convergence speed
-
-**Choose EOBBMA instead when**:
-
-- Problem is highly deceptive (Schwefel-like)
-- You want simplest parameter tuning
-- Heavy-tailed jumps are beneficial
-
-**Choose MPMA instead when**:
-
-- Need stable, predictable convergence
-- Working on control system optimization
-- Oscillatory behavior is a problem
-
-## Features Summary
-
-| Feature                 | Purpose                                          | When Applied                 |
-| ----------------------- | ------------------------------------------------ | ---------------------------- |
-| **Golden Sine**         | Adaptive exploration using golden ratio          | Elite males (top 20%)        |
-| **Simulated Annealing** | Escape local optima via probabilistic acceptance | After GSA updates            |
-| **Gaussian Mutation**   | Fine-grained search for exploitation             | Offspring mutants            |
-
-## Related Documentation
-
-- [MPMA](mpma.md) - For stable convergence alternative
-- [OLCE-MA](olce-ma.md) - For highly multimodal problems
-- [EOBBMA](eobbma.md) - For deceptive landscapes
-- [Configuration Guide](../api/configuration.md) - Complete parameter reference
+`InitialTemperature`, `CoolingRate`, and `CoolingSchedule` control the
+library's annealing-temperature recurrence. The paper names temperature `T`
+and a cooling coefficient but publishes neither a temperature recurrence nor
+numerical defaults. The exponential, linear, and logarithmic schedules are
+therefore implementation extensions, not paper parameters.
+
+`GoldenFactor` is deprecated and ignored. Eq. (10) contains no such multiplier;
+the golden coefficients are fixed and do not narrow across candidates.
+
+## Remaining source ambiguity
+
+The paper compares AMA, SMA, and ASMA mating policies and says SMA was selected
+for GSASMA. It publishes the SMA equations but not values for `pc_min`,
+`pc_max`, `pm_min`, or `pm_max`, including in its parameter table. The library
+does not invent these values: GSASMA currently uses ordinary configured Mayfly
+crossover and Gaussian mutation (`NC`, `NM`, `CrossoverGamma`, and `Mu`). Thus,
+the velocity and position stages are equation-tested, while the exact SMA
+mating policy cannot be reproduced from the cited article alone.
+
+Hybrid Cauchy/Gaussian offspring mutation and periodic opposition are not
+GSASMA stages. See [HMMA](hmma.md) for its distinct mutation cascade.

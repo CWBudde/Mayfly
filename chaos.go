@@ -1,6 +1,10 @@
 package mayfly
 
-import "math"
+import (
+	"errors"
+	"fmt"
+	"math"
+)
 
 // LogisticMap implements the logistic chaotic map.
 // The logistic map is defined by: x_{n+1} = r * x_n * (1 - x_n)
@@ -19,6 +23,9 @@ type LogisticMap struct {
 // The seed should be in the range (0, 1), exclusive of boundaries.
 // If seed is outside this range, it will be normalized to (0, 1).
 // The control parameter r is set to 4.0 for fully chaotic behavior.
+//
+// Deprecated: use NewLogisticMapChecked. This compatibility constructor
+// normalizes invalid seeds.
 func NewLogisticMap(seed float64) *LogisticMap {
 	seed = normalizeLogisticSeed(seed)
 
@@ -26,6 +33,14 @@ func NewLogisticMap(seed float64) *LogisticMap {
 		x: seed,
 		r: 4.0, // Standard value for fully chaotic behavior
 	}
+}
+
+// NewLogisticMapChecked constructs a map only for a finite seed in (0,1).
+func NewLogisticMapChecked(seed float64) (*LogisticMap, error) {
+	if err := validateLogisticSeed(seed); err != nil {
+		return nil, err
+	}
+	return &LogisticMap{x: seed, r: 4}, nil
 }
 
 // Next generates and returns the next value in the chaotic sequence.
@@ -59,6 +74,20 @@ func (lm *LogisticMap) Next() float64 {
 	return lm.x
 }
 
+// NextChecked validates receiver state before advancing the sequence.
+func (lm *LogisticMap) NextChecked() (float64, error) {
+	if lm == nil {
+		return 0, errors.New("logistic map is nil")
+	}
+	if err := validateLogisticSeed(lm.x); err != nil {
+		return 0, fmt.Errorf("invalid logistic-map state: %w", err)
+	}
+	if !isFinite(lm.r) || lm.r <= 0 || lm.r > 4 {
+		return 0, fmt.Errorf("logistic-map control parameter must be in (0,4], got %v", lm.r)
+	}
+	return lm.Next(), nil
+}
+
 // Current returns the current state value without advancing the sequence.
 // This is useful for debugging or when you need to inspect the state
 // without modifying it.
@@ -70,13 +99,47 @@ func (lm *LogisticMap) Current() float64 {
 	return lm.x
 }
 
+// CurrentChecked returns the current finite state or an error for a nil or
+// invalid map.
+func (lm *LogisticMap) CurrentChecked() (float64, error) {
+	if lm == nil {
+		return 0, errors.New("logistic map is nil")
+	}
+	if err := validateLogisticSeed(lm.x); err != nil {
+		return 0, fmt.Errorf("invalid logistic-map state: %w", err)
+	}
+	return lm.x, nil
+}
+
 // Reset resets the map to a new seed value.
 // This allows reusing the same LogisticMap instance with a different
 // starting point.
+//
+// Deprecated: use ResetChecked. This compatibility method normalizes invalid
+// seeds and ignores a nil receiver.
 func (lm *LogisticMap) Reset(seed float64) {
 	if lm != nil {
 		lm.x = normalizeLogisticSeed(seed)
 	}
+}
+
+// ResetChecked validates the receiver and seed before resetting the map.
+func (lm *LogisticMap) ResetChecked(seed float64) error {
+	if lm == nil {
+		return errors.New("logistic map is nil")
+	}
+	if err := validateLogisticSeed(seed); err != nil {
+		return err
+	}
+	lm.x = seed
+	return nil
+}
+
+func validateLogisticSeed(seed float64) error {
+	if !isFinite(seed) || seed <= 0 || seed >= 1 {
+		return fmt.Errorf("logistic-map seed must be finite and in (0,1), got %v", seed)
+	}
+	return nil
 }
 
 func normalizeLogisticSeed(seed float64) float64 {
@@ -101,67 +164,46 @@ func normalizeLogisticSeed(seed float64) float64 {
 	return seed
 }
 
-// olceElitePercent is the fraction of the sorted male population that the
-// OLCE-MA refinement steps (orthogonal learning and chaotic exploitation)
-// operate on.
-const olceElitePercent = 0.2
-
-// olceEliteCount returns how many of the sorted males the OLCE-MA refinement
-// steps operate on. At least one male is always selected.
-func olceEliteCount(population int) int {
-	return min(max(int(float64(population)*olceElitePercent), 1), population)
-}
-
-// chaoticExploitationRadius returns the perturbation radius of the chaotic
-// exploitation step for the given iteration.
-//
-// The radius decays linearly from ChaosFactor to zero over the run, which is
-// the shrinking neighborhood the chaotic local search literature specifies:
-// early iterations perturb widely to escape local optima, late iterations
-// refine. A constant radius turns the step into a persistent random walk that
-// prevents convergence.
-//
-// The optimization loop supplies the iteration indices 0 to MaxIterations-1,
-// so progress is measured against the last applied iteration, MaxIterations-1.
-// The radius therefore really reaches zero on the final iteration. A run of a
-// single iteration has no decay to spread out and keeps the full ChaosFactor,
-// because a zero radius would degrade its only exploitation step to a no-op.
-func chaoticExploitationRadius(config *Config, iteration int) float64 {
-	lastIteration := config.MaxIterations - 1
-	if lastIteration <= 0 {
-		return config.ChaosFactor
+// chaoticConstrictionFactor converts the zero-based implementation iteration
+// to the paper's one-based generation number. The OLCE-MA paper defines
+// s=(G-g+1)/G, so the factor is one in the first generation and 1/G in the
+// final generation. ChaosFactor is a compatibility multiplier; its canonical
+// value is one and zero disables the optional stage.
+func chaoticConstrictionFactor(config *Config, iteration int) float64 {
+	if config == nil || config.MaxIterations <= 0 {
+		return 0
 	}
 
-	progress := min(max(float64(iteration)/float64(lastIteration), 0.0), 1.0)
-
-	return config.ChaosFactor * (1.0 - progress)
+	generation := min(max(iteration+1, 1), config.MaxIterations)
+	return config.ChaosFactor * float64(config.MaxIterations-generation+1) /
+		float64(config.MaxIterations)
 }
 
-// chaoticExploitationCandidate writes a chaotic neighbor of source into
-// destination. Both slices must have the same length.
-//
-// The displacement of each dimension is drawn from the logistic map and scaled
-// by radius and the width of the search space.
+// chaoticExploitationCandidate implements the OLCE-MA offspring equation.
+// For every component C'=LB+C(UB-LB) is first mapped from the logistic
+// sequence, then the fittest crossover offspring O is replaced by
+// O'=(1-s)O+sC'. Both slices must have the same length.
 func chaoticExploitationCandidate(
-	destination, source []float64, config *Config, chaosMap *LogisticMap, radius float64,
+	destination, source []float64, config *Config, chaosMap *LogisticMap, constriction float64,
 ) {
 	width := config.UpperBound - config.LowerBound
 
 	for j := range source {
-		perturbation := radius * (chaosMap.Next() - 0.5) * width
-		destination[j] = min(max(source[j]+perturbation, config.LowerBound), config.UpperBound)
+		chaoticPosition := config.LowerBound + chaosMap.Next()*width
+		destination[j] = (1-constriction)*source[j] + constriction*chaoticPosition
+		destination[j] = min(max(destination[j], config.LowerBound), config.UpperBound)
 	}
 }
 
-// applyChaoticExploitation performs one chaotic local search step on target.
-//
-// A single chaotic neighbor is generated and evaluated, and target is only
-// moved onto it when the neighbor is not worse (greedy acceptance). The cost
-// of target therefore never increases, which is what separates chaotic
-// exploitation from an unconditional random kick.
+// applyChaoticExploitation forms and evaluates the chaotic position of the
+// fittest crossover offspring. The caller is responsible for selecting that
+// offspring; the paper describes this stage in the singular and places it
+// after mating, not as an elite-parent local search. Eq. (12) forms the new
+// offspring position unconditionally; it does not specify a greedy comparison
+// against the pre-chaos crossover point.
 //
 // Exactly one objective evaluation is spent per call. It returns true when the
-// candidate was accepted.
+// finite candidate was installed.
 func applyChaoticExploitation(
 	target *Mayfly,
 	config *Config,
@@ -172,41 +214,46 @@ func applyChaoticExploitation(
 	candidate := newMayfly(len(target.Position))
 	chaoticExploitationCandidate(
 		candidate.Position, target.Position, config, chaosMap,
-		chaoticExploitationRadius(config, iteration),
+		chaoticConstrictionFactor(config, iteration),
 	)
 	evaluator.evaluateMayfly(candidate, false)
 
-	return acceptChaoticCandidate(target, candidate, evaluator)
+	return commitChaoticOffspring(target, candidate)
 }
 
-// acceptChaoticCandidate applies greedy acceptance of an already evaluated
-// chaotic candidate to target and keeps the personal best consistent.
-//
-// Candidates whose cost or constraint violation is NaN are rejected outright:
-// every comparison against NaN is false, so the greedy guarantee would not
-// hold for objectives that are undefined on part of the domain, and the NaN
-// would spread through mating and sorting.
-func acceptChaoticCandidate(
-	target, candidate *Mayfly, evaluator *constraintEvaluator,
-) bool {
-	if math.IsNaN(candidate.Cost) || math.IsNaN(candidate.ConstraintViolation) {
-		return false
-	}
-
-	// Greedy acceptance: reject only strictly worse candidates.
-	if evaluator.betterMayfly(target, candidate) {
+// commitChaoticOffspring replaces the crossover offspring with an already
+// evaluated chaotic offspring and initializes its personal-best state.
+// Candidates containing non-finite evaluation metadata are rejected as a
+// library safety guard.
+func commitChaoticOffspring(target, candidate *Mayfly) bool {
+	if candidate.Cost == math.MaxFloat64 || !isFinite(candidate.Cost) ||
+		!isFinite(candidate.ConstraintViolation) {
 		return false
 	}
 
 	copy(target.Position, candidate.Position)
 	target.Cost = candidate.Cost
 	target.ConstraintViolation = candidate.ConstraintViolation
-
-	if evaluator.better(evaluationFromMayfly(target), evaluationFromBest(target.Best)) {
-		copy(target.Best.Position, target.Position)
-		target.Best.Cost = target.Cost
-		target.Best.ConstraintViolation = target.ConstraintViolation
-	}
+	copy(target.Best.Position, target.Position)
+	target.Best.Cost = target.Cost
+	target.Best.ConstraintViolation = target.ConstraintViolation
 
 	return true
+}
+
+// fittestMayfly returns the best evaluated individual without reordering the
+// input. OLCE-MA's chaotic strategy is defined for the fittest offspring in
+// the singular, so callers use this on the crossover batch only.
+func fittestMayfly(population []*Mayfly, evaluator *constraintEvaluator) *Mayfly {
+	if len(population) == 0 {
+		return nil
+	}
+
+	best := population[0]
+	for _, candidate := range population[1:] {
+		if evaluator.betterMayfly(candidate, best) {
+			best = candidate
+		}
+	}
+	return best
 }

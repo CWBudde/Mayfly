@@ -15,8 +15,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opaque caller-owned `*rand.Rand` values no longer produce an invented seed.
 - `ClassifyProblemContext` adds validation, cancellation, evaluation budgets,
   scan-only operation, and explicit errors to the landscape classifier.
-- HMMA is a separately registered variant. Hybrid Cauchy/Gaussian mutation and
-  periodic global-best opposition are no longer falsely attributed to GSASMA.
+- HMMA is a separately registered variant with the paper's scheduled
+  OBL/Cauchy global-best mutation and artificial gender mutation.
 - Validated exported Pareto helpers and defensive archive snapshots.
 - `just test-modules` and CI coverage for every nested example module.
 - `Config.QMCInit` seeds the initial population from a low-discrepancy sequence
@@ -338,9 +338,9 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   package, so nothing in the variant used the golden ratio. The update now
   follows Tanyildizi & Demir (2017):
   `x*|sin(r1)| - r2*sin(r1)*|x1*best - x2*x|`, where `x1` and `x2` are the
-  section points of a golden section search over `[-π, π]` that narrows by
-  `1/φ` after every candidate. `GoldenFactor` keeps its meaning as a scale on
-  the second term and its default of 1.0 reproduces the published rule.
+  fixed coefficients derived from `τ=(sqrt(5)-1)/2`. The published Eq. (10)
+  has no scale parameter or recurrent narrowing; `GoldenFactor` is deprecated
+  and ignored.
 
 ### Added
 

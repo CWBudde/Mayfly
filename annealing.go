@@ -16,6 +16,8 @@
 package mayfly
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 )
@@ -34,6 +36,9 @@ type AnnealingScheduler struct {
 //   - initialTemp: starting temperature (typically 100-1000)
 //   - coolingRate: cooling rate (0 < rate < 1, typically 0.8-0.99)
 //   - scheduleType: type of cooling schedule ("exponential", "linear", "logarithmic")
+//
+// Deprecated: use NewAnnealingSchedulerChecked. This compatibility constructor
+// replaces invalid parameters with defaults.
 func NewAnnealingScheduler(initialTemp, coolingRate float64, scheduleType string) *AnnealingScheduler {
 	if math.IsNaN(initialTemp) || math.IsInf(initialTemp, 0) || initialTemp <= 0 {
 		initialTemp = 1
@@ -56,6 +61,50 @@ func NewAnnealingScheduler(initialTemp, coolingRate float64, scheduleType string
 		ScheduleType:       scheduleType,
 		Iteration:          0,
 	}
+}
+
+// NewAnnealingSchedulerChecked constructs a scheduler without silently
+// replacing invalid parameters.
+func NewAnnealingSchedulerChecked(
+	initialTemp, coolingRate float64,
+	scheduleType string,
+) (*AnnealingScheduler, error) {
+	scheduler := &AnnealingScheduler{
+		InitialTemperature: initialTemp,
+		CurrentTemperature: initialTemp,
+		CoolingRate:        coolingRate,
+		ScheduleType:       scheduleType,
+	}
+	if err := scheduler.Validate(); err != nil {
+		return nil, err
+	}
+	return scheduler, nil
+}
+
+// Validate checks both construction parameters and the current mutable state
+// of a scheduler.
+func (as *AnnealingScheduler) Validate() error {
+	if as == nil {
+		return errors.New("annealing scheduler is nil")
+	}
+	if !isFinite(as.InitialTemperature) || as.InitialTemperature <= 0 {
+		return fmt.Errorf("initial temperature must be finite and positive, got %v", as.InitialTemperature)
+	}
+	if !isFinite(as.CurrentTemperature) || as.CurrentTemperature <= 0 {
+		return fmt.Errorf("current temperature must be finite and positive, got %v", as.CurrentTemperature)
+	}
+	if !isFinite(as.CoolingRate) || as.CoolingRate <= 0 || as.CoolingRate >= 1 {
+		return fmt.Errorf("cooling rate must be in (0,1), got %v", as.CoolingRate)
+	}
+	switch as.ScheduleType {
+	case CoolingExponential, CoolingLinear, CoolingLogarithmic:
+	default:
+		return fmt.Errorf("unknown cooling schedule %q", as.ScheduleType)
+	}
+	if as.Iteration < 0 {
+		return fmt.Errorf("iteration must be non-negative, got %d", as.Iteration)
+	}
+	return nil
 }
 
 // Update updates the temperature according to the cooling schedule.
@@ -98,6 +147,15 @@ func (as *AnnealingScheduler) Update() {
 	}
 }
 
+// UpdateChecked validates mutable scheduler state before advancing it.
+func (as *AnnealingScheduler) UpdateChecked() error {
+	if err := as.Validate(); err != nil {
+		return err
+	}
+	as.Update()
+	return nil
+}
+
 // GetTemperature returns the current temperature.
 func (as *AnnealingScheduler) GetTemperature() float64 {
 	if as == nil {
@@ -105,6 +163,15 @@ func (as *AnnealingScheduler) GetTemperature() float64 {
 	}
 
 	return as.CurrentTemperature
+}
+
+// GetTemperatureChecked returns the current temperature after validating the
+// scheduler's mutable state.
+func (as *AnnealingScheduler) GetTemperatureChecked() (float64, error) {
+	if err := as.Validate(); err != nil {
+		return 0, err
+	}
+	return as.CurrentTemperature, nil
 }
 
 // Reset resets the scheduler to initial temperature.
@@ -115,6 +182,24 @@ func (as *AnnealingScheduler) Reset() {
 
 	as.CurrentTemperature = as.InitialTemperature
 	as.Iteration = 0
+}
+
+// ResetChecked validates the configured schedule before restoring its initial
+// state. Unlike Validate, it does not require the current temperature to be
+// valid because resetting is the operation that repairs it.
+func (as *AnnealingScheduler) ResetChecked() error {
+	if as == nil {
+		return errors.New("annealing scheduler is nil")
+	}
+	current := as.CurrentTemperature
+	as.CurrentTemperature = as.InitialTemperature
+	err := as.Validate()
+	as.CurrentTemperature = current
+	if err != nil {
+		return err
+	}
+	as.Reset()
+	return nil
 }
 
 // Returns: acceptance probability in [0, 1].

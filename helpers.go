@@ -96,7 +96,7 @@ func effectiveNM(config *Config) int {
 	// learning, so NM is inert under it. Reporting zero here keeps that
 	// visible to callers and to validateOffspring instead of leaving NM to
 	// silently size a stage that never runs.
-	if config.UseAOBLMOA {
+	if config.UseAOBLMOA || config.UseHMMA {
 		return 0
 	}
 

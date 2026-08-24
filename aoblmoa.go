@@ -317,15 +317,22 @@ func commitStochasticOBL(offspring, opposites []*Mayfly, evaluator *constraintEv
 
 // ParetoArchive maintains a set of non-dominated solutions for multi-objective problems.
 type ParetoArchive struct {
-	initErr            error
-	Solutions          []*ParetoSolution
-	solutions          []*ParetoSolution
+	initErr error
+	// Deprecated: use GetSolutions. This is a defensive compatibility snapshot;
+	// archive operations do not trust caller mutations to it.
+	Solutions []*ParetoSolution
+	solutions []*ParetoSolution
+	// Deprecated: use Capacity. Mutating this field does not resize the archive.
 	MaxSize            int
 	maxSize            int
 	objectiveDimension int
 }
 
 // NewParetoArchive creates a new Pareto archive with specified maximum size.
+//
+// Deprecated: use NewParetoArchiveChecked or NewParetoArchiveWithObjectives.
+// An invalid capacity is retained as an error returned by Add rather than
+// panicking during allocation.
 func NewParetoArchive(maxSize int) *ParetoArchive {
 	archive := &ParetoArchive{MaxSize: maxSize, maxSize: maxSize}
 	if maxSize <= 0 {
@@ -339,6 +346,16 @@ func NewParetoArchive(maxSize int) *ParetoArchive {
 	archive.syncSnapshot()
 
 	return archive
+}
+
+// NewParetoArchiveChecked creates an archive with an objective dimension that
+// will be inferred from its first insertion.
+func NewParetoArchiveChecked(maxSize int) (*ParetoArchive, error) {
+	archive := NewParetoArchive(maxSize)
+	if archive.initErr != nil {
+		return nil, archive.initErr
+	}
+	return archive, nil
 }
 
 // NewParetoArchiveWithObjectives creates an archive with an explicit objective

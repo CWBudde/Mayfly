@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -70,17 +71,13 @@ func LoadConfigFromFile(path string) (*Config, error) {
 // Note: ObjectiveFunc, constraint functions, and Rand are not saved because
 // they cannot be serialized.
 func SaveConfigToFile(config *Config, path string) error {
-	data, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
+	if config == nil {
+		return errors.New("config is nil")
 	}
-
-	err = os.WriteFile(path, data, 0o600)
-	if err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
+	if err := ValidateConfig(config); err != nil {
+		return fmt.Errorf("invalid config: %w", err)
 	}
-
-	return nil
+	return writeJSONAtomic(config, path)
 }
 
 // ValidateConfig checks if a configuration is valid and provides helpful error messages.
@@ -203,11 +200,11 @@ func ValidateConfig(config *Config) error {
 	}
 
 	if config.UseOLCE {
-		if config.OrthogonalFactor < 0 || config.OrthogonalFactor > 1 {
+		if !isFinite(config.OrthogonalFactor) || config.OrthogonalFactor < 0 || config.OrthogonalFactor > 1 {
 			return fmt.Errorf("orthogonal_factor should be in [0,1] (got %f)", config.OrthogonalFactor)
 		}
 
-		if config.ChaosFactor < 0 || config.ChaosFactor > 1 {
+		if !isFinite(config.ChaosFactor) || config.ChaosFactor < 0 || config.ChaosFactor > 1 {
 			return fmt.Errorf("chaos_factor should be in [0,1] (got %f)", config.ChaosFactor)
 		}
 	}
@@ -255,8 +252,21 @@ func ValidateConfig(config *Config) error {
 		}
 	}
 
-	if config.UseHMMA && (config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1) {
-		return fmt.Errorf("cauchy_mutation_rate should be in [0,1] (got %f)", config.CauchyMutationRate)
+	if config.UseHMMA {
+		if !isFinite(config.HMMAInformationExchange) || config.HMMAInformationExchange <= 0 {
+			return fmt.Errorf("hmma_information_exchange must be positive (got %f)",
+				config.HMMAInformationExchange)
+		}
+		if !isFinite(config.HMMAScheduleOffset) ||
+			config.HMMAScheduleOffset < 0 || config.HMMAScheduleOffset > 1 {
+			return fmt.Errorf("hmma_schedule_offset should be in [0,1] (got %f)",
+				config.HMMAScheduleOffset)
+		}
+		if !isFinite(config.HMMAArtificialMutation) ||
+			config.HMMAArtificialMutation < 0 || config.HMMAArtificialMutation > 1 {
+			return fmt.Errorf("hmma_artificial_mutation should be in [0,1] (got %f)",
+				config.HMMAArtificialMutation)
+		}
 	}
 
 	if config.UseAOBLMOA {
@@ -382,21 +392,57 @@ func ListPresets() map[ConfigPreset]string {
 }
 
 // PrintPresets prints all available presets with descriptions.
+// Deprecated: use WritePresets to receive writer errors.
 func PrintPresets() {
-	fmt.Println("Available Configuration Presets:")
-	fmt.Println(strings.Repeat("=", 80))
+	_ = WritePresets(os.Stdout)
+}
 
-	presets := ListPresets()
-	for preset, description := range presets {
-		fmt.Printf("  %-25s : %s\n", preset, description)
+// WritePresets writes the available presets in deterministic name order.
+func WritePresets(w io.Writer) error {
+	if w == nil {
+		return errors.New("preset writer is nil")
 	}
-
-	fmt.Println(strings.Repeat("=", 80))
+	presets := ListPresets()
+	names := make([]string, 0, len(presets))
+	for preset := range presets {
+		names = append(names, string(preset))
+	}
+	sort.Strings(names)
+	var builder strings.Builder
+	fmt.Fprintln(&builder, "Available Configuration Presets:")
+	fmt.Fprintln(&builder, strings.Repeat("=", 80))
+	for _, name := range names {
+		fmt.Fprintf(&builder, "  %-25s : %s\n", name, presets[ConfigPreset(name)])
+	}
+	fmt.Fprintln(&builder, strings.Repeat("=", 80))
+	_, err := io.WriteString(w, builder.String())
+	return err
 }
 
 // AutoTuneConfig performs basic auto-tuning of configuration parameters based on problem characteristics.
 // This is a simple heuristic-based approach, not an exhaustive search.
+//
+// Deprecated: use AutoTuneConfigChecked. This compatibility wrapper ignores a
+// nil config and invalid problem metadata.
 func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
+	_ = AutoTuneConfigChecked(config, characteristics)
+}
+
+// AutoTuneConfigChecked applies the tuning heuristics after validating the
+// mutable target and characteristic enum values.
+func AutoTuneConfigChecked(config *Config, characteristics ProblemCharacteristics) error {
+	if config == nil {
+		return errors.New("config is nil")
+	}
+	if characteristics.Dimensionality < 0 {
+		return fmt.Errorf("problem dimensionality must be non-negative, got %d", characteristics.Dimensionality)
+	}
+	if characteristics.Modality < Unimodal || characteristics.Modality > HighlyMultimodal {
+		return fmt.Errorf("unknown problem modality %d", characteristics.Modality)
+	}
+	if characteristics.Landscape < Smooth || characteristics.Landscape > NarrowValley {
+		return fmt.Errorf("unknown problem landscape %d", characteristics.Landscape)
+	}
 	// Adjust population size based on dimensionality
 	if characteristics.Dimensionality >= 50 {
 		config.NPop = 40
@@ -435,6 +481,7 @@ func AutoTuneConfig(config *Config, characteristics ProblemCharacteristics) {
 			config.OrthogonalFactor = 0.4 // Increase diversity
 		}
 	}
+	return nil
 }
 
 // ExportConfigTemplate writes a complete, strict-JSON configuration for a

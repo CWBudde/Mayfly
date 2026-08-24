@@ -44,7 +44,7 @@ Detailed guides for each algorithm variant:
 
 5. **[GSASMA](algorithms/gsasma.md)** - Golden Sine with Simulated Annealing
    - Best for: Fast convergence
-   - +10-20% improvement on engineering problems
+   - Annealed velocity and golden-sine updates for both populations
 
 6. **[MPMA](algorithms/mpma.md)** - Median Position-Based
    - Best for: Stable convergence

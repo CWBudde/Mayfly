@@ -78,7 +78,7 @@ result, err := mayfly.NewBuilder("olce").
     WithPopulation(40, 40).
     WithConfig(func(c *mayfly.Config) {
         c.OrthogonalFactor = 0.4
-        c.ChaosFactor = 0.15
+        c.ChaosFactor = 1.0 // Canonical OLCE constriction multiplier
     }).
     Optimize()
 ```
@@ -257,7 +257,7 @@ result, err := mayfly.Optimize(config)
   "NPopF": 30,
   "UseOLCE": true,
   "OrthogonalFactor": 0.3,
-  "ChaosFactor": 0.1
+  "ChaosFactor": 1.0
 }
 ```
 
@@ -386,9 +386,8 @@ func main() {
         WithIterations(300).
         WithPopulation(25, 25).
         WithConfig(func(c *mayfly.Config) {
-            // Fine-tune GSASMA parameters
+            // Select the library's GSASMA cooling extension
             c.CoolingRate = 0.97
-            c.CauchyMutationRate = 0.3
         }).
         Optimize()
 

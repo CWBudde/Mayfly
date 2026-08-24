@@ -17,6 +17,7 @@ func evaluateParallelGeneticOperators(
 	rng *rand.Rand,
 	evaluator *evaluationPool,
 	iteration int,
+	chaosMaps ...*LogisticMap,
 ) ([]*Mayfly, Best, int, error) {
 	geneticBest := Best{Cost: math.Inf(1), ConstraintViolation: math.Inf(1)}
 	nc := effectiveNC(config)
@@ -24,6 +25,10 @@ func evaluateParallelGeneticOperators(
 	femaleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 
 	gamma := effectiveCrossoverGamma(config)
+	if config.UseHMMA {
+		// HMMA Eq. (4) uses L in [0,1], not BLX extrapolation.
+		gamma = 0
+	}
 
 	for k := range nc / 2 {
 		contextErr := ctx.Err()
@@ -48,6 +53,11 @@ func evaluateParallelGeneticOperators(
 
 		off2 := newMayfly(config.ProblemSize)
 		copy(off2.Position, off2Pos)
+		if config.UseHMMA {
+			off1.Position, off2.Position = hmmaArtificialMutation(
+				off1.Position, off2.Position, config.HMMAArtificialMutation,
+			)
+		}
 
 		maleOffspring = append(maleOffspring, off1)
 		femaleOffspring = append(femaleOffspring, off2)
@@ -63,6 +73,34 @@ func evaluateParallelGeneticOperators(
 	evaluations := len(offspring)
 
 	initializeOffspringBests(offspring)
+
+	// OLCE-MA Eq. (12) forms one new position from the fittest crossover
+	// offspring. It belongs here, after mating and before mutation/selection,
+	// rather than in the incumbent male-refinement phase.
+	if config.UseOLCE && config.ChaosFactor > 0 && len(offspring) > 0 {
+		var chaosMap *LogisticMap
+		if len(chaosMaps) > 0 {
+			chaosMap = chaosMaps[0]
+		}
+		if chaosMap == nil {
+			chaosMap = NewLogisticMap(rng.Float64())
+		}
+
+		target := fittestMayfly(offspring, evaluator.evaluator)
+		candidate := newMayfly(config.ProblemSize)
+		chaoticExploitationCandidate(
+			candidate.Position, target.Position, config, chaosMap,
+			chaoticConstrictionFactor(config, iteration),
+		)
+		if _, evaluationErr := evaluator.evaluate(ctx, []*Mayfly{candidate}, false, false); evaluationErr != nil {
+			return nil, Best{}, 0, evaluationErr
+		}
+		commitChaoticOffspring(target, candidate)
+		if evaluator.evaluator.betterMayflyThanBest(target, crossoverBest) {
+			copyMayflyToBest(&crossoverBest, target)
+		}
+		evaluations++
+	}
 
 	if config.UseAOBLMOA {
 		// AOBLMOA replaces offspring mutation with stochastic
@@ -115,7 +153,7 @@ func evaluateParallelGeneticOperators(
 	offspring = append(offspring, maleOffspring...)
 	offspring = append(offspring, femaleOffspring...)
 
-	return offspring, geneticBest, len(offspring), nil
+	return offspring, geneticBest, evaluations + len(mutants), nil
 }
 
 func prepareGeneticMutant(
@@ -125,19 +163,6 @@ func prepareGeneticMutant(
 	rng *rand.Rand,
 ) *Mayfly {
 	mutant := newMayfly(config.ProblemSize)
-	if config.UseHMMA {
-		mutant.Position = HybridMutate(
-			parent.Position,
-			config.Mu,
-			config.LowerBound,
-			config.UpperBound,
-			adaptiveCauchyProbability(iteration, config),
-			rng,
-		)
-
-		return mutant
-	}
-
 	mutant.Position = Mutate(
 		parent.Position,
 		config.Mu,
@@ -190,19 +215,6 @@ func keptOffspringBest(offspring []*Mayfly, evaluator *evaluationPool) Best {
 	}
 
 	return best
-}
-
-func adaptiveCauchyProbability(iteration int, config *Config) float64 {
-	iterRatio := float64(iteration) / float64(config.MaxIterations)
-
-	switch {
-	case iterRatio < 0.33:
-		return 0.7
-	case iterRatio < 0.66:
-		return 0.5
-	default:
-		return config.CauchyMutationRate
-	}
 }
 
 func initializeOffspringBests(offspring []*Mayfly) {

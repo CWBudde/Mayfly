@@ -2,6 +2,8 @@ package mayfly
 
 import (
 	"errors"
+	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -113,6 +115,9 @@ var variantRegistry = map[string]AlgorithmVariant{
 //   - "hmma" - Hybrid Mutation Mayfly Algorithm
 //   - "mpma" - Median Position-Based MA
 //   - "aoblmoa" - Aquila Optimizer and Opposition-Based Learning Mayfly Optimization Algorithm
+//
+// Deprecated: use NewVariantChecked when the name is not a compile-time
+// constant; this compatibility lookup returns nil for unknown names.
 func NewVariant(name string) AlgorithmVariant {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if name == "standard" {
@@ -120,6 +125,16 @@ func NewVariant(name string) AlgorithmVariant {
 	}
 
 	return variantRegistry[name]
+}
+
+// NewVariantChecked resolves a variant name or returns an error listing the
+// invalid lookup. It is preferred for user-controlled names.
+func NewVariantChecked(name string) (AlgorithmVariant, error) {
+	variant := NewVariant(name)
+	if variant == nil {
+		return nil, fmt.Errorf("unknown algorithm variant %q", name)
+	}
+	return variant, nil
 }
 
 // ListVariants returns a list of all available algorithm variant names.
@@ -138,6 +153,7 @@ func ListVariants() []string {
 			seen[name] = true
 		}
 	}
+	sort.Strings(variants)
 
 	return variants
 }
@@ -404,7 +420,7 @@ func (v *EOBBMAVariant) RecommendedFor() []string {
 // GSASMA Variant
 // =============================================================================
 
-// GSASMAVariant represents the Golden Sine with Simulated Annealing MA.
+// GSASMAVariant represents the Golden Annealing Crossover-Mutation MA.
 type GSASMAVariant struct{}
 
 func (v *GSASMAVariant) Name() string {
@@ -412,11 +428,11 @@ func (v *GSASMAVariant) Name() string {
 }
 
 func (v *GSASMAVariant) FullName() string {
-	return "Golden Sine Algorithm with Simulated Annealing Mayfly Algorithm"
+	return "Golden Annealing Crossover-Mutation Mayfly Algorithm"
 }
 
 func (v *GSASMAVariant) Description() string {
-	return "Golden-sine search with simulated annealing, crossover, and mutation for fast scalar optimization."
+	return "Annealed late-stage velocity selection and golden-sine position updates for both mayfly populations."
 }
 
 // HMMAVariant represents the Hybrid Mutation Mayfly Algorithm.
@@ -427,7 +443,7 @@ func (v *HMMAVariant) Name() string { return nameHMMA }
 func (v *HMMAVariant) FullName() string { return "Hybrid Mutation Mayfly Algorithm" }
 
 func (v *HMMAVariant) Description() string {
-	return "Adaptive Cauchy/Gaussian mutation with periodic opposition-based learning."
+	return "Scheduled OBL/Cauchy mutation of the global optimum with artificial gender mutation of offspring."
 }
 
 func (v *HMMAVariant) GetConfig() *Config { return NewHMMAConfig() }
@@ -449,7 +465,7 @@ func (v *HMMAVariant) ApplicableTo(characteristics ProblemCharacteristics) float
 	return min(score, 1)
 }
 
-func (v *HMMAVariant) EstimatedOverhead() float64 { return 1.08 }
+func (v *HMMAVariant) EstimatedOverhead() float64 { return 1.02 }
 
 func (v *HMMAVariant) RecommendedFor() []string {
 	return []string{"Rugged scalar-objective landscapes", "Stagnation escape", "Multimodal problems"}
@@ -626,6 +642,9 @@ type VariantBuilder struct {
 // Returns nil if the variant name is not recognized.
 //
 // Example: NewBuilder("desma").ForProblem(fn, 10, -5, 5).WithIterations(500).Build().
+//
+// Deprecated: use NewBuilderChecked to receive an explicit lookup or config
+// error.
 func NewBuilder(variantName string) *VariantBuilder {
 	variant := NewVariant(variantName)
 	if variant == nil {
@@ -638,7 +657,18 @@ func NewBuilder(variantName string) *VariantBuilder {
 	}
 }
 
+// NewBuilderChecked creates a builder or reports an invalid variant/default
+// configuration explicitly.
+func NewBuilderChecked(variantName string) (*VariantBuilder, error) {
+	variant, err := NewVariantChecked(variantName)
+	if err != nil {
+		return nil, err
+	}
+	return NewBuilderFromVariantChecked(variant)
+}
+
 // NewBuilderFromVariant creates a builder from an existing variant instance.
+// Deprecated: use NewBuilderFromVariantChecked.
 func NewBuilderFromVariant(variant AlgorithmVariant) *VariantBuilder {
 	if variant == nil {
 		return nil
@@ -653,6 +683,19 @@ func NewBuilderFromVariant(variant AlgorithmVariant) *VariantBuilder {
 		variant: variant,
 		config:  cloneComparisonConfig(config),
 	}
+}
+
+// NewBuilderFromVariantChecked creates a builder from an implementation and
+// validates that it provides a non-nil default configuration.
+func NewBuilderFromVariantChecked(variant AlgorithmVariant) (*VariantBuilder, error) {
+	if variant == nil {
+		return nil, errors.New("algorithm variant is nil")
+	}
+	config := variant.GetConfig()
+	if config == nil {
+		return nil, fmt.Errorf("variant %q returned a nil config", variant.Name())
+	}
+	return &VariantBuilder{variant: variant, config: cloneComparisonConfig(config)}, nil
 }
 
 // ForProblem sets the objective function and problem parameters.
@@ -725,6 +768,18 @@ func (b *VariantBuilder) WithConfig(fn func(*Config)) *VariantBuilder {
 	fn(b.config)
 
 	return b
+}
+
+// WithConfigChecked applies a customizer or returns a nil-input error.
+func (b *VariantBuilder) WithConfigChecked(fn func(*Config)) (*VariantBuilder, error) {
+	if b == nil {
+		return nil, errors.New("builder is nil")
+	}
+	if fn == nil {
+		return nil, errors.New("config customizer is nil")
+	}
+	fn(b.config)
+	return b, nil
 }
 
 // Build returns the configured Config ready for optimization.

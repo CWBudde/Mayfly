@@ -62,8 +62,9 @@ Academic papers and research behind the Mayfly algorithm variants implemented in
 
 ### Technical Details
 
-- **Orthogonal learning**: Applied to top 20% of population
-- **Chaos perturbation**: Logistic map with factor 0.1-0.3
+- **Orthogonal learning**: Applied to the primary male movement operator
+- **Chaos exploitation**: Forms a position from the fittest crossover
+  offspring using the logistic map and the paper's constriction schedule
 - **Target problems**: High-dimensional multimodal optimization
 
 ---
@@ -97,32 +98,32 @@ Lévy flights follow power-law distribution:
 
 ---
 
-## GSASMA - Golden Sine with Simulated Annealing
+## GSASMA - Golden Annealing Crossover-Mutation Mayfly Algorithm
 
-**Golden annealing crossover and mutation mayfly algorithm (2022). AIP Advances.**
+**An improved mayfly algorithm and its application (2022). AIP Advances.**
 
 **DOI**: https://doi.org/10.1063/5.0108278
 
 ### Key Contributions
 
-- Golden Sine Algorithm integration using golden ratio (φ ≈ 1.618)
-- Simulated Annealing for probabilistic local optima escape
-- 10-20% improvement on engineering optimization problems
+- Simulated annealing selects late-stage velocities for both populations
+- Golden-sine Eq. (10) updates every male and female position
+- SMA crossover/mutation was selected, but its probability bounds are omitted
 
 ### Technical Components
 
 1. **Golden Sine Algorithm**:
-   - Uses sine function with golden ratio scaling
-   - Applied to elite males (top 20%)
-   - Adaptive step sizing decreases over iterations
+   - Uses fixed coefficients derived from `(sqrt(5)-1)/2`
+   - Applied to both complete populations
+   - Has no configurable `GoldenFactor` or recurrent interval narrowing
 
 2. **Simulated Annealing**:
-   - Three cooling schedules: exponential, linear, logarithmic
    - Metropolis criterion: P(accept) = exp(-ΔE/T)
-   - Temperature controls exploration-exploitation balance
+   - The paper does not publish the temperature recurrence or defaults; the
+     library's cooling schedules are documented extensions
 
-Hybrid Cauchy/Gaussian mutation and periodic opposition are provided by the
-separate HMMA variant (Electronics Letters, DOI 10.1049/ell2.12568).
+HMMA instead schedules OBL/Cauchy mutation of the global optimum and applies
+artificial gender mutation to offspring pairs.
 
 ---
 
@@ -218,9 +219,9 @@ Research papers report the following improvements over Standard MA:
 | Variant | Best Problem Type | Improvement | Overhead      |
 | ------- | ----------------- | ----------- | ------------- |
 | DESMA   | Multimodal        | 70%+        | +8% evals     |
-| OLCE-MA | Highly Multimodal | 15-30%      | +12% evals    |
+| OLCE-MA | Highly Multimodal | 15-30%      | Dimension-dependent |
 | EOBBMA  | Deceptive         | 55%+        | +1.5% evals   |
-| GSASMA  | Engineering       | 10-20%      | +15% evals    |
+| GSASMA  | Multimodal        | Paper-dependent | baseline batches |
 | MPMA    | Ill-conditioned   | 10-30%      | 0% (baseline) |
 | AOBLMOA | Complex/Adaptive  | Variable    | +20-30% evals |
 

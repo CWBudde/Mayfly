@@ -1,10 +1,8 @@
 package mayfly
 
 import (
-	"context"
 	"math"
 	"math/rand"
-	"reflect"
 	"testing"
 )
 
@@ -130,17 +128,17 @@ func TestGoldenSineUpdateRespectsBounds(t *testing.T) {
 	}
 }
 
-// TestGSASMAGoldenFactorIsNotInert guards against a GSASMA whose characteristic
-// knob has no observable effect on the search.
-func TestGSASMAGoldenFactorIsNotInert(t *testing.T) {
-	run := func(goldenFactor float64, seed int64) float64 {
+func TestGSASMAGoldenFactorIsDeprecatedAndIgnored(t *testing.T) {
+	run := func(goldenFactor float64) *Result {
 		config := NewGSASMAConfig()
-		config.ObjectiveFunc = Rosenbrock
-		config.ProblemSize = 8
-		config.LowerBound = -2.048
-		config.UpperBound = 2.048
-		config.MaxIterations = 80
-		config.Rand = rand.New(rand.NewSource(seed))
+		config.ObjectiveFunc = sphere
+		config.ProblemSize = 3
+		config.LowerBound = -2
+		config.UpperBound = 2
+		config.MaxIterations = 5
+		config.NPop = 4
+		config.NPopF = 4
+		config.Rand = rand.New(rand.NewSource(91))
 		config.GoldenFactor = goldenFactor
 
 		result, err := Optimize(config)
@@ -148,71 +146,13 @@ func TestGSASMAGoldenFactorIsNotInert(t *testing.T) {
 			t.Fatalf("Optimize() error = %v", err)
 		}
 
-		return result.GlobalBest.Cost
+		return result
 	}
 
-	differed := 0
-
-	for seed := int64(1); seed <= 5; seed++ {
-		if run(0.5, seed) != run(2.0, seed) {
-			differed++
-		}
-	}
-
-	if differed == 0 {
-		t.Error("GoldenFactor has no observable effect on GSASMA results")
-	}
-}
-
-// TestParallelGoldenSineMatchesSequentialRecurrence guards the canonical
-// recurrence: candidate i+1 observes the section update from candidate i, so
-// this stage stays sequential even when other evaluations use a worker pool.
-func TestParallelGoldenSineMatchesSequentialRecurrence(t *testing.T) {
-	pool := newEvaluationPool(sphere, 2)
-	defer pool.close()
-
-	males := make([]*Mayfly, 4)
-	for i := range males {
-		males[i] = newMayfly(2)
-		males[i].Position = []float64{float64(i + 1), float64(i + 2)}
-		males[i].Cost = sphere(males[i].Position)
-		copy(males[i].Best.Position, males[i].Position)
-		males[i].Best.Cost = males[i].Cost
-	}
-
-	sequentialMales := make([]*Mayfly, len(males))
-	for i, male := range males {
-		sequentialMales[i] = male.clone()
-	}
-
-	section := newGoldenSection()
-	sequentialSection := newGoldenSection()
-	globalBest := Best{Position: []float64{0, 0}, Cost: 0}
-	sequentialBest, _ := applyGSASMAToEliteMalesWithEvaluator(
-		sequentialMales, 1, globalBest, 1, -5, 5,
-		NewAnnealingScheduler(100, 0.95, "exponential"), sequentialSection,
-		newConstraintEvaluator(sphere, nil), rand.New(rand.NewSource(7)),
-	)
-
-	_, err := evaluateParallelGoldenSine(
-		context.Background(),
-		males,
-		1.0,
-		&globalBest,
-		1.0,
-		-5, 5,
-		NewAnnealingScheduler(100, 0.95, "exponential"),
-		section,
-		rand.New(rand.NewSource(7)),
-		pool,
-	)
-	if err != nil {
-		t.Fatalf("evaluateParallelGoldenSine: %v", err)
-	}
-
-	if section.snapshot() != sequentialSection.snapshot() ||
-		!reflect.DeepEqual(globalBest, sequentialBest) || !reflect.DeepEqual(males, sequentialMales) {
-		t.Fatalf("parallel wrapper changed golden recurrence:\nparallel=%+v %+v\nsequential=%+v %+v",
-			section.snapshot(), globalBest, sequentialSection.snapshot(), sequentialBest)
+	a := run(0.5)
+	b := run(2)
+	if a.GlobalBest.Cost != b.GlobalBest.Cost ||
+		!slicesEqual(a.GlobalBest.Position, b.GlobalBest.Position) {
+		t.Fatalf("deprecated GoldenFactor changed canonical GSASMA: a=%+v b=%+v", a, b)
 	}
 }

@@ -14,12 +14,15 @@ OLCE-MA enhances the standard algorithm with orthogonal experimental design and 
 
 ### 1. Orthogonal Learning
 
-Applies **orthogonal experimental design** to elite males (top 20% of population):
+Applies **orthogonal experimental design** as part of every male's movement:
 
 - **Purpose**: Increase diversity and reduce oscillatory movement
 - **Method**: Systematic exploration of parameter combinations
 - **Effect**: More efficient search of the solution space
-- **Applied to**: Elite males after sorting by fitness
+- **Applied to**: The primary male movement operator, before sorting and mating
+- **Dimension safety**: A generated two-level array supplies distinct,
+  pairwise-balanced columns beyond three dimensions; OLCE configurations above
+  1023 dimensions are rejected before the quadratic allocation
 - **Disabling**: `OrthogonalFactor = 0` skips the stage and spends no
   evaluations on it
 
@@ -31,12 +34,12 @@ Applies **orthogonal experimental design** to elite males (top 20% of population
 
 ### 2. Chaotic Exploitation
 
-Applies a **chaotic local search** to the same elite males, one candidate per
-elite and iteration:
+Forms one new position from the **fittest crossover offspring** after mating:
 
 ```
-radius   = ChaosFactor * (1 - iteration / MaxIterations)
-candidate[j] = clamp(elite[j] + radius * (z - 0.5) * (UpperBound - LowerBound))
+s = (MaxIterations - generation + 1) / MaxIterations
+chaotic[j] = LowerBound + z[j] * (UpperBound - LowerBound)
+candidate[j] = (1 - s) * bestOffspring[j] + s * chaotic[j]
 ```
 
 Where chaos values follow the logistic map:
@@ -45,17 +48,15 @@ Where chaos values follow the logistic map:
 z(n+1) = 4 * z(n) * (1 - z(n))
 ```
 
-Two properties make this a local search rather than a random walk:
+The candidate is evaluated once and becomes the new offspring position; the
+paper does not specify a greedy comparison with the discarded crossover
+position. `ChaosFactor` is a compatibility multiplier on `s`; the
+paper-compatible default is 1 and zero disables the stage.
 
-- **Greedy acceptance**: the elite only moves onto the candidate when the
-  candidate is not worse, so the step can never degrade the population.
-- **Decaying radius**: the neighborhood shrinks linearly to zero over the run,
-  so early iterations escape local optima and late iterations refine.
-
-At `r = 4` the logistic map has an arcsine stationary distribution that
-concentrates near 0 and 1, so the typical displacement is close to the full
-radius. Without greedy acceptance and decay, that turns the step into a
-persistent large random walk that prevents convergence.
+The accessible paper metadata and indexed equation description establish the
+two lifecycle placements above and describe the target as the fittest
+offspring (singular). They do not expose enough pseudocode to settle tie
+handling; this implementation keeps the first best crossover offspring.
 
 **Properties**:
 
@@ -120,7 +121,7 @@ func main() {
 
     // Tune OLCE-specific parameters
     config.OrthogonalFactor = 0.4  // Increase exploration
-    config.ChaosFactor = 0.15       // Stronger chaos perturbation
+    config.ChaosFactor = 1.0        // Canonical offspring constriction
 
     // Increase population for high-D problems
     config.NPop = 40
@@ -219,16 +220,16 @@ func main() {
 
 - `UseOLCE`: Enable OLCE-MA variant (default: false)
 - `OrthogonalFactor`: Orthogonal learning strength (default: 0.3, range: 0-1)
-- `ChaosFactor`: Initial chaotic search radius as a fraction of the search
-  space width (default: 0.1, range: 0-1). The radius decays to zero over the
-  run. Set to 0 to disable chaotic exploitation entirely.
+- `ChaosFactor`: Compatibility multiplier for the paper's constriction factor
+  (default: 1, range: 0-1). Set to 0 to disable chaotic exploitation.
 
 ## Benefits
 
 - **15-30% improvement** on multimodal functions (Rastrigin, Rosenbrock, Ackley)
 - **Better diversity**: Orthogonal learning explores parameter space more systematically
 - **Escape stagnation**: Chaotic perturbations help avoid local optima
-- **Minimal overhead**: ~12% more function evaluations
+- **Evaluation overhead**: depends on dimension because the orthogonal array
+  is generated to provide a distinct column per dimension
 - **No tuning needed**: Works well with default parameters
 
 ## Performance
@@ -252,10 +253,9 @@ func main() {
 
 ### Overhead
 
-OLCE-MA uses approximately 12% more function evaluations:
-
-- Standard MA: ~30,540 evaluations (500 iterations, pop=20)
-- OLCE-MA: ~34,200 evaluations (includes orthogonal learning overhead)
+Each generation evaluates one orthogonal design plus one factor-analysis
+candidate per male, and one chaotic candidate for the best crossover
+offspring. The exact overhead therefore depends on dimension and population.
 
 ## When to Use OLCE-MA
 
@@ -302,22 +302,20 @@ config.OrthogonalFactor = 0.1
 **Default (balanced)**:
 
 ```go
-config.ChaosFactor = 0.1
+config.ChaosFactor = 1.0
 ```
 
-- Provides good local perturbation without disrupting convergence
+- Uses the paper's constriction without scaling.
 
-**Stronger chaos**:
+**Reduced chaos**:
 
 ```go
 config.ChaosFactor = 0.3
 ```
 
-- Use when: Need aggressive local optima escape
-- Use when: Problem has many deceptive local optima
-- Caution: May slow convergence if too high
+- Uses 30% of the paper's constriction
 
-**Weaker chaos**:
+**Minimal chaos**:
 
 ```go
 config.ChaosFactor = 0.05
@@ -358,17 +356,17 @@ config.ChaosFactor = 0.05
 
 ### Orthogonal Learning Application
 
-1. **Select elite males**: Top 20% of population by fitness
-2. **Generate orthogonal array**: Systematic parameter combinations
+1. **Update male movement**: Run the primary male movement operator
+2. **Generate orthogonal array**: Systematic parameter combinations for each male
 3. **Evaluate combinations**: Test each orthogonal combination
-4. **Select best**: Keep best orthogonally-learned solutions
+4. **Select best**: Keep an improving orthogonally-learned male position
 
 ### Chaotic Perturbation Application
 
 1. **After crossover**: Generate offspring from parents
-2. **Apply chaos map**: Perturb each dimension with chaotic value
-3. **Boundary handling**: Clamp to search space bounds
-4. **Evaluate**: Test chaotically-perturbed offspring
+2. **Select fittest crossover offspring**: The paper describes one target
+3. **Apply chaos map**: Blend it with a bounded chaotic position using `s`
+4. **Evaluate**: Test the new offspring position before mutation and selection
 
 ## Related Documentation
 

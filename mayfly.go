@@ -151,12 +151,17 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	if config.UseOLCE {
+		if config.ProblemSize > MaxOrthogonalArrayDimensions {
+			return nil, fmt.Errorf("OLCE ProblemSize must not exceed %d, got %d",
+				MaxOrthogonalArrayDimensions, config.ProblemSize)
+		}
+
 		if config.OrthogonalFactor < 0 || config.OrthogonalFactor > 1 {
 			return nil, fmt.Errorf("OLCE OrthogonalFactor must be in [0, 1], got %v", config.OrthogonalFactor)
 		}
 
-		if config.ChaosFactor < 0 {
-			return nil, fmt.Errorf("OLCE ChaosFactor must be non-negative, got %v", config.ChaosFactor)
+		if config.ChaosFactor < 0 || config.ChaosFactor > 1 {
+			return nil, fmt.Errorf("OLCE ChaosFactor must be in [0, 1], got %v", config.ChaosFactor)
 		}
 	}
 
@@ -170,8 +175,21 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		}
 	}
 
-	if config.UseHMMA && (config.CauchyMutationRate < 0 || config.CauchyMutationRate > 1) {
-		return nil, fmt.Errorf("HMMA CauchyMutationRate must be in [0, 1], got %v", config.CauchyMutationRate)
+	if config.UseHMMA {
+		if !isFinite(config.HMMAInformationExchange) || config.HMMAInformationExchange <= 0 {
+			return nil, fmt.Errorf("HMMA information exchange coefficient must be positive, got %v",
+				config.HMMAInformationExchange)
+		}
+		if !isFinite(config.HMMAScheduleOffset) ||
+			config.HMMAScheduleOffset < 0 || config.HMMAScheduleOffset > 1 {
+			return nil, fmt.Errorf("HMMA schedule offset must be in [0, 1], got %v",
+				config.HMMAScheduleOffset)
+		}
+		if !isFinite(config.HMMAArtificialMutation) ||
+			config.HMMAArtificialMutation < 0 || config.HMMAArtificialMutation > 1 {
+			return nil, fmt.Errorf("HMMA artificial mutation coefficient must be in [0, 1], got %v",
+				config.HMMAArtificialMutation)
+		}
 	}
 
 	if config.UseMPMA {
@@ -430,10 +448,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 	}
 
 	// Initialize GSASMA parameters if enabled
-	var (
-		annealingScheduler  *AnnealingScheduler
-		goldenSectionSearch *goldenSection
-	)
+	var annealingScheduler *AnnealingScheduler
 
 	if config.UseGSASMA {
 		annealingScheduler = NewAnnealingScheduler(
@@ -441,9 +456,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			config.CoolingRate,
 			config.CoolingSchedule,
 		)
-		// The golden section search persists across iterations so that the
-		// interval actually narrows over the run.
-		goldenSectionSearch = newGoldenSection()
+	}
+	previousGSASMACosts := make(map[*Mayfly]float64, len(males)+len(females))
+	for _, male := range males {
+		previousGSASMACosts[male] = male.Cost
+	}
+	for _, female := range females {
+		previousGSASMACosts[female] = female.Cost
 	}
 
 	// Main loop
@@ -532,6 +551,33 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			}
 
 			funcCount += len(males)
+			updatePersonalBests(males, candidateEvaluator)
+		case config.UseGSASMA:
+			prepareGSASMAPopulations(
+				males, females, cloneBest(globalBest),
+				previousGSASMACosts,
+				it, config.MaxIterations,
+				g, dance, fl, config, annealingScheduler,
+				candidateEvaluator, rng,
+			)
+			if evaluator != nil {
+				if _, evaluationErr := evaluator.evaluate(ctx, females, false, false); evaluationErr != nil {
+					return nil, evaluationErr
+				}
+				maleBest, evaluationErr := evaluator.evaluate(ctx, males, false, true)
+				if evaluationErr != nil {
+					return nil, evaluationErr
+				}
+				mergeBest(&globalBest, maleBest, candidateEvaluator)
+			} else {
+				for _, female := range females {
+					candidateEvaluator.evaluateMayfly(female, false)
+				}
+				for _, male := range males {
+					candidateEvaluator.evaluateMayfly(male, false)
+				}
+			}
+			funcCount += len(males) + len(females)
 			updatePersonalBests(males, candidateEvaluator)
 		default:
 			// Standard velocity-based updates
@@ -629,6 +675,36 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			funcCount += len(males)
 			updatePersonalBests(males, candidateEvaluator)
+
+			// OLCE-MA applies orthogonal learning to the primary male
+			// movement operator. It therefore runs for the male population
+			// here, before sorting and mating; it is not an elite local-search
+			// pass over already selected incumbents.
+			if config.UseOLCE && config.OrthogonalFactor > 0 {
+				lowerBounds := make([]float64, config.ProblemSize)
+				upperBounds := make([]float64, config.ProblemSize)
+				for dimension := range config.ProblemSize {
+					lowerBounds[dimension] = config.LowerBound
+					upperBounds[dimension] = config.UpperBound
+				}
+
+				if evaluator != nil {
+					orthogonalEvals, evaluationErr := evaluateParallelOrthogonalLearning(
+						ctx, males, 1, phaseBest.Position, config.OrthogonalFactor,
+						lowerBounds, upperBounds, rng, evaluator,
+					)
+					if evaluationErr != nil {
+						return nil, evaluationErr
+					}
+					funcCount += orthogonalEvals
+				} else {
+					applyOrthogonalLearningToElite(
+						males, 1, phaseBest.Position, config.OrthogonalFactor,
+						lowerBounds, upperBounds, candidateEvaluator, rng,
+					)
+					funcCount += len(males) * (len(orthogonalArray(config.ProblemSize)) + 1)
+				}
+			}
 		}
 
 		// Females are evaluated candidates too. Historically only males were
@@ -640,98 +716,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		// Sort populations by cost
 		sortMayflies(males, candidateEvaluator)
 		sortMayflies(females, candidateEvaluator)
-
-		// OLCE-MA: Refine the elite males with orthogonal learning and
-		// chaotic exploitation.
-		if config.UseOLCE {
-			numElite := olceEliteCount(len(males))
-			refined := false
-
-			// A zero factor collapses every orthogonal candidate onto the parent
-			// male, so the whole stage is a guaranteed no-op. Skipping it keeps
-			// the evaluation budget out of a step that cannot change anything.
-			if config.OrthogonalFactor > 0 {
-				// Prepare bounds vectors for orthogonal learning
-				lb := make([]float64, config.ProblemSize)
-				ub := make([]float64, config.ProblemSize)
-
-				for j := range config.ProblemSize {
-					lb[j] = config.LowerBound
-					ub[j] = config.UpperBound
-				}
-
-				if evaluator != nil {
-					orthogonalEvals, evaluationErr := evaluateParallelOrthogonalLearning(
-						ctx,
-						males,
-						olceElitePercent,
-						globalBest.Position,
-						config.OrthogonalFactor,
-						lb,
-						ub,
-						rng,
-						evaluator,
-					)
-					if evaluationErr != nil {
-						return nil, evaluationErr
-					}
-
-					funcCount += orthogonalEvals
-				} else {
-					// Apply to the elite males sequentially for backward compatibility.
-					applyOrthogonalLearningToElite(
-						males,
-						olceElitePercent,
-						globalBest.Position,
-						config.OrthogonalFactor,
-						lb, ub,
-						candidateEvaluator,
-						rng,
-					)
-
-					// Each elite evaluates a dimension-sized orthogonal array and
-					// one factor-analysis prediction.
-					funcCount += numElite * (len(orthogonalArray(config.ProblemSize)) + 1)
-				}
-
-				refined = true
-			}
-
-			// Chaotic exploitation: one chaotic neighbor per elite male, with a
-			// radius that decays over the run and greedy acceptance, so the step
-			// can only improve the population.
-			if config.ChaosFactor > 0 {
-				if evaluator != nil {
-					chaosEvals, evaluationErr := evaluateParallelChaoticExploitation(
-						ctx, males, numElite, config, chaosMap, it, evaluator,
-					)
-					if evaluationErr != nil {
-						return nil, evaluationErr
-					}
-
-					funcCount += chaosEvals
-				} else {
-					for i := range numElite {
-						applyChaoticExploitation(males[i], config, chaosMap, it, candidateEvaluator)
-
-						funcCount++
-					}
-				}
-
-				refined = true
-			}
-
-			if refined {
-				// Update global best if the refinement found a better solution
-				for i := range numElite {
-					if candidateEvaluator.betterMayflyThanBest(males[i], globalBest) {
-						copyMayflyToBest(&globalBest, males[i])
-					}
-				}
-
-				sortMayflies(males, candidateEvaluator)
-			}
-		}
 
 		// EOBBMA: Apply elite opposition-based learning
 		if config.UseEOBBMA {
@@ -795,50 +779,14 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			sortMayflies(males, candidateEvaluator)
 		}
 
-		// GSASMA: Apply Golden Sine Algorithm with Simulated Annealing to elite males
-		if config.UseGSASMA {
-			if evaluator != nil {
-				goldenSineEvals, evaluationErr := evaluateParallelGoldenSine(
-					ctx,
-					males,
-					0.2,
-					&globalBest,
-					config.GoldenFactor,
-					config.LowerBound,
-					config.UpperBound,
-					annealingScheduler,
-					goldenSectionSearch,
-					rng,
-					evaluator,
-				)
-				if evaluationErr != nil {
-					return nil, evaluationErr
-				}
-
-				funcCount += goldenSineEvals
-			} else {
-				// Apply GSA sequentially for backward compatibility.
-				updatedGlobalBest, gsaFuncEvals := applyGSASMAToEliteMalesWithEvaluator(
-					males,
-					0.2, // Elite ratio: top 20%
-					globalBest,
-					config.GoldenFactor,
-					config.LowerBound,
-					config.UpperBound,
-					annealingScheduler,
-					goldenSectionSearch,
-					candidateEvaluator,
-					rng,
-				)
-				funcCount += gsaFuncEvals
-
-				if candidateEvaluator.betterBest(updatedGlobalBest, globalBest) {
-					globalBest = updatedGlobalBest
-				}
-			}
-
-			// Re-sort after Golden Sine updates
-			sortMayflies(males, candidateEvaluator)
+		// HMMA Eqs. (6)-(11): after the mayfly positions have been
+		// updated, mutate the global optimum once through the scheduled
+		// OBL/Cauchy cascade and greedily retain the better point.
+		if config.UseHMMA {
+			globalBest = hmmaGlobalMutation(
+				globalBest, it+1, config.MaxIterations, config, candidateEvaluator, rng,
+			)
+			funcCount++
 		}
 
 		// Mating - Create offspring
@@ -853,6 +801,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				rng,
 				evaluator,
 				it,
+				chaosMap,
 			)
 			if evaluationErr != nil {
 				return nil, evaluationErr
@@ -868,6 +817,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		} else {
 			nc := effectiveNC(config)
 			gamma := effectiveCrossoverGamma(config)
+			if config.UseHMMA {
+				// HMMA Eq. (4) uses L in [0,1], not BLX extrapolation.
+				gamma = 0
+			}
 			maleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 			femaleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 
@@ -878,6 +831,11 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				off1Pos, off2Pos := CrossoverBlend(
 					p1.Position, p2.Position, gamma, config.LowerBound, config.UpperBound, rng,
 				)
+				if config.UseHMMA {
+					off1Pos, off2Pos = hmmaArtificialMutation(
+						off1Pos, off2Pos, config.HMMAArtificialMutation,
+					)
+				}
 
 				// Create offspring 1
 				off1 := newMayfly(config.ProblemSize)
@@ -921,9 +879,24 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			offspring = append(offspring, maleOffspring...)
 			offspring = append(offspring, femaleOffspring...)
 
-			// Offspring refinement: AOBLMOA applies stochastic
-			// opposition-based learning, HMMA a hybrid Cauchy-Gaussian
-			// mutation, everything else the ordinary Gaussian mutation.
+			// The cited OLCE-MA strategy applies chaotic exploitation to the
+			// fittest crossover offspring (singular), before mutation and
+			// survivor selection. One additional candidate is evaluated.
+			if config.UseOLCE && config.ChaosFactor > 0 && len(offspring) > 0 {
+				bestOffspring := fittestMayfly(offspring, candidateEvaluator)
+				applyChaoticExploitation(
+					bestOffspring, config, chaosMap, it, candidateEvaluator,
+				)
+				funcCount++
+				if candidateEvaluator.betterMayflyThanBest(bestOffspring, globalBest) {
+					copyMayflyToBest(&globalBest, bestOffspring)
+				}
+			}
+
+			// Offspring refinement: AOBLMOA applies stochastic opposition;
+			// HMMA already converted every sibling pair with Eq. (12) and
+			// effectiveNM disables extra mutants. Other variants use Gaussian
+			// mutation here.
 			switch {
 			case config.UseAOBLMOA:
 				// The paper replaces offspring mutation with stochastic
@@ -949,30 +922,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					if candidateEvaluator.betterMayflyThanBest(child, globalBest) {
 						copyMayflyToBest(&globalBest, child)
 					}
-				}
-
-			case config.UseHMMA:
-				// Produce the configured number of mutants for each sex, using
-				// parents from that sex's incumbent population.
-				for range effectiveNM(config) {
-					maleParent := males[rng.Intn(len(males))]
-					femaleParent := females[rng.Intn(len(females))]
-					maleMutant := prepareGeneticMutant(
-						maleParent, it, config, rng,
-					)
-					femaleMutant := prepareGeneticMutant(
-						femaleParent, it, config, rng,
-					)
-
-					candidateEvaluator.evaluateMayfly(maleMutant, false)
-					candidateEvaluator.evaluateMayfly(femaleMutant, false)
-
-					funcCount += 2
-
-					initializeOffspringBests([]*Mayfly{maleMutant, femaleMutant})
-					mergePopulationBest(&globalBest, []*Mayfly{maleMutant, femaleMutant}, candidateEvaluator)
-					maleOffspring = append(maleOffspring, maleMutant)
-					femaleOffspring = append(femaleOffspring, femaleMutant)
 				}
 
 			default:
@@ -1083,22 +1032,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			lastGlobalBest = cloneBest(globalBest)
 		}
 
-		// HMMA: Apply Opposition-Based Learning to global best.
-		if config.UseHMMA && config.ApplyOBLToGlobalBest {
-			// Apply OBL every 10 iterations to avoid excessive function evaluations
-			if it%10 == 0 {
-				updatedGlobalBest, improved := applyOBLToGlobalBestWithEvaluator(
-					globalBest,
-					config.LowerBound,
-					config.UpperBound,
-					candidateEvaluator,
-				)
-				funcCount++ // the opposition point evaluation
-
-				if improved {
-					globalBest = updatedGlobalBest
-				}
-			}
+		if config.UseGSASMA {
+			previousGSASMACosts = retainGSASMAPreviousCosts(
+				previousGSASMACosts, males, females,
+			)
 		}
 
 		bestSolution[it] = globalBest.Cost

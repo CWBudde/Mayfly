@@ -125,9 +125,9 @@ func TestOptimizeOrthogonalFactorZeroDoesNotGrowBudget(t *testing.T) {
 					disabled.FuncEvalCount, enabled.FuncEvalCount)
 			}
 
-			numElite := olceEliteCount(10)
-
-			wantSaved := 20 * numElite * (len(OrthogonalArray(4)) + 1)
+			// OL belongs to the primary male movement operator and therefore
+			// applies to every male, rather than a post-selection elite subset.
+			wantSaved := 20 * 10 * (len(OrthogonalArray(4)) + 1)
 			if saved := enabled.FuncEvalCount - disabled.FuncEvalCount; saved != wantSaved {
 				t.Errorf("saved evaluations = %d, want %d", saved, wantSaved)
 			}
@@ -175,5 +175,53 @@ func TestOrthogonalArrayReturnsDefensiveCopy(t *testing.T) {
 	second := OrthogonalArray(4)
 	if reflect.DeepEqual(first, second) || second[0][0] != 0 {
 		t.Fatalf("OrthogonalArray shares mutable state: first=%v second=%v", first, second)
+	}
+}
+
+func TestOrthogonalLearningIsDimensionSafeBeyondL4(t *testing.T) {
+	const dimensions = 12
+	male := newMayfly(dimensions)
+	pbest := make([]float64, dimensions)
+	gbest := make([]float64, dimensions)
+	lower := make([]float64, dimensions)
+	upper := make([]float64, dimensions)
+	for dimension := range dimensions {
+		male.Position[dimension] = 1
+		male.Best.Position[dimension] = 1
+		pbest[dimension] = 0.5
+		gbest[dimension] = -0.5
+		lower[dimension] = -2
+		upper[dimension] = 2
+	}
+	male.Cost = Sphere(male.Position)
+	male.Best.Cost = male.Cost
+
+	calls := 0
+	result := ApplyOrthogonalLearning(
+		male, pbest, gbest, 0.3, lower, upper,
+		func(position []float64) float64 {
+			calls++
+			return Sphere(position)
+		},
+		rand.New(rand.NewSource(3)),
+	)
+	if result == nil {
+		t.Fatal("orthogonal learning returned nil")
+	}
+	if calls != len(OrthogonalArray(dimensions))+1 {
+		t.Fatalf("evaluations = %d, want %d", calls, len(OrthogonalArray(dimensions))+1)
+	}
+}
+
+func TestOptimizeRejectsOLCEDimensionAboveArrayCap(t *testing.T) {
+	config := NewOLCEConfig()
+	config.ObjectiveFunc = Sphere
+	config.ProblemSize = MaxOrthogonalArrayDimensions + 1
+	config.LowerBound = -1
+	config.UpperBound = 1
+	config.MaxIterations = 1
+
+	if _, err := Optimize(config); err == nil {
+		t.Fatal("Optimize accepted an OLCE dimension above the orthogonal-array cap")
 	}
 }

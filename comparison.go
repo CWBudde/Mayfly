@@ -105,12 +105,32 @@ func NewComparisonRunner() *ComparisonRunner {
 }
 
 // WithVariants sets the variants to compare.
+// Deprecated: use WithVariantsChecked when variants are user supplied.
 func (cr *ComparisonRunner) WithVariants(variants ...AlgorithmVariant) *ComparisonRunner {
 	cr.Variants = variants
 	return cr
 }
 
+// WithVariantsChecked rejects a nil runner, empty list, or nil variant.
+func (cr *ComparisonRunner) WithVariantsChecked(variants ...AlgorithmVariant) (*ComparisonRunner, error) {
+	if cr == nil {
+		return nil, errors.New("comparison runner is nil")
+	}
+	if len(variants) == 0 {
+		return nil, errors.New("at least one comparison variant is required")
+	}
+	for i, variant := range variants {
+		if variant == nil {
+			return nil, fmt.Errorf("comparison variant %d is nil", i)
+		}
+	}
+	cr.Variants = append([]AlgorithmVariant(nil), variants...)
+	return cr, nil
+}
+
 // WithVariantNames sets the variants to compare by name.
+// Deprecated: use WithVariantNamesChecked. This compatibility method silently
+// omits unknown names.
 func (cr *ComparisonRunner) WithVariantNames(names ...string) *ComparisonRunner {
 	variants := make([]AlgorithmVariant, 0, len(names))
 
@@ -124,6 +144,27 @@ func (cr *ComparisonRunner) WithVariantNames(names ...string) *ComparisonRunner 
 	cr.Variants = variants
 
 	return cr
+}
+
+// WithVariantNamesChecked resolves every requested name or leaves the runner
+// unchanged and returns an error.
+func (cr *ComparisonRunner) WithVariantNamesChecked(names ...string) (*ComparisonRunner, error) {
+	if cr == nil {
+		return nil, errors.New("comparison runner is nil")
+	}
+	if len(names) == 0 {
+		return nil, errors.New("at least one comparison variant name is required")
+	}
+	variants := make([]AlgorithmVariant, len(names))
+	for i, name := range names {
+		variant, err := NewVariantChecked(name)
+		if err != nil {
+			return nil, fmt.Errorf("comparison variant %d: %w", i, err)
+		}
+		variants[i] = variant
+	}
+	cr.Variants = variants
+	return cr, nil
 }
 
 // WithRuns sets the number of runs per algorithm.
@@ -179,6 +220,8 @@ func (cr *ComparisonRunner) WithSeed(seed int64) *ComparisonRunner {
 }
 
 // Compare runs all algorithms on the given problem and returns comparison results.
+// Deprecated: use CompareContext; Compare preserves the historical behavior of
+// returning a partial result while discarding validation and run errors.
 func (cr *ComparisonRunner) Compare(
 	benchmarkName string,
 	fn ObjectiveFunction,
@@ -1063,6 +1106,7 @@ func logGamma(x float64) float64 {
 }
 
 // PrintComparisonResults prints a formatted comparison report to stdout.
+// Deprecated: use WriteComparisonResults to receive validation/write errors.
 func (cr *ComparisonResult) PrintComparisonResults() {
 	_ = cr.WriteComparisonResults(os.Stdout)
 }

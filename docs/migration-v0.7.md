@@ -30,8 +30,14 @@ config.Seed = &seed
 
 ## Variant names and behavior
 
-- GSASMA contains golden-sine search and simulated annealing. Use `hmma` or
-  `NewHMMAConfig` for hybrid Cauchy/Gaussian mutation and periodic opposition.
+- GSASMA now applies simulated annealing to late-stage velocities and the fixed
+  Eq. (10) golden-sine position update to both populations. `GoldenFactor` is
+  deprecated and ignored.
+- HMMA now follows the paper's every-iteration scheduled OBL/Cauchy mutation of
+  the global optimum and Eq. (12) artificial gender mutation. Its new fields
+  are `HMMAInformationExchange`, `HMMAScheduleOffset`, and
+  `HMMAArtificialMutation`; `CauchyMutationRate` and `ApplyOBLToGlobalBest` are
+  deprecated and ignored by HMMA.
 - AOBLMOA means Aquila Optimizer and Opposition-Based Learning Mayfly
   Optimization Algorithm. It is scalar, not multi-objective.
 - `PresetMultiObjective` is deprecated and returns an error. Pareto utilities
@@ -49,4 +55,3 @@ config.Seed = &seed
   defensive copies.
 - JSON configuration loading is strict, so misspelled or duplicate keys now
   fail instead of silently selecting defaults.
-

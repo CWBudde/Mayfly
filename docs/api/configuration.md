@@ -18,7 +18,8 @@ Every top-level `Config` field is covered in the sections below:
 | DESMA                 | `UseDESMA`, `EliteCount`, `SearchRange`, `EnlargeFactor`, `ReductionFactor`                                                       |
 | OLCE-MA               | `UseOLCE`, `OrthogonalFactor`, `ChaosFactor`                                                                                      |
 | EOBBMA                | `UseEOBBMA`, `LevyAlpha`, `LevyBeta`, `OppositionRate`, `EliteOppositionCount`                                                    |
-| GSASMA                | `UseGSASMA`, `InitialTemperature`, `CoolingRate`, `CoolingSchedule`, `CauchyMutationRate`, `GoldenFactor`, `ApplyOBLToGlobalBest` |
+| GSASMA                | `UseGSASMA`, `InitialTemperature`, `CoolingRate`, `CoolingSchedule` |
+| HMMA                  | `UseHMMA`, `HMMAInformationExchange`, `HMMAScheduleOffset`, `HMMAArtificialMutation` |
 | MPMA                  | `UseMPMA`, `MedianWeight`, `GravityType`, `UseWeightedMedian`                                                                     |
 | AOBLMOA               | `UseAOBLMOA`, `AquilaWeight`, `OppositionProbability`, `ArchiveSize`, `StrategySwitch`                                            |
 | Run behavior          | `Convergence`, `Constraints`, `EnableParallel`, `MaxWorkers`, `Rand`                                                              |
@@ -212,7 +213,7 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | ------------------ | --------- | ------- | ------------------------------------------------------- |
 | `UseOLCE`          | `bool`    | false   | Enable OLCE-MA variant                                  |
 | `OrthogonalFactor` | `float64` | 0.3     | Orthogonal learning strength (0-1)                      |
-| `ChaosFactor`      | `float64` | 0.1     | Initial chaotic search radius, decays to 0 (0 disables) |
+| `ChaosFactor`      | `float64` | 1.0     | Multiplier on chaotic-offspring constriction (0 disables) |
 
 ### EOBBMA Parameters
 
@@ -229,18 +230,21 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | Parameter              | Type      | Default       | Description                                      |
 | ---------------------- | --------- | ------------- | ------------------------------------------------ |
 | `UseGSASMA`            | `bool`    | false         | Enable GSASMA variant                            |
-| `InitialTemperature`   | `float64` | 100.0         | Starting temperature for SA                      |
-| `CoolingRate`          | `float64` | 0.95          | Temperature decay rate                           |
-| `CoolingSchedule`      | `string`  | "exponential" | Schedule: "exponential", "linear", "logarithmic" |
-| `GoldenFactor`         | `float64` | 1.0           | GSA influence factor (0.5-2.0)                   |
+| `InitialTemperature`   | `float64` | 100.0         | Library-extension starting temperature           |
+| `CoolingRate`          | `float64` | 0.95          | Library-extension temperature decay rate         |
+| `CoolingSchedule`      | `string`  | "exponential" | Extension: exponential, linear, or logarithmic   |
+| `GoldenFactor`         | `float64` | 1.0           | **Deprecated and ignored**; absent from Eq. (10) |
 
 ### HMMA Parameters
 
-| Parameter                | Type      | Default | Description                               |
-| ------------------------ | --------- | ------- | ----------------------------------------- |
-| `UseHMMA`                | `bool`    | false   | Enable Hybrid Mutation MA                 |
-| `CauchyMutationRate`     | `float64` | 0.3     | Base Cauchy mutation probability          |
-| `ApplyOBLToGlobalBest`   | `bool`    | true    | Apply periodic opposition to global best  |
+| Parameter                 | Type      | Default | Description                                  |
+| ------------------------- | --------- | ------- | -------------------------------------------- |
+| `UseHMMA`                 | `bool`    | false   | Enable Hybrid Mutation MA                    |
+| `HMMAInformationExchange` | `float64` | 1.5     | Eq. (7) information coefficient `a4`         |
+| `HMMAScheduleOffset`      | `float64` | 0.99    | Eq. (10) schedule offset `theta`             |
+| `HMMAArtificialMutation`  | `float64` | 0.1     | Eq. (12) gender-exchange coefficient `rho`   |
+| `CauchyMutationRate`      | `float64` | 0.3     | **Deprecated and ignored by HMMA**           |
+| `ApplyOBLToGlobalBest`    | `bool`    | false   | **Deprecated and ignored by HMMA**           |
 
 ### MPMA Parameters
 
@@ -390,10 +394,10 @@ config.MaxWorkers = 4
 
 Objective calls for initialization, male/female population updates, crossover
 offspring, and mutation offspring are parallelized. Variant-specific batches
-are covered too: DESMA elites, OLCE orthogonal-learning candidates, EOBBMA
-opposition points, GSASMA Golden Sine candidates, and AOBLMOA Aquila and
-opposition candidates. OLCE chaos and GSASMA hybrid mutation are applied before
-their offspring batches are dispatched.
+are covered too: DESMA elites, OLCE male-movement candidates, EOBBMA
+opposition points, GSASMA male/female movement batches, and AOBLMOA Aquila and
+opposition candidates. OLCE evaluates one chaotic candidate for the fittest
+crossover offspring before mutation and survivor selection.
 
 DESMA pre-draws random offsets and constructs independent elite positions with
 bounded workers before evaluating them. MPMA computes independent position

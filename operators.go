@@ -1,6 +1,8 @@
 package mayfly
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 )
@@ -21,8 +23,22 @@ const DefaultCrossoverGamma = 0.4
 
 // Crossover performs crossover between two parent positions using
 // DefaultCrossoverGamma. See CrossoverBlend for the general form.
+//
+// Deprecated: use CrossoverChecked to receive validation errors. This legacy
+// wrapper retains global-RNG and silent fallback behavior for source
+// compatibility.
 func Crossover(x1, x2 []float64, lowerBound, upperBound float64, rng *rand.Rand) ([]float64, []float64) {
 	return CrossoverBlend(x1, x2, DefaultCrossoverGamma, lowerBound, upperBound, rng)
+}
+
+// CrossoverChecked validates both parents, bounds, and RNG before applying
+// the default blend crossover.
+func CrossoverChecked(
+	x1, x2 []float64,
+	lowerBound, upperBound float64,
+	rng *rand.Rand,
+) ([]float64, []float64, error) {
+	return CrossoverBlendChecked(x1, x2, DefaultCrossoverGamma, lowerBound, upperBound, rng)
 }
 
 // CrossoverBlend performs blend (BLX-style) crossover between two parent
@@ -34,6 +50,9 @@ func Crossover(x1, x2 []float64, lowerBound, upperBound float64, rng *rand.Rand)
 // A negative or non-finite gamma is treated as zero; drawing the coefficient
 // with an infinite or NaN gamma would otherwise produce NaN offspring, which
 // the boundary clamps cannot repair.
+//
+// Deprecated: use CrossoverBlendChecked. This legacy wrapper preserves the
+// pre-v0.7 coercion of an invalid gamma to zero.
 func CrossoverBlend(
 	x1, x2 []float64,
 	gamma, lowerBound, upperBound float64,
@@ -62,6 +81,29 @@ func CrossoverBlend(
 	return off1, off2
 }
 
+// CrossoverBlendChecked performs blend crossover after validating every
+// value. It never uses the package-global random generator.
+func CrossoverBlendChecked(
+	x1, x2 []float64,
+	gamma, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) ([]float64, []float64, error) {
+	if err := validateOperatorInput(x1, lowerBound, upperBound, rng); err != nil {
+		return nil, nil, fmt.Errorf("first parent: %w", err)
+	}
+	if err := validateOperatorInput(x2, lowerBound, upperBound, rng); err != nil {
+		return nil, nil, fmt.Errorf("second parent: %w", err)
+	}
+	if len(x1) != len(x2) {
+		return nil, nil, fmt.Errorf("parent dimensions differ: %d and %d", len(x1), len(x2))
+	}
+	if !isFinite(gamma) || gamma < 0 {
+		return nil, nil, fmt.Errorf("crossover gamma must be finite and non-negative, got %v", gamma)
+	}
+	off1, off2 := CrossoverBlend(x1, x2, gamma, lowerBound, upperBound, rng)
+	return off1, off2, nil
+}
+
 // mutationCount converts a mutation rate into the number of dimensions to
 // perturb, saturating instead of producing a slice bound the operators cannot
 // use.
@@ -86,6 +128,9 @@ func mutationCount(mu float64, nVar int) int {
 
 // MutateGaussian applies Gaussian mutation to a position vector.
 // This uses a normal (Gaussian) distribution for perturbations.
+//
+// Deprecated: use MutateGaussianChecked to reject invalid rates, bounds, and
+// RNG state rather than saturating or falling back to the global RNG.
 func MutateGaussian(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	nVar := len(x)
 	nMu := mutationCount(mu, nVar)
@@ -113,8 +158,53 @@ func MutateGaussian(x []float64, mu, lowerBound, upperBound float64, rng *rand.R
 	return y
 }
 
+// MutateGaussianChecked validates its input before applying Gaussian mutation.
+func MutateGaussianChecked(
+	x []float64,
+	mu, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) ([]float64, error) {
+	if err := validateMutationInput(x, mu, lowerBound, upperBound, rng); err != nil {
+		return nil, err
+	}
+	return MutateGaussian(x, mu, lowerBound, upperBound, rng), nil
+}
+
 // Mutate applies mutation to a position vector using Gaussian distribution.
 // This is an alias for MutateGaussian for backward compatibility.
+// Deprecated: use MutateGaussianChecked.
 func Mutate(x []float64, mu, lowerBound, upperBound float64, rng *rand.Rand) []float64 {
 	return MutateGaussian(x, mu, lowerBound, upperBound, rng)
+}
+
+func validateMutationInput(
+	x []float64,
+	mu, lowerBound, upperBound float64,
+	rng *rand.Rand,
+) error {
+	if !isFinite(mu) || mu < 0 || mu > 1 {
+		return fmt.Errorf("mutation rate must be in [0,1], got %v", mu)
+	}
+	return validateOperatorInput(x, lowerBound, upperBound, rng)
+}
+
+func validateOperatorInput(x []float64, lowerBound, upperBound float64, rng *rand.Rand) error {
+	if len(x) == 0 {
+		return errors.New("position vector is empty")
+	}
+	if rng == nil {
+		return errors.New("random generator is nil")
+	}
+	if !isFinite(lowerBound) || !isFinite(upperBound) || lowerBound >= upperBound {
+		return fmt.Errorf("bounds must be finite and increasing, got [%v,%v]", lowerBound, upperBound)
+	}
+	for i, coordinate := range x {
+		if !isFinite(coordinate) {
+			return fmt.Errorf("position %d is not finite", i)
+		}
+		if coordinate < lowerBound || coordinate > upperBound {
+			return fmt.Errorf("position %d=%v is outside [%v,%v]", i, coordinate, lowerBound, upperBound)
+		}
+	}
+	return nil
 }

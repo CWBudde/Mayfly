@@ -116,8 +116,8 @@ fmt.Printf("Cost: %f, violation: %g\n",
 | **[DESMA](docs/algorithms/desma.md)**             | Multimodal           | +70%        | Adaptive elite search             |
 | **[OLCE-MA](docs/algorithms/olce-ma.md)**         | Highly multimodal    | +15-30%     | Orthogonal learning + chaos       |
 | **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes | +55%        | Lévy flights, Bare Bones          |
-| **[GSASMA](docs/algorithms/gsasma.md)**           | Fast convergence     | +10-20%     | Golden Sine + Simulated Annealing |
-| **HMMA**                                          | Adaptive mutation    | Variable    | Cauchy/Gaussian mutation + OBL    |
+| **[GSASMA](docs/algorithms/gsasma.md)**           | Multimodal search    | Variable    | Annealed velocity + golden sine   |
+| **[HMMA](docs/algorithms/hmma.md)**               | Mutation diversity   | Variable    | Scheduled global mutation + gender exchange |
 | **[MPMA](docs/algorithms/mpma.md)**               | Stable convergence   | +10-30%     | Median guidance, robust           |
 | **[AOBLMOA](docs/algorithms/aoblmoa.md)**         | Adaptive             | Variable    | 4 hunting strategies + opposition |
 
@@ -136,10 +136,10 @@ config := mayfly.NewOLCEConfig()
 // EOBBMA (best for deceptive)
 config := mayfly.NewEOBBMAConfig()
 
-// GSASMA (fastest convergence)
+// GSASMA (annealed velocity and golden-sine position updates)
 config := mayfly.NewGSASMAConfig()
 
-// HMMA (adaptive hybrid mutation)
+// HMMA (scheduled global mutation and artificial gender mutation)
 config := mayfly.NewHMMAConfig()
 
 // MPMA (most stable)
@@ -249,8 +249,8 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 - **[DESMA](docs/algorithms/desma.md)** - Dynamic Elite Strategy
 - **[OLCE-MA](docs/algorithms/olce-ma.md)** - Orthogonal Learning & Chaotic Exploitation
 - **[EOBBMA](docs/algorithms/eobbma.md)** - Elite Opposition-Based Bare Bones
-- **[GSASMA](docs/algorithms/gsasma.md)** - Golden Sine with Simulated Annealing
-- **[HMMA](docs/algorithms/hmma.md)** - Hybrid Cauchy/Gaussian mutation + opposition
+- **[GSASMA](docs/algorithms/gsasma.md)** - Annealed velocity with golden-sine position updates
+- **[HMMA](docs/algorithms/hmma.md)** - Scheduled global mutation with artificial gender mutation
 - **[MPMA](docs/algorithms/mpma.md)** - Median Position-Based
 - **[AOBLMOA](docs/algorithms/aoblmoa.md)** - Aquila Optimizer + opposition-based learning
 
@@ -362,7 +362,7 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 | `levy.go`        | Lévy Flights (Mantegna)         | Mantegna (1994), Phys. Rev. E   |
 | `cauchy.go`      | Cauchy Distribution             | Standard inverse CDF method     |
 | `opposition.go`  | Opposition-Based Learning       | Tizhoosh (2005), IEEE           |
-| `orthogonal.go`  | Orthogonal Learning (L4 array)  | Zhan et al. (2010), IEEE TEVC   |
+| `orthogonal.go`  | Dimension-safe Orthogonal Learning | Zhan et al. (2010), IEEE TEVC |
 | `aquila.go`      | Aquila Optimizer (4 strategies) | Abualigah et al. (2021)         |
 | `golden_sine.go` | Golden Sine Algorithm           | Tanyildizi & Demir (2017)       |
 | `annealing.go`   | Simulated Annealing             | Kirkpatrick et al. (1983)       |
@@ -373,7 +373,8 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 
 - **OLCE-MA** = Standard MA + `orthogonal.go` + chaos maps
 - **EOBBMA** = Standard MA + `levy.go` + `opposition.go` + Bare Bones framework
-- **GSASMA** = Standard MA + `golden_sine.go` + `annealing.go` + `cauchy.go` + `opposition.go`
+- **GSASMA** = Standard MA + annealed velocity selection + golden-sine position updates
+- **HMMA** = Standard movement + scheduled OBL/Cauchy global mutation + artificial gender mutation
 - **MPMA** = Standard MA + median position guidance
 - **AOBLMOA** = Standard MA with the dance/flight branches replaced by `aquila.go` strategies and mutation replaced by stochastic opposition from `opposition.go`
 
@@ -398,7 +399,7 @@ for worker-count selection and the cheap-versus-expensive benchmark command.
 | Variant | Additional Evaluations | When Worth It          |
 | ------- | ---------------------- | ---------------------- |
 | DESMA   | +8%                    | Multimodal problems    |
-| OLCE-MA | +12%                   | Highly multimodal      |
+| OLCE-MA | Dimension-dependent    | Highly multimodal      |
 | EOBBMA  | +1.5%                  | Deceptive landscapes   |
 | GSASMA  | +15%                   | Need fast convergence  |
 | MPMA    | 0% (baseline)          | Need stability         |

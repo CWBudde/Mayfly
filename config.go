@@ -10,7 +10,7 @@ const (
 	GravitySigmoid     = "sigmoid"
 )
 
-// Cooling schedules for the simulated annealing component (Config.CoolingSchedule).
+// Cooling schedules for the GSASMA library extension (Config.CoolingSchedule).
 const (
 	CoolingExponential = "exponential"
 	CoolingLinear      = "linear"
@@ -81,15 +81,14 @@ func NewDESMAConfig() *Config {
 // - Orthogonal learning to increase diversity and reduce oscillatory movement
 // - Chaotic exploitation to improve local search capability
 //
-// Both stages operate on the elite males only and use greedy acceptance, so
-// neither can make the population worse. Setting OrthogonalFactor or
-// ChaosFactor to zero disables the corresponding stage completely, including
-// its share of the evaluation budget.
+// Orthogonal learning augments the male movement operator. Chaotic exploitation
+// forms a new position from the fittest crossover offspring. Setting
+// OrthogonalFactor or ChaosFactor to zero disables the corresponding stage.
 func NewOLCEConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseOLCE = true
 	config.OrthogonalFactor = 0.3 // Balanced exploration/exploitation
-	config.ChaosFactor = 0.1      // Initial chaotic search radius, decays to zero
+	config.ChaosFactor = 1.0      // Canonical multiplier for the paper's constriction factor
 
 	return config
 }
@@ -145,49 +144,42 @@ func NewMPMAConfig() *Config {
 	return config
 }
 
-// NewGSASMAConfig creates a default configuration for the GSASMA variant
-// (Golden Sine Algorithm with Simulated Annealing Mayfly Algorithm).
+// NewGSASMAConfig creates a default configuration for the Golden Annealing
+// Crossover-Mutation Mayfly Algorithm.
 // You must set ObjectiveFunc, ProblemSize, LowerBound, and UpperBound.
 //
-// GSASMA enhances the standard Mayfly Algorithm with:
-// - Golden Sine Algorithm for adaptive exploration using golden ratio and sine function
-// - Simulated Annealing for probabilistic acceptance to escape local optima
+// GSASMA applies simulated annealing to the male and female velocity branches
+// in the second half of the run, then applies the paper's golden-sine position
+// equation to every mayfly. InitialTemperature, CoolingRate, and
+// CoolingSchedule select a library temperature schedule because the paper does
+// not specify its temperature recurrence or numerical defaults.
 //
-// This variant is particularly effective for:
-// - Engineering optimization problems with many local optima
-// - Problems requiring fast convergence speed
-// - Complex multimodal landscapes where standard algorithms plateau
-//
-// Key advantages:
-// - 10-20% improvement in convergence speed on engineering problems
-// - Better escape from local optima through SA acceptance
-// - Minimal tuning required with sensible defaults
-//
-// Reference: Golden annealing crossover and mutation mayfly algorithm (2022),
+// Reference: An improved mayfly algorithm and its application (2022),
 // AIP Advances, DOI: 10.1063/5.0108278.
 func NewGSASMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseGSASMA = true
-	config.InitialTemperature = 100.0           // High initial temp for early exploration
-	config.CoolingRate = 0.95                   // Gradual cooling (95% per iteration)
-	config.GoldenFactor = 1.0                   // Standard golden sine influence
-	config.CoolingSchedule = CoolingExponential // Fast early cooling, slow late cooling
+	config.InitialTemperature = 100.0
+	config.CoolingRate = 0.95
+	config.GoldenFactor = 1.0 // Deprecated and ignored.
+	config.CoolingSchedule = CoolingExponential
 
 	return config
 }
 
 // NewHMMAConfig creates a default configuration for the Hybrid Mutation
-// Mayfly Algorithm. HMMA owns the adaptive Cauchy/Gaussian mutation and
-// periodic opposition stages that were incorrectly attributed to GSASMA in
-// releases through v0.6.0.
+// Mayfly Algorithm. After the ordinary Mayfly movement, HMMA mutates the
+// global optimum through its scheduled OBL/Cauchy cascade and applies the
+// artificial gender-mutation operator to each pair of crossover children.
 //
 // Reference: An improved mayfly optimization algorithm based on hybrid
 // mutation (2022), Electronics Letters, DOI: 10.1049/ell2.12568.
 func NewHMMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseHMMA = true
-	config.CauchyMutationRate = 0.3
-	config.ApplyOBLToGlobalBest = true
+	config.HMMAInformationExchange = 1.5
+	config.HMMAScheduleOffset = 0.99
+	config.HMMAArtificialMutation = 0.1
 
 	return config
 }

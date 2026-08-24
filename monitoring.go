@@ -3,7 +3,6 @@ package mayfly
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -146,31 +145,10 @@ func (result *Result) ExportConvergenceCSV(path string) (returnErr error) {
 
 // ExportConvergenceJSON writes the convergence curve to path as an indented
 // JSON array of ConvergencePoint values.
-func (result *Result) ExportConvergenceJSON(path string) (returnErr error) {
+func (result *Result) ExportConvergenceJSON(path string) error {
 	points, err := result.convergencePoints()
 	if err != nil {
 		return err
 	}
-
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("create convergence JSON: %w", err)
-	}
-
-	defer func() {
-		closeErr := file.Close()
-		if returnErr == nil && closeErr != nil {
-			returnErr = fmt.Errorf("close convergence JSON: %w", closeErr)
-		}
-	}()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-
-	err = encoder.Encode(points)
-	if err != nil {
-		return fmt.Errorf("encode convergence JSON: %w", err)
-	}
-
-	return nil
+	return writeJSONAtomic(points, path)
 }

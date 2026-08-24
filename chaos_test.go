@@ -75,58 +75,61 @@ func TestLogisticMapResetAndBoundarySafeguards(t *testing.T) {
 	}
 }
 
-func TestChaoticExploitationRadiusDecays(t *testing.T) {
+// TestChaoticConstrictionFactorUsesOneBasedGeneration pins s=(G-g+1)/G
+// from the cited OLCE-MA chaotic-offspring strategy. The optimizer uses
+// zero-based iteration indices, while the paper uses generations 1..G.
+func TestChaoticConstrictionFactorUsesOneBasedGeneration(t *testing.T) {
 	config := NewOLCEConfig()
-	config.ChaosFactor = 0.4
-	config.MaxIterations = 100
+	config.MaxIterations = 4
 
-	// The loop applies the iterations 0 to MaxIterations-1, so the decay is
-	// measured against the last applied iteration, 99.
 	testCases := []struct {
 		name      string
 		iteration int
 		want      float64
 	}{
-		{name: "start", iteration: 0, want: 0.4},
-		{name: "half", iteration: 50, want: 0.4 * (1.0 - 50.0/99.0)},
-		{name: "last applied iteration", iteration: 99, want: 0},
-		{name: "beyond end", iteration: 150, want: 0},
+		{name: "generation one", iteration: 0, want: 1},
+		{name: "generation two", iteration: 1, want: 0.75},
+		{name: "generation four", iteration: 3, want: 0.25},
+		{name: "clamped after run", iteration: 9, want: 0.25},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			got := chaoticExploitationRadius(config, testCase.iteration)
+			got := chaoticConstrictionFactor(config, testCase.iteration)
 			if math.Abs(got-testCase.want) > 1e-12 {
-				t.Errorf("radius at iteration %d = %v, want %v",
+				t.Errorf("constriction at iteration %d = %v, want %v",
 					testCase.iteration, got, testCase.want)
 			}
 		})
 	}
 
-	// A two-iteration run must span the full range instead of stopping at half
-	// the factor.
-	config.MaxIterations = 2
-
-	if got := chaoticExploitationRadius(config, 0); math.Abs(got-config.ChaosFactor) > 1e-12 {
-		t.Errorf("radius of first of two iterations = %v, want %v", got, config.ChaosFactor)
+	config.ChaosFactor = 0.4
+	if got := chaoticConstrictionFactor(config, 1); math.Abs(got-0.3) > 1e-12 {
+		t.Errorf("compatibility-scaled constriction = %v, want 0.3", got)
 	}
+}
 
-	if got := chaoticExploitationRadius(config, 1); math.Abs(got) > 1e-12 {
-		t.Errorf("radius of last of two iterations = %v, want 0", got)
-	}
+// TestChaoticExploitationCandidateEquation pins the published offspring
+// construction: C'=LB+C(UB-LB), O'=(1-s)O+sC'. The paper says "the fittest
+// offspring's position" (singular), which is why the optimizer applies this
+// once to the best crossover child rather than to parents or every child.
+func TestChaoticExploitationCandidateEquation(t *testing.T) {
+	config := NewOLCEConfig()
+	config.LowerBound = -2
+	config.UpperBound = 6
+	config.MaxIterations = 4
+	destination := make([]float64, 2)
 
-	// A single iteration has no decay to spread out and keeps the full factor,
-	// because a zero radius would make its only exploitation step a no-op.
-	config.MaxIterations = 1
-
-	if got := chaoticExploitationRadius(config, 0); got != config.ChaosFactor {
-		t.Errorf("radius of a one-iteration run = %v, want %v", got, config.ChaosFactor)
-	}
-
-	config.MaxIterations = 0
-
-	if got := chaoticExploitationRadius(config, 7); got != config.ChaosFactor {
-		t.Errorf("radius without iteration budget = %v, want %v", got, config.ChaosFactor)
+	// Seed .25 advances to .75 for both first two logistic-map samples.
+	chaoticExploitationCandidate(
+		destination, []float64{0, 2}, config, NewLogisticMap(0.25),
+		chaoticConstrictionFactor(config, 1),
+	)
+	want := []float64{3, 3.5} // .25*offspring + .75*4
+	for dimension := range destination {
+		if math.Abs(destination[dimension]-want[dimension]) > 1e-12 {
+			t.Errorf("dimension %d = %v, want %v", dimension, destination[dimension], want[dimension])
+		}
 	}
 }
 
@@ -168,60 +171,33 @@ func TestChaoticExploitationRejectsNaNCandidate(t *testing.T) {
 	}
 }
 
-// TestChaoticExploitationNeverWorsensIndividual pins the greedy acceptance of
-// the chaotic exploitation step. Before this was a greedy step it displaced
-// every individual unconditionally, which is a persistent random walk.
-func TestChaoticExploitationNeverWorsensIndividual(t *testing.T) {
+// TestChaoticExploitationFormsNewOffspringUnconditionally pins the paper's
+// lifecycle semantics: Eq. (12) forms the new offspring position; it does not
+// describe choosing the better of that position and the crossover source.
+func TestChaoticExploitationFormsNewOffspringUnconditionally(t *testing.T) {
 	config := NewOLCEConfig()
-	config.ProblemSize = 5
-	config.LowerBound = -10
-	config.UpperBound = 10
-	config.MaxIterations = 200
-	config.ChaosFactor = 0.5
+	config.ProblemSize = 1
+	config.LowerBound = -1
+	config.UpperBound = 1
+	config.MaxIterations = 1
 
-	evaluator := newConstraintEvaluator(Rastrigin, nil)
-	chaosMap := NewLogisticMap(0.37)
+	evaluator := newConstraintEvaluator(Sphere, nil)
 
 	target := newMayfly(config.ProblemSize)
-	for j := range target.Position {
-		target.Position[j] = 3.5 - 0.25*float64(j)
-	}
-
 	evaluator.evaluateMayfly(target, false)
 	copy(target.Best.Position, target.Position)
 	target.Best.Cost = target.Cost
 
-	accepted := 0
-
-	for iteration := range config.MaxIterations {
-		previousCost := target.Cost
-
-		if applyChaoticExploitation(target, config, chaosMap, iteration, evaluator) {
-			accepted++
-		}
-
-		if target.Cost > previousCost {
-			t.Fatalf("iteration %d: cost rose from %v to %v", iteration, previousCost, target.Cost)
-		}
-
-		if target.Cost != Rastrigin(target.Position) {
-			t.Fatalf("iteration %d: cost %v does not match position", iteration, target.Cost)
-		}
-
-		if target.Best.Cost > target.Cost {
-			t.Fatalf("iteration %d: personal best %v worse than current %v",
-				iteration, target.Best.Cost, target.Cost)
-		}
-
-		for j, value := range target.Position {
-			if value < config.LowerBound || value > config.UpperBound {
-				t.Fatalf("iteration %d: dimension %d left bounds: %v", iteration, j, value)
-			}
-		}
+	if !applyChaoticExploitation(target, config, NewLogisticMap(0.25), 0, evaluator) {
+		t.Fatal("finite chaotic offspring was not committed")
 	}
-
-	if accepted == 0 {
-		t.Error("chaotic exploitation never accepted a candidate")
+	// The first logistic value is .75, mapping to .5 in [-1,1]. This is
+	// deliberately worse than the crossover offspring at zero.
+	if target.Position[0] != 0.5 || target.Cost != 0.25 {
+		t.Fatalf("offspring = (%v, cost %v), want (0.5, 0.25)", target.Position[0], target.Cost)
+	}
+	if target.Best.Position[0] != 0.5 || target.Best.Cost != 0.25 {
+		t.Fatalf("offspring best was not initialized from its formed position: %+v", target.Best)
 	}
 }
 
@@ -253,30 +229,32 @@ func TestChaoticExploitationSpendsOneEvaluation(t *testing.T) {
 	}
 }
 
-// TestOLCEConvergesOnUnimodalProblem is the end-to-end guard for the same
-// property. An unconditional chaotic kick keeps displacing the population
-// every iteration, which caps the reachable precision several orders of
-// magnitude above what greedy, decaying exploitation reaches.
-func TestOLCEConvergesOnUnimodalProblem(t *testing.T) {
-	const tolerance = 1e-20
-
-	for _, seed := range []int64{1, 2, 3} {
+func TestOptimizeOLCEAppliesChaosOncePerGeneration(t *testing.T) {
+	newConfig := func(chaosFactor float64) *Config {
 		config := NewOLCEConfig()
 		config.ObjectiveFunc = Sphere
-		config.ProblemSize = 5
+		config.ProblemSize = 2
 		config.LowerBound = -5
 		config.UpperBound = 5
-		config.MaxIterations = 200
-		config.Rand = rand.New(rand.NewSource(seed))
+		config.MaxIterations = 6
+		config.NPop = 4
+		config.NPopF = 4
+		config.OrthogonalFactor = 0
+		config.ChaosFactor = chaosFactor
+		config.Rand = rand.New(rand.NewSource(41))
+		return config
+	}
 
-		result, err := Optimize(config)
-		if err != nil {
-			t.Fatalf("Optimize with seed %d: %v", seed, err)
-		}
+	disabled, err := Optimize(newConfig(0))
+	if err != nil {
+		t.Fatalf("Optimize without chaotic offspring: %v", err)
+	}
+	enabled, err := Optimize(newConfig(1))
+	if err != nil {
+		t.Fatalf("Optimize with chaotic offspring: %v", err)
+	}
 
-		if result.GlobalBest.Cost > tolerance {
-			t.Errorf("seed %d: best cost = %v, want at most %v",
-				seed, result.GlobalBest.Cost, tolerance)
-		}
+	if difference := enabled.FuncEvalCount - disabled.FuncEvalCount; difference != 6 {
+		t.Fatalf("chaotic offspring evaluations = %d, want one for each of 6 generations", difference)
 	}
 }

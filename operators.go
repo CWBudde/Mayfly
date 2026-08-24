@@ -93,7 +93,7 @@ func CrossoverBlendChecked(
 		return nil, nil, fmt.Errorf("first parent: %w", err)
 	}
 
-	err := validateOperatorInput(x2, lowerBound, upperBound, rng)
+	err = validateOperatorInput(x2, lowerBound, upperBound, rng)
 	if err != nil {
 		return nil, nil, fmt.Errorf("second parent: %w", err)
 	}

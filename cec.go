@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -306,7 +307,8 @@ func readCECShiftFile(data fs.FS, name string, rows, dimension int) ([]float64, 
 		}
 	}
 
-	if scanErr := scanner.Err(); scanErr != nil {
+	scanErr := scanner.Err()
+	if scanErr != nil {
 		return nil, scanErr
 	}
 
@@ -328,8 +330,9 @@ func readCECFloatFile(data fs.FS, name string, count int) ([]float64, error) {
 
 	result := make([]float64, count)
 	for i := range count {
-		if _, err := fmt.Fscan(reader, &result[i]); err != nil {
-			return nil, fmt.Errorf("%s value %d: %w", name, i, err)
+		_, scanErr := fmt.Fscan(reader, &result[i])
+		if scanErr != nil {
+			return nil, fmt.Errorf("%s value %d: %w", name, i, scanErr)
 		}
 	}
 
@@ -347,8 +350,9 @@ func readCECIntFile(data fs.FS, name string, count int) ([]int, error) {
 
 	result := make([]int, count)
 	for i := range count {
-		if _, err := fmt.Fscan(reader, &result[i]); err != nil {
-			return nil, fmt.Errorf("%s value %d: %w", name, i, err)
+		_, scanErr := fmt.Fscan(reader, &result[i])
+		if scanErr != nil {
+			return nil, fmt.Errorf("%s value %d: %w", name, i, scanErr)
 		}
 	}
 
@@ -382,13 +386,7 @@ func openCECData(data fs.FS, name string) (fs.File, error) {
 }
 
 func containsInt(values []int, value int) bool {
-	for _, candidate := range values {
-		if candidate == value {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(values, value)
 }
 
 func solveCECLinearSystem(matrix, target []float64, dimension int) ([]float64, error) {

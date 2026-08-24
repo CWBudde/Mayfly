@@ -63,6 +63,9 @@ condensed; unchecked items retain the details needed to act on them.
 - Added equation fixtures plus seeded parity, non-finite, aliasing, cancellation,
   configuration-reuse, Pareto, and statistical regressions. Updated v0.7.0 migration
   notes and invalidated deterministic benchmark baselines produced by older algorithms.
+
+### Phase 4: Benchmark-suite expansion — complete (2026-08-24)
+
 - Added the complete usable CEC2017 and CEC2020 bound-constrained suites through
   validated loaders for the organizers' official transformation data, plus four
   constrained engineering-design benchmarks with mixed-variable projection and

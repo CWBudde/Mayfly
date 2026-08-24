@@ -122,6 +122,7 @@ func cecEvaluateBase(kind cecBase, x, shift, rotation []float64) float64 {
 	}
 
 	rate := cecTransformRate(kind)
+
 	z := cecTransform(x, shift, rotation, rate)
 	if kind == cecSchafferF7 && len(rotation) == len(x)*len(x) {
 		// This intentionally follows the official evaluator, which computes
@@ -587,6 +588,7 @@ func cecHybrid(x, shift, rotation []float64, shuffle []int, spec cecHybridSpec) 
 	result, offset := 0.0, 0
 	for i, size := range sizes {
 		part := permuted[offset : offset+size]
+
 		switch spec.functions[i] {
 		case cecSchafferF7:
 			// Schaffer F7 reads the shared pre-rotation buffer in the reference

@@ -174,6 +174,7 @@ func (problem *BenchmarkCase) NewConfig(base *Config) (*Config, error) {
 	}
 
 	config.Constraints = normalizedBenchmarkConstraints(problem)
+
 	err := ValidateConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("configure benchmark: %w", err)

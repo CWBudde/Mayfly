@@ -33,6 +33,7 @@
   const npopfInput = el("npopf");
   const iterationsInput = el("iterations");
   const seedInput = el("seed");
+  const qmcSelect = el("qmcInit");
   const lowerInput = el("lower");
   const upperInput = el("upper");
 
@@ -46,6 +47,7 @@
   const frameReadout = el("frameReadout");
 
   const benchNote = el("benchNote");
+  const qmcNote = el("qmcNote");
   const projectionNote = el("projectionNote");
   const variantNote = el("variantNote");
   const buildInfo = el("buildInfo");
@@ -163,6 +165,7 @@
       npop: intValue(npopInput, 20),
       npopf: intValue(npopfInput, 20),
       seed: intValue(seedInput, 42),
+      qmcInit: qmcSelect.value,
       lower: floatValue(lowerInput, -5.12),
       upper: floatValue(upperInput, 5.12),
       axisX: 0,
@@ -211,6 +214,18 @@
     variantSelect.value = "MA";
     compareSelect.value = "";
 
+    // Initial-population strategies come from Go for the same reason the
+    // variants do: the library owns the set of legal Config.QMCInit values.
+    qmcSelect.innerHTML = "";
+
+    for (const strategy of info.qmcInit || []) {
+      const option = document.createElement("option");
+      option.value = strategy.key;
+      option.textContent = strategy.label;
+      option.title = strategy.note;
+      qmcSelect.append(option);
+    }
+
     dimensionsInput.max = String(info.maxDimensions);
     iterationsInput.max = String(info.maxIterations);
     npopInput.max = String(info.maxPopulation);
@@ -220,6 +235,23 @@
 
     applyBenchmarkDefaults();
     updateVariantNote();
+    updateQMCNote();
+  }
+
+  function updateQMCNote() {
+    if (!state.info) {
+      return;
+    }
+
+    const strategy = (state.info.qmcInit || []).find(
+      (s) => s.key === qmcSelect.value,
+    );
+
+    if (!strategy) {
+      return;
+    }
+
+    qmcNote.innerHTML = `<b>${strategy.label}.</b> ${strategy.note}`;
   }
 
   function applyBenchmarkDefaults() {
@@ -522,6 +554,11 @@
     });
 
     compareSelect.addEventListener("change", doRun);
+
+    qmcSelect.addEventListener("change", () => {
+      updateQMCNote();
+      doRun();
+    });
 
     for (const input of [
       dimensionsInput,

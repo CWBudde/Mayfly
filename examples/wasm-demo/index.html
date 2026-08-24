@@ -35,6 +35,7 @@
         #compareVariant   <select> for the A/B variant; value "" disables A/B
         #dimensions #npop #npopf #iterations #seed   <input type=number>
         #lower #upper     <input type=number> bounds
+        #qmcInit          <select> of initial-population strategies (from info())
         #run              primary button
         #rerun            re-run at the same seed
         #newSeed          randomize the seed and run
@@ -45,6 +46,7 @@
         #frameReadout     "iteration n / N"
 
         #benchNote        blurb for the selected function
+        #qmcNote          description for the selected initialization
         #projectionNote   warning shown when the heatmap slice misses the optimum
         #variantNote      description for the selected variant
 
@@ -183,6 +185,11 @@
             <label for="seed">seed</label>
             <input type="number" id="seed" step="1" value="42" />
           </div>
+          <div class="field">
+            <label for="qmcInit">initialization</label>
+            <select id="qmcInit"></select>
+          </div>
+          <p class="field-note" id="qmcNote">—</p>
           <div class="button-row">
             <button id="run" data-primary disabled>Run</button>
             <button id="rerun" disabled>Same seed</button>

@@ -49,8 +49,19 @@ func jsInfo(_ js.Value) any {
 		})
 	}
 
+	qmcList := make([]any, 0, len(qmcInitOptions()))
+
+	for _, option := range qmcInitOptions() {
+		qmcList = append(qmcList, map[string]any{
+			"key":   option.key,
+			"label": option.label,
+			"note":  option.note,
+		})
+	}
+
 	return map[string]any{
 		"goVersion":     runtime.Version(),
+		"qmcInit":       qmcList,
 		"goos":          runtime.GOOS,
 		"goarch":        runtime.GOARCH,
 		"variants":      variantList,

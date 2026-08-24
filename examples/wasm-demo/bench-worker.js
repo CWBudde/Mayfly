@@ -93,6 +93,7 @@ async function runSweep(request) {
       runs: request.runs,
       iterations: request.iterations,
       seed: request.seed,
+      qmcInit: request.qmcInit,
     });
 
     if (!result || result.error) {

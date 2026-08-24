@@ -39,6 +39,7 @@ func jsCompare(opts js.Value) any {
 		seed       = int64(readFloat(opts, "seed", 42))
 		lower      = readFloat(opts, "lower", spec.lower)
 		upper      = readFloat(opts, "upper", spec.upper)
+		qmcInit    = readString(opts, "qmcInit", mayfly.QMCInitUniform)
 	)
 
 	// The success threshold is derived from this function's optimum in this
@@ -51,7 +52,16 @@ func jsCompare(opts js.Value) any {
 
 	names := readStrings(opts, "variants", nil)
 
+	// One strategy for the whole sweep, applied through the variant list
+	// because the comparison framework builds each job's config from
+	// AlgorithmVariant.GetConfig() and offers nowhere else to reach it.
+	variants, err := selectedVariants(names, qmcInit)
+	if err != nil {
+		return errorResult("compare: %v", err)
+	}
+
 	runner := mayfly.NewComparisonRunner().
+		WithVariants(variants...).
 		WithRuns(runs).
 		WithIterations(iterations).
 		WithSeed(seed).
@@ -60,16 +70,6 @@ func jsCompare(opts js.Value) any {
 		// Same reasoning as a single run: js/wasm schedules every goroutine
 		// onto one thread, so a worker pool adds coordination and no speed.
 		WithParallel(false)
-
-	if len(names) > 0 {
-		runner = runner.WithVariantNames(names...)
-
-		// WithVariantNames silently drops names it does not recognize, which
-		// would show up as a table quietly missing a column.
-		if len(runner.Variants) != len(names) {
-			return errorResult("compare: unknown variant in %v", names)
-		}
-	}
 
 	result, err := runner.CompareContext(
 		context.Background(),
@@ -83,7 +83,10 @@ func jsCompare(opts js.Value) any {
 		return errorResult("compare: %v", err)
 	}
 
-	return compareResponse(result, spec, dimensions, runs, iterations, target, successMeaningful)
+	response := compareResponse(result, spec, dimensions, runs, iterations, target, successMeaningful)
+	response["qmcInit"] = qmcInit
+
+	return response
 }
 
 func compareResponse(

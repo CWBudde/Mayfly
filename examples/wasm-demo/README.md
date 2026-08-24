@@ -48,6 +48,12 @@ a stale copy fails at runtime in ways that look like demo bugs.
   two dimensions they do not.
 - **The comparison framework.** Paired runs, `WithSeed`, and the significance
   tests, computed by the library rather than restated in JS.
+- **Quasi-random initialization.** The _initialization_ control sets
+  `Config.QMCInit`: `uniform`, `sobol` or `halton`. Iteration 0 on the heatmap
+  is where the difference is visible — a Sobol population covers the box with no
+  gaps or clumps. The Shootout applies the choice to every variant in the sweep,
+  so its table stays a comparison of variants rather than of seedings. See
+  `docs/qmc-initialization.md` for what it is worth on the benchmark suite.
 
 ## Reading the numbers
 

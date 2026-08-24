@@ -47,13 +47,25 @@ func jsRun(opts js.Value) any {
 		upper       = readFloat(opts, "upper", spec.upper)
 		axisX       = clampInt(readInt(opts, "axisX", 0), 0, dimensions-1)
 		axisY       = clampInt(readInt(opts, "axisY", 1), 0, dimensions-1)
+		qmcInit     = readString(opts, "qmcInit", mayfly.QMCInitUniform)
 	)
 
 	if lower >= upper {
 		return errorResult("run: lower bound %v must be below upper bound %v", lower, upper)
 	}
 
-	config, err := configFor(variantName, benchmarkName, dimensions, iterations, npop, npopf, seed, lower, upper)
+	config, err := configFor(runSettings{
+		variant:    variantName,
+		benchmark:  benchmarkName,
+		qmcInit:    qmcInit,
+		dimensions: dimensions,
+		iterations: iterations,
+		npop:       npop,
+		npopf:      npopf,
+		seed:       seed,
+		lower:      lower,
+		upper:      upper,
+	})
 	if err != nil {
 		return errorResult("run: %v", err)
 	}
@@ -87,6 +99,7 @@ func jsRun(opts js.Value) any {
 		"optimum":           optionalNumber(spec.optimumValue(dimensions)),
 		"lower":             lower,
 		"upper":             upper,
+		"qmcInit":           config.QMCInit,
 
 		// configFor used Config.Seed, so this is also the non-nil Result.Seed.
 		"seed": float64(seed),

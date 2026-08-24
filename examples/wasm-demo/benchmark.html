@@ -28,6 +28,8 @@
 
         #effort           <select> quick|standard|thorough
         #dimensions #runs #iterations #seed   <input type=number>
+        #qmcInit          <select> of initial-population strategies (from info())
+        #qmcNote          description for the selected initialization
         #benchmarkChips   container; JS fills it with .chip buttons
         #variantChips     container; JS fills it with .chip buttons
         #start #stop      buttons
@@ -115,6 +117,11 @@
             <label for="seed">base seed</label>
             <input type="number" id="seed" step="1" value="42" />
           </div>
+          <div class="field">
+            <label for="qmcInit">initialization</label>
+            <select id="qmcInit"></select>
+          </div>
+          <p class="field-note" id="qmcNote">—</p>
           <div class="button-row">
             <button id="start" data-primary disabled>Run sweep</button>
             <button id="stop" disabled>Stop</button>

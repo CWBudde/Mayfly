@@ -30,6 +30,8 @@
   const iterationsInput = el("iterations");
   const dimensionsInput = el("dimensions");
   const seedInput = el("seed");
+  const qmcSelect = el("qmcInit");
+  const qmcNote = el("qmcNote");
   const benchmarkChips = el("benchmarkChips");
   const variantChips = el("variantChips");
   const startButton = el("start");
@@ -131,6 +133,19 @@
 
   // --- estimate ----------------------------------------------------------
 
+  function updateQMCNote() {
+    const strategies = (state.info && state.info.qmcInit) || [];
+    const strategy = strategies.find((entry) => entry.key === qmcSelect.value);
+
+    if (!strategy) {
+      return;
+    }
+
+    // One strategy applies to every variant in the sweep: a table whose columns
+    // differed in how they were seeded would not be comparing variants.
+    qmcNote.innerHTML = `<b>${strategy.label}.</b> ${strategy.note} Applied to every variant in the sweep.`;
+  }
+
   // A crude model, calibrated on one machine, and labelled as crude on the
   // page. Its job is only to stop someone launching a twenty-minute sweep by
   // accident.
@@ -195,6 +210,7 @@
       iterations: intValue(iterationsInput, 200),
       dimensions: intValue(dimensionsInput, 10),
       seed: intValue(seedInput, 42),
+      qmcInit: qmcSelect.value,
     });
   }
 
@@ -284,6 +300,20 @@
         })),
         message.info.variants.map((v) => v.key),
       );
+
+      // The legal Config.QMCInit values are the library's, so the page asks Go
+      // for them rather than restating them in the markup.
+      qmcSelect.innerHTML = "";
+
+      for (const strategy of message.info.qmcInit || []) {
+        const option = document.createElement("option");
+        option.value = strategy.key;
+        option.textContent = strategy.label;
+        option.title = strategy.note;
+        qmcSelect.append(option);
+      }
+
+      updateQMCNote();
 
       buildInfo.textContent = `${message.info.goVersion} · ${message.info.goos}/${message.info.goarch}`;
       setStatus("WASM ready", "ready");
@@ -673,6 +703,7 @@
             iterations: intValue(iterationsInput, 200),
             dimensions: intValue(dimensionsInput, 10),
             seed: intValue(seedInput, 42),
+            qmcInit: qmcSelect.value,
           },
           results: state.results,
         },
@@ -707,6 +738,8 @@
     for (const input of [runsInput, iterationsInput, dimensionsInput, seedInput]) {
       input.addEventListener("change", updateEstimate);
     }
+
+    qmcSelect.addEventListener("change", updateQMCNote);
 
     // Sorting was mouse-only: a bare <th> takes no focus and fires no click
     // from the keyboard, so the main results table could not be reordered

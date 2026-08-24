@@ -7,6 +7,30 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-24
+
+### Changed
+
+- Lint and readability pass over the package: error assignments no longer
+  shadow an outer `err`, struct fields are ordered for alignment, and blank
+  lines are normalised. `ParetoArchive` keeps both its exported `Solutions`
+  snapshot and `MaxSize` field; only their declaration order moved.
+- The wasm demo exposes the QMC initial-population sequence in its UI and
+  benchmark harness, and its variant list carries HMMA.
+- CI actions updated to current major versions.
+
+### Fixed
+
+- Three error assignments introduced by the readability pass shadowed the
+  variable they were meant to set in `config_loader.go`, `multiobjective.go`,
+  and `parallel_variants.go`.
+
+**No behavioural change.** A fixed seed walks the same trajectory as v0.7.0:
+standard MA on a sphere at seed 4242 with a 32/32 population over 128
+iterations returns bit-identical costs under both versions, for `uniform`,
+`sobol`, and `halton`, at 10 and 56 dimensions. v0.7.0 measurements remain
+comparable.
+
 ## [0.7.0] - 2026-08-24
 
 ### Added
@@ -485,7 +509,8 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Benchmark functions, algorithm selection, comparison utilities, examples,
   JSON configuration, and algorithm documentation.
 
-[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/CWBudde/Mayfly/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/CWBudde/Mayfly/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/CWBudde/Mayfly/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/CWBudde/Mayfly/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/CWBudde/Mayfly/compare/v0.5.0...v0.5.1

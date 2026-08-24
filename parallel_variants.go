@@ -325,7 +325,7 @@ func evaluateParallelGoldenSine(
 	)
 	*globalBest = updatedBest
 
-	err := ctx.Err()
+	err = ctx.Err()
 	if err != nil {
 		return 0, err
 	}

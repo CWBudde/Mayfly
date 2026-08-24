@@ -460,6 +460,7 @@ func ExportConfigTemplate(path, variant string) error {
 
 func ensureJSONEOF(decoder *json.Decoder) error {
 	var trailing any
+
 	err := decoder.Decode(&trailing)
 	if !errors.Is(err, io.EOF) {
 		if err == nil {

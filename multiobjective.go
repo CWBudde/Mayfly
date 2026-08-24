@@ -29,7 +29,7 @@ func Dominates(a, b []float64) (bool, error) {
 		return false, fmt.Errorf("first objective vector: %w", err)
 	}
 
-	err := validateObjectiveVector(b, len(a))
+	err = validateObjectiveVector(b, len(a))
 	if err != nil {
 		return false, fmt.Errorf("second objective vector: %w", err)
 	}

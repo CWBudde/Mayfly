@@ -1,351 +1,122 @@
-# Mayfly Algorithm Suite - Remaining Tasks
+# Mayfly Algorithm Suite Roadmap
 
-> ## ⚠️ Known defects in `functions.go` — benchmark edge-case handling
->
-> Found 2026-08-23 while porting this file verbatim into the sibling
-> [Dragonfly](https://github.com/MeKo-Christian/dragonfly) library. The same defects exist
-> in both repositories and should be fixed in both, together, so the two benchmark suites
-> stay numerically comparable.
->
-> **1. `Levy([])` panics.** With an empty input, `n == 0` and the function indexes `w[n-1]`
-> — `index out of range [0] with length 0`. It is the only benchmark function that panics
-> rather than returning a value. A metaheuristic should never call it with an empty vector,
-> but a panic is the wrong failure mode for a pure scoring function, and it makes the suite
-> unsafe to fuzz.
->
-> **2. Empty-input handling is inconsistent across the suite.** Measured behaviour of
-> `f([])` for all 15 functions:
->
-> | Result    | Functions                                                                                                                                |
-> | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-> | `0`       | Sphere, Rastrigin, Rosenbrock, Griewank, Schwefel, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, ExpandedSchafferF6 |
-> | `NaN`     | Ackley, HappyCat — both divide by `n`                                                                                                    |
-> | **panic** | Levy                                                                                                                                     |
->
-> Pick one convention for the whole suite and apply it uniformly. Returning `0` for an
-> empty vector is defensible (an empty sum is zero) and is already what 12 of the 15 do;
-> whichever is chosen, document it in the file's package comment and add a table-driven
-> test that asserts it for every function at once, so a new benchmark cannot land without
-> a deliberate answer.
->
-> **Not defects — checked and cleared.** Two things in this file look wrong at a glance and
-> are not. Recording them here so they are not "fixed" into actual bugs later:
->
-> - `Levy` uses `sin(math.Pi*wi + 1)`. The `+ 1` is correct and is part of the standard
->   definition (Surjanovic & Bingham:
->   `f = sin²(πw₁) + Σ(wᵢ−1)²[1+10sin²(πwᵢ+1)] + (w_d−1)²[1+sin²(2πw_d)]`, `wᵢ = 1+(xᵢ−1)/4`).
->   It is **not** a mistranscription of `π/4`.
-> - `ExpandedSchafferF6` closes the loop with the wrap-around pair `g(x[n-1], x[0])`. That
->   cyclic term is part of the CEC definition of the expanded function, not an extra.
->
-> ### Tasks -- resolved 2026-08-23, in both repositories together
->
-> The convention is `f([]) == 0` for every single-objective function, stated in the
-> `functions.go` file comment and asserted for all fifteen at once by
-> `TestBenchmarkFunctionsEmptyInput`.
->
-> - [x] Fix the `Levy([])` panic
-> - [x] Choose and document a single empty-input convention for `functions.go`
-> - [x] Add a table-driven test asserting that convention for all 15 functions
-> - [x] Mirror the fix and the test in the Dragonfly library's ported `functions.go`
+This file is the source of truth for remaining work. Completed phases are intentionally
+condensed; unchecked items retain the details needed to act on them.
 
-> ## ⚠️ Known defect in `selector.go` — `estimateLandscape` measures the box, not the function
->
-> Found 2026-08-23 while building the sibling
-> [Dragonfly](https://github.com/MeKo-Christian/dragonfly) library's own selector. Dragonfly
-> deliberately did **not** port this heuristic; Mayfly still uses it.
->
-> `estimateLandscape` (selector.go:239) averages the raw finite-difference gradient
-> **magnitude** over random samples and compares that average against three absolute
-> thresholds — `> 100 → Deceptive`, `> 10 → Rugged`, `< 0.01 → NarrowValley`, else `Smooth`.
-> A gradient magnitude carries the units of the search space, so the classification scales
-> with the width of the box rather than with the shape of the function.
->
-> Measured, d = 30, calling `estimateLandscape` directly:
->
-> | Function  | `[-5,5]`    | `[-50,50]`  | `[-500,500]` |
-> | --------- | ----------- | ----------- | ------------ |
-> | Sphere    | `Rugged`    | `Deceptive` | `Deceptive`  |
-> | Rastrigin | `Deceptive` | `Deceptive` | `Deceptive`  |
->
-> Sphere is a smooth convex bowl — the textbook `Smooth` case, and exactly what
-> `RecommendForBenchmark` hard-codes it as at selector.go:353. The sampler never returns
-> `Smooth` for it at any tested scale, and rates it _more_ deceptive than Rastrigin as the
-> box grows. This matters because `Landscape` is not inert: `SelectVariant` routes on
-> `== Deceptive` (selector.go:87, 126) and `== NarrowValley` (selector.go:130), so a
-> misclassification silently changes which algorithm a caller is told to use.
->
-> Two smaller things in the same function:
->
-> - The accumulator is named `gradientVariance` but holds a **mean magnitude** — no variance
->   is ever computed, despite the comment at selector.go:274 saying "high gradient variance
->   suggests rugged landscape". Ruggedness is about how much the gradient _changes_, which
->   is the quantity the name promises and the code does not compute.
-> - `ClassifyProblem` and `estimateLandscape` draw through `unifrnd(lower, upper, nil)`,
->   i.e. the package-level RNG, so a classification is not reproducible from a seed and
->   cannot be made so by the caller.
->
-> **Suggested fix** — make the statistic scale-free. Dragonfly's replacement uses random
-> line scans and reports (a) average direction changes per line for modality and (b) total
-> variation normalised by _that line's own value range_ for landscape. Both are invariant
-> under rescaling the box and under affine rescaling of the objective, and they separate
-> Sphere/Zakharov from Rastrigin/Schwefel/Ackley. See `Dragonfly/selector.go`.
->
-> Note that `Deceptive` and `NarrowValley` arguably cannot be established by sampling at
-> all: both are claims about where the optimum sits relative to the surrounding terrain,
-> not about local roughness. Dragonfly's version returns only `Smooth` or `Rugged` and
-> documents that the other two are for the caller to set.
->
-> ### Tasks -- resolved 2026-08-24
->
-> Dragonfly's line-scan classifier is now Mayfly's too, with two thresholds retuned:
-> `smoothRoughness` 3.0 -> 2.2 and `multimodalTurningPoints` 6.0 -> 5.0. Schwefel sat on
-> both of Dragonfly's values, so its verdict flipped with the seed; the new ones sit in the
-> measured gaps and hold over forty seeds. **Dragonfly likely has the same latent
-> flakiness** -- its own `TestClassifyProblemSeparatesSmoothFromRugged` expects Schwefel
-> `Rugged` at a single seed, which passes there by luck of the draw. Worth re-tuning that
-> library to match.
->
-> One reconciliation gap is documented rather than fixed: Griewank over `[-600,600]` reads
-> `Unimodal`/`Smooth`, against the table's `HighlyMultimodal`/`Rugged`. Its cosine ripples
-> are a few units wide and of order one tall against a value range of order 100000 -- both
-> aliased by the scan spacing and negligible in the total variation. The table entry is the
-> better answer for an optimizer working near the optimum and stays as it is.
->
-> - [x] Replace the absolute gradient-magnitude thresholds with a scale-free statistic
-> - [x] Rename `gradientVariance`, or compute the variance the name and comment promise
-> - [x] Thread an `*rand.Rand` through `ClassifyProblem` / `estimateLandscape` instead of
->       drawing from the package-level RNG
-> - [x] Add a test asserting a function classifies identically on `[-5,5]` and `[-500,500]`
-> - [x] Reconcile `ClassifyProblem`'s answers with the hard-coded `RecommendForBenchmark`
->       table, which is the de facto expected output
+## Completed phases
 
-> ## ⚠️ Correctness audit — release blocker for v0.7.0
->
-> A repository-wide adversarial review completed 2026-08-24 found that the green root
-> test suite overstates the library's readiness. The optimizer can discard a superior
-> female solution, parallel execution can follow a different algorithm from sequential
-> execution, and several named variants materially differ from their cited papers.
-> AOBLMOA is also described as multi-objective even though the public optimizer accepts
-> only a scalar objective. Historical seeded results for corrected algorithms must not be
-> compared as though they came from the same implementation.
->
-> ### Core correctness
->
-> - [x] Include both populations in initialization, global-best updates, stopping, and reporting
-> - [x] Sort populations before the first rank-dependent update
-> - [x] Preserve offspring sex and generate mutations separately from incumbent males/females
-> - [x] Give sequential and parallel execution one deterministic proposal/evaluate/commit model
-> - [x] Treat configuration as immutable and report only truthful reproducibility metadata
-> - [x] Centralize finite-value, bounds, velocity, variant, and cancellation validation
->
-> ### Algorithm fidelity
->
-> - [x] Restore the published scalar-distance and genetic stages of standard MA
-> - [x] Correct MPMA ranked median, nonlinear gravity, application sites, and citation
-> - [x] Correct AOBLMOA Aquila strategies, crossover, stochastic opposition, and naming
-> - [x] Reimplement EOBBMA's fitness-dependent updates and mirror boundary handling
-> - [x] Restore DESMA's dynamic elite schedule, replacement order, defaults, and no-op behavior
-> - [x] Move OLCE orthogonal/chaotic operators to their published lifecycle stages and support D > 3
-> - [x] Separate faithful GSASMA and HMMA implementations and citations
->
-> ### Public API and tooling safety
->
-> - [x] Remove fake multi-objective presets/recommendations; retain only honest Pareto utilities
-> - [x] Make Pareto archives nondominated, validated, dimension-safe, and alias-safe
-> - [x] Unify direct, builder, and JSON validation; make templates strict and round-trippable
-> - [x] Make classifier failures/budgets explicit and its stability statistic translation-invariant
-> - [x] Correct comparison targets, tied statistics, failed-run aggregation, and atomic export
-> - [x] Replace panic-prone public helpers and mutable global tables with validated APIs/copies
->
-> ### Verification and release
->
-> - [x] Add independent equation-level fixtures and seeded sequential/parallel parity tests
-> - [x] Add non-finite, aliasing, cancellation, config-reuse, Pareto, and statistical regressions
-> - [x] Build, vet, and test every nested `go.mod`; fix currently excluded broken examples
-> - [x] Run format/lint-fix, tidy, unit, race, integration, and nested-module checks
-> - [x] Publish v0.7.0 migration notes and invalidate pre-fix deterministic benchmark baselines
->
-> ### Audit follow-ups completed 2026-08-24
->
-> - [x] Place OLCE orthogonal learning in the male-movement stage and chaotic exploitation on
->       the fittest crossover offspring, with dimension-safe orthogonal arrays and exact
->       sequential/parallel evaluation accounting.
-> - [x] Validate and correct GSASMA and HMMA end to end. GSASMA now applies annealed velocity
->       selection and the published golden-sine position equation to both populations; HMMA
->       now uses its scheduled OBL/Cauchy global-best cascade and artificial gender mutation.
-> - [x] Add checked, error-returning alternatives for exported helpers that previously
->       panicked, returned nil, or silently coerced invalid input. Legacy signatures remain
->       deprecated for source compatibility, and mutable compatibility views are defensive.
-> - [x] Run `just lint-fix` as the accepted lint remediation for this audit. Its formatter ran;
->       the installed golangci-lint v2.11.4 analysis then reported `no go files to analyze`, so
->       no tool was installed or upgraded. Unit, vet, tidy, race, integration, and all nested
->       example-module checks passed independently.
->
-> Paper gaps are documented rather than filled with invented behavior: the accessible OLCE
-> source leaves equal-fitness offspring tie handling implicit, while the GSASMA paper omits
-> annealing recurrence/defaults and SMA crossover/mutation probability bounds. Mayfly uses a
-> deterministic first-best OLCE tie and labels its GSASMA cooling schedule as a library
-> extension; ordinary configured mating remains in place.
+### Phase 1: Core and advanced infrastructure — complete
 
-## High Priority
+- Added bounded parallel evaluation for both populations, genetic operators, and all
+  variant-specific stages. `Config.MaxWorkers` defaults to `runtime.NumCPU()`, while
+  `Config.EnableParallel` preserves the sequential compatibility path.
+- Added deterministic sequential/parallel proposal, evaluation, and commit behavior;
+  race, accounting, parity, and cheap/expensive-objective tests; performance benchmarks;
+  and guidance on when parallel execution offsets its overhead.
+- Added concurrent multi-algorithm comparison, statistical aggregation, and result
+  visualization.
+- Added convergence/stagnation detection, adaptive iteration limits, penalty methods,
+  feasibility rules, and constraint utilities.
 
-### Phase 1: Advanced Features
+### Phase 2: Release preparation — complete
 
-#### 1.1 Parallel Fitness Evaluation (Core)
+- Completed the static-analysis cleanup, coverage work (80%+), unit/race/integration
+  testing, reproducible profiling, hot-path optimization, and regression benchmarks.
+- Added semantic-versioning and release documentation, `CHANGELOG.md`, package metadata,
+  the release workflow, and pkg.go.dev publication checks.
+- The final correctness-audit run of `just lint-fix` completed its formatter stage, but
+  the installed golangci-lint v2.11.4 analyzer reported `no go files to analyze`. No tool
+  was installed or upgraded. Formatting, module tidiness, unit tests, `go vet`, race tests,
+  integration tests, and nested example-module checks passed independently.
 
-- [x] Implement worker pool for bounded concurrency
-- [x] Parallelize male population fitness evaluation
-- [x] Parallelize female population fitness evaluation
-- [x] Thread-safe global best update mechanism (mutex/atomic)
-- [x] Configuration: `Config.MaxWorkers` (default: runtime.NumCPU())
-- [x] Configuration: `Config.EnableParallel` flag for backward compatibility
-- [x] Benchmarks comparing sequential vs parallel performance
+### Phase 3: Correctness and algorithm-fidelity audit — complete (2026-08-24)
 
-**Rationale**: For expensive objective functions (simulations, ML training), this provides 10-20x speedup on multi-core systems. Core populations have 20+ individuals evaluated per iteration.
+- Standardized all 15 single-objective benchmark functions on `f([]) == 0`, fixed the
+  `Levy([])` panic, added one table-driven regression test, and mirrored the change in
+  Dragonfly. Do not "correct" two intentional formulas: Levy's middle term contains
+  `sin(math.Pi*wi + 1)`, and Expanded Schaffer F6 includes the wrap-around pair
+  `g(x[n-1], x[0])`.
+- Replaced the selector's scale-dependent mean-gradient heuristic with seeded,
+  scale-free line scans. Retuned `smoothRoughness` from 3.0 to 2.2 and
+  `multimodalTurningPoints` from 6.0 to 5.0 after forty-seed testing, made classification
+  reproducible, and reconciled sampled results with benchmark recommendations where the
+  sampling resolution supports doing so.
+- Corrected core lifecycle behavior: both populations participate in initialization,
+  best tracking, stopping, and reporting; populations are sorted before rank-dependent
+  updates; offspring retain sex; configuration is immutable; metadata is truthful; and
+  finite values, bounds, velocity, variants, and cancellation share validation paths.
+- Restored the published scalar-distance and genetic stages of MA; corrected MPMA's
+  ranked median and nonlinear gravity; corrected AOBLMOA's Aquila strategies, crossover,
+  stochastic opposition, and scalar-objective naming; restored EOBBMA's
+  fitness-dependent updates and mirror boundaries; and fixed DESMA's dynamic elite
+  schedule, replacement order, defaults, and no-op behavior.
+- Moved OLCE orthogonal learning and chaotic exploitation to their published lifecycle
+  stages, made orthogonal arrays dimension-safe beyond three dimensions, and corrected
+  evaluation accounting. Separated GSASMA and HMMA into faithful implementations:
+  GSASMA uses annealed velocity selection and golden-sine position updates for both
+  populations; HMMA uses its scheduled OBL/Cauchy global-best cascade and artificial
+  gender mutation.
+- Removed misleading multi-objective presets while retaining validated Pareto utilities;
+  unified direct, builder, JSON, and template validation; corrected comparison statistics
+  and atomic exports; and added checked error-returning alternatives for panic-prone
+  helpers. Deprecated compatibility APIs remain defensive and source-compatible.
+- Added equation fixtures plus seeded parity, non-finite, aliasing, cancellation,
+  configuration-reuse, Pareto, and statistical regressions. Updated v0.7.0 migration
+  notes and invalidated deterministic benchmark baselines produced by older algorithms.
+- Added the complete usable CEC2017 and CEC2020 bound-constrained suites through
+  validated loaders for the organizers' official transformation data, plus four
+  constrained engineering-design benchmarks with mixed-variable projection and
+  normalized Mayfly adapters.
 
-#### 1.2 Parallel Genetic Operators
+## Remaining phases
 
-- [x] Parallel crossover offspring evaluation
-- [x] Parallel mutation offspring evaluation
-- [x] Thread-safe offspring slice management
-- [x] Race detector tests (`go test -race`)
+### Phase 5: Documentation and examples — medium priority
 
-**Rationale**: Offspring generation (NC + NM individuals) happens every iteration. Parallelization reduces iteration time significantly.
+The API examples, quick-reference guide, and parameter documentation are complete.
 
-#### 1.3 Parallel Variant-Specific Enhancements
+#### Tutorials
 
-- [x] DESMA: Parallel elite candidate generation and evaluation
-- [x] OLCE-MA: Parallel orthogonal learning candidate evaluation (4 per elite)
-- [x] EOBBMA: Parallel opposition point evaluation
-- [x] GSASMA: Parallel Golden Sine candidate evaluation
-- [x] AOBLMOA: Parallel Aquila strategy evaluation
-- [x] MPMA: Thread-safe median position calculation
+- [ ] Write a getting-started tutorial.
+- [ ] Write an algorithm-selection guide.
+- [ ] Write a parameter-tuning tutorial.
+- [ ] Write a custom-objective-function guide.
 
-**Rationale**: Variant-specific operations add significant computational overhead. OLCE generates 4 candidates per elite (top 20%), DESMA generates 5+ elite candidates. These are natural parallelization targets.
+#### Real-world examples
 
-#### 1.4 Multi-Algorithm Parallel Comparison Framework
+- [ ] Add a neural-network hyperparameter-tuning example.
+- [ ] Add a resource-allocation example.
+- [ ] Add a scheduling example.
+- [ ] Add a feature-selection example.
 
-- [x] Concurrent execution of multiple algorithms on same problem
-- [x] Enhanced comparison example using goroutines
-- [x] Statistical comparison utilities with parallel runs
-- [x] Results aggregation and visualization
+### Phase 6: Community setup — low priority
 
-**Rationale**: Users often want to compare MA, DESMA, OLCE-MA, EOBBMA, GSASMA, MPMA, AOBLMOA on same problem. Running 7 algorithms sequentially takes 7x time; parallel execution is much faster.
+- [ ] Add `CONTRIBUTING.md`.
+- [ ] Add issue templates.
+- [ ] Add pull-request templates.
 
-#### 1.5 Parallel Infrastructure Testing & Validation
+### Phase 7: Research reproducibility and classifier follow-ups — low priority
 
-- [x] Comprehensive race condition tests
-- [x] Verify deterministic results with same seed (challenging with parallel execution)
-- [x] Performance benchmarks showing speedup vs core count
-- [x] Validate no fitness evaluations are lost or duplicated
-- [x] Test with cheap vs expensive objective functions
-- [x] Document when parallel execution is beneficial vs overhead
-
-**Rationale**: Parallel execution introduces complexity (race conditions, non-determinism). Thorough testing is critical to ensure correctness and measure actual performance gains.
-
-**Phase 1 Total Effort Estimate**: Items 1.1-1.5 represent ~5-8x the original single "Parallel Execution" item. This is a major feature requiring careful design for thread-safety across all 7 algorithm variants.
-
-#### 1.6 Convergence Detection
-
-- [x] Early stopping criteria
-- [x] Stagnation detection
-- [x] Adaptive iteration limits
-
-#### 1.7 Constraint Handling
-
-- [x] Penalty function methods
-- [x] Feasibility rules
-- [x] Constraint-handling utilities
-
-### Phase 2: Release Preparation
-
-#### 2.1 Static Analysis & Lint Remediation
-
-- [x] Capture and classify the current `golangci-lint` baseline
-- [x] Resolve production-code layout and alignment findings
-- [x] Resolve inline error-handling findings
-- [x] Resolve whitespace/style findings in tests
-- [x] Verify formatting, module tidiness, `go vet`, and `golangci-lint`
-
-#### 2.2 Coverage & Test Quality
-
-- [x] Measure package and function-level coverage
-- [x] Add focused tests for the lowest-covered behavior
-- [x] Verify 80%+ statement coverage
-- [x] Run unit, race, and integration test suites
-
-#### 2.3 Performance Profiling & Optimization
-
-- [x] Establish reproducible benchmark baselines
-- [x] Capture CPU and memory profiles for representative workloads
-- [x] Identify and optimize material hot paths
-- [x] Add regression benchmarks for optimized paths
-- [x] Document profiling commands and results
-
-#### 2.4 Release Engineering & Publishing
-
-- [x] Define and document the semantic-versioning policy
-- [x] Add a release checklist and validation workflow
-- [x] Create `CHANGELOG.md` from the existing release history
-- [x] Verify package metadata and documentation for pkg.go.dev
-- [x] Tag a release and verify publication on pkg.go.dev
-
----
-
-## Medium Priority
-
-### Phase 3: Advanced Features (continued)
-
-#### 3.1 Logging & Monitoring
-
-- [x] Structured logging interface
-- [x] Progress callbacks
-- [x] Convergence curve export
-
-#### 3.2 Advanced Benchmarks
-
-- [ ] CEC2017 benchmark suite
-- [ ] CEC2020 benchmark suite
-- [ ] Real-world engineering problems
-
-### Phase 4: Documentation
-
-#### 4.1 API Documentation
-
-- [x] Add code examples to docs
-- [x] Create quick reference guide
-- [x] Document all parameters
-
-#### 4.2 Tutorials
-
-- [ ] Getting started tutorial
-- [ ] Algorithm selection guide
-- [ ] Parameter tuning tutorial
-- [ ] Custom objective function guide
-
-#### 4.3 Real-World Examples
-
-- [ ] Neural network hyperparameter tuning
-- [ ] Resource allocation problems
-- [ ] Scheduling problems
-- [ ] Feature selection
-
----
-
-## Low Priority
-
-### Phase 5: Community Setup
-
-- [ ] CONTRIBUTING.md
-- [ ] Issue templates
-- [ ] Pull request templates
-
-### Phase 6: Research Reproducibility
-
-- [ ] Reproduce original paper results (MA, DESMA, OLCE-MA, EOBBMA, GSASMA, HMMA, MPMA, AOBLMOA)
-- [ ] Compare OLCE equal-fitness offspring handling against the complete published pseudocode
-      if an accessible authoritative copy becomes available
-- [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA probability bounds
-      against the authors' reference implementation or reproducible experiment data
-- [ ] Provide experiment scripts
+- [ ] Reproduce the original paper results for MA, DESMA, OLCE-MA, EOBBMA, GSASMA,
+      HMMA, MPMA, and AOBLMOA. Historical seeded results from before the correctness
+      audit must not be compared as if they came from the corrected implementations.
+- [ ] Provide experiment scripts.
+- [ ] Compare OLCE's equal-fitness offspring handling with the complete published
+      pseudocode if an accessible authoritative copy becomes available. Until then,
+      Mayfly uses deterministic first-best tie handling because the accessible source
+      leaves ties implicit.
+- [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA crossover and
+      mutation probability bounds against the authors' reference implementation or
+      reproducible experimental data. The current cooling schedule is explicitly a
+      library extension, and ordinary configured mating remains in place rather than
+      inventing constants absent from the paper.
+- [ ] Re-test Dragonfly's selector thresholds across multiple seeds and, if it still uses
+      the old values, align them with Mayfly's `smoothRoughness = 2.2` and
+      `multimodalTurningPoints = 5.0`. Dragonfly's single-seed Schwefel test may currently
+      pass only by luck of the draw.
+- [ ] Decide whether to improve sampled classification for Griewank on `[-600,600]`.
+      Mayfly currently measures it as `Unimodal`/`Smooth`, while
+      `RecommendForBenchmark` deliberately remains `HighlyMultimodal`/`Rugged`: the
+      order-one cosine ripples are only a few units wide against a value range around
+      100,000, so the current line spacing aliases them and normalized total variation
+      treats them as negligible. The hard-coded recommendation is more useful to an
+      optimizer working near the optimum.

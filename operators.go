@@ -88,19 +88,26 @@ func CrossoverBlendChecked(
 	gamma, lowerBound, upperBound float64,
 	rng *rand.Rand,
 ) ([]float64, []float64, error) {
-	if err := validateOperatorInput(x1, lowerBound, upperBound, rng); err != nil {
+	err := validateOperatorInput(x1, lowerBound, upperBound, rng)
+	if err != nil {
 		return nil, nil, fmt.Errorf("first parent: %w", err)
 	}
-	if err := validateOperatorInput(x2, lowerBound, upperBound, rng); err != nil {
+
+	err := validateOperatorInput(x2, lowerBound, upperBound, rng)
+	if err != nil {
 		return nil, nil, fmt.Errorf("second parent: %w", err)
 	}
+
 	if len(x1) != len(x2) {
 		return nil, nil, fmt.Errorf("parent dimensions differ: %d and %d", len(x1), len(x2))
 	}
+
 	if !isFinite(gamma) || gamma < 0 {
 		return nil, nil, fmt.Errorf("crossover gamma must be finite and non-negative, got %v", gamma)
 	}
+
 	off1, off2 := CrossoverBlend(x1, x2, gamma, lowerBound, upperBound, rng)
+
 	return off1, off2, nil
 }
 
@@ -164,9 +171,11 @@ func MutateGaussianChecked(
 	mu, lowerBound, upperBound float64,
 	rng *rand.Rand,
 ) ([]float64, error) {
-	if err := validateMutationInput(x, mu, lowerBound, upperBound, rng); err != nil {
+	err := validateMutationInput(x, mu, lowerBound, upperBound, rng)
+	if err != nil {
 		return nil, err
 	}
+
 	return MutateGaussian(x, mu, lowerBound, upperBound, rng), nil
 }
 
@@ -185,6 +194,7 @@ func validateMutationInput(
 	if !isFinite(mu) || mu < 0 || mu > 1 {
 		return fmt.Errorf("mutation rate must be in [0,1], got %v", mu)
 	}
+
 	return validateOperatorInput(x, lowerBound, upperBound, rng)
 }
 
@@ -192,19 +202,24 @@ func validateOperatorInput(x []float64, lowerBound, upperBound float64, rng *ran
 	if len(x) == 0 {
 		return errors.New("position vector is empty")
 	}
+
 	if rng == nil {
 		return errors.New("random generator is nil")
 	}
+
 	if !isFinite(lowerBound) || !isFinite(upperBound) || lowerBound >= upperBound {
 		return fmt.Errorf("bounds must be finite and increasing, got [%v,%v]", lowerBound, upperBound)
 	}
+
 	for i, coordinate := range x {
 		if !isFinite(coordinate) {
 			return fmt.Errorf("position %d is not finite", i)
 		}
+
 		if coordinate < lowerBound || coordinate > upperBound {
 			return fmt.Errorf("position %d=%v is outside [%v,%v]", i, coordinate, lowerBound, upperBound)
 		}
 	}
+
 	return nil
 }

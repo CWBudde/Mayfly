@@ -150,6 +150,7 @@ func TestGSASMAGoldenFactorIsDeprecatedAndIgnored(t *testing.T) {
 	}
 
 	a := run(0.5)
+
 	b := run(2)
 	if a.GlobalBest.Cost != b.GlobalBest.Cost ||
 		!slicesEqual(a.GlobalBest.Position, b.GlobalBest.Position) {

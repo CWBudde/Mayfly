@@ -1,6 +1,7 @@
 # Benchmark Functions Reference
 
-The library includes 15+ standard benchmark functions for testing and comparing algorithms.
+The library includes 15 standalone functions, the complete usable CEC2017 and
+CEC2020 bound-constrained suites, and four constrained engineering-design problems.
 
 ## Function Categories
 
@@ -28,6 +29,61 @@ Additional challenging functions from CEC competitions:
 - **Weierstrass** - Continuous, non-differentiable
 - **HappyCat** - Multimodal, plate-shaped
 - **ExpandedSchafferF6** - Multimodal, composite
+
+### Official CEC2017 and CEC2020 Suites
+
+`NewCEC2017Problem`, `CEC2017Suite`, `NewCEC2020Problem`, and `CEC2020Suite`
+implement the numbered competition suites, including their shifts, rotations,
+permutations, hybrid partitions, composition weights, biases, and evaluation budgets.
+CEC2017 contains 29 usable functions because its organizers removed F2 for numerical
+instability; CEC2020 contains ten.
+
+The organizers did not attach a redistribution license to the transformation data, so
+Mayfly does not silently copy it into the module. Download and extract the official
+[CEC2017](https://github.com/P-N-Suganthan/CEC2017-BoundContrained) or
+[CEC2020](https://github.com/P-N-Suganthan/2020-Bound-Constrained-Opt-Benchmark)
+software, then pass an `fs.FS` rooted at either the archive or its `input_data` directory:
+
+```go
+data := os.DirFS("/path/to/CEC17_fast_pow")
+problem, err := mayfly.NewCEC2017Problem(data, 10, 30)
+if err != nil {
+    log.Fatal(err)
+}
+
+config, err := problem.NewConfig(nil)
+if err != nil {
+    log.Fatal(err)
+}
+result, err := mayfly.Optimize(config)
+```
+
+Supported competition dimensions are 10, 30, 50, and 100 for CEC2017, and 5,
+10, 15, and 20 for CEC2020. `BenchmarkCase.NewConfig` searches a normalized
+`[0,1]^D` box; use `problem.Decode(result.GlobalBest.Position)` to recover the
+suite coordinates.
+
+Compatibility follows the released evaluator where it disagrees with descriptive prose.
+In particular, CEC2017's Schaffer F7 reads its pre-rotation scratch and the released
+"non-continuous" Rastrigin discards its rounded scratch. One numerical defect is not
+reproduced: CEC2020 F7 at D=5 evaluates its one-dimensional elliptic partition normally
+instead of dividing by zero and returning `NaN`.
+
+### Engineering Design Suite
+
+`EngineeringBenchmarkSuite` includes:
+
+- tension/compression spring design;
+- welded-beam design;
+- mixed-variable pressure-vessel design; and
+- mixed-variable speed-reducer design.
+
+Each `BenchmarkCase` exposes physical bounds, objective, constraints, a published
+reference solution, and defensive metadata. Pressure-vessel thickness indices and
+speed-reducer tooth count are projected onto their discrete grids. Calling `NewConfig`
+maps Mayfly's unit search box to the heterogeneous physical bounds and wraps the
+constraints consistently; decode the returned best position before reporting physical
+design variables.
 
 ## Function Details
 

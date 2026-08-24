@@ -355,6 +355,7 @@ func NewParetoArchiveChecked(maxSize int) (*ParetoArchive, error) {
 	if archive.initErr != nil {
 		return nil, archive.initErr
 	}
+
 	return archive, nil
 }
 

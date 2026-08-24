@@ -134,6 +134,7 @@ func NewVariantChecked(name string) (AlgorithmVariant, error) {
 	if variant == nil {
 		return nil, fmt.Errorf("unknown algorithm variant %q", name)
 	}
+
 	return variant, nil
 }
 
@@ -153,6 +154,7 @@ func ListVariants() []string {
 			seen[name] = true
 		}
 	}
+
 	sort.Strings(variants)
 
 	return variants
@@ -664,6 +666,7 @@ func NewBuilderChecked(variantName string) (*VariantBuilder, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return NewBuilderFromVariantChecked(variant)
 }
 
@@ -691,10 +694,12 @@ func NewBuilderFromVariantChecked(variant AlgorithmVariant) (*VariantBuilder, er
 	if variant == nil {
 		return nil, errors.New("algorithm variant is nil")
 	}
+
 	config := variant.GetConfig()
 	if config == nil {
 		return nil, fmt.Errorf("variant %q returned a nil config", variant.Name())
 	}
+
 	return &VariantBuilder{variant: variant, config: cloneComparisonConfig(config)}, nil
 }
 
@@ -775,10 +780,13 @@ func (b *VariantBuilder) WithConfigChecked(fn func(*Config)) (*VariantBuilder, e
 	if b == nil {
 		return nil, errors.New("builder is nil")
 	}
+
 	if fn == nil {
 		return nil, errors.New("config customizer is nil")
 	}
+
 	fn(b.config)
+
 	return b, nil
 }
 

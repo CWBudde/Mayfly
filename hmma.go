@@ -30,6 +30,7 @@ func hmmaOppositionTarget(
 		opposition := upperBound + rng.Float64()*(lowerBound-coordinate)
 		target[i] = informationExchange * (coordinate - opposition)
 	}
+
 	maxVec(target, lowerBound)
 	minVec(target, upperBound)
 
@@ -47,6 +48,7 @@ func hmmaCauchyTarget(
 	for i, coordinate := range globalBest {
 		target[i] = cauchyRand(0, 1, rng) * coordinate
 	}
+
 	maxVec(target, lowerBound)
 	minVec(target, upperBound)
 
@@ -85,6 +87,7 @@ func hmmaGlobalMutation(
 	candidate := newMayfly(len(position))
 	copy(candidate.Position, position)
 	evaluator.evaluateMayfly(candidate, false)
+
 	if evaluator.betterMayflyThanBest(candidate, globalBest) {
 		return bestFromMayfly(candidate)
 	}
@@ -96,6 +99,7 @@ func hmmaGlobalMutation(
 // from the original pair, not from an already-mutated sibling.
 func hmmaArtificialMutation(male, female []float64, rho float64) ([]float64, []float64) {
 	maleMutated := make([]float64, len(male))
+
 	femaleMutated := make([]float64, len(female))
 	for i := range male {
 		maleMutated[i] = (1-rho)*male[i] + rho*female[i]

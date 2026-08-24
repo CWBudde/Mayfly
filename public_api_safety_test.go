@@ -10,6 +10,7 @@ import (
 
 func TestCheckedStochasticOperatorsRejectInvalidInputs(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
+
 	tests := []struct {
 		name string
 		run  func() error
@@ -41,7 +42,8 @@ func TestCheckedStochasticOperatorsRejectInvalidInputs(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.run(); err == nil {
+			err := test.run()
+			if err == nil {
 				t.Fatal("checked operator accepted invalid input")
 			}
 		})
@@ -52,27 +54,35 @@ func TestCheckedConstructorsRejectInsteadOfCoercing(t *testing.T) {
 	if _, err := NewAnnealingSchedulerChecked(math.NaN(), 0.95, CoolingExponential); err == nil {
 		t.Fatal("checked annealing constructor accepted NaN")
 	}
+
 	if _, err := NewAnnealingSchedulerChecked(10, 0.95, "unknown"); err == nil {
 		t.Fatal("checked annealing constructor accepted unknown schedule")
 	}
+
 	if _, err := NewLogisticMapChecked(math.Inf(1)); err == nil {
 		t.Fatal("checked logistic-map constructor accepted infinity")
 	}
+
 	if _, err := NewParetoArchiveChecked(0); err == nil {
 		t.Fatal("checked Pareto archive constructor accepted zero capacity")
 	}
+
 	if _, err := NewVariantChecked("missing"); err == nil {
 		t.Fatal("checked variant lookup accepted unknown name")
 	}
+
 	if _, err := NewBuilderChecked("missing"); err == nil {
 		t.Fatal("checked builder lookup accepted unknown name")
 	}
+
 	if _, err := NewBuilderFromVariantChecked(nil); err == nil {
 		t.Fatal("checked builder accepted nil variant")
 	}
+
 	if _, err := NewComparisonRunner().WithVariantNamesChecked("ma", "missing"); err == nil {
 		t.Fatal("checked comparison runner accepted unknown variant")
 	}
+
 	if _, err := NewComparisonRunner().WithVariantsChecked(nil); err == nil {
 		t.Fatal("checked comparison runner accepted nil variant")
 	}
@@ -83,13 +93,16 @@ func TestAnnealingAndLogisticMapValidateMutableState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewAnnealingSchedulerChecked: %v", err)
 	}
+
 	scheduler.CurrentTemperature = math.NaN()
 	if err := scheduler.Validate(); err == nil {
 		t.Fatal("scheduler validation accepted mutated NaN state")
 	}
+
 	if err := scheduler.UpdateChecked(); err == nil {
 		t.Fatal("checked update accepted mutated NaN state")
 	}
+
 	if err := scheduler.ResetChecked(); err != nil {
 		t.Fatalf("checked reset could not repair current state: %v", err)
 	}
@@ -98,12 +111,15 @@ func TestAnnealingAndLogisticMapValidateMutableState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewLogisticMapChecked: %v", err)
 	}
+
 	if err := logisticMap.ResetChecked(1); err == nil {
 		t.Fatal("ResetChecked accepted boundary seed")
 	}
+
 	if got := logisticMap.Current(); got != 0.25 {
 		t.Fatalf("failed reset changed state to %v", got)
 	}
+
 	if _, err := (*LogisticMap)(nil).NextChecked(); err == nil {
 		t.Fatal("checked next accepted nil map")
 	}
@@ -113,6 +129,7 @@ func TestCheckedOrthogonalHelpersRejectShapeAndObjectiveFailures(t *testing.T) {
 	if _, err := OrthogonalArrayChecked(0); err == nil {
 		t.Fatal("checked orthogonal array accepted zero dimensions")
 	}
+
 	if _, err := OrthogonalArrayChecked(MaxOrthogonalArrayDimensions + 1); err == nil {
 		t.Fatal("checked orthogonal array accepted excessive dimensions")
 	}
@@ -122,6 +139,7 @@ func TestCheckedOrthogonalHelpersRejectShapeAndObjectiveFailures(t *testing.T) {
 	male.Best.Position = []float64{0, 0}
 	male.Cost = 0
 	male.Best.Cost = 0
+
 	_, err := ApplyOrthogonalLearningChecked(
 		male, []float64{0}, []float64{0, 0}, 0.3,
 		[]float64{-1, -1}, []float64{1, 1}, Sphere, nil,
@@ -144,13 +162,17 @@ func TestParetoArchiveSnapshotsAreDefensive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewParetoArchiveWithObjectives: %v", err)
 	}
+
 	solution := &ParetoSolution{Position: []float64{1}, ObjectiveValues: []float64{1, 2}}
+
 	added, err := archive.Add(solution)
 	if err != nil || !added {
 		t.Fatalf("Add = %v, %v", added, err)
 	}
+
 	solution.ObjectiveValues[0] = -100
 	snapshot := archive.GetSolutions()
+
 	snapshot[0].ObjectiveValues[0] = -200
 	if got := archive.GetBestSolution().ObjectiveValues[0]; got != 1 {
 		t.Fatalf("caller mutation leaked into archive: %v", got)
@@ -164,9 +186,11 @@ func TestCheckedConstraintAndRecommendationHelpers(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "panicked") {
 		t.Fatalf("constraint panic error = %v", err)
 	}
+
 	if _, err := PenalizedCostChecked(1, -1, 10, PenaltyLinear); err == nil {
 		t.Fatal("checked penalty accepted negative violation")
 	}
+
 	if _, err := BetterConstrainedCandidateChecked(
 		CandidateEvaluation{Cost: math.NaN()}, CandidateEvaluation{Cost: 1}, nil,
 	); err == nil {
@@ -176,15 +200,19 @@ func TestCheckedConstraintAndRecommendationHelpers(t *testing.T) {
 	if err := AutoTuneConfigChecked(nil, ProblemCharacteristics{}); err == nil {
 		t.Fatal("checked auto-tuner accepted nil config")
 	}
+
 	if _, err := NewAlgorithmSelector().RecommendBestChecked(ProblemCharacteristics{MultiObjective: true}); err == nil {
 		t.Fatal("checked selector claimed multi-objective support")
 	}
+
 	if err := WriteRecommendations(&bytes.Buffer{}, []AlgorithmRecommendation{{}}); err == nil {
 		t.Fatal("recommendation writer accepted nil variant")
 	}
+
 	if _, err := RecommendForBenchmarkChecked("unknown"); err == nil {
 		t.Fatal("checked benchmark lookup accepted unknown name")
 	}
+
 	if err := SaveConfigToFile(nil, t.TempDir()+"/config.json"); err == nil {
 		t.Fatal("config saver accepted nil config")
 	}

@@ -350,13 +350,17 @@ func evaluateParallelChaoticExploitation(
 	evaluator *evaluationPool,
 ) (int, error) {
 	_ = numElite
-	if err := ctx.Err(); err != nil {
+
+	err := ctx.Err()
+	if err != nil {
 		return 0, err
 	}
+
 	target := fittestMayfly(males, evaluator.evaluator)
 	if target == nil {
 		return 0, nil
 	}
+
 	candidate := newMayfly(len(target.Position))
 	chaoticExploitationCandidate(
 		candidate.Position, target.Position, config, chaosMap,

@@ -226,11 +226,17 @@ result.PrintComparisonResults()
 
 ## Benchmark Functions
 
-15+ standard test functions included:
+The library includes standalone functions plus complete CEC and engineering suites:
 
 **Classic Functions:** Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
 
 **CEC-Style Functions:** Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6
+
+**Competition Suites:** all 29 usable CEC2017 functions and all 10 CEC2020 functions,
+loaded with the organizers' official transformation data
+
+**Engineering Problems:** tension/compression spring, welded beam, pressure vessel,
+and speed reducer, including constraints and mixed-variable projection
 
 See [Benchmark Functions](docs/benchmarks.md) for details.
 

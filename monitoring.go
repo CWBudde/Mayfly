@@ -150,5 +150,6 @@ func (result *Result) ExportConvergenceJSON(path string) error {
 	if err != nil {
 		return err
 	}
+
 	return writeJSONAtomic(points, path)
 }

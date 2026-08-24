@@ -19,6 +19,7 @@ func TestHMMAScheduleProbabilityMatchesEquation10(t *testing.T) {
 	} {
 		want := -math.Exp(-float64(testCase.iteration)/float64(testCase.maximum)) + theta
 		want = min(max(want, 0), 1)
+
 		got := hmmaScheduleProbability(testCase.iteration, testCase.maximum, theta)
 		if math.Abs(got-want) > 1e-15 {
 			t.Errorf("Ps(%d,%d) = %v, want %v",
@@ -34,16 +35,19 @@ func TestHMMAOppositionTargetMatchesEquations6And7(t *testing.T) {
 		ub   = 5.0
 		a4   = 1.5
 	)
+
 	best := []float64{-2, 0.5, 4}
 	got := hmmaOppositionTarget(best, lb, ub, a4, rand.New(rand.NewSource(seed)))
 
 	reference := rand.New(rand.NewSource(seed))
+
 	want := make([]float64, len(best))
 	for i, coordinate := range best {
 		r3 := reference.Float64()
 		opposition := ub + r3*(lb-coordinate)
 		want[i] = max(lb, min(ub, a4*(coordinate-opposition)))
 	}
+
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("opposition target = %v, want %v", got, want)
 	}
@@ -51,16 +55,19 @@ func TestHMMAOppositionTargetMatchesEquations6And7(t *testing.T) {
 
 func TestHMMACauchyTargetMatchesEquation8(t *testing.T) {
 	const seed = int64(23)
+
 	best := []float64{-2, 0.5, 4}
 	got := hmmaCauchyTarget(best, -5, 5, rand.New(rand.NewSource(seed)))
 
 	reference := rand.New(rand.NewSource(seed))
+
 	want := make([]float64, len(best))
 	for i, coordinate := range best {
 		u := reference.Float64()
 		cauchy := math.Tan(math.Pi * (u - 0.5))
 		want[i] = max(-5.0, min(5.0, cauchy*coordinate))
 	}
+
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Cauchy target = %v, want %v", got, want)
 	}
@@ -71,11 +78,13 @@ func TestHMMAArtificialMutationMatchesEquation12(t *testing.T) {
 	female := []float64{2, -2, 5}
 	gotMale, gotFemale := hmmaArtificialMutation(male, female, 0.25)
 	wantMale := []float64{-2.5, 1, 2}
+
 	wantFemale := []float64{0.5, -1, 4}
 	if !reflect.DeepEqual(gotMale, wantMale) || !reflect.DeepEqual(gotFemale, wantFemale) {
 		t.Fatalf("artificial mutation = (%v,%v), want (%v,%v)",
 			gotMale, gotFemale, wantMale, wantFemale)
 	}
+
 	if !reflect.DeepEqual(male, []float64{-4, 2, 1}) ||
 		!reflect.DeepEqual(female, []float64{2, -2, 5}) {
 		t.Fatal("artificial mutation modified an input before calculating its sibling")
@@ -122,7 +131,9 @@ func TestHMMAConfigValidation(t *testing.T) {
 		config.LowerBound = -1
 		config.UpperBound = 1
 		mutate(config)
-		if err := ValidateConfig(config); err == nil {
+
+		err := ValidateConfig(config)
+		if err == nil {
 			t.Fatalf("ValidateConfig accepted invalid HMMA config: %+v", config)
 		}
 	}

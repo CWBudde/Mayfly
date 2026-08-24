@@ -125,6 +125,7 @@ func TestChaoticExploitationCandidateEquation(t *testing.T) {
 		destination, []float64{0, 2}, config, NewLogisticMap(0.25),
 		chaoticConstrictionFactor(config, 1),
 	)
+
 	want := []float64{3, 3.5} // .25*offspring + .75*4
 	for dimension := range destination {
 		if math.Abs(destination[dimension]-want[dimension]) > 1e-12 {
@@ -196,6 +197,7 @@ func TestChaoticExploitationFormsNewOffspringUnconditionally(t *testing.T) {
 	if target.Position[0] != 0.5 || target.Cost != 0.25 {
 		t.Fatalf("offspring = (%v, cost %v), want (0.5, 0.25)", target.Position[0], target.Cost)
 	}
+
 	if target.Best.Position[0] != 0.5 || target.Best.Cost != 0.25 {
 		t.Fatalf("offspring best was not initialized from its formed position: %+v", target.Best)
 	}
@@ -242,6 +244,7 @@ func TestOptimizeOLCEAppliesChaosOncePerGeneration(t *testing.T) {
 		config.OrthogonalFactor = 0
 		config.ChaosFactor = chaosFactor
 		config.Rand = rand.New(rand.NewSource(41))
+
 		return config
 	}
 
@@ -249,6 +252,7 @@ func TestOptimizeOLCEAppliesChaosOncePerGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Optimize without chaotic offspring: %v", err)
 	}
+
 	enabled, err := Optimize(newConfig(1))
 	if err != nil {
 		t.Fatalf("Optimize with chaotic offspring: %v", err)

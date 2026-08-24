@@ -74,9 +74,12 @@ func SaveConfigToFile(config *Config, path string) error {
 	if config == nil {
 		return errors.New("config is nil")
 	}
-	if err := ValidateConfig(config); err != nil {
+
+	err := ValidateConfig(config)
+	if err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
+
 	return writeJSONAtomic(config, path)
 }
 
@@ -257,11 +260,13 @@ func ValidateConfig(config *Config) error {
 			return fmt.Errorf("hmma_information_exchange must be positive (got %f)",
 				config.HMMAInformationExchange)
 		}
+
 		if !isFinite(config.HMMAScheduleOffset) ||
 			config.HMMAScheduleOffset < 0 || config.HMMAScheduleOffset > 1 {
 			return fmt.Errorf("hmma_schedule_offset should be in [0,1] (got %f)",
 				config.HMMAScheduleOffset)
 		}
+
 		if !isFinite(config.HMMAArtificialMutation) ||
 			config.HMMAArtificialMutation < 0 || config.HMMAArtificialMutation > 1 {
 			return fmt.Errorf("hmma_artificial_mutation should be in [0,1] (got %f)",
@@ -402,20 +407,27 @@ func WritePresets(w io.Writer) error {
 	if w == nil {
 		return errors.New("preset writer is nil")
 	}
+
 	presets := ListPresets()
+
 	names := make([]string, 0, len(presets))
 	for preset := range presets {
 		names = append(names, string(preset))
 	}
+
 	sort.Strings(names)
+
 	var builder strings.Builder
 	fmt.Fprintln(&builder, "Available Configuration Presets:")
 	fmt.Fprintln(&builder, strings.Repeat("=", 80))
+
 	for _, name := range names {
 		fmt.Fprintf(&builder, "  %-25s : %s\n", name, presets[ConfigPreset(name)])
 	}
+
 	fmt.Fprintln(&builder, strings.Repeat("=", 80))
 	_, err := io.WriteString(w, builder.String())
+
 	return err
 }
 
@@ -434,12 +446,15 @@ func AutoTuneConfigChecked(config *Config, characteristics ProblemCharacteristic
 	if config == nil {
 		return errors.New("config is nil")
 	}
+
 	if characteristics.Dimensionality < 0 {
 		return fmt.Errorf("problem dimensionality must be non-negative, got %d", characteristics.Dimensionality)
 	}
+
 	if characteristics.Modality < Unimodal || characteristics.Modality > HighlyMultimodal {
 		return fmt.Errorf("unknown problem modality %d", characteristics.Modality)
 	}
+
 	if characteristics.Landscape < Smooth || characteristics.Landscape > NarrowValley {
 		return fmt.Errorf("unknown problem landscape %d", characteristics.Landscape)
 	}
@@ -481,6 +496,7 @@ func AutoTuneConfigChecked(config *Config, characteristics ProblemCharacteristic
 			config.OrthogonalFactor = 0.4 // Increase diversity
 		}
 	}
+
 	return nil
 }
 

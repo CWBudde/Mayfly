@@ -37,9 +37,11 @@ func NewLogisticMap(seed float64) *LogisticMap {
 
 // NewLogisticMapChecked constructs a map only for a finite seed in (0,1).
 func NewLogisticMapChecked(seed float64) (*LogisticMap, error) {
-	if err := validateLogisticSeed(seed); err != nil {
+	err := validateLogisticSeed(seed)
+	if err != nil {
 		return nil, err
 	}
+
 	return &LogisticMap{x: seed, r: 4}, nil
 }
 
@@ -79,12 +81,16 @@ func (lm *LogisticMap) NextChecked() (float64, error) {
 	if lm == nil {
 		return 0, errors.New("logistic map is nil")
 	}
-	if err := validateLogisticSeed(lm.x); err != nil {
+
+	err := validateLogisticSeed(lm.x)
+	if err != nil {
 		return 0, fmt.Errorf("invalid logistic-map state: %w", err)
 	}
+
 	if !isFinite(lm.r) || lm.r <= 0 || lm.r > 4 {
 		return 0, fmt.Errorf("logistic-map control parameter must be in (0,4], got %v", lm.r)
 	}
+
 	return lm.Next(), nil
 }
 
@@ -105,9 +111,12 @@ func (lm *LogisticMap) CurrentChecked() (float64, error) {
 	if lm == nil {
 		return 0, errors.New("logistic map is nil")
 	}
-	if err := validateLogisticSeed(lm.x); err != nil {
+
+	err := validateLogisticSeed(lm.x)
+	if err != nil {
 		return 0, fmt.Errorf("invalid logistic-map state: %w", err)
 	}
+
 	return lm.x, nil
 }
 
@@ -128,10 +137,14 @@ func (lm *LogisticMap) ResetChecked(seed float64) error {
 	if lm == nil {
 		return errors.New("logistic map is nil")
 	}
-	if err := validateLogisticSeed(seed); err != nil {
+
+	err := validateLogisticSeed(seed)
+	if err != nil {
 		return err
 	}
+
 	lm.x = seed
+
 	return nil
 }
 
@@ -139,6 +152,7 @@ func validateLogisticSeed(seed float64) error {
 	if !isFinite(seed) || seed <= 0 || seed >= 1 {
 		return fmt.Errorf("logistic-map seed must be finite and in (0,1), got %v", seed)
 	}
+
 	return nil
 }
 
@@ -175,6 +189,7 @@ func chaoticConstrictionFactor(config *Config, iteration int) float64 {
 	}
 
 	generation := min(max(iteration+1, 1), config.MaxIterations)
+
 	return config.ChaosFactor * float64(config.MaxIterations-generation+1) /
 		float64(config.MaxIterations)
 }
@@ -255,5 +270,6 @@ func fittestMayfly(population []*Mayfly, evaluator *constraintEvaluator) *Mayfly
 			best = candidate
 		}
 	}
+
 	return best
 }

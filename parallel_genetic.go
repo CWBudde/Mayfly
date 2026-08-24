@@ -53,6 +53,7 @@ func evaluateParallelGeneticOperators(
 
 		off2 := newMayfly(config.ProblemSize)
 		copy(off2.Position, off2Pos)
+
 		if config.UseHMMA {
 			off1.Position, off2.Position = hmmaArtificialMutation(
 				off1.Position, off2.Position, config.HMMAArtificialMutation,
@@ -82,6 +83,7 @@ func evaluateParallelGeneticOperators(
 		if len(chaosMaps) > 0 {
 			chaosMap = chaosMaps[0]
 		}
+
 		if chaosMap == nil {
 			chaosMap = NewLogisticMap(rng.Float64())
 		}
@@ -92,13 +94,17 @@ func evaluateParallelGeneticOperators(
 			candidate.Position, target.Position, config, chaosMap,
 			chaoticConstrictionFactor(config, iteration),
 		)
+
 		if _, evaluationErr := evaluator.evaluate(ctx, []*Mayfly{candidate}, false, false); evaluationErr != nil {
 			return nil, Best{}, 0, evaluationErr
 		}
+
 		commitChaoticOffspring(target, candidate)
+
 		if evaluator.evaluator.betterMayflyThanBest(target, crossoverBest) {
 			copyMayflyToBest(&crossoverBest, target)
 		}
+
 		evaluations++
 	}
 

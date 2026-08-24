@@ -180,11 +180,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			return nil, fmt.Errorf("HMMA information exchange coefficient must be positive, got %v",
 				config.HMMAInformationExchange)
 		}
+
 		if !isFinite(config.HMMAScheduleOffset) ||
 			config.HMMAScheduleOffset < 0 || config.HMMAScheduleOffset > 1 {
 			return nil, fmt.Errorf("HMMA schedule offset must be in [0, 1], got %v",
 				config.HMMAScheduleOffset)
 		}
+
 		if !isFinite(config.HMMAArtificialMutation) ||
 			config.HMMAArtificialMutation < 0 || config.HMMAArtificialMutation > 1 {
 			return nil, fmt.Errorf("HMMA artificial mutation coefficient must be in [0, 1], got %v",
@@ -457,10 +459,12 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			config.CoolingSchedule,
 		)
 	}
+
 	previousGSASMACosts := make(map[*Mayfly]float64, len(males)+len(females))
 	for _, male := range males {
 		previousGSASMACosts[male] = male.Cost
 	}
+
 	for _, female := range females {
 		previousGSASMACosts[female] = female.Cost
 	}
@@ -560,23 +564,28 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				g, dance, fl, config, annealingScheduler,
 				candidateEvaluator, rng,
 			)
+
 			if evaluator != nil {
 				if _, evaluationErr := evaluator.evaluate(ctx, females, false, false); evaluationErr != nil {
 					return nil, evaluationErr
 				}
+
 				maleBest, evaluationErr := evaluator.evaluate(ctx, males, false, true)
 				if evaluationErr != nil {
 					return nil, evaluationErr
 				}
+
 				mergeBest(&globalBest, maleBest, candidateEvaluator)
 			} else {
 				for _, female := range females {
 					candidateEvaluator.evaluateMayfly(female, false)
 				}
+
 				for _, male := range males {
 					candidateEvaluator.evaluateMayfly(male, false)
 				}
 			}
+
 			funcCount += len(males) + len(females)
 			updatePersonalBests(males, candidateEvaluator)
 		default:
@@ -682,6 +691,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			// pass over already selected incumbents.
 			if config.UseOLCE && config.OrthogonalFactor > 0 {
 				lowerBounds := make([]float64, config.ProblemSize)
+
 				upperBounds := make([]float64, config.ProblemSize)
 				for dimension := range config.ProblemSize {
 					lowerBounds[dimension] = config.LowerBound
@@ -696,6 +706,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 					if evaluationErr != nil {
 						return nil, evaluationErr
 					}
+
 					funcCount += orthogonalEvals
 				} else {
 					applyOrthogonalLearningToElite(
@@ -816,11 +827,13 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			mergeBest(&globalBest, offspringBest, candidateEvaluator)
 		} else {
 			nc := effectiveNC(config)
+
 			gamma := effectiveCrossoverGamma(config)
 			if config.UseHMMA {
 				// HMMA Eq. (4) uses L in [0,1], not BLX extrapolation.
 				gamma = 0
 			}
+
 			maleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 			femaleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 
@@ -887,7 +900,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				applyChaoticExploitation(
 					bestOffspring, config, chaosMap, it, candidateEvaluator,
 				)
+
 				funcCount++
+
 				if candidateEvaluator.betterMayflyThanBest(bestOffspring, globalBest) {
 					copyMayflyToBest(&globalBest, bestOffspring)
 				}

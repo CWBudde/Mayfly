@@ -75,9 +75,11 @@ func NewAnnealingSchedulerChecked(
 		CoolingRate:        coolingRate,
 		ScheduleType:       scheduleType,
 	}
-	if err := scheduler.Validate(); err != nil {
+	err := scheduler.Validate()
+	if err != nil {
 		return nil, err
 	}
+
 	return scheduler, nil
 }
 
@@ -87,23 +89,29 @@ func (as *AnnealingScheduler) Validate() error {
 	if as == nil {
 		return errors.New("annealing scheduler is nil")
 	}
+
 	if !isFinite(as.InitialTemperature) || as.InitialTemperature <= 0 {
 		return fmt.Errorf("initial temperature must be finite and positive, got %v", as.InitialTemperature)
 	}
+
 	if !isFinite(as.CurrentTemperature) || as.CurrentTemperature <= 0 {
 		return fmt.Errorf("current temperature must be finite and positive, got %v", as.CurrentTemperature)
 	}
+
 	if !isFinite(as.CoolingRate) || as.CoolingRate <= 0 || as.CoolingRate >= 1 {
 		return fmt.Errorf("cooling rate must be in (0,1), got %v", as.CoolingRate)
 	}
+
 	switch as.ScheduleType {
 	case CoolingExponential, CoolingLinear, CoolingLogarithmic:
 	default:
 		return fmt.Errorf("unknown cooling schedule %q", as.ScheduleType)
 	}
+
 	if as.Iteration < 0 {
 		return fmt.Errorf("iteration must be non-negative, got %d", as.Iteration)
 	}
+
 	return nil
 }
 
@@ -149,10 +157,13 @@ func (as *AnnealingScheduler) Update() {
 
 // UpdateChecked validates mutable scheduler state before advancing it.
 func (as *AnnealingScheduler) UpdateChecked() error {
-	if err := as.Validate(); err != nil {
+	err := as.Validate()
+	if err != nil {
 		return err
 	}
+
 	as.Update()
+
 	return nil
 }
 
@@ -168,9 +179,11 @@ func (as *AnnealingScheduler) GetTemperature() float64 {
 // GetTemperatureChecked returns the current temperature after validating the
 // scheduler's mutable state.
 func (as *AnnealingScheduler) GetTemperatureChecked() (float64, error) {
-	if err := as.Validate(); err != nil {
+	err := as.Validate()
+	if err != nil {
 		return 0, err
 	}
+
 	return as.CurrentTemperature, nil
 }
 
@@ -191,14 +204,18 @@ func (as *AnnealingScheduler) ResetChecked() error {
 	if as == nil {
 		return errors.New("annealing scheduler is nil")
 	}
+
 	current := as.CurrentTemperature
 	as.CurrentTemperature = as.InitialTemperature
 	err := as.Validate()
 	as.CurrentTemperature = current
+
 	if err != nil {
 		return err
 	}
+
 	as.Reset()
+
 	return nil
 }
 

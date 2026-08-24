@@ -46,12 +46,14 @@ func OrthogonalArrayChecked(dimensions int) ([][]int, error) {
 	if dimensions <= 0 {
 		return nil, fmt.Errorf("orthogonal-array dimensions must be positive, got %d", dimensions)
 	}
+
 	if dimensions > MaxOrthogonalArrayDimensions {
 		return nil, fmt.Errorf(
 			"orthogonal-array dimensions %d exceed the supported maximum %d",
 			dimensions, MaxOrthogonalArrayDimensions,
 		)
 	}
+
 	return orthogonalArray(dimensions), nil
 }
 
@@ -127,35 +129,44 @@ func ApplyOrthogonalLearningChecked(
 	objFunc ObjectiveFunction,
 	rng *rand.Rand,
 ) (*Mayfly, error) {
-	if err := validateOrthogonalInputs(male, pbest, gbest, factor, lb, ub); err != nil {
+	err := validateOrthogonalInputs(male, pbest, gbest, factor, lb, ub)
+	if err != nil {
 		return nil, err
 	}
+
 	if objFunc == nil {
 		return nil, errors.New("orthogonal-learning objective function is nil")
 	}
+
 	var objectiveErr error
+
 	checkedObjective := func(position []float64) (value float64) {
 		if objectiveErr != nil {
 			return math.NaN()
 		}
+
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				objectiveErr = fmt.Errorf("orthogonal-learning objective panicked: %v", recovered)
 				value = math.NaN()
 			}
 		}()
+
 		value = objFunc(position)
 		if !isFinite(value) {
 			objectiveErr = errors.New("orthogonal-learning objective returned a non-finite value")
 		}
+
 		return value
 	}
 	result := applyOrthogonalLearning(
 		male, pbest, gbest, factor, lb, ub, newConstraintEvaluator(checkedObjective, nil), rng,
 	)
+
 	if objectiveErr != nil {
 		return nil, objectiveErr
 	}
+
 	return result, nil
 }
 
@@ -287,13 +298,16 @@ func validateOrthogonalInputs(male *Mayfly, pbest, gbest []float64, factor float
 	if male == nil {
 		return errors.New("orthogonal-learning male is nil")
 	}
+
 	if !isFinite(factor) || factor < 0 || factor > 1 {
 		return fmt.Errorf("orthogonal factor must be in [0,1], got %v", factor)
 	}
+
 	dim := len(male.Position)
 	if dim == 0 {
 		return errors.New("orthogonal-learning position is empty")
 	}
+
 	for name, vector := range map[string][]float64{
 		"velocity": male.Velocity, "personal best": pbest, "global best": gbest,
 		"lower bounds": lb, "upper bounds": ub,
@@ -302,6 +316,7 @@ func validateOrthogonalInputs(male *Mayfly, pbest, gbest []float64, factor float
 			return fmt.Errorf("%s dimension is %d, want %d", name, len(vector), dim)
 		}
 	}
+
 	for i := range dim {
 		values := []float64{male.Position[i], pbest[i], gbest[i], lb[i], ub[i]}
 		for _, value := range values {
@@ -309,14 +324,17 @@ func validateOrthogonalInputs(male *Mayfly, pbest, gbest []float64, factor float
 				return fmt.Errorf("orthogonal-learning dimension %d contains a non-finite value", i)
 			}
 		}
+
 		if lb[i] > ub[i] {
 			return fmt.Errorf("lower bound %v exceeds upper bound %v at dimension %d", lb[i], ub[i], i)
 		}
+
 		if male.Position[i] < lb[i] || male.Position[i] > ub[i] ||
 			pbest[i] < lb[i] || pbest[i] > ub[i] || gbest[i] < lb[i] || gbest[i] > ub[i] {
 			return fmt.Errorf("orthogonal-learning position is outside bounds at dimension %d", i)
 		}
 	}
+
 	return nil
 }
 
@@ -367,48 +385,63 @@ func ApplyOrthogonalLearningToEliteChecked(
 	if len(males) == 0 {
 		return errors.New("orthogonal-learning population is empty")
 	}
+
 	if !isFinite(topPercent) || topPercent <= 0 || topPercent > 1 {
 		return fmt.Errorf("elite percentage must be in (0,1], got %v", topPercent)
 	}
+
 	if objFunc == nil {
 		return errors.New("orthogonal-learning objective function is nil")
 	}
+
 	for i, male := range males {
 		if male == nil {
 			return fmt.Errorf("male %d is nil", i)
 		}
-		if err := validateOrthogonalInputs(male, male.Best.Position, gbest, factor, lb, ub); err != nil {
+
+		err := validateOrthogonalInputs(male, male.Best.Position, gbest, factor, lb, ub)
+		if err != nil {
 			return fmt.Errorf("male %d: %w", i, err)
 		}
 	}
+
 	var objectiveErr error
+
 	checkedObjective := func(position []float64) (value float64) {
 		if objectiveErr != nil {
 			return math.NaN()
 		}
+
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				objectiveErr = fmt.Errorf("orthogonal-learning objective panicked: %v", recovered)
 				value = math.NaN()
 			}
 		}()
+
 		value = objFunc(position)
 		if !isFinite(value) {
 			objectiveErr = errors.New("orthogonal-learning objective returned a non-finite value")
 		}
+
 		return value
 	}
+
 	working := make([]*Mayfly, len(males))
 	for i, male := range males {
 		working[i] = male.clone()
 	}
+
 	applyOrthogonalLearningToElite(
 		working, topPercent, gbest, factor, lb, ub, newConstraintEvaluator(checkedObjective, nil), rng,
 	)
+
 	if objectiveErr != nil {
 		return objectiveErr
 	}
+
 	copy(males, working)
+
 	return nil
 }
 

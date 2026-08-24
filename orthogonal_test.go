@@ -180,10 +180,12 @@ func TestOrthogonalArrayReturnsDefensiveCopy(t *testing.T) {
 
 func TestOrthogonalLearningIsDimensionSafeBeyondL4(t *testing.T) {
 	const dimensions = 12
+
 	male := newMayfly(dimensions)
 	pbest := make([]float64, dimensions)
 	gbest := make([]float64, dimensions)
 	lower := make([]float64, dimensions)
+
 	upper := make([]float64, dimensions)
 	for dimension := range dimensions {
 		male.Position[dimension] = 1
@@ -193,10 +195,12 @@ func TestOrthogonalLearningIsDimensionSafeBeyondL4(t *testing.T) {
 		lower[dimension] = -2
 		upper[dimension] = 2
 	}
+
 	male.Cost = Sphere(male.Position)
 	male.Best.Cost = male.Cost
 
 	calls := 0
+
 	result := ApplyOrthogonalLearning(
 		male, pbest, gbest, 0.3, lower, upper,
 		func(position []float64) float64 {
@@ -208,6 +212,7 @@ func TestOrthogonalLearningIsDimensionSafeBeyondL4(t *testing.T) {
 	if result == nil {
 		t.Fatal("orthogonal learning returned nil")
 	}
+
 	if calls != len(OrthogonalArray(dimensions))+1 {
 		t.Fatalf("evaluations = %d, want %d", calls, len(OrthogonalArray(dimensions))+1)
 	}

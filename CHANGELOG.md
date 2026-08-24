@@ -7,6 +7,16 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Exact CEC2017 (29 usable functions; F2 was officially removed) and CEC2020
+  (10 functions) benchmark evaluators with validated `fs.FS` loaders for the
+  organizers' shift, rotation, and shuffle data, official biases and budgets,
+  normalized Mayfly configurations, and regression coverage for every function.
+- Constrained spring, welded-beam, pressure-vessel, and speed-reducer engineering
+  benchmarks with physical bounds, published reference designs, mixed-variable
+  projection, and normalized configuration adapters.
+
 ## [0.7.0] - 2026-08-24
 
 ### Added

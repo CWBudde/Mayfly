@@ -111,9 +111,11 @@ func MutateCauchyChecked(
 	mu, lowerBound, upperBound float64,
 	rng *rand.Rand,
 ) ([]float64, error) {
-	if err := validateMutationInput(x, mu, lowerBound, upperBound, rng); err != nil {
+	err := validateMutationInput(x, mu, lowerBound, upperBound, rng)
+	if err != nil {
 		return nil, err
 	}
+
 	return MutateCauchy(x, mu, lowerBound, upperBound, rng), nil
 }
 
@@ -140,11 +142,14 @@ func HybridMutateChecked(
 	mu, lowerBound, upperBound, cauchyProb float64,
 	rng *rand.Rand,
 ) ([]float64, error) {
-	if err := validateMutationInput(x, mu, lowerBound, upperBound, rng); err != nil {
+	err := validateMutationInput(x, mu, lowerBound, upperBound, rng)
+	if err != nil {
 		return nil, err
 	}
+
 	if !isFinite(cauchyProb) || cauchyProb < 0 || cauchyProb > 1 {
 		return nil, fmt.Errorf("Cauchy probability must be in [0,1], got %v", cauchyProb)
 	}
+
 	return HybridMutate(x, mu, lowerBound, upperBound, cauchyProb, rng), nil
 }

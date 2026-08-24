@@ -78,41 +78,53 @@ func EvaluateConstraintsChecked(
 	if len(position) == 0 {
 		return evaluation, errors.New("constraint position is empty")
 	}
+
 	for i, coordinate := range position {
 		if !isFinite(coordinate) {
 			return evaluation, fmt.Errorf("constraint position %d is not finite", i)
 		}
 	}
-	if err := validateConstraintConfig(config); err != nil {
+
+	err := validateConstraintConfig(config)
+	if err != nil {
 		return evaluation, err
 	}
+
 	if config == nil {
 		return ConstraintEvaluation{Feasible: true}, nil
 	}
+
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			returnErr = fmt.Errorf("constraint function panicked: %v", recovered)
 			evaluation = ConstraintEvaluation{}
 		}
 	}()
+
 	violation := 0.0
+
 	for i, constraint := range config.Inequalities {
 		value := constraint(position)
 		if !isFinite(value) {
 			return ConstraintEvaluation{}, fmt.Errorf("inequality constraint %d returned a non-finite value", i)
 		}
+
 		violation += max(0, value)
 	}
+
 	for i, constraint := range config.Equalities {
 		value := constraint(position)
 		if !isFinite(value) {
 			return ConstraintEvaluation{}, fmt.Errorf("equality constraint %d returned a non-finite value", i)
 		}
+
 		violation += max(0, math.Abs(value)-config.EqualityTolerance)
 	}
+
 	if !isFinite(violation) {
 		return ConstraintEvaluation{}, errors.New("aggregate constraint violation overflowed")
 	}
+
 	return ConstraintEvaluation{Violation: violation, Feasible: violation == 0}, nil
 }
 
@@ -141,19 +153,24 @@ func PenalizedCostChecked(cost, violation, factor float64, method PenaltyMethod)
 	if !isFinite(cost) {
 		return 0, fmt.Errorf("cost must be finite, got %v", cost)
 	}
+
 	if !isFinite(violation) || violation < 0 {
 		return 0, fmt.Errorf("constraint violation must be finite and non-negative, got %v", violation)
 	}
+
 	if !isFinite(factor) || factor < 0 {
 		return 0, fmt.Errorf("penalty factor must be finite and non-negative, got %v", factor)
 	}
+
 	if method != "" && method != PenaltyLinear && method != PenaltyQuadratic {
 		return 0, fmt.Errorf("unknown penalty method %q", method)
 	}
+
 	result := PenalizedCost(cost, violation, factor, method)
 	if !isFinite(result) {
 		return 0, errors.New("penalized cost overflowed")
 	}
+
 	return result, nil
 }
 
@@ -209,19 +226,23 @@ func BetterConstrainedCandidateChecked(
 	candidate, incumbent CandidateEvaluation,
 	config *ConstraintConfig,
 ) (bool, error) {
-	if err := validateConstraintConfig(config); err != nil {
+	err := validateConstraintConfig(config)
+	if err != nil {
 		return false, err
 	}
+
 	for name, evaluation := range map[string]CandidateEvaluation{
 		"candidate": candidate, "incumbent": incumbent,
 	} {
 		if !isFinite(evaluation.Cost) {
 			return false, fmt.Errorf("%s cost must be finite", name)
 		}
+
 		if !isFinite(evaluation.ConstraintViolation) || evaluation.ConstraintViolation < 0 {
 			return false, fmt.Errorf("%s constraint violation must be finite and non-negative", name)
 		}
 	}
+
 	return BetterConstrainedCandidate(candidate, incumbent, config), nil
 }
 

@@ -116,15 +116,19 @@ func (cr *ComparisonRunner) WithVariantsChecked(variants ...AlgorithmVariant) (*
 	if cr == nil {
 		return nil, errors.New("comparison runner is nil")
 	}
+
 	if len(variants) == 0 {
 		return nil, errors.New("at least one comparison variant is required")
 	}
+
 	for i, variant := range variants {
 		if variant == nil {
 			return nil, fmt.Errorf("comparison variant %d is nil", i)
 		}
 	}
+
 	cr.Variants = append([]AlgorithmVariant(nil), variants...)
+
 	return cr, nil
 }
 
@@ -152,18 +156,23 @@ func (cr *ComparisonRunner) WithVariantNamesChecked(names ...string) (*Compariso
 	if cr == nil {
 		return nil, errors.New("comparison runner is nil")
 	}
+
 	if len(names) == 0 {
 		return nil, errors.New("at least one comparison variant name is required")
 	}
+
 	variants := make([]AlgorithmVariant, len(names))
 	for i, name := range names {
 		variant, err := NewVariantChecked(name)
 		if err != nil {
 			return nil, fmt.Errorf("comparison variant %d: %w", i, err)
 		}
+
 		variants[i] = variant
 	}
+
 	cr.Variants = variants
+
 	return cr, nil
 }
 

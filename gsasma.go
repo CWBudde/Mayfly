@@ -41,6 +41,7 @@ func gsasmaGoldenPosition(
 		updated[i] = position[i]*absSinR1 -
 			r2*sinR1*math.Abs(c1*personalBest[i]-c2*position[i])
 	}
+
 	maxVec(updated, lowerBound)
 	minVec(updated, upperBound)
 
@@ -60,6 +61,7 @@ func gsasmaPositionStep(
 	for i := range position {
 		stepped[i] = position[i] + velocity[i]
 	}
+
 	maxVec(stepped, lowerBound)
 	minVec(stepped, upperBound)
 
@@ -82,12 +84,14 @@ func prepareGSASMAPopulations(
 
 	for i, female := range females {
 		currentCost := female.Cost
+
 		attracted := evaluator.betterMayfly(males[i], female)
 		if !early {
 			previousCost, ok := previousCosts[female]
 			if !ok {
 				previousCost = currentCost
 			}
+
 			attracted = gsasmaAnnealedAttraction(
 				currentCost, previousCost, temperature, rng,
 			)
@@ -101,6 +105,7 @@ func prepareGSASMAPopulations(
 				female.Velocity[j] = g*female.Velocity[j] + flight*randomFlight[j]
 			}
 		}
+
 		maxVec(female.Velocity, config.VelMin)
 		minVec(female.Velocity, config.VelMax)
 		female.Position = gsasmaPositionStep(
@@ -112,6 +117,7 @@ func prepareGSASMAPopulations(
 
 	for _, male := range males {
 		currentCost := male.Cost
+
 		attracted := evaluator.better(
 			evaluationFromBest(globalBest), evaluationFromMayfly(male),
 		)
@@ -120,6 +126,7 @@ func prepareGSASMAPopulations(
 			if !ok {
 				previousCost = currentCost
 			}
+
 			attracted = gsasmaAnnealedAttraction(
 				currentCost, previousCost, temperature, rng,
 			)
@@ -133,6 +140,7 @@ func prepareGSASMAPopulations(
 				male.Velocity[j] = g*male.Velocity[j] + dance*randomDance[j]
 			}
 		}
+
 		maxVec(male.Velocity, config.VelMin)
 		minVec(male.Velocity, config.VelMax)
 		male.Position = gsasmaPositionStep(
@@ -156,6 +164,7 @@ func retainGSASMAPreviousCosts(
 			if !ok {
 				previousCost = mayfly.Cost
 			}
+
 			retained[mayfly] = previousCost
 		}
 	}

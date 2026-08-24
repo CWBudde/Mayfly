@@ -79,9 +79,11 @@ func (s *AlgorithmSelector) RecommendAlgorithms(characteristics ProblemCharacter
 func (s *AlgorithmSelector) RecommendAlgorithmsChecked(
 	characteristics ProblemCharacteristics,
 ) ([]AlgorithmRecommendation, error) {
-	if err := validateProblemCharacteristics(s, characteristics); err != nil {
+	err := validateProblemCharacteristics(s, characteristics)
+	if err != nil {
 		return nil, err
 	}
+
 	return s.RecommendAlgorithms(characteristics), nil
 }
 
@@ -117,9 +119,11 @@ func (s *AlgorithmSelector) RecommendBestChecked(
 	if err != nil {
 		return AlgorithmRecommendation{}, err
 	}
+
 	if len(recommendations) == 0 {
 		return AlgorithmRecommendation{}, errors.New("algorithm selector has no variants")
 	}
+
 	return recommendations[0], nil
 }
 
@@ -127,21 +131,27 @@ func validateProblemCharacteristics(s *AlgorithmSelector, characteristics Proble
 	if s == nil {
 		return errors.New("algorithm selector is nil")
 	}
+
 	if len(s.variants) == 0 {
 		return errors.New("algorithm selector has no variants")
 	}
+
 	if characteristics.Dimensionality < 0 {
 		return fmt.Errorf("problem dimensionality must be non-negative, got %d", characteristics.Dimensionality)
 	}
+
 	if characteristics.Modality < Unimodal || characteristics.Modality > HighlyMultimodal {
 		return fmt.Errorf("unknown problem modality %d", characteristics.Modality)
 	}
+
 	if characteristics.Landscape < Smooth || characteristics.Landscape > NarrowValley {
 		return fmt.Errorf("unknown problem landscape %d", characteristics.Landscape)
 	}
+
 	if characteristics.MultiObjective {
 		return errors.New("no multi-objective optimizer is implemented")
 	}
+
 	return nil
 }
 
@@ -780,28 +790,35 @@ func WriteRecommendations(w io.Writer, recommendations []AlgorithmRecommendation
 	if w == nil {
 		return errors.New("recommendation writer is nil")
 	}
+
 	for i, recommendation := range recommendations {
 		if recommendation.Variant == nil {
 			return fmt.Errorf("recommendation %d has a nil variant", i)
 		}
+
 		if !isFinite(recommendation.Score) || recommendation.Score < 0 || recommendation.Score > 1 {
 			return fmt.Errorf("recommendation %d score must be in [0,1]", i)
 		}
+
 		if !isFinite(recommendation.Confidence) || recommendation.Confidence < 0 || recommendation.Confidence > 1 {
 			return fmt.Errorf("recommendation %d confidence must be in [0,1]", i)
 		}
 	}
+
 	var builder strings.Builder
 	fmt.Fprintln(&builder, "Algorithm Recommendations (ranked by score):")
 	fmt.Fprintln(&builder, "="+strings.Repeat("=", 79))
 	fmt.Fprintf(&builder, "%-12s | %-8s | %-10s | %s\n", "Algorithm", "Score", "Confidence", "Reasoning")
 	fmt.Fprintln(&builder, strings.Repeat("-", 80))
+
 	for _, recommendation := range recommendations {
 		fmt.Fprintf(&builder, "%-12s | %6.2f%% | %8.2f%% | %s\n",
 			recommendation.Variant.Name(), recommendation.Score*100,
 			recommendation.Confidence*100, recommendation.Reasoning)
 	}
+
 	fmt.Fprintln(&builder, strings.Repeat("=", 80))
 	_, err := io.WriteString(w, builder.String())
+
 	return err
 }

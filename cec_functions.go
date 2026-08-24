@@ -532,18 +532,18 @@ type cecHybridSpec struct {
 }
 
 var cec2017Hybrids = map[int]cecHybridSpec{
-	1:  {[]float64{0.2, 0.4, 0.4}, []cecBase{cecZakharov, cecRosenbrock, cecRastrigin}, false},
-	2:  {[]float64{0.3, 0.3, 0.4}, []cecBase{cecElliptic, cecSchwefel, cecBentCigar}, false},
-	3:  {[]float64{0.3, 0.3, 0.4}, []cecBase{cecBentCigar, cecRosenbrock, cecLunacek}, false},
-	4:  {[]float64{0.2, 0.2, 0.2, 0.4}, []cecBase{cecElliptic, cecAckley, cecSchafferF7, cecRastrigin}, false},
-	5:  {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecBentCigar, cecHGBat, cecRastrigin, cecRosenbrock}, false},
-	6:  {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecExpandedSchaffer6, cecHGBat, cecRosenbrock, cecSchwefel}, false},
+	1: {[]float64{0.2, 0.4, 0.4}, []cecBase{cecZakharov, cecRosenbrock, cecRastrigin}, false},
+	2: {[]float64{0.3, 0.3, 0.4}, []cecBase{cecElliptic, cecSchwefel, cecBentCigar}, false},
+	3: {[]float64{0.3, 0.3, 0.4}, []cecBase{cecBentCigar, cecRosenbrock, cecLunacek}, false},
+	4: {[]float64{0.2, 0.2, 0.2, 0.4}, []cecBase{cecElliptic, cecAckley, cecSchafferF7, cecRastrigin}, false},
+	5: {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecBentCigar, cecHGBat, cecRastrigin, cecRosenbrock}, false},
+	6: {[]float64{0.2, 0.2, 0.3, 0.3}, []cecBase{cecExpandedSchaffer6, cecHGBat, cecRosenbrock, cecSchwefel}, false},
 	7: {
 		[]float64{0.1, 0.2, 0.2, 0.2, 0.3},
 		[]cecBase{cecKatsuura, cecAckley, cecGriewankRosenbrock, cecSchwefel, cecRastrigin},
 		false,
 	},
-	8:  {[]float64{0.2, 0.2, 0.2, 0.2, 0.2}, []cecBase{cecElliptic, cecAckley, cecRastrigin, cecHGBat, cecDiscus}, false},
+	8: {[]float64{0.2, 0.2, 0.2, 0.2, 0.2}, []cecBase{cecElliptic, cecAckley, cecRastrigin, cecHGBat, cecDiscus}, false},
 	9: {
 		[]float64{0.2, 0.2, 0.2, 0.2, 0.2},
 		[]cecBase{cecBentCigar, cecRastrigin, cecGriewankRosenbrock, cecWeierstrass, cecExpandedSchaffer6},

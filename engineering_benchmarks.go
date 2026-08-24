@@ -81,7 +81,11 @@ func NewWeldedBeamDesignProblem() (*BenchmarkCase, error) {
 	return newBenchmarkCase(BenchmarkCase{
 		suite: "Engineering", name: "Welded beam design", dimension: 4,
 		lower: []float64{0.1, 0.1, 0.1, 0.1}, upper: []float64{2, 10, 10, 2},
-		optimum: []float64{0.205729639786079, 3.470488665628002, 9.036623910357633, 0.205729639786080}, minimum: 1.724852308597365,
+		optimum: []float64{
+			0.205729639786079, 3.470488665628002,
+			9.036623910357633, 0.205729639786080,
+		},
+		minimum:   1.724852308597365,
 		objective: objective, constraints: constraints,
 	})
 }
@@ -115,7 +119,8 @@ func weldedBeamBucklingLoad(x []float64) float64 {
 // before evaluation. The remaining coordinates are radius and cylinder length.
 func NewPressureVesselDesignProblem() (*BenchmarkCase, error) {
 	optimumRadius := 0.8125 / 0.0193
-	optimumLength := (1296000 - 4*math.Pi*optimumRadius*optimumRadius*optimumRadius/3) / (math.Pi * optimumRadius * optimumRadius)
+	optimumLength := (1296000 - 4*math.Pi*optimumRadius*optimumRadius*optimumRadius/3) /
+		(math.Pi * optimumRadius * optimumRadius)
 	project := func(x []float64) []float64 {
 		result := append([]float64(nil), x...)
 		result[0] = math.Round(result[0])
@@ -189,9 +194,13 @@ func NewSpeedReducerDesignProblem() (*BenchmarkCase, error) {
 
 	return newBenchmarkCase(BenchmarkCase{
 		suite: "Engineering", name: "Speed reducer design", dimension: 7,
-		lower:   []float64{2.6, 0.7, 17, 7.3, 7.3, 2.9, 5},
-		upper:   []float64{3.6, 0.8, 28, 8.3, 8.3, 3.9, 5.5},
-		optimum: []float64{3.5, 0.7, 17, 7.3, 7.715319912497795, 3.350214666225438, 5.286654465026051}, minimum: 2994.471066247639,
+		lower: []float64{2.6, 0.7, 17, 7.3, 7.3, 2.9, 5},
+		upper: []float64{3.6, 0.8, 28, 8.3, 8.3, 3.9, 5.5},
+		optimum: []float64{
+			3.5, 0.7, 17, 7.3, 7.715319912497795,
+			3.350214666225438, 5.286654465026051,
+		},
+		minimum:   2994.471066247639,
 		objective: objective, constraints: constraints, project: project,
 	})
 }

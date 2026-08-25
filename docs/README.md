@@ -93,7 +93,7 @@ Complete API reference:
 ### Reference Documentation
 
 - **[Benchmark Functions](benchmarks.md)** - Test function reference
-  - 15+ standard benchmark functions
+  - 16+ standard benchmark functions
   - Function characteristics
   - Expected performance
   - Usage examples

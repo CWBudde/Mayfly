@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `Himmelblau` benchmark function, the sixteenth in the standalone suite:
+  multimodal with four equal global minima, extended to n dimensions by summing
+  over disjoint coordinate pairs, with the unpaired coordinate in an odd
+  dimension scored as its square. Available in the WebAssembly demo.
 - Exact CEC2017 (29 usable functions; F2 was officially removed) and CEC2020
   (10 functions) benchmark evaluators with validated `fs.FS` loaders for the
   organizers' shift, rotation, and shuffle data, official biases and budgets,

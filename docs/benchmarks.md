@@ -1,6 +1,6 @@
 # Benchmark Functions Reference
 
-The library includes 15 standalone functions, the complete usable CEC2017 and
+The library includes 16 standalone functions, the complete usable CEC2017 and
 CEC2020 bound-constrained suites, and four constrained engineering-design problems.
 
 ## Function Categories
@@ -15,7 +15,7 @@ Standard test functions from optimization literature:
 - **Ackley** - Multimodal, flat outer region
 - **Griewank** - Many local minima
 
-### CEC-Style Benchmark Functions (10)
+### CEC-Style Benchmark Functions (11)
 
 Additional challenging functions from CEC competitions:
 
@@ -29,6 +29,7 @@ Additional challenging functions from CEC competitions:
 - **Weierstrass** - Continuous, non-differentiable
 - **HappyCat** - Multimodal, plate-shaped
 - **ExpandedSchafferF6** - Multimodal, composite
+- **Himmelblau** - Multimodal, four equal global minima
 
 ### Official CEC2017 and CEC2020 Suites
 
@@ -374,6 +375,27 @@ mayfly.ExpandedSchafferF6(x []float64) float64
 
 **Use for**: Testing composite function optimization
 
+---
+
+### Himmelblau Function
+
+```go
+mayfly.Himmelblau(x []float64) float64
+```
+
+- **Global minimum**: f(3, 2, ..., 3, 2) = 0, with a trailing 0 in odd dimensions
+- **Typical bounds**: [-5, 5]
+- **Type**: Multimodal, four equal global minima
+- **Characteristics**: 4^floor(n/2) equally good optima, none of them favoured
+- **Best variant**: DESMA
+- **Expected performance** (500 iter): 1e-6 to 1e-2
+
+**Formula**: Sum of (a^2 + b - 11)^2 + (a + b^2 - 7)^2 over disjoint coordinate
+pairs, plus the square of the unpaired coordinate when n is odd
+
+**Use for**: Testing whether a swarm splits across equally good basins or
+collapses into one
+
 ## Quick Reference Table
 
 | Function           | Type               | Dimensionality | Best Variant | Difficulty         |
@@ -393,6 +415,7 @@ mayfly.ExpandedSchafferF6(x []float64) float64
 | Weierstrass        | Non-differentiable | Any            | EOBBMA       | ⭐⭐⭐⭐ Very Hard |
 | HappyCat           | Plateau            | Any            | GSASMA       | ⭐⭐⭐ Hard        |
 | ExpandedSchafferF6 | Composite          | Any            | AOBLMOA      | ⭐⭐⭐⭐ Very Hard |
+| Himmelblau         | Multimodal         | Any            | DESMA        | ⭐⭐ Medium        |
 
 ## Usage Example
 

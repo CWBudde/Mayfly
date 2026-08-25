@@ -15,7 +15,7 @@ The Mayfly Algorithm is a swarm intelligence optimization algorithm inspired by 
 
 - Clean, idiomatic Go implementation
 - 7 algorithm variants for different problem types
-- 15+ benchmark functions included
+- 16+ benchmark functions included
 - Unified API with intelligent algorithm selection
 - Statistical comparison framework
 - Optional target-cost and stagnation-based early stopping
@@ -230,7 +230,7 @@ The library includes standalone functions plus complete CEC and engineering suit
 
 **Classic Functions:** Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
 
-**CEC-Style Functions:** Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6
+**CEC-Style Functions:** Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6, Himmelblau
 
 **Competition Suites:** all 29 usable CEC2017 functions and all 10 CEC2020 functions,
 loaded with the organizers' official transformation data
@@ -373,7 +373,7 @@ Each algorithm and operator is implemented in dedicated files with proper citati
 | `golden_sine.go` | Golden Sine Algorithm           | Tanyildizi & Demir (2017)       |
 | `annealing.go`   | Simulated Annealing             | Kirkpatrick et al. (1983)       |
 | `operators.go`   | Crossover & Mutation            | Standard genetic operators      |
-| `functions.go`   | 15 benchmark functions          | CEC/standard test suites        |
+| `functions.go`   | 16 benchmark functions          | CEC/standard test suites        |
 
 **Variant compositions:**
 

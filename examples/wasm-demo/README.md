@@ -81,7 +81,7 @@ a stale copy fails at runtime in ways that look like demo bugs.
 | `main_stub.go`    | No-op `main()` so non-wasm builds still work            |
 | `bridge.go`       | `guard()` and the tolerant option readers               |
 | `marshal.go`      | `Float32Array` sinks over JS-owned `ArrayBuffer`s       |
-| `benchmarks.go`   | The 15 benchmarks with bounds, optima and blurbs        |
+| `benchmarks.go`   | The 16 benchmarks with bounds, optima and blurbs        |
 | `variants.go`     | Variant lookup and per-run `Config` construction        |
 | `run.go`          | `run` — one optimization, recorded frame by frame       |
 | `landscape.go`    | `landscape` — the objective sampled on a grid           |

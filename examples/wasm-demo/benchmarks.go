@@ -13,7 +13,7 @@ import (
 // UI needs: where to search, where the answer is, and what makes the function
 // worth showing.
 //
-// The library exposes its 15 benchmarks as plain functions with no registry and
+// The library exposes its 16 benchmarks as plain functions with no registry and
 // no programmatic bounds — those live only in doc comments, and inconsistently.
 // This table is the demo's own reading of them, kept here rather than pushed
 // into the library because the demo is currently the only caller that needs it.
@@ -22,9 +22,10 @@ type benchmark struct {
 	name string
 
 	// optimumAt returns the minimizing position in the requested dimension,
-	// and whether one is known. It is not a scalar because two of these
+	// and whether one is known. It is not a scalar because three of these
 	// functions do not have a uniform minimizer: Dixon-Price's coordinates
-	// depend on their index, and Michalewicz has no closed form at all. Pinning
+	// depend on their index, Himmelblau's alternate between the halves of a
+	// pair, and Michalewicz has no closed form at all. Pinning
 	// every hidden coordinate to a single value produced heatmap slices that
 	// missed the global minimum while the UI claimed they passed through it.
 	optimumAt func(dimensions int) ([]float64, bool)
@@ -41,7 +42,8 @@ type benchmark struct {
 }
 
 // uniformOptimum describes a function minimized where every coordinate takes
-// the same value, which is all of them except Dixon-Price and Michalewicz.
+// the same value, which is all of them except Dixon-Price, Himmelblau and
+// Michalewicz.
 func uniformOptimum(coordinate float64) func(int) ([]float64, bool) {
 	return func(dimensions int) ([]float64, bool) {
 		position := make([]float64, dimensions)
@@ -67,6 +69,21 @@ func dixonPriceOptimum(dimensions int) ([]float64, bool) {
 	for i := range position {
 		power := math.Pow(2, float64(i+1))
 		position[i] = math.Pow(2, -(power-2)/power)
+	}
+
+	return position, true
+}
+
+// himmelblauOptimum alternates 3 and 2 because the function scores disjoint
+// coordinate pairs, so every pair must sit on the same 2-D minimum. An odd
+// dimension leaves a trailing coordinate scored as its square, which is
+// minimized at 0. uniformOptimum cannot express either.
+func himmelblauOptimum(dimensions int) ([]float64, bool) {
+	position := make([]float64, dimensions)
+
+	for i := 0; i+1 < dimensions; i += 2 {
+		position[i] = 3
+		position[i+1] = 2
 	}
 
 	return position, true
@@ -171,6 +188,11 @@ var benchmarks = map[string]benchmark{
 		optimumAt: uniformOptimum(0), optimumValue: knownValue(0), modality: "highly multimodal",
 		blurb: "Concentric ripples around the origin — every ring is a local minimum.",
 	},
+	"Himmelblau": {
+		fn: mayfly.Himmelblau, name: "Himmelblau", lower: -5, upper: 5,
+		optimumAt: himmelblauOptimum, optimumValue: knownValue(0), modality: "multimodal",
+		blurb: "Four equal global minima, one per quadrant — a test of which basin a swarm commits to.",
+	},
 }
 
 // benchmarkNames returns the table's keys in a stable, didactic order: the
@@ -181,6 +203,7 @@ func benchmarkNames() []string {
 		"Sphere", "Rastrigin", "Rosenbrock", "Ackley", "Griewank",
 		"Schwefel", "Levy", "Zakharov", "Michalewicz", "DixonPrice",
 		"BentCigar", "Discus", "Weierstrass", "HappyCat", "ExpandedSchafferF6",
+		"Himmelblau",
 	}
 
 	seen := make(map[string]bool, len(ordered))

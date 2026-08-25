@@ -147,7 +147,8 @@ fmt.Printf("Recommended: %s (Score: %.1f%%)\n",
 // Available benchmark names:
 // "Sphere", "Rastrigin", "Rosenbrock", "Ackley", "Griewank",
 // "Schwefel", "Levy", "Zakharov", "DixonPrice", "Michalewicz",
-// "BentCigar", "Discus", "Weierstrass", "HappyCat", "ExpandedSchafferF6"
+// "BentCigar", "Discus", "Weierstrass", "HappyCat", "ExpandedSchafferF6",
+// "Himmelblau"
 ```
 
 ## Automatic Problem Classification

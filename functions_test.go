@@ -787,6 +787,65 @@ func TestExpandedSchafferF6(t *testing.T) {
 	}
 }
 
+// TestHimmelblau tests the Himmelblau benchmark function.
+func TestHimmelblau(t *testing.T) {
+	tests := []struct {
+		name     string
+		x        []float64
+		expected float64
+	}{
+		{
+			name:     "global_minimum_2d_first",
+			x:        []float64{3.0, 2.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_2d_second",
+			x:        []float64{-2.805118, 3.131312},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_2d_third",
+			x:        []float64{-3.779310, -3.283186},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_2d_fourth",
+			x:        []float64{3.584428, -1.848126},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_4d",
+			x:        []float64{3.0, 2.0, 3.0, 2.0},
+			expected: 0.0,
+		},
+		{
+			name:     "global_minimum_3d_zero_tail",
+			x:        []float64{3.0, 2.0, 0.0},
+			expected: 0.0,
+		},
+		{
+			name:     "odd_tail_is_scored",
+			x:        []float64{3.0, 2.0, 1.0},
+			expected: 1.0,
+		},
+		{
+			name:     "origin_2d",
+			x:        []float64{0.0, 0.0},
+			expected: 170.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Himmelblau(tt.x)
+			if math.Abs(result-tt.expected) > epsilon {
+				t.Errorf("Himmelblau(%v) = %v, want %v", tt.x, result, tt.expected)
+			}
+		})
+	}
+}
+
 // TestCECFunctionsNonNegative tests that CEC functions produce valid outputs.
 func TestCECFunctionsNonNegative(t *testing.T) {
 	cecFunctions := []struct {
@@ -803,6 +862,7 @@ func TestCECFunctionsNonNegative(t *testing.T) {
 		{"Weierstrass", Weierstrass, []float64{0.1, 0.1}},
 		{"HappyCat", HappyCat, []float64{0.0, 0.0}},
 		{"ExpandedSchafferF6", ExpandedSchafferF6, []float64{1.0, 1.0}},
+		{"Himmelblau", Himmelblau, []float64{1.0, 1.0}},
 	}
 
 	for _, tt := range cecFunctions {
@@ -882,6 +942,7 @@ func TestBenchmarkFunctionsEmptyInput(t *testing.T) {
 		"Weierstrass":        Weierstrass,
 		"HappyCat":           HappyCat,
 		"ExpandedSchafferF6": ExpandedSchafferF6,
+		"Himmelblau":         Himmelblau,
 	}
 
 	inputs := map[string][]float64{

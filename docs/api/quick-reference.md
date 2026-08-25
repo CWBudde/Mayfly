@@ -212,7 +212,7 @@ All bundled functions have signature `func([]float64) float64`:
 
 `Sphere`, `Rastrigin`, `Rosenbrock`, `Ackley`, `Griewank`, `Schwefel`, `Levy`,
 `Zakharov`, `Michalewicz`, `DixonPrice`, `BentCigar`, `Discus`, `Weierstrass`,
-`HappyCat`, and `ExpandedSchafferF6`.
+`HappyCat`, `ExpandedSchafferF6`, and `Himmelblau`.
 
 Typical bounds and known minima are listed in the
 [benchmark reference](../benchmarks.md).

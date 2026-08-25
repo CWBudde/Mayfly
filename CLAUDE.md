@@ -185,7 +185,7 @@ Located in `functions.go`. All functions are **minimization** problems with know
 ### Quick Reference
 
 **Classic Functions** (5): Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
-**CEC-Style Functions** (10): Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6
+**CEC-Style Functions** (11): Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6, Himmelblau
 
 **Performance expectations** (500 iterations, D=30):
 
@@ -202,7 +202,7 @@ For detailed function descriptions, parameters, and expected results, see `docs/
 ```
 .
 ├── mayfly.go              # Core algorithm
-├── functions.go           # Benchmark functions (15 total)
+├── functions.go           # Benchmark functions (16 total)
 ├── variants.go            # Variant interface and implementations
 ├── selector.go            # Algorithm selection
 ├── comparison.go          # Statistical comparison framework
@@ -388,8 +388,8 @@ All variants maintain research fidelity to original papers:
 4. **EOBBMA**: _Arabian Journal for Science and Engineering_, 2024
 5. **GSASMA**: _AIP Advances_, 2022, DOI 10.1063/5.0108278
 6. **HMMA**: _Electronics Letters_, 2022, DOI 10.1049/ell2.12568
-6. **MPMA**: _IEEE Access_, 2022
-7. **AOBLMOA**: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
+7. **MPMA**: _IEEE Access_, 2022
+8. **AOBLMOA**: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
 
 ## Common Pitfalls
 

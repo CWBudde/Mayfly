@@ -297,3 +297,31 @@ func ExpandedSchafferF6(x []float64) float64 {
 
 	return sum
 }
+
+// Himmelblau is the Himmelblau benchmark function: multimodal with four equal global
+// minima, extended to n dimensions by summing over disjoint coordinate pairs.
+// Typical bounds: [-5, 5].
+//
+// In two dimensions this is the textbook function, with minima of 0 at (3, 2),
+// (-2.805118, 3.131312), (-3.779310, -3.283186) and (3.584428, -1.848126).
+// An odd dimension leaves one coordinate without a partner; it contributes its
+// square, so the minimum stays 0 and Himmelblau([3, 2, 0]) == 0 rather than
+// silently ignoring the last coordinate.
+func Himmelblau(x []float64) float64 {
+	n := len(x)
+
+	sum := 0.0
+
+	for k := 0; k < n-1; k += 2 {
+		a, b := x[k], x[k+1]
+		first := a*a + b - 11
+		second := a + b*b - 7
+		sum += first*first + second*second
+	}
+
+	if n%2 == 1 {
+		sum += x[n-1] * x[n-1]
+	}
+
+	return sum
+}

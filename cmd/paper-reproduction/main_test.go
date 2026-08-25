@@ -25,6 +25,7 @@ func TestParseOptions(t *testing.T) {
 	opts, err := parseOptions([]string{
 		"-output", "results", "-benchmarks", "sphere,ackley", "-variants", "standard,olce",
 		"-dimensions", "2,10,2", "-runs", "3", "-iterations", "4", "-workers", "2", "-seed", "7",
+		"-max-evaluations", "90",
 	})
 	if err != nil {
 		t.Fatalf("parseOptions() error = %v", err)
@@ -42,7 +43,7 @@ func TestParseOptions(t *testing.T) {
 		t.Fatalf("dimensions = %v", opts.dimensions)
 	}
 
-	if opts.runs != 3 || opts.iterations != 4 || opts.workers != 2 || opts.seed != 7 {
+	if opts.runs != 3 || opts.iterations != 4 || opts.maxEvals != 90 || opts.workers != 2 || opts.seed != 7 {
 		t.Fatalf("unexpected scalar options: %+v", opts)
 	}
 }
@@ -68,6 +69,7 @@ func TestRunExperimentWritesAllVariantRowsAndManifest(t *testing.T) {
 		dimensions: []int{2},
 		runs:       1,
 		iterations: 1,
+		maxEvals:   0,
 		workers:    1,
 		seed:       42,
 	}

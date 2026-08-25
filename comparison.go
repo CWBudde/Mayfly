@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -80,27 +81,29 @@ type FriedmanTestResult struct {
 // limits concurrent optimization runs; any Config-level parallel evaluation is
 // an independent inner limit.
 type ComparisonRunner struct {
-	TargetCost    *float64
-	Variants      []AlgorithmVariant
-	Runs          int
-	MaxIterations int
-	MaxWorkers    int
-	Seed          int64
-	Verbose       bool
-	Parallel      bool
+	TargetCost     *float64
+	Variants       []AlgorithmVariant
+	Runs           int
+	MaxIterations  int
+	MaxEvaluations int
+	MaxWorkers     int
+	Seed           int64
+	Verbose        bool
+	Parallel       bool
 }
 
 // NewComparisonRunner creates a new comparison runner.
 func NewComparisonRunner() *ComparisonRunner {
 	return &ComparisonRunner{
-		Variants:      GetAllVariants(),
-		Runs:          30, // Standard for statistical significance
-		TargetCost:    nil,
-		MaxIterations: 500,
-		Verbose:       false,
-		Parallel:      false,
-		MaxWorkers:    runtime.NumCPU(),
-		Seed:          time.Now().UnixNano(),
+		Variants:       GetAllVariants(),
+		Runs:           30, // Standard for statistical significance
+		TargetCost:     nil,
+		MaxIterations:  500,
+		MaxEvaluations: 0,
+		Verbose:        false,
+		Parallel:       false,
+		MaxWorkers:     runtime.NumCPU(),
+		Seed:           time.Now().UnixNano(),
 	}
 }
 
@@ -200,6 +203,19 @@ func (cr *ComparisonRunner) WithIterations(iterations int) *ComparisonRunner {
 	return cr
 }
 
+// WithMaxEvaluations caps actual objective-function calls in each run. Zero
+// disables the cap. MaxIterations remains a safety ceiling and must be large
+// enough for the algorithm to consume the requested evaluation budget.
+//
+// If the cap is reached partway through a generation, remaining candidates in
+// that generation receive an infinite cost without calling the objective. This
+// preserves the best solution obtained within the exact evaluation budget.
+func (cr *ComparisonRunner) WithMaxEvaluations(evaluations int) *ComparisonRunner {
+	cr.MaxEvaluations = evaluations
+
+	return cr
+}
+
 // WithVerbose enables verbose output.
 func (cr *ComparisonRunner) WithVerbose(verbose bool) *ComparisonRunner {
 	cr.Verbose = verbose
@@ -256,9 +272,29 @@ func (cr *ComparisonRunner) CompareContext(
 
 type comparisonJob struct {
 	config       *Config
+	budget       *objectiveEvaluationBudget
 	variantIndex int
 	runIndex     int
 	seed         int64
+}
+
+type objectiveEvaluationBudget struct {
+	objective ObjectiveFunction
+	limit     int64
+	used      atomic.Int64
+}
+
+func (budget *objectiveEvaluationBudget) evaluate(position []float64) float64 {
+	for {
+		used := budget.used.Load()
+		if used >= budget.limit {
+			return math.Inf(1)
+		}
+
+		if budget.used.CompareAndSwap(used, used+1) {
+			return budget.objective(position)
+		}
+	}
 }
 
 type comparisonJobResult struct {
@@ -317,14 +353,25 @@ func (cr *ComparisonRunner) prepareJobs(
 				return nil, nil, nil, fmt.Errorf("variant %s returned a nil config", variant.Name())
 			}
 
-			config.ObjectiveFunc = fn
+			var budget *objectiveEvaluationBudget
+			if cr.MaxEvaluations > 0 {
+				budget = &objectiveEvaluationBudget{
+					objective: fn,
+					limit:     int64(cr.MaxEvaluations),
+					used:      atomic.Int64{},
+				}
+				config.ObjectiveFunc = budget.evaluate
+			} else {
+				config.ObjectiveFunc = fn
+			}
+
 			config.ProblemSize = problemSize
 			config.LowerBound = lower
 			config.UpperBound = upper
 			config.MaxIterations = cr.MaxIterations
 			config.Rand = rand.New(rand.NewSource(seed))
 			jobs = append(jobs, comparisonJob{
-				config: config, variantIndex: variantIndex, runIndex: run, seed: seed,
+				config: config, budget: budget, variantIndex: variantIndex, runIndex: run, seed: seed,
 			})
 		}
 	}
@@ -473,6 +520,10 @@ func (cr *ComparisonRunner) validate(
 		return fmt.Errorf("comparison iterations must be positive, got %d", cr.MaxIterations)
 	}
 
+	if cr.MaxEvaluations < 0 {
+		return fmt.Errorf("comparison maximum evaluations must be non-negative, got %d", cr.MaxEvaluations)
+	}
+
 	if cr.MaxWorkers < 0 {
 		return fmt.Errorf("comparison MaxWorkers must be non-negative, got %d", cr.MaxWorkers)
 	}
@@ -520,8 +571,25 @@ func (cr *ComparisonRunner) executeJob(ctx context.Context, job comparisonJob) c
 	}
 
 	run.BestCost = result.GlobalBest.Cost
-	run.FuncEvals = result.FuncEvalCount
 	run.Iterations = result.IterationCount
+
+	if job.budget != nil {
+		run.FuncEvals = int(job.budget.used.Load())
+		if run.FuncEvals < int(job.budget.limit) {
+			err = fmt.Errorf(
+				"maximum iterations exhausted after %d of %d objective evaluations",
+				run.FuncEvals,
+				job.budget.limit,
+			)
+			run.Error = err.Error()
+
+			return comparisonJobResult{
+				run: run, variantIndex: job.variantIndex, runIndex: job.runIndex, err: err,
+			}
+		}
+	} else {
+		run.FuncEvals = result.FuncEvalCount
+	}
 
 	return comparisonJobResult{run: run, variantIndex: job.variantIndex, runIndex: job.runIndex}
 }

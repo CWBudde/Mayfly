@@ -78,6 +78,53 @@ func TestComparisonRunnerParallelOptionsAndDefaults(t *testing.T) {
 	}
 }
 
+func TestComparisonRunnerCapsObjectiveEvaluationsPerRun(t *testing.T) {
+	var calls atomic.Int64
+
+	objective := func(position []float64) float64 {
+		calls.Add(1)
+
+		return Sphere(position)
+	}
+
+	runner := NewComparisonRunner().
+		WithVariants(comparisonTestVariant{name: "A"}).
+		WithRuns(1).
+		WithIterations(1).
+		WithMaxEvaluations(7).
+		WithSeed(11)
+
+	result, err := runner.CompareContext(context.Background(), "budgeted", objective, 2, -1, 1)
+	if err != nil {
+		t.Fatalf("CompareContext: %v", err)
+	}
+
+	if got := calls.Load(); got != 7 {
+		t.Fatalf("objective calls = %d, want 7", got)
+	}
+
+	if got := result.RunResults[0][0].FuncEvals; got != 7 {
+		t.Fatalf("reported function evaluations = %d, want 7", got)
+	}
+}
+
+func TestComparisonRunnerRejectsUnconsumedEvaluationBudget(t *testing.T) {
+	runner := NewComparisonRunner().
+		WithVariants(comparisonTestVariant{name: "A"}).
+		WithRuns(1).
+		WithIterations(1).
+		WithMaxEvaluations(100)
+
+	result, err := runner.CompareContext(context.Background(), "budgeted", Sphere, 2, -1, 1)
+	if err == nil || result != nil {
+		t.Fatalf("CompareContext returned result=%v, err=%v; want an unconsumed-budget error", result, err)
+	}
+
+	if !strings.Contains(err.Error(), "10 of 100 objective evaluations") {
+		t.Fatalf("CompareContext error = %q", err)
+	}
+}
+
 func TestComparisonRunnerBoundsOuterConcurrency(t *testing.T) {
 	var active atomic.Int64
 
@@ -193,6 +240,7 @@ func TestComparisonContextValidationCancellationAndRunErrors(t *testing.T) {
 		{name: "no variants", runner: NewComparisonRunner().WithVariants(), fn: Sphere, size: 2, lower: -1, upper: 1},
 		{name: "zero runs", runner: NewComparisonRunner().WithRuns(0), fn: Sphere, size: 2, lower: -1, upper: 1},
 		{name: "negative workers", runner: NewComparisonRunner().WithMaxWorkers(-1), fn: Sphere, size: 2, lower: -1, upper: 1},
+		{name: "negative evaluations", runner: NewComparisonRunner().WithMaxEvaluations(-1), fn: Sphere, size: 2, lower: -1, upper: 1},
 		{name: "nil objective", runner: valid, size: 2, lower: -1, upper: 1},
 		{name: "bad size", runner: valid, fn: Sphere, size: 0, lower: -1, upper: 1},
 		{name: "bad bounds", runner: valid, fn: Sphere, size: 2, lower: 1, upper: 1},

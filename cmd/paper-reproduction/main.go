@@ -21,7 +21,7 @@ import (
 	"github.com/cwbudde/mayfly"
 )
 
-const schemaVersion = 1
+const schemaVersion = 2
 
 type options struct {
 	outputDir  string
@@ -30,6 +30,7 @@ type options struct {
 	dimensions []int
 	runs       int
 	iterations int
+	maxEvals   int
 	workers    int
 	seed       int64
 }
@@ -59,22 +60,23 @@ type variantProtocol struct {
 }
 
 type manifest struct {
-	Experiment    string              `json:"experiment"`
-	Module        string              `json:"module"`
-	Revision      string              `json:"revision,omitempty"`
-	GoVersion     string              `json:"go_version"`
-	GOOS          string              `json:"goos"`
-	GOARCH        string              `json:"goarch"`
-	SeedSchedule  string              `json:"seed_schedule"`
-	Variants      []variantProtocol   `json:"variants"`
-	Benchmarks    []benchmarkProtocol `json:"benchmarks"`
-	Notes         []string            `json:"notes"`
-	BaseSeed      int64               `json:"base_seed"`
-	SchemaVersion int                 `json:"schema_version"`
-	Runs          int                 `json:"runs_per_algorithm"`
-	Iterations    int                 `json:"iterations_per_run"`
-	Workers       int                 `json:"comparison_workers"`
-	SourceDirty   bool                `json:"source_dirty,omitempty"`
+	Experiment     string              `json:"experiment"`
+	Module         string              `json:"module"`
+	Revision       string              `json:"revision,omitempty"`
+	GoVersion      string              `json:"go_version"`
+	GOOS           string              `json:"goos"`
+	GOARCH         string              `json:"goarch"`
+	SeedSchedule   string              `json:"seed_schedule"`
+	Variants       []variantProtocol   `json:"variants"`
+	Benchmarks     []benchmarkProtocol `json:"benchmarks"`
+	Notes          []string            `json:"notes"`
+	BaseSeed       int64               `json:"base_seed"`
+	SchemaVersion  int                 `json:"schema_version"`
+	Runs           int                 `json:"runs_per_algorithm"`
+	Iterations     int                 `json:"iterations_per_run"`
+	MaxEvaluations int                 `json:"max_function_evaluations,omitempty"`
+	Workers        int                 `json:"comparison_workers"`
+	SourceDirty    bool                `json:"source_dirty,omitempty"`
 }
 
 var benchmarkRegistry = map[string]benchmark{
@@ -125,6 +127,7 @@ func parseOptions(arguments []string) (options, error) {
 		dimensions: nil,
 		runs:       0,
 		iterations: 0,
+		maxEvals:   0,
 		workers:    0,
 		seed:       0,
 	}
@@ -136,6 +139,7 @@ func parseOptions(arguments []string) (options, error) {
 	flags.StringVar(&dimensions, "dimensions", "10,30", "comma-separated positive dimensions")
 	flags.IntVar(&opts.runs, "runs", 30, "paired runs per algorithm")
 	flags.IntVar(&opts.iterations, "iterations", 2000, "iterations per run")
+	flags.IntVar(&opts.maxEvals, "max-evaluations", 0, "exact objective-evaluation budget per run; zero disables")
 	flags.IntVar(&opts.workers, "workers", 1, "concurrent optimization runs")
 	flags.Int64Var(&opts.seed, "seed", 20260825, "base seed; run i uses base seed+i")
 
@@ -152,8 +156,8 @@ func parseOptions(arguments []string) (options, error) {
 		return options{}, errors.New("output directory must not be empty")
 	}
 
-	if opts.runs <= 0 || opts.iterations <= 0 || opts.workers <= 0 {
-		return options{}, errors.New("runs, iterations, and workers must be positive")
+	if opts.runs <= 0 || opts.iterations <= 0 || opts.workers <= 0 || opts.maxEvals < 0 {
+		return options{}, errors.New("runs, iterations, and workers must be positive; max-evaluations must be non-negative")
 	}
 
 	opts.dimensions, err = parseDimensions(dimensions)
@@ -305,6 +309,7 @@ func runExperiment(ctx context.Context, opts options, output io.Writer) error {
 
 			runner.WithRuns(opts.runs).
 				WithIterations(opts.iterations).
+				WithMaxEvaluations(opts.maxEvals).
 				WithSeed(opts.seed).
 				WithParallel(opts.workers > 1).
 				WithMaxWorkers(opts.workers)
@@ -334,29 +339,41 @@ func runExperiment(ctx context.Context, opts options, output io.Writer) error {
 func newManifest(opts options, variants []mayfly.AlgorithmVariant) (manifest, error) {
 	revision, dirty := sourceRevision()
 	protocol := manifest{
-		SchemaVersion: schemaVersion,
-		Experiment:    "Mayfly post-v0.7 classic benchmark baseline",
-		Module:        "github.com/cwbudde/mayfly",
-		Revision:      revision,
-		SourceDirty:   dirty,
-		GoVersion:     runtime.Version(),
-		GOOS:          runtime.GOOS,
-		GOARCH:        runtime.GOARCH,
-		BaseSeed:      opts.seed,
-		SeedSchedule:  "seed(run_index) = base_seed + zero_based_run_index; the same seed is paired across variants",
-		Runs:          opts.runs,
-		Iterations:    opts.iterations,
-		Workers:       opts.workers,
-		Variants:      []variantProtocol{},
-		Benchmarks:    []benchmarkProtocol{},
+		SchemaVersion:  schemaVersion,
+		Experiment:     "Mayfly post-v0.7 classic benchmark baseline",
+		Module:         "github.com/cwbudde/mayfly",
+		Revision:       revision,
+		SourceDirty:    dirty,
+		GoVersion:      runtime.Version(),
+		GOOS:           runtime.GOOS,
+		GOARCH:         runtime.GOARCH,
+		BaseSeed:       opts.seed,
+		SeedSchedule:   "seed(run_index) = base_seed + zero_based_run_index; the same seed is paired across variants",
+		Runs:           opts.runs,
+		Iterations:     opts.iterations,
+		MaxEvaluations: opts.maxEvals,
+		Workers:        opts.workers,
+		Variants:       []variantProtocol{},
+		Benchmarks:     []benchmarkProtocol{},
 		Notes: []string{
-			"No early-stopping target is enabled; every successful run uses the configured iteration count.",
+			"No target-cost early stopping is enabled.",
 			"CSV execution_seconds is machine-dependent; costs, seeds, evaluation counts, " +
 				"and iterations are the reproducibility data.",
 			"Different variants can consume different function-evaluation counts, so compare " +
 				"function_evaluations as well as best_cost.",
 			"This is a current-library baseline, not a claim that every source paper used this common protocol.",
 		},
+	}
+
+	if opts.maxEvals > 0 {
+		protocol.Notes = append(protocol.Notes,
+			"Each successful run invokes the objective exactly max_function_evaluations times; "+
+				"iterations_per_run is a safety ceiling and must be high enough to consume that budget.",
+		)
+	} else {
+		protocol.Notes = append(protocol.Notes,
+			"Every successful run uses the configured iteration count; no objective-evaluation cap is enabled.",
+		)
 	}
 
 	for _, variant := range variants {

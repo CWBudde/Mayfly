@@ -24,11 +24,16 @@ func TestComparisonRunner(t *testing.T) {
 		t.Errorf("Default max iterations should be 500, got %d", runner.MaxIterations)
 	}
 
+	if runner.MaxEvaluations != 0 {
+		t.Errorf("Default maximum evaluations should be disabled, got %d", runner.MaxEvaluations)
+	}
+
 	// Test fluent API
 	runner = runner.
 		WithVariantNames("ma", "desma").
 		WithRuns(3).
 		WithIterations(50).
+		WithMaxEvaluations(1_000).
 		WithVerbose(false)
 
 	if len(runner.Variants) != 2 {
@@ -41,6 +46,10 @@ func TestComparisonRunner(t *testing.T) {
 
 	if runner.MaxIterations != 50 {
 		t.Errorf("Expected 50 iterations, got %d", runner.MaxIterations)
+	}
+
+	if runner.MaxEvaluations != 1_000 {
+		t.Errorf("Expected 1000 maximum evaluations, got %d", runner.MaxEvaluations)
 	}
 }
 

@@ -12,6 +12,9 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A reproducible experiment command and wrapper for paired seeded comparisons
   of all eight variants, with CSV/JSON run data and a protocol manifest that
   records revision, runtime, bounds, seed schedule, and configuration.
+- Exact per-run objective-evaluation budgets for `ComparisonRunner` and the
+  paper-reproduction command, including rejection when the iteration safety
+  ceiling is too short to consume the requested budget.
 - A forty-seed classifier calibration regression covering smooth and rugged
   benchmark landscapes.
 - `Himmelblau` benchmark function, the sixteenth in the standalone suite:

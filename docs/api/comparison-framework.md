@@ -48,6 +48,7 @@ Lower objective costs rank better.
 | `WithVariantNames(...string)`       | Select variants by registered name                                                          |
 | `WithRuns(int)`                     | Set independent runs per variant                                                            |
 | `WithIterations(int)`               | Set the iteration limit for every run                                                       |
+| `WithMaxEvaluations(int)`           | Cap actual objective calls per run; zero disables the cap                                   |
 | `WithTarget(float64)`               | Set a positive cost threshold used for success and convergence statistics; zero disables it |
 | `WithSeed(int64)`                   | Set the base seed for reproducible, paired runs                                             |
 | `WithParallel(bool)`                | Run independent optimization trials concurrently                                            |
@@ -58,6 +59,25 @@ Recognized variant names are `ma`, `desma`, `olce` (or `olce-ma`), `eobbma`,
 `gsasma`, `mpma`, and `aoblmoa`. `standard` is an alias for `ma`. Unknown names
 are ignored by `WithVariantNames`; `CompareContext` returns an error if no valid
 variant remains.
+
+### Function-evaluation budgets
+
+Paper comparisons often require the same number of objective evaluations even
+when algorithms evaluate different numbers of candidates per iteration. Use an
+evaluation budget together with an iteration safety ceiling:
+
+```go
+runner.WithMaxEvaluations(95_000).WithIterations(2_000)
+```
+
+Each run invokes the objective no more than the configured budget and reports
+the actual invocation count in `RunResult.FuncEvals`. If the iteration ceiling
+is reached before the complete budget is consumed, `CompareContext` returns an
+error instead of silently accepting an incomparable run. If the budget ends
+partway through a generation, remaining candidates receive an infinite cost
+without invoking the objective, preserving the best solution found within the
+exact budget. Set `MaxIterations` close to the expected final generation to
+avoid unnecessary post-budget work.
 
 ### Parallelism and objective safety
 

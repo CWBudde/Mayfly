@@ -102,8 +102,11 @@ The API examples, quick-reference guide, and parameter documentation are complet
 - [ ] Reproduce the original paper results for MA, DESMA, OLCE-MA, EOBBMA, GSASMA,
       HMMA, MPMA, and AOBLMOA. Historical seeded results from before the correctness
       audit must not be compared as if they came from the corrected implementations.
-      The post-audit harness now provides a controlled baseline, but exact
-      paper protocols and reference tables still need to be encoded and compared.
+      The post-audit harness now provides a controlled baseline and can enforce
+      exact per-run objective-evaluation budgets. The original MA paper's 50-run,
+      95,000-evaluation target and 20/20 population have been source-audited, but
+      its Appendix A improved-MA configuration, benchmark protocol, and reference
+      tables still need to be encoded and compared before this item is complete.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and
       `scripts/run-paper-experiments.sh` run paired seeded trials of all eight variants,
       export raw CSV/JSON, and record the protocol, revision, runtime, bounds, and

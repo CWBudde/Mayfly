@@ -10,6 +10,7 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 - **Looking for benchmarks?** Visit [Benchmark Functions](benchmarks.md)
 - **Wondering about the initial population?** See [Quasi-Random Initial Populations](qmc-initialization.md)
 - **Interested in research?** Read [Research References](research.md)
+- **Reproducing experiments?** Use the [Paper-reproduction Experiments](paper-reproduction.md)
 
 ## Documentation Structure
 
@@ -113,6 +114,9 @@ Complete API reference:
   - Variant-specific papers
   - BibTeX entries
   - Research trends
+- **[Paper-reproduction Experiments](paper-reproduction.md)** - Reproducible post-v0.7 baseline
+  - Paired seed schedule for all eight variants
+  - Machine-readable protocol, raw run data, and configuration snapshots
 - **[Release Guide](releasing.md)** - Version policy, validation, and
   publication checklist
 

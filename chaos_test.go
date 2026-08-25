@@ -75,9 +75,9 @@ func TestLogisticMapResetAndBoundarySafeguards(t *testing.T) {
 	}
 }
 
-// TestChaoticConstrictionFactorUsesOneBasedGeneration pins s=(G-g+1)/G
-// from the cited OLCE-MA chaotic-offspring strategy. The optimizer uses
-// zero-based iteration indices, while the paper uses generations 1..G.
+// TestChaoticConstrictionFactorUsesOneBasedGeneration pins the compatibility
+// stage's s=(G-g+1)/G schedule. The optimizer uses zero-based iteration indices
+// while the compatibility equation uses generations 1..G.
 func TestChaoticConstrictionFactorUsesOneBasedGeneration(t *testing.T) {
 	config := NewOLCEConfig()
 	config.MaxIterations = 4
@@ -109,10 +109,9 @@ func TestChaoticConstrictionFactorUsesOneBasedGeneration(t *testing.T) {
 	}
 }
 
-// TestChaoticExploitationCandidateEquation pins the published offspring
-// construction: C'=LB+C(UB-LB), O'=(1-s)O+sC'. The paper says "the fittest
-// offspring's position" (singular), which is why the optimizer applies this
-// once to the best crossover child rather than to parents or every child.
+// TestChaoticExploitationCandidateEquation pins the historical compatibility
+// construction: C'=LB+C(UB-LB), O'=(1-s)O+sC'. It is intentionally distinct
+// from the unresolved published all-offspring Chebyshev mutation.
 func TestChaoticExploitationCandidateEquation(t *testing.T) {
 	config := NewOLCEConfig()
 	config.LowerBound = -2
@@ -172,9 +171,9 @@ func TestChaoticExploitationRejectsNaNCandidate(t *testing.T) {
 	}
 }
 
-// TestChaoticExploitationFormsNewOffspringUnconditionally pins the paper's
-// lifecycle semantics: Eq. (12) forms the new offspring position; it does not
-// describe choosing the better of that position and the crossover source.
+// TestChaoticExploitationFormsNewOffspringUnconditionally pins the historical
+// compatibility behavior: it replaces the selected crossover source rather
+// than greedily choosing between the two positions.
 func TestChaoticExploitationFormsNewOffspringUnconditionally(t *testing.T) {
 	config := NewOLCEConfig()
 	config.ProblemSize = 1

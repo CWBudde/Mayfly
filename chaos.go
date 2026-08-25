@@ -179,10 +179,10 @@ func normalizeLogisticSeed(seed float64) float64 {
 }
 
 // chaoticConstrictionFactor converts the zero-based implementation iteration
-// to the paper's one-based generation number. The OLCE-MA paper defines
-// s=(G-g+1)/G, so the factor is one in the first generation and 1/G in the
-// final generation. ChaosFactor is a compatibility multiplier; its canonical
-// value is one and zero disables the optional stage.
+// to the one-based generation used by Mayfly's historical OLCE compatibility
+// equation s=(G-g+1)/G. The factor is one in the first generation and 1/G in
+// the final generation. ChaosFactor is a compatibility multiplier; one keeps
+// the historical behavior and zero disables the optional stage.
 func chaoticConstrictionFactor(config *Config, iteration int) float64 {
 	if config == nil || config.MaxIterations <= 0 {
 		return 0
@@ -194,7 +194,10 @@ func chaoticConstrictionFactor(config *Config, iteration int) float64 {
 		float64(config.MaxIterations)
 }
 
-// chaoticExploitationCandidate implements the OLCE-MA offspring equation.
+// chaoticExploitationCandidate implements Mayfly's historical OLCE
+// compatibility equation. Publisher pseudocode discovered after this stage was
+// written specifies a Chebyshev mutation over all crossover offspring, but its
+// exact component equation is not available in the accessible figures.
 // For every component C'=LB+C(UB-LB) is first mapped from the logistic
 // sequence, then the fittest crossover offspring O is replaced by
 // O'=(1-s)O+sC'. Both slices must have the same length.
@@ -210,12 +213,10 @@ func chaoticExploitationCandidate(
 	}
 }
 
-// applyChaoticExploitation forms and evaluates the chaotic position of the
-// fittest crossover offspring. The caller is responsible for selecting that
-// offspring; the paper describes this stage in the singular and places it
-// after mating, not as an elite-parent local search. Eq. (12) forms the new
-// offspring position unconditionally; it does not specify a greedy comparison
-// against the pre-chaos crossover point.
+// applyChaoticExploitation forms and evaluates the historical compatibility
+// position for one caller-selected crossover offspring. The published
+// pseudocode instead applies Chebyshev mutation to all crossover offspring;
+// retain this behavior only until the exact component equation is available.
 //
 // Exactly one objective evaluation is spent per call. It returns true when the
 // finite candidate was installed.
@@ -257,8 +258,8 @@ func commitChaoticOffspring(target, candidate *Mayfly) bool {
 }
 
 // fittestMayfly returns the best evaluated individual without reordering the
-// input. OLCE-MA's chaotic strategy is defined for the fittest offspring in
-// the singular, so callers use this on the crossover batch only.
+// input. OLCE's current compatibility stage uses this on the crossover batch;
+// it is not part of the published all-offspring pseudocode.
 func fittestMayfly(population []*Mayfly, evaluator *constraintEvaluator) *Mayfly {
 	if len(population) == 0 {
 		return nil

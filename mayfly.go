@@ -892,9 +892,10 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			offspring = append(offspring, maleOffspring...)
 			offspring = append(offspring, femaleOffspring...)
 
-			// The cited OLCE-MA strategy applies chaotic exploitation to the
-			// fittest crossover offspring (singular), before mutation and
-			// survivor selection. One additional candidate is evaluated.
+			// The historical OLCE compatibility stage applies Logistic-map
+			// exploitation to one fittest crossover offspring. The published
+			// pseudocode instead uses Chebyshev mutation over all offspring;
+			// see chaos.go. One additional candidate is currently evaluated.
 			if config.UseOLCE && config.ChaosFactor > 0 && len(offspring) > 0 {
 				bestOffspring := fittestMayfly(offspring, candidateEvaluator)
 				applyChaoticExploitation(

@@ -102,24 +102,36 @@ The API examples, quick-reference guide, and parameter documentation are complet
 - [ ] Reproduce the original paper results for MA, DESMA, OLCE-MA, EOBBMA, GSASMA,
       HMMA, MPMA, and AOBLMOA. Historical seeded results from before the correctness
       audit must not be compared as if they came from the corrected implementations.
-- [ ] Provide experiment scripts.
-- [ ] Compare OLCE's equal-fitness offspring handling with the complete published
-      pseudocode if an accessible authoritative copy becomes available. Until then,
-      Mayfly uses deterministic first-best tie handling because the accessible source
-      leaves ties implicit.
+      The post-audit harness now provides a controlled baseline, but exact
+      paper protocols and reference tables still need to be encoded and compared.
+- [x] Provide experiment scripts. `cmd/paper-reproduction` and
+      `scripts/run-paper-experiments.sh` run paired seeded trials of all eight variants,
+      export raw CSV/JSON, and record the protocol, revision, runtime, bounds, and
+      configuration in a manifest.
+- [ ] Correct OLCE's chaotic-exploitation stage against the complete published equations.
+      The publisher's authoritative pseudocode figures became accessible on 2026-08-25
+      and invalidate the earlier equal-fitness premise: they specify Chebyshev mutation
+      over all `N` crossover offspring, so there is no fittest-offspring tie. The current
+      Logistic-map, first-best stage is now documented as an extension. The figures do
+      not expose the exact recurrence and component mutation equation, so implementation
+      remains blocked on an authoritative full equation or reference implementation.
 - [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA crossover and
       mutation probability bounds against the authors' reference implementation or
       reproducible experimental data. The current cooling schedule is explicitly a
       library extension, and ordinary configured mating remains in place rather than
       inventing constants absent from the paper.
-- [ ] Re-test Dragonfly's selector thresholds across multiple seeds and, if it still uses
+- [x] Re-test Dragonfly's selector thresholds across multiple seeds and, if it still uses
       the old values, align them with Mayfly's `smoothRoughness = 2.2` and
-      `multimodalTurningPoints = 5.0`. Dragonfly's single-seed Schwefel test may currently
-      pass only by luck of the draw.
-- [ ] Decide whether to improve sampled classification for Griewank on `[-600,600]`.
+      `multimodalTurningPoints = 5.0`. Across 40 seeds, the old thresholds classified
+      Schwefel correctly only 37/40 times for modality and 25/40 for landscape; the
+      aligned thresholds and new multi-seed regression pass 40/40.
+- [x] Decide whether to improve sampled classification for Griewank on `[-600,600]`.
       Mayfly currently measures it as `Unimodal`/`Smooth`, while
       `RecommendForBenchmark` deliberately remains `HighlyMultimodal`/`Rugged`: the
       order-one cosine ripples are only a few units wide against a value range around
       100,000, so the current line spacing aliases them and normalized total variation
       treats them as negligible. The hard-coded recommendation is more useful to an
-      optimizer working near the optimum.
+      optimizer working near the optimum. A 200-seed sweep found that increasing from
+      65 to 1025 points per line raises sampling cost from 390 to 6,150 evaluations and
+      recovers modality, but still reports `Smooth` in every run. Keep the cheap generic
+      box-scale classifier and the literature-backed benchmark override.

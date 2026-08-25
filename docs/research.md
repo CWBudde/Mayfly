@@ -55,7 +55,7 @@ Academic papers and research behind the Mayfly algorithm variants implemented in
 ### Key Contributions
 
 - Orthogonal experimental design for systematic parameter exploration
-- Chaotic maps (logistic map) for perturbation
+- Chebyshev-map mutation in the published chaotic-exploitation pseudocode
 - Improved diversity maintenance
 - Better performance on highly multimodal problems
 - 15-30% improvement on Rastrigin, Rosenbrock, Ackley
@@ -63,8 +63,10 @@ Academic papers and research behind the Mayfly algorithm variants implemented in
 ### Technical Details
 
 - **Orthogonal learning**: Applied to the primary male movement operator
-- **Chaos exploitation**: Forms a position from the fittest crossover
-  offspring using the logistic map and the paper's constriction schedule
+- **Chaos exploitation**: The publisher pseudocode applies Chebyshev-based
+  mutation to all crossover offspring. Mayfly's current one-offspring
+  Logistic-map stage predates access to that figure and remains a documented
+  extension until the exact component equation is available.
 - **Target problems**: High-dimensional multimodal optimization
 
 ---
@@ -216,14 +218,14 @@ callers who want a front:
 
 Research papers report the following improvements over Standard MA:
 
-| Variant | Best Problem Type | Improvement | Overhead      |
-| ------- | ----------------- | ----------- | ------------- |
-| DESMA   | Multimodal        | 70%+        | +8% evals     |
-| OLCE-MA | Highly Multimodal | 15-30%      | Dimension-dependent |
-| EOBBMA  | Deceptive         | 55%+        | +1.5% evals   |
-| GSASMA  | Multimodal        | Paper-dependent | baseline batches |
-| MPMA    | Ill-conditioned   | 10-30%      | 0% (baseline) |
-| AOBLMOA | Complex/Adaptive  | Variable    | +20-30% evals |
+| Variant | Best Problem Type | Improvement     | Overhead            |
+| ------- | ----------------- | --------------- | ------------------- |
+| DESMA   | Multimodal        | 70%+            | +8% evals           |
+| OLCE-MA | Highly Multimodal | 15-30%          | Dimension-dependent |
+| EOBBMA  | Deceptive         | 55%+            | +1.5% evals         |
+| GSASMA  | Multimodal        | Paper-dependent | baseline batches    |
+| MPMA    | Ill-conditioned   | 10-30%          | 0% (baseline)       |
+| AOBLMOA | Complex/Adaptive  | Variable        | +20-30% evals       |
 
 ### Common Benchmark Functions
 
@@ -258,22 +260,31 @@ Papers typically evaluate on:
 
 ## Implementation Notes
 
-This Go implementation maintains **research fidelity** while providing:
+This Go implementation targets **research fidelity** while recording known
+source ambiguities and compatibility extensions explicitly. In particular,
+OLCE chaotic exploitation and GSASMA's undocumented schedules are open Phase 7
+items. The library also provides:
 
 - Idiomatic Go code structure
-- All variants implemented as described in papers
+- Accessible paper components covered by equation-level fixtures
+- Known deviations isolated behind documented compatibility behavior
 - Consistent API across variants
-- Comprehensive benchmark validation
-- Performance metrics matching published results
+- Classic, CEC, and engineering benchmark support
+- Statistical comparison and raw-result export
 
 ### Validation Approach
 
-Each variant has been validated against:
+Validation currently includes:
 
-- Benchmark functions from original papers
-- Expected performance ranges
-- Algorithm behavior characteristics
-- Parameter sensitivity analysis
+- equation-level fixtures for accessible published formulas;
+- deterministic lifecycle, accounting, and sequential/parallel parity tests;
+- controlled benchmark studies produced by the
+  [paper-reproduction harness](paper-reproduction.md).
+
+The harness does not yet reproduce every source paper's complete protocol or
+published result table. Its manifests and raw outputs are the basis for that
+remaining work; reported improvement percentages above are literature claims,
+not new measurements from the corrected v0.7 implementations.
 
 ---
 

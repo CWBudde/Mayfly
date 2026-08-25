@@ -75,9 +75,9 @@ func evaluateParallelGeneticOperators(
 
 	initializeOffspringBests(offspring)
 
-	// OLCE-MA Eq. (12) forms one new position from the fittest crossover
-	// offspring. It belongs here, after mating and before mutation/selection,
-	// rather than in the incumbent male-refinement phase.
+	// The historical OLCE compatibility stage forms one new position from the
+	// fittest crossover offspring. Publisher pseudocode discovered later uses
+	// Chebyshev mutation over the whole offspring batch; see chaos.go.
 	if config.UseOLCE && config.ChaosFactor > 0 && len(offspring) > 0 {
 		var chaosMap *LogisticMap
 		if len(chaosMaps) > 0 {

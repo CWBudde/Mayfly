@@ -338,8 +338,9 @@ func evaluateParallelAOBLMOA(
 }
 
 // evaluateParallelChaoticExploitation is retained as an internal compatibility
-// helper. OLCE-MA applies chaos to the fittest offspring only, so numElite is
-// ignored and this function evaluates exactly one candidate.
+// helper. Mayfly's historical stage applies chaos to one fittest offspring, so
+// numElite is ignored and this function evaluates exactly one candidate. This
+// is not the published all-offspring Chebyshev stage; see chaos.go.
 func evaluateParallelChaoticExploitation(
 	ctx context.Context,
 	males []*Mayfly,

@@ -185,6 +185,44 @@ func TestClassifyProblemIsScaleFree(t *testing.T) {
 	}
 }
 
+// TestClassifierThresholdsAcrossSeeds pins the multi-seed calibration behind
+// multimodalTurningPoints and smoothRoughness. In particular, the former 6.0
+// and 3.0 thresholds made Schwefel's verdict depend heavily on the selected
+// seed; the current thresholds separate these benchmark shapes for every seed
+// in the calibration set without making the single-basin functions rugged.
+func TestClassifierThresholdsAcrossSeeds(t *testing.T) {
+	tests := []struct {
+		name          string
+		fn            ObjectiveFunction
+		lower, upper  float64
+		wantModality  Modality
+		wantLandscape Landscape
+	}{
+		{"Sphere", Sphere, -500, 500, Unimodal, Smooth},
+		{"Rosenbrock", Rosenbrock, -5, 10, Unimodal, Smooth},
+		{"Rastrigin", Rastrigin, -5.12, 5.12, HighlyMultimodal, Rugged},
+		{"Ackley", Ackley, -32, 32, HighlyMultimodal, Rugged},
+		{"Schwefel", Schwefel, -500, 500, HighlyMultimodal, Rugged},
+	}
+
+	for _, test := range tests {
+		for seed := range int64(40) {
+			turns, roughness := lineScanStatistics(
+				test.fn, 10, test.lower, test.upper, rand.New(rand.NewSource(seed)))
+
+			if got := modalityFromTurningPoints(turns); got != test.wantModality {
+				t.Errorf("%s seed %d: modality = %v (turns %.2f), want %v",
+					test.name, seed, got, turns, test.wantModality)
+			}
+
+			if got := landscapeFromRoughness(roughness); got != test.wantLandscape {
+				t.Errorf("%s seed %d: landscape = %v (roughness %.2f), want %v",
+					test.name, seed, got, roughness, test.wantLandscape)
+			}
+		}
+	}
+}
+
 // TestLineShapeHandWorked checks the two scan statistics on scans whose shape
 // is obvious by inspection.
 func TestLineShapeHandWorked(t *testing.T) {

@@ -34,7 +34,8 @@ Applies **orthogonal experimental design** as part of every male's movement:
 
 ### 2. Chaotic Exploitation
 
-Forms one new position from the **fittest crossover offspring** after mating:
+Mayfly currently forms one new position from the **fittest crossover offspring**
+after mating:
 
 ```
 s = (MaxIterations - generation + 1) / MaxIterations
@@ -42,21 +43,26 @@ chaotic[j] = LowerBound + z[j] * (UpperBound - LowerBound)
 candidate[j] = (1 - s) * bestOffspring[j] + s * chaotic[j]
 ```
 
-Where chaos values follow the logistic map:
+The compatibility implementation uses a logistic map:
 
 ```
 z(n+1) = 4 * z(n) * (1 - z(n))
 ```
 
-The candidate is evaluated once and becomes the new offspring position; the
-paper does not specify a greedy comparison with the discarded crossover
-position. `ChaosFactor` is a compatibility multiplier on `s`; the
-paper-compatible default is 1 and zero disables the stage.
+The candidate is evaluated once and becomes the new offspring position.
+`ChaosFactor` is a compatibility multiplier on `s`; its default is 1 and zero
+disables the stage.
 
-The accessible paper metadata and indexed equation description establish the
-two lifecycle placements above and describe the target as the fittest
-offspring (singular). They do not expose enough pseudocode to settle tie
-handling; this implementation keeps the first best crossover offspring.
+This stage is now known to be a library extension, not a paper-faithful
+implementation. The publisher's [mating pseudocode](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig1_HTML.png)
+creates `N` crossover offspring, and its [chaotic-exploitation pseudocode](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig3_HTML.png)
+applies Chebyshev-based mutation to all `N`; the [published map figure](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig4_HTML.png)
+also shows values in `[-1,1]` with `C1 = 0.65`. There is therefore no
+equal-fitness offspring tie to resolve. The accessible figures do not expose
+the exact Chebyshev recurrence or component mutation equation, so the library
+retains its prior behavior rather than guessing those formulas. Do not label
+OLCE results as exact paper reproductions until that open fidelity item is
+resolved.
 
 **Properties**:
 
@@ -220,8 +226,8 @@ func main() {
 
 - `UseOLCE`: Enable OLCE-MA variant (default: false)
 - `OrthogonalFactor`: Orthogonal learning strength (default: 0.3, range: 0-1)
-- `ChaosFactor`: Compatibility multiplier for the paper's constriction factor
-  (default: 1, range: 0-1). Set to 0 to disable chaotic exploitation.
+- `ChaosFactor`: Multiplier for the historical Logistic-map compatibility
+  stage (default: 1, range: 0-1). Set to 0 to disable that stage.
 
 ## Benefits
 
@@ -254,8 +260,10 @@ func main() {
 ### Overhead
 
 Each generation evaluates one orthogonal design plus one factor-analysis
-candidate per male, and one chaotic candidate for the best crossover
-offspring. The exact overhead therefore depends on dimension and population.
+candidate per male, and the current compatibility stage evaluates one chaotic
+candidate for the best crossover offspring. The exact overhead therefore
+depends on dimension and population; a future paper-faithful all-offspring
+stage will have a different budget.
 
 ## When to Use OLCE-MA
 
@@ -305,7 +313,7 @@ config.OrthogonalFactor = 0.1
 config.ChaosFactor = 1.0
 ```
 
-- Uses the paper's constriction without scaling.
+- Uses the historical compatibility constriction without scaling.
 
 **Reduced chaos**:
 
@@ -313,7 +321,7 @@ config.ChaosFactor = 1.0
 config.ChaosFactor = 0.3
 ```
 
-- Uses 30% of the paper's constriction
+- Uses 30% of the historical compatibility constriction
 
 **Minimal chaos**:
 
@@ -364,9 +372,12 @@ config.ChaosFactor = 0.05
 ### Chaotic Perturbation Application
 
 1. **After crossover**: Generate offspring from parents
-2. **Select fittest crossover offspring**: The paper describes one target
-3. **Apply chaos map**: Blend it with a bounded chaotic position using `s`
+2. **Compatibility selection**: Select the first fittest crossover offspring
+3. **Compatibility map**: Blend it with a bounded Logistic-map position using `s`
 4. **Evaluate**: Test the new offspring position before mutation and selection
+
+These are the current library steps, not the publisher pseudocode's
+Chebyshev mutation over every crossover offspring; see the fidelity note above.
 
 ## Related Documentation
 

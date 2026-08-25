@@ -9,6 +9,11 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A reproducible experiment command and wrapper for paired seeded comparisons
+  of all eight variants, with CSV/JSON run data and a protocol manifest that
+  records revision, runtime, bounds, seed schedule, and configuration.
+- A forty-seed classifier calibration regression covering smooth and rugged
+  benchmark landscapes.
 - `Himmelblau` benchmark function, the sixteenth in the standalone suite:
   multimodal with four equal global minima, extended to n dimensions by summing
   over disjoint coordinate pairs, with the unpaired coordinate in an odd
@@ -20,6 +25,14 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Constrained spring, welded-beam, pressure-vessel, and speed-reducer engineering
   benchmarks with physical bounds, published reference designs, mixed-variable
   projection, and normalized configuration adapters.
+
+### Changed
+
+- OLCE documentation now reflects the publisher's newly accessible complete
+  pseudocode: chaotic exploitation uses Chebyshev mutation over all crossover
+  offspring, so the former fittest-offspring tie premise was incorrect. The
+  existing one-offspring Logistic-map behavior is explicitly labeled a library
+  extension pending an authoritative exact mutation equation.
 
 ## [0.7.0] - 2026-08-24
 

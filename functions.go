@@ -87,6 +87,53 @@ func Griewank(x []float64) float64 {
 	return sum/4000 - prod + 1
 }
 
+// Eggcrate is the two-dimensional Eggcrate benchmark function. Coordinates
+// beyond the first two are ignored because the published function is
+// fixed-dimension. A missing coordinate is treated as zero, preserving the
+// package convention that an empty position vector scores zero.
+// Global minimum is at f(0, 0) = 0.
+func Eggcrate(x []float64) float64 {
+	if len(x) == 0 {
+		return 0
+	}
+
+	x1 := x[0]
+
+	x2 := 0.0
+	if len(x) > 1 {
+		x2 = x[1]
+	}
+
+	sine1 := math.Sin(x1)
+	sine2 := math.Sin(x2)
+
+	return x1*x1 + x2*x2 + 25*(sine1*sine1+sine2*sine2)
+}
+
+// Beale is the two-dimensional Beale benchmark function. Coordinates beyond
+// the first two are ignored because the published function is fixed-dimension.
+// A missing coordinate is treated as zero, preserving the package convention
+// that an empty position vector scores zero.
+// Global minimum is at f(3, 0.5) = 0.
+func Beale(x []float64) float64 {
+	if len(x) == 0 {
+		return 0
+	}
+
+	x1 := x[0]
+
+	x2 := 0.0
+	if len(x) > 1 {
+		x2 = x[1]
+	}
+
+	first := 1.5 - x1 + x1*x2
+	second := 2.25 - x1 + x1*x2*x2
+	third := 2.625 - x1 + x1*x2*x2*x2
+
+	return first*first + second*second + third*third
+}
+
 // Schwefel is the Schwefel benchmark function: deceptive, with the global minimum far from the next best local minima.
 // Typical bounds: [-500, 500].
 func Schwefel(x []float64) float64 {

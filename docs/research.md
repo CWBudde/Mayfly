@@ -232,7 +232,8 @@ Research papers report the following improvements over Standard MA:
 Papers typically evaluate on:
 
 - **CEC competitions**: CEC 2014, CEC 2017, CEC 2020 suites
-- **Classic functions**: Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
+- **Classic functions**: Sphere, Rastrigin, Rosenbrock, Ackley, Griewank,
+  Eggcrate, Beale
 - **Deceptive functions**: Schwefel, Michalewicz
 - **Engineering problems**: Spring design, welded beam, pressure vessel
 

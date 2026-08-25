@@ -1,11 +1,11 @@
 # Benchmark Functions Reference
 
-The library includes 16 standalone functions, the complete usable CEC2017 and
+The library includes 18 standalone functions, the complete usable CEC2017 and
 CEC2020 bound-constrained suites, and four constrained engineering-design problems.
 
 ## Function Categories
 
-### Classic Benchmark Functions (5)
+### Classic Benchmark Functions (7)
 
 Standard test functions from optimization literature:
 
@@ -14,6 +14,8 @@ Standard test functions from optimization literature:
 - **Rosenbrock** - Unimodal, narrow valley
 - **Ackley** - Multimodal, flat outer region
 - **Griewank** - Many local minima
+- **Eggcrate** - Fixed 2D, regularly oscillating
+- **Beale** - Fixed 2D, non-convex
 
 ### CEC-Style Benchmark Functions (11)
 
@@ -184,6 +186,38 @@ mayfly.Griewank(x []float64) float64
 **Formula**: `f(x) = 1 + Σ(xi²/4000) - Π(cos(xi/√i))`
 
 **Use for**: Testing ability to handle interdependent variables
+
+---
+
+### Eggcrate Function
+
+```go
+mayfly.Eggcrate(x []float64) float64
+```
+
+- **Global minimum**: f(0, 0) = 0
+- **Typical bounds**: [-5, 5]
+- **Type**: Fixed 2D, multimodal
+- **Formula**: `f(x,y) = x² + y² + 25(sin²x + sin²y)`
+- **Dimension handling**: Coordinates beyond the first two are ignored
+
+This is F19 in Table 6 of the original MA paper.
+
+---
+
+### Beale Function
+
+```go
+mayfly.Beale(x []float64) float64
+```
+
+- **Global minimum**: f(3, 0.5) = 0
+- **Typical bounds**: [-4.5, 4.5]
+- **Type**: Fixed 2D, multimodal
+- **Formula**: `(1.5-x+xy)² + (2.25-x+xy²)² + (2.625-x+xy³)²`
+- **Dimension handling**: Coordinates beyond the first two are ignored
+
+This is F20 in Table 6 of the original MA paper.
 
 ---
 

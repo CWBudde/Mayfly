@@ -36,8 +36,8 @@ so changing the worker count does not change the cost samples. For example:
 
 The command accepts comma-separated `-benchmarks`, `-variants`, and
 `-dimensions`. Benchmark names are `sphere`, `rastrigin`, `rosenbrock`,
-`ackley`, `griewank`, and `schwefel`. Variant names are `ma`, `desma`,
-`olce-ma`, `eobbma`, `gsasma`, `hmma`, `mpma`, and `aoblmoa`.
+`ackley`, `beale`, `eggcrate`, `griewank`, and `schwefel`. Variant names are
+`ma`, `desma`, `olce-ma`, `eobbma`, `gsasma`, `hmma`, `mpma`, and `aoblmoa`.
 
 Use `-max-evaluations N` when a source protocol specifies an objective-call
 budget. `-iterations` remains a safety ceiling and must be high enough to
@@ -50,17 +50,38 @@ objective and cannot replace the best solution found within the budget.
 The original MA paper reports 50 replications at 95,000 function evaluations
 per run. It uses a population of 40 (20 male and 20 female mayflies) and reports
 the tuned attraction constants `a1 = 1`, `a2 = 1.5`, visibility coefficient
-`beta = 2`, and basic-MA dance and random-flight values of `0.1`. These facts
-come from the publisher's [validation and comparison section](https://www.sciencedirect.com/science/article/pii/S036083522030293X).
+`beta = 2`, and basic-MA dance and random-flight values of `0.1`. Its IMA adds
+the `0.1 * (upper-lower)` velocity limit, `g = 0.8`, dance/flight damping of
+`0.77`, and Gaussian mutation with a reported rate of `0.1`. These facts come
+from the publisher's [validation and comparison section](https://www.sciencedirect.com/science/article/pii/S036083522030293X).
+
+The complete Table 6 protocol, Appendix A tuning grid, benchmark bounds, and
+all Basic MA/VGMA/SMA/IMA reference statistics are transcribed in the
+[machine-readable reference file](reference-data/original-ma-2020-table6.json).
+The scalable cases are 5D Sphere, Rosenbrock, Rastrigin, and Ackley; Eggcrate
+and Beale remain the fixed 2D functions defined by the paper's benchmark table,
+despite Table 6's generic “at 5 dimensions” caption.
+
 The authors' [reference implementation](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python)
-also confirms the 20/20 population shape and exposes a later demo configuration.
+confirms the 20/20 population shape but exposes a later demo configuration, not
+the paper's tuned IMA protocol.
 
 The harness can now enforce the paper's exact 95,000-call budget. An
-`original-ma-2020` preset is intentionally not yet exposed: the paper compares
-its fully improved MA after a basic/VGMA/SMA/IMA tuning sequence, while the
-current default configuration reflects the authors' later reference code.
-Encoding a preset before the exact Appendix A configuration and the reference
-rows have been transcribed would conflate those two protocols.
+`original-ma-2020` preset is intentionally not yet exposed. The remaining
+blocker is operator semantics, not missing numerical transcription:
+
+- Section 3.2.3 defines arithmetic offspring using a coefficient `L`, while
+  Section 4.2 calls the configured operator “single point uniform crossover” at
+  rate `0.95`; it does not say how that rate gates mating.
+- Equation 22 defines additive Gaussian mutation, but the reported mutation
+  rate `0.1` is not identified as a candidate probability, coordinate
+  probability, or Gaussian standard deviation.
+
+The later author code has separate knobs for those interpretations and uses
+different tuned parameters. Selecting one silently would create a plausible
+experiment, not a reproduction. The reference file records these ambiguities so
+that a future author clarification or archived experiment implementation can
+close them without redoing the protocol audit.
 
 ## Output contract
 

@@ -547,6 +547,48 @@ func BenchmarkGriewank(b *testing.B) {
 	}
 }
 
+func TestEggcrate(t *testing.T) {
+	tests := []struct {
+		name string
+		x    []float64
+		want float64
+	}{
+		{name: "empty", x: nil, want: 0},
+		{name: "global minimum", x: []float64{0, 0}, want: 0},
+		{name: "known point", x: []float64{math.Pi, 0}, want: math.Pi * math.Pi},
+		{name: "fixed dimension", x: []float64{0, 0, 100}, want: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Eggcrate(tt.x); math.Abs(got-tt.want) > epsilon {
+				t.Errorf("Eggcrate(%v) = %v, want %v", tt.x, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBeale(t *testing.T) {
+	tests := []struct {
+		name string
+		x    []float64
+		want float64
+	}{
+		{name: "empty", x: nil, want: 0},
+		{name: "global minimum", x: []float64{3, 0.5}, want: 0},
+		{name: "origin", x: []float64{0, 0}, want: 14.203125},
+		{name: "fixed dimension", x: []float64{3, 0.5, 100}, want: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Beale(tt.x); math.Abs(got-tt.want) > epsilon {
+				t.Errorf("Beale(%v) = %v, want %v", tt.x, got, tt.want)
+			}
+		})
+	}
+}
+
 // TestSchwefel tests the Schwefel benchmark function.
 func TestSchwefel(t *testing.T) {
 	tests := []struct {

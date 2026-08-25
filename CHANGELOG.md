@@ -15,6 +15,9 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Exact per-run objective-evaluation budgets for `ComparisonRunner` and the
   paper-reproduction command, including rejection when the iteration safety
   ceiling is too short to consume the requested budget.
+- Machine-readable transcription of the original MA paper's Appendix A tuning
+  grid, Table 6 protocol, and published Basic MA/VGMA/SMA/IMA statistics, plus
+  the fixed-dimension Eggcrate and Beale benchmark functions used by that table.
 - A forty-seed classifier calibration regression covering smooth and rugged
   benchmark landscapes.
 - `Himmelblau` benchmark function, the sixteenth in the standalone suite:

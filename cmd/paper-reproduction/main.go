@@ -81,6 +81,8 @@ type manifest struct {
 
 var benchmarkRegistry = map[string]benchmark{
 	"ackley":     {name: "Ackley", fn: mayfly.Ackley, lower: -32.768, upper: 32.768, minimum: 0},
+	"beale":      {name: "Beale", fn: mayfly.Beale, lower: -4.5, upper: 4.5, minimum: 0},
+	"eggcrate":   {name: "Eggcrate", fn: mayfly.Eggcrate, lower: -5, upper: 5, minimum: 0},
 	"griewank":   {name: "Griewank", fn: mayfly.Griewank, lower: -600, upper: 600, minimum: 0},
 	"rastrigin":  {name: "Rastrigin", fn: mayfly.Rastrigin, lower: -5.12, upper: 5.12, minimum: 0},
 	"rosenbrock": {name: "Rosenbrock", fn: mayfly.Rosenbrock, lower: -30, upper: 30, minimum: 0},

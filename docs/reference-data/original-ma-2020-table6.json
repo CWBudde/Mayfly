@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "protocol_id": "original-ma-2020-table6",
+  "source": {
+    "title": "A mayfly optimization algorithm",
+    "authors": ["Konstantinos Zervoudakis", "Stelios Tsafarakis"],
+    "journal": "Computers & Industrial Engineering 145 (2020) 106559",
+    "doi": "10.1016/j.cie.2020.106559",
+    "publisher_url": "https://www.sciencedirect.com/science/article/pii/S036083522030293X",
+    "section": "4.2",
+    "table": 6
+  },
+  "execution": {
+    "replications": 50,
+    "function_evaluations_per_replication": 95000,
+    "male_population": 20,
+    "female_population": 20,
+    "published_seed_schedule": null
+  },
+  "ima": {
+    "common_parameters": {
+      "a1": 1.0,
+      "a2": 1.5,
+      "beta": 2.0,
+      "nuptial_dance": 0.1,
+      "random_flight": 0.1,
+      "selection": "linear rank pairing"
+    },
+    "vgma_improvements": {
+      "velocity_limit_fraction_of_search_range": 0.1,
+      "gravity": 0.8
+    },
+    "sma_improvements": {
+      "nuptial_dance_damping": 0.77,
+      "random_flight_damping": 0.77,
+      "gaussian_mutation_rate": 0.1
+    },
+    "published_crossover_description": "single point uniform crossover with the rate 0.95",
+    "appendix_a_tuning_grid": {
+      "gravity": {"minimum": 0.5, "maximum": 0.9, "step": 0.1},
+      "a1": {"minimum": 1.0, "maximum": 2.0, "step": 0.5},
+      "a2": {"minimum": 1.0, "maximum": 2.0, "step": 0.5},
+      "beta": {"minimum": 1.0, "maximum": 2.0, "step": 1.0},
+      "nuptial_dance": {"minimum": 0.1, "maximum": 0.9, "step": 0.2},
+      "random_flight": {"minimum": 0.1, "maximum": 0.9, "step": 0.2},
+      "damping": {"minimum": 0.66, "maximum": 0.99, "step": 0.11},
+      "combinations": 9000,
+      "benchmark": "F1 Sphere",
+      "dimension": 5,
+      "reported_outcome": {
+        "mean": 0.0015,
+        "standard_deviation": 0.0045,
+        "median": 3.4572e-159,
+        "minimum": 0.0,
+        "maximum": 0.0385
+      }
+    },
+    "unresolved_operator_semantics": [
+      "Section 3.2.3 defines arithmetic offspring with L but Section 4.2 calls the configured operator single point uniform crossover; the paper does not define how rate 0.95 gates mating.",
+      "Equation 22 defines additive Gaussian mutation, but mutation rate 0.1 is not identified as a candidate probability, coordinate probability, or Gaussian standard deviation."
+    ]
+  },
+  "benchmarks": [
+    {"id": "F1", "name": "Sphere", "dimension": 5, "lower_bound": -10.0, "upper_bound": 10.0, "known_minimum": 0.0},
+    {"id": "F2", "name": "Rosenbrock", "dimension": 5, "lower_bound": -5.0, "upper_bound": 10.0, "known_minimum": 0.0},
+    {"id": "F10", "name": "Rastrigin", "dimension": 5, "lower_bound": -5.12, "upper_bound": 5.12, "known_minimum": 0.0},
+    {"id": "F11", "name": "Ackley", "dimension": 5, "lower_bound": -32.0, "upper_bound": 32.0, "known_minimum": 0.0},
+    {"id": "F19", "name": "Eggcrate", "dimension": 2, "lower_bound": -5.0, "upper_bound": 5.0, "known_minimum": 0.0},
+    {"id": "F20", "name": "Beale", "dimension": 2, "lower_bound": -4.5, "upper_bound": 4.5, "known_minimum": 0.0}
+  ],
+  "dimension_note": "Table 6 is captioned at 5 dimensions, while the paper's benchmark table defines F19 Eggcrate and F20 Beale as fixed two-dimensional functions.",
+  "statistics_order": ["best", "worst", "mean", "median", "standard_deviation"],
+  "published_results": {
+    "F1": {
+      "basic_ma": [0.0, 3.4276e-304, 8.3607e-306, 0.0, 0.0],
+      "vgma": [2.3756e-29, 8.7923e-24, 5.7377e-25, 3.5990e-26, 1.5647e-24],
+      "sma": [0.0, 0.0, 0.0, 0.0, 0.0],
+      "ima": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "F2": {
+      "basic_ma": [3.8202, 17497.0, 1478.4, 536.76, 3018.5],
+      "vgma": [1.4014e-17, 1.7263, 0.042841, 7.2446e-11, 0.20138],
+      "sma": [0.0, 5.3396e-28, 3.0863e-29, 4.1908e-30, 7.2279e-29],
+      "ima": [0.0, 1.7995e-29, 2.0798e-30, 0.0, 4.3249e-30]
+    },
+    "F10": {
+      "basic_ma": [3.1762, 46.678, 18.583, 16.072, 11.094],
+      "vgma": [2.2026e-13, 6.5767, 1.8654, 1.9899, 1.2829],
+      "sma": [0.0, 4.3343e-13, 6.4659e-15, 0.0, 4.3545e-14],
+      "ima": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "F11": {
+      "basic_ma": [2.7765e-4, 2.6659, 0.28847, 0.14419, 0.45693],
+      "vgma": [0.0, 3.5527e-15, 2.4869e-16, 0.0, 9.1103e-16],
+      "sma": [0.0, 0.0, 0.0, 0.0, 0.0],
+      "ima": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "F19": {
+      "basic_ma": [1.3679e-7, 9.5302, 0.47634, 3.8534e-5, 2.0801],
+      "vgma": [0.0, 8.8508e-24, 1.3526e-25, 3.2908e-32, 9.1701e-25],
+      "sma": [0.0, 0.0, 0.0, 0.0, 0.0],
+      "ima": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "F20": {
+      "basic_ma": [4.5317e-7, 0.11108, 0.01936, 0.0016887, 0.032672],
+      "vgma": [0.0, 0.76207, 0.060965, 0.0, 0.20778],
+      "sma": [0.0, 0.76207, 0.053344, 0.0, 0.19541],
+      "ima": [0.0, 0.0, 0.0, 0.0, 0.0]
+    }
+  }
+}

@@ -228,7 +228,8 @@ result.PrintComparisonResults()
 
 The library includes standalone functions plus complete CEC and engineering suites:
 
-**Classic Functions:** Sphere, Rastrigin, Rosenbrock, Ackley, Griewank
+**Classic Functions:** Sphere, Rastrigin, Rosenbrock, Ackley, Griewank,
+Eggcrate, Beale
 
 **CEC-Style Functions:** Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6, Himmelblau
 

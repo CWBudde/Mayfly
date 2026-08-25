@@ -104,9 +104,13 @@ The API examples, quick-reference guide, and parameter documentation are complet
       audit must not be compared as if they came from the corrected implementations.
       The post-audit harness now provides a controlled baseline and can enforce
       exact per-run objective-evaluation budgets. The original MA paper's 50-run,
-      95,000-evaluation target and 20/20 population have been source-audited, but
-      its Appendix A improved-MA configuration, benchmark protocol, and reference
-      tables still need to be encoded and compared before this item is complete.
+      95,000-evaluation target and 20/20 population have been source-audited.
+      Its Appendix A tuning grid, Table 6 benchmark protocol, and published
+      Basic MA/VGMA/SMA/IMA rows are encoded in
+      `docs/reference-data/original-ma-2020-table6.json`. An exact preset and
+      comparison remain blocked because the paper does not resolve how crossover
+      rate 0.95 applies to its conflicting crossover descriptions or what the
+      Gaussian mutation rate 0.1 controls.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and
       `scripts/run-paper-experiments.sh` run paired seeded trials of all eight variants,
       export raw CSV/JSON, and record the protocol, revision, runtime, bounds, and

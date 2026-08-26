@@ -74,7 +74,9 @@ func NewAnnealingSchedulerChecked(
 		CurrentTemperature: initialTemp,
 		CoolingRate:        coolingRate,
 		ScheduleType:       scheduleType,
+		Iteration:          0,
 	}
+
 	err := scheduler.Validate()
 	if err != nil {
 		return nil, err

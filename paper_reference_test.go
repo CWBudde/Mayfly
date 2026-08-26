@@ -12,7 +12,25 @@ var originalMA2020Table6JSON []byte
 func TestOriginalMA2020Table6ReferenceData(t *testing.T) {
 	var reference struct {
 		ProtocolID string `json:"protocol_id"`
-		Execution  struct {
+		AuthorCode struct {
+			DatasetURL           string `json:"dataset_url"`
+			Version1DOI          string `json:"version_1_doi"`
+			DeclaredScope        string `json:"declared_scope"`
+			Table6ExperimentCode bool   `json:"table_6_experiment_code"`
+			AuditedVersions      []struct {
+				Version      int    `json:"version"`
+				MatlabSHA256 string `json:"matlab_sha256"`
+			} `json:"audited_versions"`
+			Version1 struct {
+				Dimension                      int     `json:"dimension"`
+				MutantsPerIteration            int     `json:"mutants_per_iteration"`
+				MutationCoordinateFraction     float64 `json:"mutation_coordinate_fraction"`
+				MutationStandardDeviationRange float64 `json:"mutation_standard_deviation_fraction_of_search_range"`
+				ActualFunctionEvaluations      int     `json:"actual_function_evaluations_at_2000_iterations"`
+				DisplayedFunctionEvaluations   int     `json:"displayed_function_evaluations_at_2000_iterations"`
+			} `json:"version_1_observations"`
+		} `json:"author_code_archive"`
+		Execution struct {
 			Replications        int `json:"replications"`
 			FunctionEvaluations int `json:"function_evaluations_per_replication"`
 			MalePopulation      int `json:"male_population"`
@@ -39,6 +57,21 @@ func TestOriginalMA2020Table6ReferenceData(t *testing.T) {
 		reference.Execution.MalePopulation != 20 ||
 		reference.Execution.FemalePopulation != 20 {
 		t.Fatalf("unexpected execution protocol: %+v", reference.Execution)
+	}
+
+	if reference.AuthorCode.DatasetURL != "https://data.mendeley.com/datasets/5w58s8hhz2" ||
+		reference.AuthorCode.Version1DOI != "10.17632/5w58s8hhz2.1" ||
+		reference.AuthorCode.DeclaredScope == "" || reference.AuthorCode.Table6ExperimentCode ||
+		len(reference.AuthorCode.AuditedVersions) != 4 ||
+		reference.AuthorCode.AuditedVersions[2].MatlabSHA256 !=
+			reference.AuthorCode.AuditedVersions[3].MatlabSHA256 ||
+		reference.AuthorCode.Version1.Dimension != 50 ||
+		reference.AuthorCode.Version1.MutantsPerIteration != 1 ||
+		reference.AuthorCode.Version1.MutationCoordinateFraction != 0.01 ||
+		reference.AuthorCode.Version1.MutationStandardDeviationRange != 0.1 ||
+		reference.AuthorCode.Version1.ActualFunctionEvaluations != 122_040 ||
+		reference.AuthorCode.Version1.DisplayedFunctionEvaluations != 120_040 {
+		t.Fatalf("unexpected author-code audit: %+v", reference.AuthorCode)
 	}
 
 	wantBenchmarks := map[string]struct {

@@ -9,6 +9,13 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added machine-readable provenance for every version of the original MA
+  authors' Mendeley code archive, explicitly distinguishing its simplified
+  50D demo protocol from the paper's 5D Table 6 experiment.
+- Added an opt-in published-reference mode to the experiment command. It runs
+  corrected current MA on Table 6's exact case geometry and emits a strictly
+  validated, SHA-256-linked descriptive comparison that explicitly disclaims
+  historical reproduction and unavailable VGMA/SMA/IMA implementations.
 - A reproducible experiment command and wrapper for paired seeded comparisons
   of all eight variants, with CSV/JSON run data and a protocol manifest that
   records revision, runtime, bounds, seed schedule, and configuration.
@@ -121,6 +128,16 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   numerically comparable.
 
 ### Fixed
+
+- Corrected HMMA fidelity documentation after auditing the publisher's Equation
+  (10) and Table 1 protocol. The established probability schedule is now
+  labeled a compatibility extension, and the published aggregates and all
+  unresolved protocol fields are preserved in a non-reproduction reference
+  artifact.
+- GSASMA's library-extension temperature schedule no longer cools during the
+  ordinary-MA first half of a run. Cooling now begins with the paper's
+  second-half annealed velocity phase, so the default schedule does not reach
+  its temperature floor before it is first used.
 
 - Females now participate in `GlobalBest`, convergence, target termination, and
   stagnation decisions. Populations are sorted before the first ranked update.

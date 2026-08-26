@@ -62,9 +62,40 @@ The scalable cases are 5D Sphere, Rosenbrock, Rastrigin, and Ackley; Eggcrate
 and Beale remain the fixed 2D functions defined by the paper's benchmark table,
 despite Table 6's generic “at 5 dimensions” caption.
 
-The authors' [reference implementation](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python)
-confirms the 20/20 population shape but exposes a later demo configuration, not
-the paper's tuned IMA protocol.
+Use that file to produce a descriptive comparison between the corrected
+current-library MA and the published Basic MA row:
+
+```bash
+./scripts/run-paper-experiments.sh \
+  -published-reference docs/reference-data/original-ma-2020-table6.json \
+  -output paper-results/original-ma-table6-current-ma \
+  -runs 50 \
+  -max-evaluations 95000 \
+  -iterations 2000 \
+  -workers 8
+```
+
+This mode derives all six dimensions and bounds from the reference file and
+accepts only `ma`. Besides the raw result files and manifest, it writes
+`published-comparison.json`. That file is deliberately labeled
+`descriptive_non_reproduction` and `reproduction_claim: false`; it reports
+protocol-alignment fields, current-minus-published descriptive statistics, the
+unknown convention behind the paper's reported standard deviation, and the
+unavailable historical VGMA/SMA/IMA implementations. The paper did not publish
+its seeds, so no paired test or pass/fail threshold is inferred.
+
+The authors' [Mendeley code archive](https://data.mendeley.com/datasets/5w58s8hhz2)
+also does not contain the Table 6 experiment. Its own metadata calls every
+version a “simplified Matlab demo”; version 1 (published 2020-07-10) runs only
+50D Sphere/Rastrigin. It crosses every pair with a separate coefficient per
+coordinate sampled from `[-1,1]`, creates one mutant per iteration, treats
+`mu = 0.01` as the fraction of coordinates to mutate, and uses
+`sigma = 0.1 * (upper-lower)`. Version 2 changes the crossover coefficient to
+`[0,1]` and changes scalar attraction distances to component-wise distances.
+Those changes are useful provenance for a separate demo protocol, but they do
+not explain the paper's crossover rate `0.95` or Gaussian mutation rate `0.1`.
+The authors' later [Python implementation](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python)
+likewise exposes a demo configuration rather than the tuned IMA protocol.
 
 The harness can now enforce the paper's exact 95,000-call budget. An
 `original-ma-2020` preset is intentionally not yet exposed. The remaining
@@ -82,6 +113,25 @@ different tuned parameters. Selecting one silently would create a plausible
 experiment, not a reproduction. The reference file records these ambiguities so
 that a future author clarification or archived experiment implementation can
 close them without redoing the protocol audit.
+
+## HMMA protocol audit
+
+The HMMA paper's Table 1 protocol and aggregate rows are transcribed in the
+[machine-readable HMMA reference](reference-data/hmma-2022-table1.json). The
+paper reports 50 independent runs, 1,000 iterations, a parameter tuple, and
+Best/Worst/Average/Std/Median rows for MA, IMA, AMMA, OCMA, and HMMA on F3, F7,
+and F15.
+
+That artifact is deliberately labeled `reproduction_claim: false`. The paper
+does not publish population size, F3/F7 dimensions, seeds, or raw per-run
+results. Its parameter tuple prints `ub = 0.1`, `lb = 10`, omits the `a4`
+coefficient used by Equation (7), and reports `theta = 0.005` while its printed
+Equation (10), `Ps = -exp((1-t/Iter_MAX)^20) + theta`, stays negative throughout
+the stated run. Mayfly's existing `-exp(-t/Iter_MAX) + theta` schedule and
+defaults are now explicitly documented as compatibility extensions rather than
+paper-calibrated settings. An exact HMMA preset and comparison remain blocked
+on author clarification or the supporting data, which the paper makes available
+on request.
 
 ## Output contract
 
@@ -113,9 +163,12 @@ a paper's published table requires a protocol derived from that paper or its
 author implementation, followed by a separate output directory and archived
 manifest.
 
-In particular, GSASMA's temperature recurrence and crossover/mutation
-probability bounds are not fully specified in the accessible publication. The
-official OLCE-MA pseudocode figures specify Chebyshev mutation over all `N`
+In particular, GSASMA's publication does not define its cooling-coefficient
+sequence, temperature update, initial temperature, or four SMA
+crossover/mutation probability bounds. Its data-availability statement offers
+supporting data only on request, and an August 2026 public artifact search found
+no author code or raw seeded runs. The official OLCE-MA pseudocode figures
+specify Chebyshev mutation over all `N`
 crossover offspring, invalidating Mayfly's earlier fittest-offspring tie
 assumption, but the accessible figures do not expose the exact recurrence and
 component mutation equation. Until that stage is corrected from an

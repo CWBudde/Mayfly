@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "protocol_id": "hmma-2022-table1",
+  "reproduction_claim": false,
+  "source": {
+    "title": "Improved mayfly algorithm based on hybrid mutation",
+    "authors": ["Hua Zhang", "Zheng Liu", "ShiWeng Gui", "Mei Zou", "PeiYuan Wang"],
+    "journal": "Electronics Letters 58 (2022) 687-689",
+    "doi": "10.1049/ell2.12568",
+    "publisher_url": "https://ietresearch.onlinelibrary.wiley.com/doi/full/10.1049/ell2.12568",
+    "table": 1
+  },
+  "execution": {
+    "replications": 50,
+    "iterations": 1000,
+    "population_size": null,
+    "published_seed_schedule": null
+  },
+  "reported_parameter_tuple": {
+    "symbols": ["a1", "a2", "a3", "fl", "g", "ub", "lb", "theta", "d", "fl_damp", "g_damp", "d_damp", "rho"],
+    "values": [1.0, 1.5, 1.5, 1.0, 0.8, 0.1, 10.0, 0.005, 5.0, 0.99, 1.0, 0.8, 0.1],
+    "verbatim_order_note": "The publisher HTML prints ub=0.1 before lb=10, which is not a valid lower/upper bound ordering. This file preserves the published order and does not silently swap the values."
+  },
+  "published_equation_10": {
+    "expression": "Ps = -exp((1 - t / Iter_MAX)^20) + theta",
+    "current_library_schedule_matches": false,
+    "note": "The current library's -exp(-t/Iter_MAX)+theta schedule is a compatibility extension, not the printed equation. With the printed theta=0.005, the printed expression is negative throughout t in [0, Iter_MAX], so the intended probability remains unresolved."
+  },
+  "benchmarks": [
+    {
+      "id": "F3",
+      "description": "unimodal testbench; Equation 13",
+      "dimension": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "known_minimum": 0.0
+    },
+    {
+      "id": "F7",
+      "description": "multimodal testbench; Equation 14 as printed",
+      "dimension": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "known_minimum": 0.0
+    },
+    {
+      "id": "F15",
+      "description": "fixed-dimension multimodal testbench; Equation 15",
+      "dimension": 4,
+      "lower_bound": null,
+      "upper_bound": null,
+      "known_minimum": 0.00030
+    }
+  ],
+  "statistics_order": ["best", "worst", "average", "standard_deviation", "median"],
+  "published_results": {
+    "F3": {
+      "ma": [38.34681438, 5570.54223, 1990.623611, 1298.093088, 1755.035755],
+      "ima": [172.9991708, 4070.999659, 1389.873149, 794.0436791, 1166.967053],
+      "amma": [9.306114281, 2032.942393, 444.7573059, 386.5839019, 314.2271551],
+      "ocma": [5.0043e-158, 8.8989e-123, 1.7798e-124, 1.2458e-123, 9.9646e-143],
+      "hmma": [1.5321e-155, 3.0399e-123, 6.0807e-125, 4.2558e-124, 4.4956e-143]
+    },
+    "F7": {
+      "ma": [35.8184, 178.096, 92.7297, 37.5374, 84.5712],
+      "ima": [3.9798, 25.8756, 10.3546, 4.9176, 9.9503],
+      "amma": [25.8689, 145.263, 60.8912, 23.0554, 55.2201],
+      "ocma": [0.0, 0.0093, 0.0009, 0.00214, 0.0],
+      "hmma": [0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    "F15": {
+      "ma": [0.000307486, 0.020363339, 0.002524212, 0.005996743, 0.000307486],
+      "ima": [0.000307486, 0.020363339, 0.003171937, 0.006160735, 0.000307486],
+      "amma": [0.000307486, 0.020363339, 0.001541832, 0.004126545, 0.000307486],
+      "ocma": [0.000307486, 0.020363339, 0.002023941, 0.005011123, 0.000307486],
+      "hmma": [0.000307486, 0.020363339, 0.002105313, 0.004469969, 0.000307486]
+    }
+  },
+  "unresolved_protocol_semantics": [
+    "The total population size and its male/female split are not reported.",
+    "The dimensions of F3 and F7 are not reported.",
+    "The benchmark bounds are not reported consistently: the parameter tuple prints ub=0.1 and lb=10.",
+    "Equation 10 and the reported theta=0.005 produce a negative value throughout the stated iteration interval, so the intended OBL/Cauchy branch probability is unclear.",
+    "The information-exchange coefficient a4 used by Equation 7 is not included in the reported parameter tuple.",
+    "The paper does not report random seeds, raw per-run results, or a reference implementation; data are available from the authors on request."
+  ]
+}

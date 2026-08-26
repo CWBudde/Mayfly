@@ -10,6 +10,37 @@
     "section": "4.2",
     "table": 6
   },
+  "author_code_archive": {
+    "dataset_url": "https://data.mendeley.com/datasets/5w58s8hhz2",
+    "version_1_doi": "10.17632/5w58s8hhz2.1",
+    "version_1_publish_date": "2020-07-10",
+    "version_2_doi": "10.17632/5w58s8hhz2.2",
+    "version_2_publish_date": "2021-04-29",
+    "audited_versions": [
+      {"version": 1, "publish_date": "2020-07-10", "matlab_sha256": "c2e0b7f74bfb80767b0b1076d6af32eff629f4c18689c931b93634c625bebad3"},
+      {"version": 2, "publish_date": "2021-04-29", "matlab_sha256": "546b6289bdd94a073752ce15d87bf908ffdae7d5997c9c590311b72367f3a18a"},
+      {"version": 3, "publish_date": "2022-09-12", "matlab_sha256": "65c68eebebd211fdc763a75fecabb49cd7cbfa7741c43d33ebf62bc6df1e2505"},
+      {"version": 4, "publish_date": "2023-08-04", "matlab_sha256": "65c68eebebd211fdc763a75fecabb49cd7cbfa7741c43d33ebf62bc6df1e2505"}
+    ],
+    "declared_scope": "simplified Matlab demo code for global continuous optimization",
+    "table_6_experiment_code": false,
+    "version_1_observations": {
+      "benchmarks": ["Sphere", "Rastrigin"],
+      "dimension": 50,
+      "crossover_application": "every selected pair",
+      "crossover_coefficient_per_coordinate": "L sampled uniformly from [-1, 1]",
+      "mutants_per_iteration": 1,
+      "mutation_coordinate_fraction": 0.01,
+      "mutation_standard_deviation_fraction_of_search_range": 0.1,
+      "actual_function_evaluations_at_2000_iterations": 122040,
+      "displayed_function_evaluations_at_2000_iterations": 120040
+    },
+    "version_2_changes": [
+      "The crossover coefficient L changed from a per-coordinate Uniform[-1,1] sample to Uniform[0,1].",
+      "Scalar Euclidean attraction distances changed to component-wise distances."
+    ],
+    "audit_conclusion": "The archive is useful implementation evidence for a separate demo protocol, but it is not the 5D Table 6 experiment and does not resolve the paper's crossover-rate or Gaussian-mutation-rate semantics."
+  },
   "execution": {
     "replications": 50,
     "function_evaluations_per_replication": 95000,

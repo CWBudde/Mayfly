@@ -22,6 +22,24 @@ func gsasmaAnnealedAttraction(
 	return rng.Float64() < eta
 }
 
+// gsasmaAnnealingActive reports whether GSASMA has entered the late search
+// phase in which the paper applies simulated annealing to velocity selection.
+func gsasmaAnnealingActive(iteration, maxIterations int) bool {
+	return iteration >= maxIterations/2+maxIterations%2
+}
+
+// advanceGSASMATemperature cools the library-extension schedule only while it
+// is in use. Cooling it during GSASMA's ordinary-MA first half can exhaust the
+// temperature before the paper's annealed velocity phase begins.
+func advanceGSASMATemperature(
+	scheduler *AnnealingScheduler,
+	iteration, maxIterations int,
+) {
+	if gsasmaAnnealingActive(iteration, maxIterations) {
+		scheduler.Update()
+	}
+}
+
 // gsasmaGoldenPosition implements Eq. (10) with fixed golden coefficients.
 // r1 and r2 are scalars drawn once per individual, as in the paper.
 func gsasmaGoldenPosition(
@@ -79,7 +97,7 @@ func prepareGSASMAPopulations(
 	evaluator *constraintEvaluator,
 	rng *rand.Rand,
 ) {
-	early := 2*iteration < maxIterations
+	early := !gsasmaAnnealingActive(iteration, maxIterations)
 	temperature := scheduler.GetTemperature()
 
 	for i, female := range females {

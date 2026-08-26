@@ -230,7 +230,7 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | Parameter              | Type      | Default       | Description                                      |
 | ---------------------- | --------- | ------------- | ------------------------------------------------ |
 | `UseGSASMA`            | `bool`    | false         | Enable GSASMA variant                            |
-| `InitialTemperature`   | `float64` | 100.0         | Library-extension starting temperature           |
+| `InitialTemperature`   | `float64` | 100.0         | Extension temperature held until annealing starts |
 | `CoolingRate`          | `float64` | 0.95          | Library-extension temperature decay rate         |
 | `CoolingSchedule`      | `string`  | "exponential" | Extension: exponential, linear, or logarithmic   |
 | `GoldenFactor`         | `float64` | 1.0           | **Deprecated and ignored**; absent from Eq. (10) |
@@ -240,8 +240,8 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | Parameter                 | Type      | Default | Description                                  |
 | ------------------------- | --------- | ------- | -------------------------------------------- |
 | `UseHMMA`                 | `bool`    | false   | Enable Hybrid Mutation MA                    |
-| `HMMAInformationExchange` | `float64` | 1.5     | Eq. (7) information coefficient `a4`         |
-| `HMMAScheduleOffset`      | `float64` | 0.99    | Eq. (10) schedule offset `theta`             |
+| `HMMAInformationExchange` | `float64` | 1.5     | Eq. (7) `a4`; extension default because the paper omits its value |
+| `HMMAScheduleOffset`      | `float64` | 0.99    | Historical compatibility-schedule offset; not the paper's unresolved Eq. (10) |
 | `HMMAArtificialMutation`  | `float64` | 0.1     | Eq. (12) gender-exchange coefficient `rho`   |
 | `CauchyMutationRate`      | `float64` | 0.3     | **Deprecated and ignored by HMMA**           |
 | `ApplyOBLToGlobalBest`    | `bool`    | false   | **Deprecated and ignored by HMMA**           |

@@ -57,10 +57,15 @@ result, err := mayfly.Optimize(config)
 ```
 
 `InitialTemperature`, `CoolingRate`, and `CoolingSchedule` control the
-library's annealing-temperature recurrence. The paper names temperature `T`
-and a cooling coefficient but publishes neither a temperature recurrence nor
-numerical defaults. The exponential, linear, and logarithmic schedules are
-therefore implementation extensions, not paper parameters.
+library's annealing-temperature recurrence. The paper defines Metropolis
+acceptance using temperature `T` and prints
+`tau = max(tau_i, rand), i = 0,1,...,10`, calling `tau` a cooling coefficient.
+It does not define `tau_i`, connect `tau` to `T`, give an initial temperature,
+or state a temperature-update recurrence. The exponential, linear, and
+logarithmic schedules are therefore implementation extensions, not paper
+parameters. The configured initial temperature is held constant during the
+ordinary-MA first half; the schedule starts advancing only when the annealed
+second-half velocity phase begins.
 
 `GoldenFactor` is deprecated and ignored. Eq. (10) contains no such multiplier;
 the golden coefficients are fixed and do not narrow across candidates.
@@ -74,6 +79,13 @@ does not invent these values: GSASMA currently uses ordinary configured Mayfly
 crossover and Gaussian mutation (`NC`, `NM`, `CrossoverGamma`, and `Mu`). Thus,
 the velocity and position stages are equation-tested, while the exact SMA
 mating policy cannot be reproduced from the cited article alone.
+
+An August 2026 search of the DOI/title across GitHub, Zenodo, Mendeley Data,
+Figshare, and OSF found no author implementation or public raw benchmark data.
+The article's data-availability statement instead says supporting data are
+available from the corresponding author upon reasonable request. Calibration
+therefore requires that author material; aggregate means and standard
+deviations from 30 unseeded runs cannot uniquely identify the missing values.
 
 Hybrid Cauchy/Gaussian offspring mutation and periodic opposition are not
 GSASMA stages. See [HMMA](hmma.md) for its distinct mutation cascade.

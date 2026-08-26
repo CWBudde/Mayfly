@@ -1057,9 +1057,9 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		bestSolution[it] = globalBest.Cost
 		iterationCount = it + 1
 
-		// GSASMA: Update temperature schedule
+		// GSASMA: Cool only after the annealed second-half phase begins.
 		if config.UseGSASMA {
-			annealingScheduler.Update()
+			advanceGSASMATemperature(annealingScheduler, it, config.MaxIterations)
 		}
 
 		// Update parameters

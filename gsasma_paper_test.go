@@ -64,6 +64,59 @@ func TestGSASMAVelocityMateriallyFeedsPosition(t *testing.T) {
 	}
 }
 
+func TestGSASMAAnnealingPhaseBoundary(t *testing.T) {
+	tests := []struct {
+		name          string
+		iteration     int
+		maxIterations int
+		want          bool
+	}{
+		{name: "even before midpoint", iteration: 999, maxIterations: 2000, want: false},
+		{name: "even at midpoint", iteration: 1000, maxIterations: 2000, want: true},
+		{name: "odd before midpoint", iteration: 2, maxIterations: 5, want: false},
+		{name: "odd after midpoint", iteration: 3, maxIterations: 5, want: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := gsasmaAnnealingActive(tt.iteration, tt.maxIterations); got != tt.want {
+				t.Fatalf("gsasmaAnnealingActive(%d, %d) = %v, want %v",
+					tt.iteration, tt.maxIterations, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGSASMATemperatureStartsCoolingWithAnnealedPhase(t *testing.T) {
+	const (
+		maxIterations = 2000
+		initialTemp   = 100.0
+		coolingRate   = 0.95
+	)
+
+	scheduler := NewAnnealingScheduler(initialTemp, coolingRate, CoolingExponential)
+	for iteration := range maxIterations / 2 {
+		advanceGSASMATemperature(scheduler, iteration, maxIterations)
+	}
+
+	if scheduler.Iteration != 0 || scheduler.CurrentTemperature != initialTemp {
+		t.Fatalf("temperature cooled during inactive first half: iteration=%d temperature=%v",
+			scheduler.Iteration, scheduler.CurrentTemperature)
+	}
+
+	advanceGSASMATemperature(scheduler, maxIterations/2, maxIterations)
+
+	if scheduler.Iteration != 1 {
+		t.Fatalf("scheduler iteration = %d after first annealed step, want 1", scheduler.Iteration)
+	}
+
+	wantTemperature := initialTemp * coolingRate
+	if scheduler.CurrentTemperature != wantTemperature {
+		t.Fatalf("temperature = %v after first annealed step, want %v",
+			scheduler.CurrentTemperature, wantTemperature)
+	}
+}
+
 func TestGSASMAPreviousCostsFollowSurvivorIdentityAndStayBounded(t *testing.T) {
 	a := newMayfly(1)
 	b := newMayfly(1)

@@ -24,15 +24,16 @@ import (
 const schemaVersion = 2
 
 type options struct {
-	outputDir  string
-	benchmarks []string
-	variants   []string
-	dimensions []int
-	runs       int
-	iterations int
-	maxEvals   int
-	workers    int
-	seed       int64
+	outputDir          string
+	publishedReference string
+	benchmarks         []string
+	variants           []string
+	dimensions         []int
+	runs               int
+	iterations         int
+	maxEvals           int
+	workers            int
+	seed               int64
 }
 
 type benchmark struct {
@@ -123,19 +124,22 @@ func parseOptions(arguments []string) (options, error) {
 	)
 
 	opts := options{
-		outputDir:  "",
-		benchmarks: nil,
-		variants:   nil,
-		dimensions: nil,
-		runs:       0,
-		iterations: 0,
-		maxEvals:   0,
-		workers:    0,
-		seed:       0,
+		outputDir:          "",
+		publishedReference: "",
+		benchmarks:         nil,
+		variants:           nil,
+		dimensions:         nil,
+		runs:               0,
+		iterations:         0,
+		maxEvals:           0,
+		workers:            0,
+		seed:               0,
 	}
 	flags := flag.NewFlagSet("paper-reproduction", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	flags.StringVar(&opts.outputDir, "output", "paper-results", "directory for the manifest and result files")
+	flags.StringVar(&opts.publishedReference, "published-reference", "",
+		"Table 6 reference JSON for a descriptive current-MA comparison")
 	flags.StringVar(&benchmarkNames, "benchmarks", "all", "comma-separated benchmark names, or all")
 	flags.StringVar(&variantNames, "variants", "all", "comma-separated variant names, or all")
 	flags.StringVar(&dimensions, "dimensions", "10,30", "comma-separated positive dimensions")
@@ -160,6 +164,23 @@ func parseOptions(arguments []string) (options, error) {
 
 	if opts.runs <= 0 || opts.iterations <= 0 || opts.workers <= 0 || opts.maxEvals < 0 {
 		return options{}, errors.New("runs, iterations, and workers must be positive; max-evaluations must be non-negative")
+	}
+
+	if opts.publishedReference != "" {
+		if strings.EqualFold(strings.TrimSpace(variantNames), "all") {
+			variantNames = "ma"
+		}
+
+		opts.variants, err = selectVariantNames(variantNames)
+		if err != nil {
+			return options{}, err
+		}
+
+		if len(opts.variants) != 1 || opts.variants[0] != "ma" {
+			return options{}, errors.New("published-reference mode supports only the current ma variant")
+		}
+
+		return opts, nil
 	}
 
 	opts.dimensions, err = parseDimensions(dimensions)
@@ -269,6 +290,10 @@ func sortedBenchmarkNames() []string {
 }
 
 func runExperiment(ctx context.Context, opts options, output io.Writer) error {
+	if opts.publishedReference != "" {
+		return runPublishedReferenceComparison(ctx, opts, output)
+	}
+
 	variants := make([]mayfly.AlgorithmVariant, len(opts.variants))
 	for index, name := range opts.variants {
 		variant, err := mayfly.NewVariantChecked(name)
@@ -336,6 +361,129 @@ func runExperiment(ctx context.Context, opts options, output io.Writer) error {
 	fmt.Fprintf(output, "wrote protocol and raw results to %s\n", opts.outputDir)
 
 	return nil
+}
+
+func runPublishedReferenceComparison(ctx context.Context, opts options, output io.Writer) error {
+	if len(opts.variants) != 1 || opts.variants[0] != "ma" {
+		return errors.New("published-reference mode supports only the current ma variant")
+	}
+
+	reference, err := loadOriginalMAReference(opts.publishedReference)
+	if err != nil {
+		return err
+	}
+
+	variant, err := mayfly.NewVariantChecked("ma")
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(opts.outputDir, 0o755)
+	if err != nil {
+		return fmt.Errorf("create output directory: %w", err)
+	}
+
+	protocol, err := newManifest(opts, []mayfly.AlgorithmVariant{variant})
+	if err != nil {
+		return fmt.Errorf("build manifest: %w", err)
+	}
+
+	protocol.Experiment = "Descriptive current-library MA comparison with original MA 2020 Table 6"
+	protocol.Notes = append(protocol.Notes,
+		"The published comparison is explicitly descriptive_non_reproduction.",
+		"Only current-library MA is compared with the published Basic MA row; "+
+			"VGMA, SMA, and IMA are not implemented as historical variants.",
+		"The paper's crossover and Gaussian-mutation semantics remain unresolved, and its replication seeds are unavailable.",
+	)
+
+	for _, referenceBenchmark := range reference.Benchmarks {
+		stem := referenceResultStem(referenceBenchmark)
+		protocol.Benchmarks = append(protocol.Benchmarks, benchmarkProtocol{
+			Name:       referenceBenchmark.Name,
+			ResultCSV:  stem + ".csv",
+			ResultJSON: stem + ".json",
+			Dimension:  referenceBenchmark.Dimension,
+			LowerBound: referenceBenchmark.LowerBound,
+			UpperBound: referenceBenchmark.UpperBound,
+			Minimum:    referenceBenchmark.KnownMinimum,
+		})
+	}
+
+	err = writeJSON(filepath.Join(opts.outputDir, "manifest.json"), protocol)
+	if err != nil {
+		return fmt.Errorf("write manifest: %w", err)
+	}
+
+	inputs := make([]basicMAComparisonInput, 0, len(reference.Benchmarks))
+	for _, referenceBenchmark := range reference.Benchmarks {
+		bench, ok := benchmarkRegistry[strings.ToLower(referenceBenchmark.Name)]
+		if !ok {
+			return fmt.Errorf("reference benchmark %s (%s) has no objective implementation",
+				referenceBenchmark.ID, referenceBenchmark.Name)
+		}
+
+		caseName := fmt.Sprintf("%s %s-%dD", referenceBenchmark.ID,
+			referenceBenchmark.Name, referenceBenchmark.Dimension)
+		fmt.Fprintf(output, "running %s (current MA x %d runs)\n", caseName, opts.runs)
+
+		runner, configureErr := mayfly.NewComparisonRunner().WithVariantsChecked(variant)
+		if configureErr != nil {
+			return fmt.Errorf("configure current MA: %w", configureErr)
+		}
+
+		runner.WithRuns(opts.runs).
+			WithIterations(opts.iterations).
+			WithMaxEvaluations(opts.maxEvals).
+			WithSeed(opts.seed).
+			WithParallel(opts.workers > 1).
+			WithMaxWorkers(opts.workers)
+
+		result, compareErr := runner.CompareContext(ctx, caseName, bench.fn,
+			referenceBenchmark.Dimension, referenceBenchmark.LowerBound, referenceBenchmark.UpperBound)
+		if compareErr != nil {
+			return fmt.Errorf("run %s: %w", caseName, compareErr)
+		}
+
+		stem := referenceResultStem(referenceBenchmark)
+
+		exportErr := result.ExportToCSV(filepath.Join(opts.outputDir, stem+".csv"))
+		if exportErr != nil {
+			return fmt.Errorf("export %s CSV: %w", caseName, exportErr)
+		}
+
+		exportErr = result.ExportToJSON(filepath.Join(opts.outputDir, stem+".json"))
+		if exportErr != nil {
+			return fmt.Errorf("export %s JSON: %w", caseName, exportErr)
+		}
+
+		inputs = append(inputs, basicMAComparisonInput{
+			Result:      result,
+			Config:      variant.GetConfig(),
+			BenchmarkID: referenceBenchmark.ID,
+			Dimension:   referenceBenchmark.Dimension,
+			LowerBound:  referenceBenchmark.LowerBound,
+			UpperBound:  referenceBenchmark.UpperBound,
+		})
+	}
+
+	summary, err := buildBasicMAComparisonSummary(reference, inputs)
+	if err != nil {
+		return fmt.Errorf("build published comparison: %w", err)
+	}
+
+	err = writeJSON(filepath.Join(opts.outputDir, "published-comparison.json"), summary)
+	if err != nil {
+		return fmt.Errorf("write published comparison: %w", err)
+	}
+
+	fmt.Fprintf(output, "wrote descriptive published comparison and raw results to %s\n", opts.outputDir)
+
+	return nil
+}
+
+func referenceResultStem(benchmark originalMABenchmark) string {
+	return fmt.Sprintf("%s-%s-%dd", strings.ToLower(benchmark.ID),
+		strings.ToLower(benchmark.Name), benchmark.Dimension)
 }
 
 func newManifest(opts options, variants []mayfly.AlgorithmVariant) (manifest, error) {

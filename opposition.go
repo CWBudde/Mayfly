@@ -14,7 +14,7 @@
 //
 // OBL simultaneously considers a candidate solution and its opposition point
 // (x_opp = a + b - x) to accelerate convergence and expand search coverage.
-// Used in EOBBMA, GSASMA, and AOBLMOA variants.
+// Used in EOBBMA and AOBLMOA. Opposition is not a GSASMA stage.
 
 package mayfly
 

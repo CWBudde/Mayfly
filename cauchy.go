@@ -60,7 +60,7 @@ func cauchyRandVec(size int, x0, gamma float64, rng *rand.Rand) []float64 {
 }
 
 // MutateCauchy applies Cauchy mutation to a solution.
-// Used in GSASMA for heavy-tailed exploration.
+// It is an exported generic helper and is not part of the GSASMA lifecycle.
 // rng must not be nil (ensured by caller).
 // Returns: mutated position vector.
 //
@@ -120,7 +120,7 @@ func MutateCauchyChecked(
 }
 
 // HybridMutate applies either Cauchy or Gaussian mutation based on probability.
-// Used in GSASMA to balance exploration (Cauchy) and exploitation (Gaussian).
+// It is an exported generic helper and is not part of the GSASMA lifecycle.
 // rng must not be nil (ensured by caller).
 // Returns: mutated position vector.
 //

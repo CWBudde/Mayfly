@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestHMMAScheduleProbabilityMatchesEquation10(t *testing.T) {
+func TestHMMACompatibilityScheduleProbability(t *testing.T) {
 	const theta = 0.99
 	for _, testCase := range []struct {
 		iteration int

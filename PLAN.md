@@ -102,31 +102,57 @@ The API examples, quick-reference guide, and parameter documentation are complet
 - [ ] Reproduce the original paper results for MA, DESMA, OLCE-MA, EOBBMA, GSASMA,
       HMMA, MPMA, and AOBLMOA. Historical seeded results from before the correctness
       audit must not be compared as if they came from the corrected implementations.
-      The post-audit harness now provides a controlled baseline and can enforce
-      exact per-run objective-evaluation budgets. The original MA paper's 50-run,
-      95,000-evaluation target and 20/20 population have been source-audited.
-      Its Appendix A tuning grid, Table 6 benchmark protocol, and published
-      Basic MA/VGMA/SMA/IMA rows are encoded in
-      `docs/reference-data/original-ma-2020-table6.json`. An exact preset and
-      comparison remain blocked because the paper does not resolve how crossover
-      rate 0.95 applies to its conflicting crossover descriptions or what the
-      Gaussian mutation rate 0.1 controls.
+  - [x] Source-audit the original MA paper's 50-run, 95,000-evaluation, 20/20
+        population protocol; encode its Appendix A tuning grid, Table 6 benchmarks,
+        and Basic MA/VGMA/SMA/IMA rows in
+        `docs/reference-data/original-ma-2020-table6.json`.
+  - [x] Audit all four versions of the original MA authors' Mendeley archive and
+        record why its simplified 50D Sphere/Rastrigin demos are not the Table 6
+        implementation.
+  - [x] Add a machine-labeled `descriptive_non_reproduction` comparison of corrected
+        current MA against the published Basic MA row without presenting modern
+        variants as the unavailable historical VGMA/SMA/IMA implementations.
+  - [ ] Resolve how the original MA paper's crossover rate 0.95 applies to its
+        conflicting crossover descriptions and what its Gaussian mutation rate 0.1
+        controls, then add an exact preset.
+  - [x] Source-audit HMMA's 50-run, 1,000-iteration Table 1 protocol and encode all
+        published MA/IMA/AMMA/OCMA/HMMA aggregates in
+        `docs/reference-data/hmma-2022-table1.json`. The artifact deliberately makes
+        no reproduction claim and preserves the missing population, F3/F7
+        dimensions, seeds, raw runs, `a4`, inconsistent `ub`/`lb` tuple, and
+        Equation 10/`theta` conflict.
+  - [ ] Obtain HMMA author clarification or data for those protocol conflicts, then
+        add an exact preset and comparison.
+  - [ ] Source-audit and encode paper-specific protocols/reference outputs for
+        DESMA, EOBBMA, MPMA, and AOBLMOA.
+  - [ ] Run and archive exact trials only for variants whose implementation and
+        protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and
       `scripts/run-paper-experiments.sh` run paired seeded trials of all eight variants,
       export raw CSV/JSON, and record the protocol, revision, runtime, bounds, and
       configuration in a manifest.
 - [ ] Correct OLCE's chaotic-exploitation stage against the complete published equations.
-      The publisher's authoritative pseudocode figures became accessible on 2026-08-25
-      and invalidate the earlier equal-fitness premise: they specify Chebyshev mutation
-      over all `N` crossover offspring, so there is no fittest-offspring tie. The current
-      Logistic-map, first-best stage is now documented as an extension. The figures do
-      not expose the exact recurrence and component mutation equation, so implementation
-      remains blocked on an authoritative full equation or reference implementation.
+  - [x] Audit the publisher's authoritative pseudocode figures: they specify
+        Chebyshev mutation over all `N` crossover offspring, invalidating the earlier
+        equal-fitness/fittest-offspring premise.
+  - [x] Document the current Logistic-map, first-best stage as a library extension.
+  - [ ] Obtain the authoritative recurrence and component mutation equation or a
+        reference implementation.
+  - [ ] Implement Chebyshev mutation over all `N` offspring and add equation-level
+        regression tests.
 - [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA crossover and
-      mutation probability bounds against the authors' reference implementation or
-      reproducible experimental data. The current cooling schedule is explicitly a
-      library extension, and ordinary configured mating remains in place rather than
-      inventing constants absent from the paper.
+      mutation probability bounds.
+  - [x] Document the current cooling and ordinary configured mating as library
+        extensions rather than inventing constants absent from the paper.
+  - [x] Hold the extension's initial temperature through the ordinary first half and
+        begin cooling at the exact `2*iteration >= MaxIterations` annealing boundary.
+  - [x] Audit the version-of-record article, publisher flowchart, Crossref metadata,
+        GitHub, Zenodo, Mendeley Data, Figshare, and OSF; no public author
+        implementation or raw seeded results were available in August 2026.
+  - [ ] Obtain the authors' `T0`, `T` update, undefined `tau_i` sequence, four SMA
+        probability bounds, fitness orientation, seeds, and raw 30-run outputs.
+  - [ ] Implement the exact recurrence and SMA mating, then validate it against the
+        author material.
 - [x] Re-test Dragonfly's selector thresholds across multiple seeds and, if it still uses
       the old values, align them with Mayfly's `smoothRoughness = 2.2` and
       `multimodalTurningPoints = 5.0`. Across 40 seeds, the old thresholds classified

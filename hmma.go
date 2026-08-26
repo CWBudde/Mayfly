@@ -5,13 +5,16 @@ import (
 	"math/rand"
 )
 
-// hmmaScheduleProbability implements Eq. (10) of Zhang et al. (2022):
+// hmmaScheduleProbability implements Mayfly's historical HMMA compatibility
+// schedule:
 //
 //	Ps = -exp(-t/Iter_MAX) + theta
 //
-// iteration is one-based. Clamping is a numerical guard for caller-selected
-// theta values at the endpoints; the paper's theta=0.99 naturally starts at
-// zero and rises toward about 0.622.
+// This is not Eq. (10) as printed by Zhang et al. (2022), which places
+// (1-t/Iter_MAX)^20 in the exponent. The paper also reports theta=0.005, making
+// that printed expression negative throughout the run, so the intended
+// probability cannot be recovered without author clarification. Iteration is
+// one-based; clamping is a numerical guard for caller-selected theta values.
 func hmmaScheduleProbability(iteration, maxIterations int, theta float64) float64 {
 	probability := -math.Exp(-float64(iteration)/float64(maxIterations)) + theta
 

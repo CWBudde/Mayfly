@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A machine-readable, send-ready DESMA Table 3 clarification request that
+  records the public-source audit, six stable exact-preset blockers,
+  acceptable primary evidence, and an unsent corresponding-author draft.
+  Fixed-run summaries now carry the same blocker IDs and clarification path.
 - Official CEC2013 D=30 benchmark support for DESMA's protocol, with all 28
   functions, caller-supplied official transformation data, a 300,000-evaluation
   budget, and source-evaluator conformance coverage.

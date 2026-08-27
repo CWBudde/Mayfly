@@ -106,6 +106,15 @@ absolute errors. Its manifest and summary explicitly label the result
 `descriptive_non_reproduction`; it exercises current-library DESMA rather than
 claiming a paper-exact preset.
 
+A separate
+[machine-readable clarification request](../reference-data/desma-2022-clarification-request.json)
+turns those omissions into six stable, test-checked blockers: initial radius,
+population split, base-MA settings, evaluation accounting, published seed
+schedule, and raw per-run results. It records acceptable primary evidence and
+contains an unsent author-contact draft. Until every blocker is answered and
+validated, fixed-run summaries expose `blocked_missing_author_or_archival_data`
+and no exact DESMA preset is claimed.
+
 DESMA now uses its own Equations 6-7 crossover rather than the generic BLX
 operator. Each coordinate draws `L` uniformly from `[-1,1]`, and that same
 coordinate coefficient forms the two complementary offspring. The paper gives

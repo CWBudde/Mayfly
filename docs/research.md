@@ -46,6 +46,9 @@ Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
 - A strictly improving elite replaces the current best population member and
   becomes the next iteration's male attractor
 - DESMA-specific crossover samples per-coordinate `L` uniformly from `[-1,1]`
+- The exact Table 3 preset remains blocked on six author/archival questions
+  pinned in the
+  [machine-readable clarification request](reference-data/desma-2022-clarification-request.json)
 
 ---
 
@@ -267,8 +270,8 @@ Papers typically evaluate on:
 
 This Go implementation targets **research fidelity** while recording known
 source ambiguities and compatibility extensions explicitly. In particular,
-OLCE chaotic exploitation and GSASMA's undocumented schedules are open Phase 7
-items. The library also provides:
+DESMA's missing Table 3 protocol/data, OLCE chaotic exploitation, and GSASMA's
+undocumented schedules are open Phase 7 items. The library also provides:
 
 - Idiomatic Go code structure
 - Accessible paper components covered by equation-level fixtures

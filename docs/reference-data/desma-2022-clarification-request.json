@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "protocol_id": "desma-2022-table3",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "corresponding_author": "Honghao Zhu",
+    "public_email": "bbxyzhh@163.com",
+    "contact_source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9409577/"
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "No public source located in this audit closes any exact-preset blocker.",
+    "sources": [
+      {
+        "kind": "publisher_article_and_data_availability_statement",
+        "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0273155",
+        "finding": "The article supplies aggregate Table 3 results and states that all relevant data are in the article and Supporting Information, but omits the six requested protocol/data items."
+      },
+      {
+        "kind": "publisher_supporting_archive",
+        "url": "https://journals.plos.org/plosone/article/file?type=supplementary&id=info:doi/10.1371/journal.pone.0273155.s001",
+        "finding": "The 15-file archive contains the CEC2013 evaluator and transformation inputs, but no DESMA source, experiment driver, configuration, seeds, or raw runs.",
+        "sha256": "7d311e26d5b98ae6bd292ff271be13b0bb929e9f8fc41f3dcc2724363d238bbd"
+      },
+      {
+        "kind": "publisher_table_3_spreadsheet",
+        "url": "https://plos.figshare.com/articles/dataset/Algorithm_test_results_/20636381",
+        "finding": "The publisher export is a one-sheet transcription of the printed aggregate table, not a source workbook; it contains no per-run values, formulas, seeds, or protocol settings."
+      },
+      {
+        "kind": "biostudies_article_archive",
+        "url": "https://www.ebi.ac.uk/biostudies/api/v1/studies/S-EPMC9409577",
+        "finding": "The public article mirror lists the same S1 RAR and no additional code, configuration, or result artifact."
+      },
+      {
+        "kind": "crossref_relation_metadata",
+        "url": "https://api.crossref.org/works/10.1371/journal.pone.0273155",
+        "finding": "The DOI record has no related dataset, software, or archive relation."
+      },
+      {
+        "kind": "github_exact_title_and_code_search",
+        "url": "https://github.com/search?q=%22Dynamic+elite+strategy+mayfly+algorithm%22&type=code",
+        "finding": "No author implementation or experiment archive was found; exact-title code matches were limited to Mayfly's own audit artifacts."
+      },
+      {
+        "kind": "corresponding_author_orcid_record",
+        "url": "https://orcid.org/0000-0003-4088-7980",
+        "finding": "The public record does not link a DESMA repository or dataset."
+      },
+      {
+        "kind": "public_repository_and_dataset_registry_search",
+        "url": "https://zenodo.org/search?q=%22Dynamic%20elite%20strategy%20mayfly%20algorithm%22",
+        "finding": "Exact-title, DOI, and author searches of Zenodo, DataCite, Figshare, and GitHub located no separate author code archive, protocol package, seed schedule, or raw-run dataset."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "initial_search_radius",
+      "question": "What exact initial value or formula for R was used for every CEC2013 Table 3 run, and was it scalar, per-coordinate, or function-dependent?",
+      "known_evidence": "Equations 12 and 14 update and use R, but the paper never initializes it.",
+      "required_answer_shape": "A numeric value or complete deterministic formula, including any per-function exceptions and whether R is scalar or vector-valued.",
+      "units": "CEC2013 decision-space coordinate units, or a dimensionless fraction if normalized to the search span",
+      "acceptable_primary_evidence": [
+        "The original Table 3 DESMA source or configuration",
+        "A dated author clarification identifying the exact value/formula used"
+      ],
+      "affected_fields": ["Config.SearchRange"],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "population_split",
+      "question": "Does Table 3 population size 50 mean 50 males plus 50 females, or 50 total; if total, what were the male and female counts?",
+      "known_evidence": "Section 4.3 reports population size 50, while the algorithm maintains separate male and female populations and does not define whether N is per sex or combined.",
+      "required_answer_shape": "Two positive integer counts: male population size and female population size.",
+      "units": "mayflies per sex",
+      "acceptable_primary_evidence": [
+        "The original Table 3 experiment driver or configuration",
+        "A dated author clarification giving both counts"
+      ],
+      "affected_fields": ["Config.NPop", "Config.NPopF"],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "base_ma_settings",
+      "question": "Which complete base-MA initialization, attraction, crossover, mutation, selection, velocity, boundary, and elite-count settings were used for DESMA Table 3?",
+      "known_evidence": "The paper reports g_max, g_min, a1, a2, dance/flight values and their attenuation, while Section 4.2 selects k=10 without restating it for Table 3. It omits beta, the female-attraction coefficient mapping, offspring count or crossover rate, parent selection, offspring sex assignment, mutant count or mutation rate, Gaussian sigma, survivor replacement details, initial velocities, velocity limits, and boundary handling.",
+      "required_answer_shape": "A complete named parameter/configuration record plus executable definitions for initialization, attraction, parent selection, crossover and offspring sex assignment, Gaussian mutation, survivor replacement, velocity limiting, boundary repair, and confirmation of Table 3's elite count.",
+      "units": "Parameter-specific; counts and probabilities are dimensionless, while velocity and Gaussian sigma must state decision-space or normalized units.",
+      "acceptable_primary_evidence": [
+        "The original DESMA function and all base-MA functions called by the Table 3 driver",
+        "The exact Table 3 configuration plus dated author clarification of every operator convention"
+      ],
+      "affected_fields": [
+        "Config.Beta",
+        "Config.NC",
+        "Config.NCRatio",
+        "Config.NM",
+        "Config.Mu",
+        "Config.VelMax",
+        "Config.VelMin",
+        "Config.EliteCount",
+        "initialization",
+        "boundary handling"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "evaluation_accounting",
+      "question": "Exactly which objective calls counted toward 300,000, how were generations scheduled, and how was a budget reached partway through a generation?",
+      "known_evidence": "The paper reports a 300,000 maximum evaluation count but no iteration count or accounting rules; the current runner's 4,167-iteration ceiling is derived only from current-library defaults.",
+      "required_answer_shape": "A deterministic accounting specification covering initialization, moved parents, offspring, mutants, elites, rejected/no-op candidates, stopping checks, generation count, and partial final generations.",
+      "units": "objective-function calls and generations",
+      "acceptable_primary_evidence": [
+        "The original Table 3 driver and DESMA objective-call counter",
+        "A dated author clarification with a complete call-count trace or formula"
+      ],
+      "affected_fields": [
+        "Config.MaxIterations",
+        "ComparisonRunner.WithMaxEvaluations",
+        "manifest iteration and evaluation accounting"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "published_seed_schedule",
+      "question": "Which MATLAB random-number generator, version/state, and seed or state was used for each of the 51 runs on each Table 3 function?",
+      "known_evidence": "Neither the article nor S1 Data publishes seeds or RNG state.",
+      "required_answer_shape": "A 28-by-51 mapping from CEC2013 function and run index to MATLAB RNG algorithm plus seed/state, including any reset policy.",
+      "units": "MATLAB RNG algorithm identifiers and integer seeds or serialized RNG states",
+      "acceptable_primary_evidence": [
+        "The original driver with its saved RNG states or seed table",
+        "A raw experiment archive containing machine-readable RNG metadata"
+      ],
+      "affected_fields": ["Config.Seed", "manifest seed schedule"],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "raw_per_run_results",
+      "question": "Can the original per-run Table 3 DESMA results be supplied with function IDs, run IDs, final objective values/errors, evaluation counts, and seeds or RNG states?",
+      "known_evidence": "Table 3 publishes rounded mean error and rank only; S1 Data has no result files.",
+      "required_answer_shape": "At minimum 1,428 records (28 functions by 51 runs), each identifying function, run, final best objective or absolute error, objective-call count, and its seed/RNG-state reference.",
+      "units": "CEC2013 objective values or absolute error from the documented optimum, plus objective-function calls",
+      "acceptable_primary_evidence": [
+        "Original MATLAB result files produced by the Table 3 experiment",
+        "An author-published archival dataset with checksums and field definitions"
+      ],
+      "affected_fields": [
+        "published comparison per-run validation",
+        "aggregate tolerance and statistical comparison"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The original MATLAB DESMA implementation and every helper it calls",
+    "The Table 3 experiment driver and exact parameter/configuration files",
+    "Saved RNG seeds or states for every function and run",
+    "Raw per-run DESMA outputs for all 28 functions and 51 runs",
+    "Runtime logs or counters that establish objective-evaluation accounting"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "requires_question_ids": [
+      "initial_search_radius",
+      "population_split",
+      "base_ma_settings",
+      "evaluation_accounting",
+      "published_seed_schedule",
+      "raw_per_run_results"
+    ],
+    "rule": "An exact preset and published comparison may be added only after every required question has a non-null answer backed by cited primary evidence and the resulting protocol passes equation-level, accounting, and reference-data validation."
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Reproducibility details and data request for DESMA Table 3",
+    "body": "Dear Prof. Zhu and Dr. Du,\n\nI am implementing the protocol from your 2022 PLOS ONE article, Dynamic elite strategy mayfly algorithm (doi:10.1371/journal.pone.0273155), and would like to reproduce Table 3 faithfully. Could you please share the original MATLAB DESMA code, Table 3 driver/configuration, RNG seeds or states, and raw 51-run results? In particular, could you clarify: (1) the initial value/formula and shape of R; (2) whether population size 50 is per sex or combined, and the male/female counts; (3) the complete base-MA settings and operator conventions, including beta and female attraction, parent/offspring selection, crossover count or rate, offspring sex assignment, mutation count or rate and sigma, survivor replacement, velocity initialization/limits, boundary handling, and whether k=10 was used for Table 3; and (4) which calls count toward the 300,000-evaluation budget, the generation count, and partial-generation behavior? Machine-readable files and any checksums or version information would be especially helpful.\n\nThank you for your time."
+  }
+}

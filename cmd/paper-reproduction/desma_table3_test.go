@@ -88,6 +88,42 @@ func TestDESMATable3ManifestLabelsNonReproduction(t *testing.T) {
 	}
 }
 
+func TestDESMATable3ExactPresetStatusExposesClarificationBlockers(t *testing.T) {
+	status := newDESMAExactPresetStatus()
+
+	if status.State != desmaExactPresetBlocked || status.Clarification != desmaClarificationPath ||
+		!reflect.DeepEqual(status.BlockingQuestionIDs, desmaClarificationBlockerIDs) ||
+		len(status.BlockingQuestionIDs) != 6 {
+		t.Fatalf("unexpected exact-preset status: %+v", status)
+	}
+
+	summary := desmaTable3Summary{
+		ComparisonKind:    desmaTable3Comparison,
+		ReproductionClaim: false,
+		ExactPresetStatus: status,
+	}
+
+	data, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatalf("marshal DESMA Table 3 summary: %v", err)
+	}
+
+	encoded := string(data)
+	for _, required := range append(
+		[]string{desmaExactPresetBlocked, desmaClarificationPath},
+		desmaClarificationBlockerIDs...,
+	) {
+		if !strings.Contains(encoded, required) {
+			t.Errorf("summary omits %q: %s", required, encoded)
+		}
+	}
+
+	if !strings.Contains(encoded, `"reproduction_claim":false`) ||
+		!strings.Contains(encoded, `"comparison_kind":"descriptive_non_reproduction"`) {
+		t.Fatalf("blocked summary mislabels reproduction status: %s", encoded)
+	}
+}
+
 func TestValidateDESMATable3AccountingPinsCurrentDefaults(t *testing.T) {
 	config := mayfly.NewDESMAConfig()
 

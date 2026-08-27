@@ -20,12 +20,29 @@ const (
 	desmaTable3Runs          = 51
 	desmaTable3Evaluations   = 300_000
 	desmaTable3Iterations    = 4_167
+	desmaClarificationPath   = "docs/reference-data/desma-2022-clarification-request.json"
+	desmaExactPresetBlocked  = "blocked_missing_author_or_archival_data"
 )
+
+var desmaClarificationBlockerIDs = []string{
+	"initial_search_radius",
+	"population_split",
+	"base_ma_settings",
+	"evaluation_accounting",
+	"published_seed_schedule",
+	"raw_per_run_results",
+}
 
 var desmaTable3FidelityGates = []string{
 	"The initial search radius is not published.",
 	"Population size 50 is not identified as per-sex or combined.",
 	"Complete base-MA settings, evaluation accounting, seeds, and raw runs are unavailable.",
+}
+
+type desmaExactPresetStatus struct {
+	State               string   `json:"state"`
+	Clarification       string   `json:"clarification_artifact"`
+	BlockingQuestionIDs []string `json:"blocking_question_ids"`
 }
 
 type desmaTable3FunctionSummary struct {
@@ -47,6 +64,7 @@ type desmaTable3Summary struct {
 	SeedSchedule           string                       `json:"seed_schedule"`
 	Results                []desmaTable3FunctionSummary `json:"results"`
 	ImplementationGates    []string                     `json:"implementation_fidelity_gates"`
+	ExactPresetStatus      desmaExactPresetStatus       `json:"exact_preset_status"`
 	SchemaVersion          int                          `json:"schema_version"`
 	Dimension              int                          `json:"dimension"`
 	Runs                   int                          `json:"runs_per_function"`
@@ -98,6 +116,7 @@ func runDESMATable3(ctx context.Context, opts options, output io.Writer) error {
 		BaseSeed:               opts.seed,
 		SeedSchedule:           "seed(run_index) = base_seed + zero_based_run_index",
 		ImplementationGates:    append([]string(nil), desmaTable3FidelityGates...),
+		ExactPresetStatus:      newDESMAExactPresetStatus(),
 		Results:                make([]desmaTable3FunctionSummary, 0, len(problems)),
 	}
 
@@ -154,6 +173,14 @@ func runDESMATable3(ctx context.Context, opts options, output io.Writer) error {
 	fmt.Fprintf(output, "wrote descriptive_non_reproduction results to %s\n", opts.outputDir)
 
 	return nil
+}
+
+func newDESMAExactPresetStatus() desmaExactPresetStatus {
+	return desmaExactPresetStatus{
+		State:               desmaExactPresetBlocked,
+		Clarification:       desmaClarificationPath,
+		BlockingQuestionIDs: append([]string(nil), desmaClarificationBlockerIDs...),
+	}
 }
 
 func newDESMATable3Manifest(

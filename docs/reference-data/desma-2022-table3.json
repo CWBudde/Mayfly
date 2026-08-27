@@ -164,6 +164,18 @@
     "gwo": [17, 3, 8],
     "sma": [13, 6, 9]
   },
+  "clarification_request": {
+    "artifact": "docs/reference-data/desma-2022-clarification-request.json",
+    "status": "awaiting_author_or_archival_data",
+    "blocking_question_ids": [
+      "initial_search_radius",
+      "population_split",
+      "base_ma_settings",
+      "evaluation_accounting",
+      "published_seed_schedule",
+      "raw_per_run_results"
+    ]
+  },
   "implementation_fidelity_gates": [
     "The Table 3 runner uses current-library DESMA defaults and a 4,167-iteration ceiling derived from their evaluation accounting; this is not a published DESMA iteration count or exact preset."
   ],

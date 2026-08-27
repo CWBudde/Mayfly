@@ -138,9 +138,12 @@ The API examples, quick-reference guide, and parameter documentation are complet
   - [x] Resolve and implement DESMA's Equation 16 elite-attractor/replacement
         lifecycle and its `L` in `[-1,1]` crossover semantics; add equation-level
         regression tests.
-  - [ ] Obtain DESMA's initial radius, population split, complete base-MA settings,
-        evaluation accounting, and seeds/raw runs; then add an exact preset and
-        comparison.
+  - [x] Audit the DESMA paper, supplement, publisher exports, metadata, and public
+        code/data registries; encode a machine-readable, send-ready clarification
+        request for the missing protocol and run data, and expose its stable blocker
+        IDs in fixed-run output.
+  - [ ] Obtain author or archival answers for every DESMA clarification blocker,
+        validate the supplied code/data, then add an exact preset and comparison.
   - [ ] Source-audit and encode paper-specific protocols/reference outputs for
         EOBBMA, MPMA, and AOBLMOA.
   - [ ] Run and archive exact trials only for variants whose implementation and

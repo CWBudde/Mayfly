@@ -133,6 +133,15 @@ combined, and does not give enough base-MA operator settings to derive exact
 evaluation accounting. Seeds and raw runs are absent. The official supporting
 RAR supplies CEC2013 evaluator/input files but no DESMA implementation.
 
+The follow-up requirements are pinned in a
+[machine-readable clarification request](reference-data/desma-2022-clarification-request.json).
+It records the 2026-08-28 public-source audit, six stable blocker IDs, acceptable
+primary evidence, affected configuration/output fields, and an unsent
+correspondence draft for the paper's corresponding author. The exact-preset gate
+can close only when every blocker has a non-null answer backed by primary
+evidence. Preparing this request does not imply that it was sent or that an
+author response was received.
+
 The implementation-level ambiguities now have a documented source-guided
 resolution. An improving elite replaces the current best population member and
 becomes the next iteration's global attractor. Equation 16's printed `>` is
@@ -169,6 +178,9 @@ raw CSV and JSON, while `desma-table3-summary.json` computes the mean of
 manifest carry `protocol_id: desma-2022-table3`,
 `comparison_kind: descriptive_non_reproduction`, and
 `reproduction_claim: false`.
+The summary also embeds `exact_preset_status`, including the clarification
+artifact path and blocker IDs, so archived runs remain self-describing if they
+are separated from these docs.
 
 The command uses 4,167 iterations as the minimum ceiling under the recorded
 current defaults: 40 initialization calls, 72 calls per complete iteration,

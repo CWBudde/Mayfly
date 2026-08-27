@@ -25,11 +25,14 @@ It clips each coordinate to the problem bounds, selects the best candidate,
 and describes replacing the current global-best mayfly only when that candidate
 improves it. The next male-velocity update then uses `egbest`.
 
-The current library generates `EliteCount` candidates after survivor selection
-and inserts an improving candidate at the worst-male slot. This retains the old
-best population member, unlike the published replacement description. That
-population-insertion choice is a documented compatibility extension pending an
-authoritative implementation or clarification.
+The library generates `EliteCount` candidates after survivor selection. A
+strictly improving candidate replaces whichever sorted population head is the
+current best, becomes the global-best record, and is used as the male attractor
+on the next iteration. Equation 16 prints the attraction inequality in the
+wrong direction for minimization; the same sign error occurs in the paper's
+base Equation 3. Mayfly therefore follows the repeated minimization prose and
+the original MA authors' implementation: a male is attracted when the elite
+dominates it and dances otherwise.
 
 ### Adaptive Search Range
 
@@ -103,11 +106,13 @@ absolute errors. Its manifest and summary explicitly label the result
 `descriptive_non_reproduction`; it exercises current-library DESMA rather than
 claiming a paper-exact preset.
 
-Two additional implementation gates remain. The paper's crossover uses `L` in
-`[-1,1]`, whereas the current generic BLX operator uses `[-0.4,1.4]` at its
-default `gamma = 0.4`. Equation 16 also prints a minimization-direction
-condition that conflicts with the surrounding prose. These must be resolved
-rather than silently normalized for an exact preset.
+DESMA now uses its own Equations 6-7 crossover rather than the generic BLX
+operator. Each coordinate draws `L` uniformly from `[-1,1]`, and that same
+coordinate coefficient forms the two complementary offspring. The paper gives
+the interval but not the distribution or draw granularity; the uniform
+per-coordinate interpretation follows the
+[cited original MA authors' crossover code](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python/blob/749251dfd95fe3606fde0c67bbef4c042d4202e8/operators.py#L3-L9)
+and is recorded as source-guided rather than author-confirmed.
 
 Evaluation overhead is configuration-dependent. Each iteration adds up to
 `EliteCount` objective calls; the resulting percentage depends on population,
@@ -132,7 +137,9 @@ In the current library, after the standard MA selection step:
    - If stagnating → decrease range (exploitation)
 2. **Generate Elite Solutions**: Create `EliteCount` solutions around global best
 3. **Evaluate Elites**: Calculate fitness for each elite solution
-4. **Library replacement**: Insert the best improving elite at the worst-male slot
+4. **Elite promotion**: If the best elite strictly improves global best, replace
+   the current best population member and use the elite as next iteration's
+   Equation 16 attractor
 
 ## Parameter Tuning Guide
 

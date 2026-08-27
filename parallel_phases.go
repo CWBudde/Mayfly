@@ -156,7 +156,10 @@ func useMedianPosition(medianPosition []float64, config *Config) bool {
 
 // prepareStandardMale performs the ordinary Mayfly velocity and position update
 // for a single male, attracted to its personal and the global best when the
-// global best dominates it and dancing randomly otherwise.
+// global best dominates it and dancing randomly otherwise. For DESMA, the
+// committed elite occupies globalBest, so this is the source-guided
+// minimization reading of Eq. (16); the paper prints the opposite inequality,
+// but the same sign error appears in its base Eq. (3).
 func prepareStandardMale(
 	male *Mayfly,
 	globalBest Best,

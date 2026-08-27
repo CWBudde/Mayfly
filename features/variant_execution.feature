@@ -24,11 +24,11 @@ Feature: Algorithm Variants
     Then search range should increase if improving
     And search range should decrease if stagnating
 
-  Scenario: Both variants use same core operators
+  Scenario: DESMA keeps the shared genetic lifecycle with paper-specific crossover
     Given a Standard MA config
     And a DESMA config
     When I run both optimizations
-    Then both should use Crossover operator
+    Then DESMA should use paper-specific crossover coefficients
     And both should use Mutate operator
     And both should sort populations by fitness
 

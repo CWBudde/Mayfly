@@ -53,8 +53,18 @@
     "equation_14": "egbest = cgbest + r1*R",
     "equation_15": "egbest = max(egbest, LowerBound); egbest = min(egbest, UpperBound)",
     "paper_prose_replacement_target": "the current global-best mayfly, only when egbest is better",
-    "current_library_replacement_matches": false,
-    "current_library_note": "Mayfly currently inserts an improving elite at the worst-male slot and retains the prior best population member. The paper's prose describes replacing the current global-best mayfly, while Algorithm 2 and Equation 16 do not provide a consistent replacement lifecycle."
+    "equation_16_printed_condition": "attract to egbest when f(egbest) > f(x_i), otherwise dance",
+    "equation_16_resolution": "Treat > as a minimization-sign error, also present in the paper's base Equation 3. Attract when egbest strictly dominates x_i and dance otherwise.",
+    "current_library_replacement_matches": true,
+    "current_library_note": "After survivor selection, a strictly improving elite replaces the current best sorted population member, becomes the global-best record, and is used as the next iteration's male attractor. Its zero velocity and personal-best-equals-self state come from constructing it as a new evaluated mayfly; the paper does not specify those inherited fields."
+  },
+  "crossover_semantics": {
+    "equations_6_7": "offs1 = L*male + (1-L)*female; offs2 = L*female + (1-L)*male",
+    "published_coefficient_interval": "[-1,1]",
+    "current_library_distribution": "independent Uniform[-1,1] coefficient per coordinate and mating pair, shared by the two complementary siblings",
+    "resolution_basis": "The DESMA paper omits distribution and draw granularity. The cited original MA authors' implementation samples a uniform coefficient array shaped like the parent and reuses it for both siblings, so Mayfly adopts that source-guided convention.",
+    "resolution_source_url": "https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python/blob/749251dfd95fe3606fde0c67bbef4c042d4202e8/operators.py#L3-L9",
+    "author_confirmed": false
   },
   "benchmark_suite": {
     "name": "CEC2013 real-parameter single-objective optimization",
@@ -155,19 +165,14 @@
     "sma": [13, 6, 9]
   },
   "implementation_fidelity_gates": [
-    "The Table 3 runner uses current-library DESMA defaults and a 4,167-iteration ceiling derived from their evaluation accounting; this is not a published DESMA iteration count or exact preset.",
-    "The paper's crossover Equations 6-7 use L in [-1,1], while the current generic BLX crossover samples a coefficient in [-0.4,1.4] at its default gamma=0.4.",
-    "The current implementation does not follow Equation 16's printed elite-attractor lifecycle or the paper prose's population replacement description.",
-    "Equation 16 applies elite attraction when f(egbest) > f(x_i), which conflicts with the paper's minimization prose and improving-elite requirement; this direction must not be silently chosen."
+    "The Table 3 runner uses current-library DESMA defaults and a 4,167-iteration ceiling derived from their evaluation accounting; this is not a published DESMA iteration count or exact preset."
   ],
   "unresolved_protocol_semantics": [
     "The initial value of the dynamic search radius R is not reported.",
     "The paper reports population size 50 without stating whether that is each sex or the combined male/female population.",
     "The iteration count implied by the 300,000-evaluation budget depends on the unresolved population split and offspring/evaluation accounting.",
     "The experimental section does not report beta, crossover count or rate, mutation count or rate, Gaussian sigma, initial velocities, or boundary handling for the base MA stages.",
-    "The crossover coefficient L is described only as a random number in [-1,1]; its distribution and whether it is drawn per pair or per coordinate are not reported.",
     "The paper does not define whether initialization and elite calls count toward the evaluation budget or how a partial final iteration is handled.",
-    "The prose says an improving elite replaces the current global-best mayfly, Algorithm 2 places elite use after its stopping check, and Equation 16 prints an apparently reversed minimization condition; the authoritative lifecycle is unresolved.",
     "Table 3 contains rounded mean-error/rank aggregates only: no standard deviations, best/worst/median values, or raw runs. Mean execution times are mentioned but only plotted graphically.",
     "The t-test row does not identify the test variant, statistic, or exact operands beyond the printed +/=/- counts and a reported 0.05 significance level.",
     "The paper and supporting archive do not publish random seeds, raw per-run results, an experiment driver, or a DESMA reference implementation."

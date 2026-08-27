@@ -3,8 +3,232 @@ package mayfly
 import (
 	"math"
 	"math/rand"
+	"slices"
 	"testing"
 )
+
+func TestDESMACrossoverEquationsSixAndSeven(t *testing.T) {
+	male := []float64{2, -4, 8}
+	female := []float64{-6, 10, 3}
+	seed := int64(73)
+
+	offspring1, offspring2 := desmaCrossover(
+		male, female, -100, 100, rand.New(rand.NewSource(seed)),
+	)
+	wantRNG := rand.New(rand.NewSource(seed))
+
+	coefficients := make([]float64, len(male))
+	for dimension := range male {
+		coefficient := unifrnd(-1, 1, wantRNG)
+		coefficients[dimension] = coefficient
+		want1 := coefficient*male[dimension] + (1-coefficient)*female[dimension]
+		want2 := coefficient*female[dimension] + (1-coefficient)*male[dimension]
+
+		if offspring1[dimension] != want1 || offspring2[dimension] != want2 {
+			t.Fatalf(
+				"dimension %d = (%v, %v), want DESMA Eqs. (6)-(7) (%v, %v)",
+				dimension, offspring1[dimension], offspring2[dimension], want1, want2,
+			)
+		}
+
+		if coefficient < -1 || coefficient > 1 {
+			t.Fatalf("dimension %d coefficient = %v, want [-1,1]", dimension, coefficient)
+		}
+
+		if math.Abs(
+			(offspring1[dimension]+offspring2[dimension])-(male[dimension]+female[dimension]),
+		) > 1e-14 {
+			t.Fatalf("dimension %d complementary offspring do not preserve the parent sum", dimension)
+		}
+	}
+
+	if coefficients[0] == coefficients[1] && coefficients[1] == coefficients[2] {
+		t.Fatalf("DESMA crossover reused one scalar coefficient across coordinates: %v", coefficients)
+	}
+}
+
+func TestCrossoverForConfigUsesDESMARangeAndPreservesHMMAPrecedence(t *testing.T) {
+	male := []float64{2, -4}
+	female := []float64{-6, 10}
+
+	desmaConfig := NewDESMAConfig()
+	desmaConfig.LowerBound = -100
+	desmaConfig.UpperBound = 100
+	desmaConfig.CrossoverGamma = 99 // DESMA's paper-specific L ignores generic BLX gamma.
+
+	got1, got2 := crossoverForConfig(male, female, desmaConfig, rand.New(rand.NewSource(19)))
+
+	want1, want2 := desmaCrossover(male, female, -100, 100, rand.New(rand.NewSource(19)))
+	if !slices.Equal(got1, want1) || !slices.Equal(got2, want2) {
+		t.Fatalf("DESMA dispatch = (%v, %v), want (%v, %v)", got1, got2, want1, want2)
+	}
+
+	hmmaConfig := NewHMMAConfig()
+	hmmaConfig.UseDESMA = true
+	hmmaConfig.LowerBound = -100
+	hmmaConfig.UpperBound = 100
+	got1, got2 = crossoverForConfig(male, female, hmmaConfig, rand.New(rand.NewSource(19)))
+
+	want1, want2 = CrossoverBlend(male, female, 0, -100, 100, rand.New(rand.NewSource(19)))
+	if !slices.Equal(got1, want1) || !slices.Equal(got2, want2) {
+		t.Fatalf("HMMA precedence = (%v, %v), want (%v, %v)", got1, got2, want1, want2)
+	}
+}
+
+func TestCommitDESMAEliteReplacesCurrentBestPopulationMember(t *testing.T) {
+	newCandidate := func(position, cost float64) *Mayfly {
+		candidate := newMayfly(1)
+		candidate.Position[0] = position
+		candidate.Cost = cost
+		candidate.Best.Position[0] = position
+		candidate.Best.Cost = cost
+
+		return candidate
+	}
+
+	tests := []struct {
+		name             string
+		maleCosts        []float64
+		femaleCosts      []float64
+		wantReplacedMale bool
+	}{
+		{name: "best male", maleCosts: []float64{2, 8}, femaleCosts: []float64{3, 9}, wantReplacedMale: true},
+		{name: "best female", maleCosts: []float64{3, 8}, femaleCosts: []float64{2, 9}, wantReplacedMale: false},
+		{name: "tie keeps male", maleCosts: []float64{2, 8}, femaleCosts: []float64{2, 9}, wantReplacedMale: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			males := []*Mayfly{
+				newCandidate(test.maleCosts[0], test.maleCosts[0]),
+				newCandidate(test.maleCosts[1], test.maleCosts[1]),
+			}
+			females := []*Mayfly{
+				newCandidate(test.femaleCosts[0], test.femaleCosts[0]),
+				newCandidate(test.femaleCosts[1], test.femaleCosts[1]),
+			}
+			oldMaleBest, oldMaleWorst := males[0], males[1]
+			oldFemaleBest, oldFemaleWorst := females[0], females[1]
+			globalBest := Best{Position: []float64{2}, Cost: 2}
+			elite := newCandidate(1, 1)
+
+			committed := commitDESMAElite(
+				males, females, &globalBest, elite, newConstraintEvaluator(Sphere, nil),
+			)
+			if !committed {
+				t.Fatal("strictly improving elite was not committed")
+			}
+
+			if globalBest.Cost != elite.Cost || globalBest.Position[0] != elite.Position[0] {
+				t.Fatalf("global attractor = %+v, want elite %+v", globalBest, elite)
+			}
+
+			if test.wantReplacedMale {
+				if males[0] != elite || males[1] != oldMaleWorst || females[0] != oldFemaleBest ||
+					females[1] != oldFemaleWorst || slices.Contains(males, oldMaleBest) {
+					t.Fatalf("male-best replacement produced males=%p/%p females=%p/%p",
+						males[0], males[1], females[0], females[1])
+				}
+			} else if females[0] != elite || females[1] != oldFemaleWorst || males[0] != oldMaleBest ||
+				males[1] != oldMaleWorst || slices.Contains(females, oldFemaleBest) {
+				t.Fatalf("female-best replacement produced males=%p/%p females=%p/%p",
+					males[0], males[1], females[0], females[1])
+			}
+		})
+	}
+}
+
+func TestCommitDESMAEliteRejectsEqualAndWorseCandidates(t *testing.T) {
+	for _, eliteCost := range []float64{2, 3} {
+		males := []*Mayfly{mayflyFromBest(Best{Position: []float64{2}, Cost: 2}, 1)}
+		females := []*Mayfly{mayflyFromBest(Best{Position: []float64{4}, Cost: 4}, 1)}
+		globalBest := Best{Position: []float64{2}, Cost: 2}
+		elite := mayflyFromBest(Best{Position: []float64{eliteCost}, Cost: eliteCost}, 1)
+		oldMale, oldFemale := males[0], females[0]
+
+		if commitDESMAElite(males, females, &globalBest, elite, newConstraintEvaluator(Sphere, nil)) {
+			t.Fatalf("elite cost %v was accepted over equal/better incumbent", eliteCost)
+		}
+
+		if males[0] != oldMale || females[0] != oldFemale || globalBest.Cost != 2 || globalBest.Position[0] != 2 {
+			t.Fatalf("rejected elite cost %v changed the lifecycle", eliteCost)
+		}
+	}
+}
+
+func TestDESMAEquation16UsesCommittedEliteAsNextAttractor(t *testing.T) {
+	globalBest := Best{Position: []float64{4}, Cost: 16}
+	males := []*Mayfly{mayflyFromBest(globalBest, 1)}
+	females := []*Mayfly{mayflyFromBest(Best{Position: []float64{5}, Cost: 25}, 1)}
+	elite := mayflyFromBest(Best{Position: []float64{1}, Cost: 1}, 1)
+
+	evaluator := newConstraintEvaluator(Sphere, nil)
+	if !commitDESMAElite(males, females, &globalBest, elite, evaluator) {
+		t.Fatal("improving elite was not committed")
+	}
+
+	male := mayflyFromBest(Best{Position: []float64{2}, Cost: 4}, 1)
+	male.Position[0] = 3
+	male.Cost = 9
+	male.Velocity[0] = 0.5
+	config := NewDESMAConfig()
+	config.ProblemSize = 1
+	config.LowerBound = -100
+	config.UpperBound = 100
+	config.VelMin = -100
+	config.VelMax = 100
+	config.A1 = 1
+	config.A2 = 1.5
+	config.Beta = 0.25
+
+	const gravity = 0.8
+	prepareStandardMale(
+		male, globalBest, nil, gravity, config.Dance, gravity, config,
+		rand.New(rand.NewSource(5)), evaluator,
+	)
+
+	personalDelta := 2.0 - 3.0
+	eliteDelta := 1.0 - 3.0
+
+	wantVelocity := gravity*0.5 +
+		config.A1*math.Exp(-config.Beta*personalDelta*personalDelta)*personalDelta +
+		config.A2*math.Exp(-config.Beta*eliteDelta*eliteDelta)*eliteDelta
+	if math.Abs(male.Velocity[0]-wantVelocity) > 1e-15 {
+		t.Fatalf("Eq. (16) velocity = %.17g, want %.17g", male.Velocity[0], wantVelocity)
+	}
+
+	if math.Abs(male.Position[0]-(3+wantVelocity)) > 1e-15 {
+		t.Fatalf("Eq. (16) position = %.17g, want %.17g", male.Position[0], 3+wantVelocity)
+	}
+}
+
+func TestDESMAEquation16DancesWhenEliteDoesNotDominate(t *testing.T) {
+	male := mayflyFromBest(Best{Position: []float64{1}, Cost: 1}, 1)
+	male.Position[0] = 2
+	male.Cost = 1 // Equal fitness takes the non-attraction branch.
+	male.Velocity[0] = 0.5
+	eliteBest := Best{Position: []float64{-3}, Cost: 1}
+	config := NewDESMAConfig()
+	config.ProblemSize = 1
+	config.LowerBound = -100
+	config.UpperBound = 100
+	config.VelMin = -100
+	config.VelMax = 100
+	config.Dance = 0
+
+	const gravity = 0.8
+	prepareStandardMale(
+		male, eliteBest, nil, gravity, config.Dance, gravity, config,
+		rand.New(rand.NewSource(5)), newConstraintEvaluator(Sphere, nil),
+	)
+
+	if male.Velocity[0] != gravity*0.5 || male.Position[0] != 2+gravity*0.5 {
+		t.Fatalf(
+			"equal elite took attraction branch: velocity=%v position=%v",
+			male.Velocity[0], male.Position[0],
+		)
+	}
+}
 
 // TestGenerateEliteMayflies tests the DESMA elite generation mechanism.
 func TestGenerateEliteMayflies(t *testing.T) {

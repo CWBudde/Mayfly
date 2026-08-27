@@ -133,16 +133,20 @@ combined, and does not give enough base-MA operator settings to derive exact
 evaluation accounting. Seeds and raw runs are absent. The official supporting
 RAR supplies CEC2013 evaluator/input files but no DESMA implementation.
 
-There are also implementation-fidelity gates. The prose describes replacing
-the current global-best mayfly with a better `egbest`, but Algorithm 2 and
-Equation 16 do not give a consistent lifecycle; Mayfly currently inserts the
-elite at the worst-male slot and retains the previous population best. The
-paper's crossover coefficient is in `[-1,1]`, while the generic library BLX
-operator uses `[-0.4,1.4]` by default. Mayfly's automatic 10%-of-span initial
-radius and population insertion are compatibility choices. The official
-CEC2013 D=30 suite is now available through `CEC2013Suite`, closing the
-benchmark-availability gate. Run the fixed current-library DESMA protocol with
-an already extracted copy of the official input data:
+The implementation-level ambiguities now have a documented source-guided
+resolution. An improving elite replaces the current best population member and
+becomes the next iteration's global attractor. Equation 16's printed `>` is
+treated as the same minimization-sign error found in the paper's base Equation
+3. DESMA's Equations 6-7 crossover independently samples each coordinate's `L`
+uniformly from `[-1,1]` and shares it between the complementary siblings; the
+draw granularity follows the
+[cited original MA authors' implementation](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python/blob/749251dfd95fe3606fde0c67bbef4c042d4202e8/operators.py#L3-L9)
+because the DESMA authors did not publish code. These resolutions do not fill the
+remaining experiment-protocol gaps, so results stay non-reproductions.
+Mayfly's automatic 10%-of-span initial radius is still a compatibility choice.
+The official CEC2013 D=30 suite is available through `CEC2013Suite`. Run the
+fixed current-library DESMA protocol with an already extracted copy of the
+official input data:
 
 ```bash
 ./scripts/run-paper-experiments.sh \

@@ -37,8 +37,14 @@ func TestDESMA2022Table3ReferenceData(t *testing.T) {
 		EliteStrategy struct {
 			Equation13                       string `json:"equation_13"`
 			Equation14                       string `json:"equation_14"`
+			Equation16Resolution             string `json:"equation_16_resolution"`
 			CurrentLibraryReplacementMatches bool   `json:"current_library_replacement_matches"`
 		} `json:"elite_strategy"`
+		CrossoverSemantics struct {
+			PublishedCoefficientInterval string `json:"published_coefficient_interval"`
+			CurrentLibraryDistribution   string `json:"current_library_distribution"`
+			AuthorConfirmed              bool   `json:"author_confirmed"`
+		} `json:"crossover_semantics"`
 		BenchmarkSuite struct {
 			FunctionIDs []string `json:"function_ids"`
 			Benchmarks  []struct {
@@ -90,8 +96,15 @@ func TestDESMA2022Table3ReferenceData(t *testing.T) {
 
 	if reference.EliteStrategy.Equation13 != "r1 = 2*rand(1,n) - 1" ||
 		reference.EliteStrategy.Equation14 != "egbest = cgbest + r1*R" ||
-		reference.EliteStrategy.CurrentLibraryReplacementMatches {
+		!reference.EliteStrategy.CurrentLibraryReplacementMatches ||
+		reference.EliteStrategy.Equation16Resolution == "" {
 		t.Fatalf("unexpected DESMA equation audit: %+v", reference.EliteStrategy)
+	}
+
+	if reference.CrossoverSemantics.PublishedCoefficientInterval != "[-1,1]" ||
+		reference.CrossoverSemantics.CurrentLibraryDistribution == "" ||
+		reference.CrossoverSemantics.AuthorConfirmed {
+		t.Fatalf("unexpected DESMA crossover resolution: %+v", reference.CrossoverSemantics)
 	}
 
 	if len(reference.BenchmarkSuite.FunctionIDs) != 28 || len(reference.BenchmarkSuite.Benchmarks) != 28 ||
@@ -148,7 +161,7 @@ func TestDESMA2022Table3ReferenceData(t *testing.T) {
 			reference.PublishedAverageRank, reference.PublishedTTests)
 	}
 
-	if len(reference.ImplementationFidelityGates) < 4 || len(reference.UnresolvedProtocolSemantics) < 6 {
+	if len(reference.ImplementationFidelityGates) != 1 || len(reference.UnresolvedProtocolSemantics) < 6 {
 		t.Fatalf("DESMA blockers were not preserved: %v", reference.UnresolvedProtocolSemantics)
 	}
 }

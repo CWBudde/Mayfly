@@ -26,7 +26,6 @@ var desmaTable3FidelityGates = []string{
 	"The initial search radius is not published.",
 	"Population size 50 is not identified as per-sex or combined.",
 	"Complete base-MA settings, evaluation accounting, seeds, and raw runs are unavailable.",
-	"The Equation 16 elite lifecycle and the crossover coefficient L in [-1,1] remain unresolved.",
 }
 
 type desmaTable3FunctionSummary struct {

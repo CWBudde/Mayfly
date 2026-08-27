@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -607,9 +608,26 @@ func (ctx *integrationTestContext) iRunBothOptimizations() error {
 	return nil
 }
 
-func (ctx *integrationTestContext) bothShouldUseCrossoverOperator() error {
-	// Both variants use the same Crossover function
-	// This is verified by code inspection
+func (ctx *integrationTestContext) desmaShouldUsePaperSpecificCrossoverCoefficients() error {
+	config := NewDESMAConfig()
+	config.LowerBound = -100
+	config.UpperBound = 100
+	male := []float64{2, -4}
+	female := []float64{-6, 10}
+	seed := int64(31)
+
+	offspring1, offspring2 := crossoverForConfig(
+		male, female, config, rand.New(rand.NewSource(seed)),
+	)
+
+	want1, want2 := desmaCrossover(
+		male, female, config.LowerBound, config.UpperBound,
+		rand.New(rand.NewSource(seed)),
+	)
+	if !slices.Equal(offspring1, want1) || !slices.Equal(offspring2, want2) {
+		return errors.New("DESMA did not use its L in [-1,1] crossover")
+	}
+
 	return nil
 }
 
@@ -775,7 +793,7 @@ func InitializeScenario(sc *godog.ScenarioContext) {
 	sc.Step(`^search range should decrease if stagnating$`, ctx.searchRangeShouldDecreaseIfStagnating)
 	sc.Step(`^a DESMA config$`, ctx.aDESMAConfig)
 	sc.Step(`^I run both optimizations$`, ctx.iRunBothOptimizations)
-	sc.Step(`^both should use Crossover operator$`, ctx.bothShouldUseCrossoverOperator)
+	sc.Step(`^DESMA should use paper-specific crossover coefficients$`, ctx.desmaShouldUsePaperSpecificCrossoverCoefficients)
 	sc.Step(`^both should use Mutate operator$`, ctx.bothShouldUseMutateOperator)
 	sc.Step(`^both should sort populations by fitness$`, ctx.bothShouldSortPopulationsByFitness)
 	sc.Step(`^exactly (\d+) elite solutions should be generated per iteration$`, ctx.exactlyEliteSolutionsShouldBeGeneratedPerIteration)

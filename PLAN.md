@@ -135,7 +135,7 @@ The API examples, quick-reference guide, and parameter documentation are complet
   - [x] Add a DESMA Table 3 runner mode that loads CEC2013 data, performs 51 runs
         under the exact objective-call budget, computes mean absolute error, and
         labels its output non-reproduction until the remaining fidelity gates close.
-  - [ ] Resolve and implement DESMA's Equation 16 elite-attractor/replacement
+  - [x] Resolve and implement DESMA's Equation 16 elite-attractor/replacement
         lifecycle and its `L` in `[-1,1]` crossover semantics; add equation-level
         regression tests.
   - [ ] Obtain DESMA's initial radius, population split, complete base-MA settings,

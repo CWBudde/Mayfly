@@ -48,6 +48,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Correct DESMA's source-guided Equation 16 lifecycle: a strictly improving
+  elite now replaces the current best population member and becomes the next
+  male attractor, while DESMA crossover uses per-coordinate `L` in `[-1,1]` in
+  both sequential and parallel execution.
 - OLCE documentation now reflects the publisher's newly accessible complete
   pseudocode: chaotic exploitation uses Chebyshev mutation over all crossover
   offspring, so the former fittest-offspring tie premise was incorrect. The

@@ -43,7 +43,9 @@ Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
 - Generates elite solutions within adaptive search range
 - Enlarges range when improving (exploration)
 - Reduces range when stagnating (exploitation)
-- Published text replaces the current best; Mayfly currently inserts at the worst-male slot
+- A strictly improving elite replaces the current best population member and
+  becomes the next iteration's male attractor
+- DESMA-specific crossover samples per-coordinate `L` uniformly from `[-1,1]`
 
 ---
 

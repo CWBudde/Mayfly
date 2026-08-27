@@ -113,6 +113,10 @@ mutation. Crossover creates pairs, so use an even `NC`; `NC/2` may not exceed
 either population size. If the effective mutant count is positive, `NC` must
 be at least 2 because mutants are sampled from crossover offspring.
 
+`CrossoverGamma` applies to the generic MA blend operator. DESMA ignores it and
+uses its paper-specific per-coordinate `L` in `[-1,1]`; HMMA likewise uses its
+own `L` in `[0,1]` semantics.
+
 ### How `CrossoverGamma` is resolved
 
 Crossover is the blend (BLX-style) operator of the reference implementation: a

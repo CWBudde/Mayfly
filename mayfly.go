@@ -828,12 +828,6 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 		} else {
 			nc := effectiveNC(config)
 
-			gamma := effectiveCrossoverGamma(config)
-			if config.UseHMMA {
-				// HMMA Eq. (4) uses L in [0,1], not BLX extrapolation.
-				gamma = 0
-			}
-
 			maleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 			femaleOffspring := make([]*Mayfly, 0, nc/2+effectiveNM(config))
 
@@ -841,8 +835,8 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 				p1, p2 := selectParents(males, females, k, config, rng)
 
 				// Apply crossover
-				off1Pos, off2Pos := CrossoverBlend(
-					p1.Position, p2.Position, gamma, config.LowerBound, config.UpperBound, rng,
+				off1Pos, off2Pos := crossoverForConfig(
+					p1.Position, p2.Position, config, rng,
 				)
 				if config.UseHMMA {
 					off1Pos, off2Pos = hmmaArtificialMutation(
@@ -1034,16 +1028,7 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 
 			funcCount += eliteFuncCount
 
-			// Replace worst male if elite is better
-			if eliteMayfly != nil && candidateEvaluator.betterMayfly(eliteMayfly, males[config.NPop-1]) {
-				males[config.NPop-1] = eliteMayfly
-				sortMayflies(males, candidateEvaluator) // Re-sort after replacement
-
-				// Update global best if elite is the new best
-				if candidateEvaluator.betterMayflyThanBest(eliteMayfly, globalBest) {
-					copyMayflyToBest(&globalBest, eliteMayfly)
-				}
-			}
+			commitDESMAElite(males, females, &globalBest, eliteMayfly, candidateEvaluator)
 
 			lastGlobalBest = cloneBest(globalBest)
 		}

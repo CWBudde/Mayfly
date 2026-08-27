@@ -233,8 +233,9 @@ Eggcrate, Beale
 
 **CEC-Style Functions:** Schwefel, Levy, Zakharov, DixonPrice, Michalewicz, BentCigar, Discus, Weierstrass, HappyCat, ExpandedSchafferF6, Himmelblau
 
-**Competition Suites:** all 29 usable CEC2017 functions and all 10 CEC2020 functions,
-loaded with the organizers' official transformation data
+**Competition Suites:** all 28 CEC2013 functions at D=30, all 29 usable CEC2017
+functions, and all 10 CEC2020 functions, loaded with the organizers' official
+transformation data
 
 **Engineering Problems:** tension/compression spring, welded beam, pressure vessel,
 and speed reducer, including constraints and mixed-variable projection

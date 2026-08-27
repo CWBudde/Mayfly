@@ -9,6 +9,9 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Official CEC2013 D=30 benchmark support for DESMA's protocol, with all 28
+  functions, caller-supplied official transformation data, a 300,000-evaluation
+  budget, and source-evaluator conformance coverage.
 - Added machine-readable provenance for every version of the original MA
   authors' Mendeley code archive, explicitly distinguishing its simplified
   50D demo protocol from the paper's 5D Table 6 experiment.

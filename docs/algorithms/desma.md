@@ -95,8 +95,10 @@ It is deliberately marked `reproduction_claim: false`: the paper does not give
 the initial radius, clarify whether population 50 is per sex or combined, or
 publish the full base-MA operator settings, seeds, or raw runs. Its supplement
 contains CEC2013 evaluator/input data but no DESMA implementation. The library
-does not yet expose that CEC2013 suite, so the paper's exact benchmark set
-cannot currently be selected by the reproduction command.
+now exposes all 28 functions at D=30 through `CEC2013Suite`, using
+caller-supplied official data. The paper's exact benchmark set is therefore
+available to library callers, but it is not yet wired into the reproduction
+command's DESMA Table 3 runner.
 
 Two additional implementation gates remain. The paper's crossover uses `L` in
 `[-1,1]`, whereas the current generic BLX operator uses `[-0.4,1.4]` at its

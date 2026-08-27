@@ -129,7 +129,12 @@ The API examples, quick-reference guide, and parameter documentation are complet
         reproduction claim and preserves the missing initial radius, population
         split, seeds, base-MA settings, raw runs, and best-versus-worst replacement
         mismatch.
-  - [ ] Add official CEC2013 D=30 benchmark support for DESMA's Table 3 protocol.
+  - [x] Add official CEC2013 D=30 benchmark support for DESMA's Table 3 protocol,
+        including all 28 source-compatible evaluators, caller-supplied official
+        data, the 300,000-evaluation budget, and source-derived conformance tests.
+  - [ ] Add a DESMA Table 3 runner mode that loads CEC2013 data, performs 51 runs
+        under the exact objective-call budget, computes mean absolute error, and
+        labels its output non-reproduction until the remaining fidelity gates close.
   - [ ] Resolve and implement DESMA's Equation 16 elite-attractor/replacement
         lifecycle and its `L` in `[-1,1]` crossover semantics; add equation-level
         regression tests.

@@ -139,9 +139,10 @@ Equation 16 do not give a consistent lifecycle; Mayfly currently inserts the
 elite at the worst-male slot and retains the previous population best. The
 paper's crossover coefficient is in `[-1,1]`, while the generic library BLX
 operator uses `[-0.4,1.4]` by default. Mayfly's automatic 10%-of-span initial
-radius and population insertion are compatibility choices, and the library
-does not yet expose the paper's CEC2013 suite. An exact preset and comparison
-remain blocked until those implementation and protocol gaps are closed.
+radius and population insertion are compatibility choices. The official
+CEC2013 D=30 suite is now available through `CEC2013Suite`, closing the
+benchmark-availability gate; an exact preset and comparison remain blocked
+until the implementation and protocol gaps are closed.
 
 ## HMMA protocol audit
 

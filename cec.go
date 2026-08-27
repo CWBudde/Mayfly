@@ -363,6 +363,7 @@ func openCECData(data fs.FS, name string) (fs.File, error) {
 	paths := []string{
 		name,
 		"input_data/" + name,
+		"data/input_data/" + name,
 		"CEC17_fast_pow/input_data/" + name,
 		"Matlab version/input_data/" + name,
 	}

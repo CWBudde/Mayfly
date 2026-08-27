@@ -1,7 +1,8 @@
 # Benchmark Functions Reference
 
-The library includes 18 standalone functions, the complete usable CEC2017 and
-CEC2020 bound-constrained suites, and four constrained engineering-design problems.
+The library includes 18 standalone functions, the complete CEC2013 D=30,
+usable CEC2017, and CEC2020 bound-constrained suites, plus four constrained
+engineering-design problems.
 
 ## Function Categories
 
@@ -33,17 +34,19 @@ Additional challenging functions from CEC competitions:
 - **ExpandedSchafferF6** - Multimodal, composite
 - **Himmelblau** - Multimodal, four equal global minima
 
-### Official CEC2017 and CEC2020 Suites
+### Official CEC2013, CEC2017, and CEC2020 Suites
 
-`NewCEC2017Problem`, `CEC2017Suite`, `NewCEC2020Problem`, and `CEC2020Suite`
-implement the numbered competition suites, including their shifts, rotations,
-permutations, hybrid partitions, composition weights, biases, and evaluation budgets.
-CEC2017 contains 29 usable functions because its organizers removed F2 for numerical
-instability; CEC2020 contains ten.
+`NewCEC2013Problem`, `CEC2013Suite`, `NewCEC2017Problem`, `CEC2017Suite`,
+`NewCEC2020Problem`, and `CEC2020Suite` implement the numbered competition
+suites, including their shifts, rotations, permutations where applicable,
+composition weights, biases, and evaluation budgets. CEC2013 contains 28
+functions. CEC2017 contains 29 usable functions because its organizers removed
+F2 for numerical instability; CEC2020 contains ten.
 
 The organizers did not attach a redistribution license to the transformation data, so
-Mayfly does not silently copy it into the module. Download and extract the official
-[CEC2017](https://github.com/P-N-Suganthan/CEC2017-BoundContrained) or
+Mayfly does not silently copy runtime data into callers' binaries. Download and
+extract the official [CEC2013](https://github.com/P-N-Suganthan/CEC2013),
+[CEC2017](https://github.com/P-N-Suganthan/CEC2017-BoundContrained), or
 [CEC2020](https://github.com/P-N-Suganthan/2020-Bound-Constrained-Opt-Benchmark)
 software, then pass an `fs.FS` rooted at either the archive or its `input_data` directory:
 
@@ -61,13 +64,24 @@ if err != nil {
 result, err := mayfly.Optimize(config)
 ```
 
-Supported competition dimensions are 10, 30, 50, and 100 for CEC2017, and 5,
-10, 15, and 20 for CEC2020. `BenchmarkCase.NewConfig` searches a normalized
-`[0,1]^D` box; use `problem.Decode(result.GlobalBest.Position)` to recover the
-suite coordinates.
+For the DESMA paper's CEC2013 protocol, the paper's extracted S1 layout can be
+used directly:
+
+```go
+data := os.DirFS("/path/to/extracted-S1") // contains data/input_data/
+suite, err := mayfly.CEC2013Suite(data, 30)
+```
+
+Mayfly currently exposes CEC2013 at D=30 for DESMA's 300,000-evaluation
+protocol. Supported competition dimensions are 10, 30, 50, and 100 for
+CEC2017, and 5, 10, 15, and 20 for CEC2020. `BenchmarkCase.NewConfig` searches
+a normalized `[0,1]^D` box; use `problem.Decode(result.GlobalBest.Position)`
+to recover the suite coordinates.
 
 Compatibility follows the released evaluator where it disagrees with descriptive prose.
-In particular, CEC2017's Schaffer F7 reads its pre-rotation scratch and the released
+CEC2013 preserves the released source's multi-stage transformation and scratch-buffer
+semantics, sequential D=30 shift-data read, and composition definitions. In
+particular, CEC2017's Schaffer F7 reads its pre-rotation scratch and the released
 "non-continuous" Rastrigin discards its rounded scratch. One numerical defect is not
 reproduced: CEC2020 F7 at D=5 evaluates its one-dimensional elliptic partition normally
 instead of dividing by zero and returning `NaN`.

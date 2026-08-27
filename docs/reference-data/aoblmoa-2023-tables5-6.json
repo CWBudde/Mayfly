@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "protocol_id": "aoblmoa-2023-tables5-6",
+  "status": "source_transcribed_non_reproduction",
+  "reproduction_claim": false,
+  "scope": "AOBLMOA rows from the 19-function classic benchmark experiment in Tables 5 and 6",
+  "source": {
+    "title": "AOBLMOA: A Hybrid Biomimetic Optimization Algorithm for Numerical Optimization and Engineering Design Problems",
+    "authors": [
+      "Yanpu Zhao",
+      "Changsheng Huang",
+      "Mengjie Zhang",
+      "Yang Cui"
+    ],
+    "journal": "Biomimetics",
+    "volume": 8,
+    "issue": 4,
+    "article": 381,
+    "publication_date": "2023-08-21",
+    "doi": "10.3390/biomimetics8040381",
+    "tables": [5, 6],
+    "urls": {
+      "publisher": "https://www.mdpi.com/2313-7673/8/4/381",
+      "pmc": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10452254/",
+      "author_code": "https://github.com/SheldonYnuup/AOBLMOA"
+    }
+  },
+  "author_code_audit": {
+    "commit": "dd3b5b21fc4638cef3c4dde9fc04056296c574e6",
+    "commit_date": "2023-07-08T17:51:10+08:00",
+    "files": [
+      "AOBLMOA.m",
+      "main.m"
+    ],
+    "main_script_function": "F1",
+    "main_script_male_population": 30,
+    "main_script_female_population": 30,
+    "main_script_offspring_count": 30,
+    "main_script_iterations": 1000,
+    "available_benchmark_evaluators": [
+      "f1"
+    ],
+    "batch_replication_driver_available": false,
+    "raw_run_outputs_available": false,
+    "published_seed_schedule_available": false
+  },
+  "execution": {
+    "replications": 30,
+    "iterations": 1000,
+    "reported_population_size": 30,
+    "male_population_size_from_author_code": 30,
+    "female_population_size_from_author_code": 30,
+    "offspring_count_from_author_code": 30,
+    "maximum_function_evaluations": null,
+    "seed_schedule": null,
+    "software": "MATLAB R2021b",
+    "machine": "Intel Core i7-1165G7, 16 GB RAM, 64-bit Microsoft Windows 11"
+  },
+  "reported_parameters": {
+    "a1": 1.0,
+    "a2": 1.5,
+    "a3": 1.5,
+    "g_initial": 0.9,
+    "g_final": 0.4,
+    "alpha": 0.1,
+    "delta": 0.1,
+    "beta_from_author_code": 2.0,
+    "velocity_limit_fraction_from_author_code": 0.1,
+    "crossover_coefficient_from_author_code": "one independent U(0,1) value per coordinate",
+    "exploration_phase_from_author_code": "one-based t <= (2/3)*Tmax",
+    "opposition_from_author_code": "one U(0,1) scalar multiplies the complete reflected offspring vector"
+  },
+  "benchmark_suite": {
+    "source_table": 3,
+    "benchmarks": [
+      {"id": "f1", "dimension": 10, "lower_bound": -100, "upper_bound": 100, "optimum": 0, "result_table": 5},
+      {"id": "f2", "dimension": 10, "lower_bound": -10, "upper_bound": 10, "optimum": 0, "result_table": 5},
+      {"id": "f3", "dimension": 10, "lower_bound": -100, "upper_bound": 100, "optimum": 0, "result_table": 5},
+      {"id": "f4", "dimension": 10, "lower_bound": -100, "upper_bound": 100, "optimum": 0, "result_table": 5},
+      {"id": "f5", "dimension": 10, "lower_bound": -128, "upper_bound": 128, "optimum": 0, "result_table": 5},
+      {"id": "f6", "dimension": 10, "lower_bound": -5.12, "upper_bound": 5.12, "optimum": 0, "result_table": 5},
+      {"id": "f7", "dimension": 10, "lower_bound": -32, "upper_bound": 32, "optimum": 0, "result_table": 5},
+      {"id": "f8", "dimension": 10, "lower_bound": -600, "upper_bound": 600, "optimum": 0, "result_table": 5},
+      {"id": "f9", "dimension": 10, "lower_bound": -50, "upper_bound": 50, "optimum": 0, "result_table": 5},
+      {"id": "f10", "dimension": 10, "lower_bound": -50, "upper_bound": 50, "optimum": 0, "result_table": 5},
+      {"id": "f11", "dimension": 4, "lower_bound": -5, "upper_bound": 5, "optimum": 0.0003, "result_table": 6},
+      {"id": "f12", "dimension": 2, "lower_bound": -5, "upper_bound": 5, "optimum": -1.0316, "result_table": 6},
+      {"id": "f13", "dimension": 2, "lower_bound": -5, "upper_bound": 5, "optimum": 0.398, "result_table": 6},
+      {"id": "f14", "dimension": 2, "lower_bound": -2, "upper_bound": 2, "optimum": 3, "result_table": 6},
+      {"id": "f15", "dimension": 3, "lower_bound": 0, "upper_bound": 1, "optimum": -3.86, "result_table": 6},
+      {"id": "f16", "dimension": 6, "lower_bound": 0, "upper_bound": 1, "optimum": -3.32, "result_table": 6},
+      {"id": "f17", "dimension": 4, "lower_bound": 0, "upper_bound": 1, "optimum": -10.1532, "result_table": 6},
+      {"id": "f18", "dimension": 4, "lower_bound": 0, "upper_bound": 1, "optimum": -10.4028, "result_table": 6},
+      {"id": "f19", "dimension": 4, "lower_bound": 0, "upper_bound": 1, "optimum": -10.5363, "result_table": 6}
+    ]
+  },
+  "statistics_order": [
+    "best",
+    "median",
+    "worst",
+    "mean",
+    "standard_deviation",
+    "reported_time"
+  ],
+  "reported_time_unit": null,
+  "published_aoblmoa_results": {
+    "f1": [0, 0, 0, 0, 0, 0.146875],
+    "f2": [0, 0, 0, 0, 0, 0.1989583],
+    "f3": [0, 0, 0, 0, 0, 0.2255208],
+    "f4": [0, 0, 0, 0, 0, 0.19375],
+    "f5": [5.63e-7, 2.931e-5, 0.000106, 3.76e-5, 2.79e-5, 0.1895833],
+    "f6": [0, 0, 0, 0, 0, 0.1953125],
+    "f7": [8.88e-16, 8.88e-16, 8.88e-16, 8.88e-16, 9.86e-32, 0.1958333],
+    "f8": [0, 0, 0, 0, 0, 0.2182292],
+    "f9": [4.71e-32, 4.71e-32, 4.71e-32, 4.71e-32, 1.64e-47, 0.2317708],
+    "f10": [1.35e-32, 1.35e-32, 1.35e-32, 1.35e-32, 5.47e-48, 0.2348958],
+    "f11": [0.000307, 0.000307, 0.000307, 0.000307, 0, 0.188021],
+    "f12": [-1.03163, -1.03163, -1.03163, -1.03163, 0, 0.190104],
+    "f13": [0.397887, 0.397887, 0.397887, 0.397887, 1.11e-16, 0.183854],
+    "f14": [3, 3, 3, 3, 1.92e-15, 0.174479],
+    "f15": [-3.86278, -3.86278, -3.86278, -3.86278, 2.66e-15, 0.205208],
+    "f16": [-3.322, -3.322, -3.322, -3.322, 1.33e-15, 0.197917],
+    "f17": [-10.1532, -10.1532, -10.1532, -10.1532, 1.78e-15, 0.200521],
+    "f18": [-10.4029, -10.4029, -10.4029, -10.4029, 0, 0.217708],
+    "f19": [-10.5364, -10.5364, -10.5364, -10.5364, 2.57e-14, 0.202604]
+  },
+  "implementation_fidelity_gates": [
+    {
+      "id": "gravity_schedule",
+      "paper_or_author_code": "g decreases linearly from 0.9 to 0.4",
+      "current_library": "NewAOBLMOAConfig inherits constant G=0.8 and GDamp=1.0",
+      "closed": false
+    },
+    {
+      "id": "aquila_mean_semantics",
+      "paper_or_author_code": "paper Equation 13 uses a population mean; linked code uses mean of the current individual's coordinates",
+      "current_library": "uses the paper's per-coordinate population mean",
+      "closed": false
+    },
+    {
+      "id": "levy_scale_conflict",
+      "paper_or_author_code": "paper Equation 15 sets s=0.01; linked code returns an unscaled Mantegna step",
+      "current_library": "uses the paper's 0.01 scale",
+      "closed": false
+    },
+    {
+      "id": "author_rng_order",
+      "paper_or_author_code": "linked code updates and draws for all females before all males and has no seed schedule",
+      "current_library": "updates males before females against frozen iteration-start snapshots",
+      "closed": false
+    }
+  ],
+  "unresolved_protocol_semantics": [
+    "The article and linked source disagree on the Aquila population-mean calculation.",
+    "The article's Levy flight has scale 0.01 while the linked source omits that scale.",
+    "The linked repository contains only the f1 evaluator and a one-run main script, not the other 18 evaluators or the 30-run table-generation driver.",
+    "Neither the article nor linked repository provides the random seeds or generator states for the 30 runs.",
+    "Raw per-run outputs are unavailable, so the aggregates and standard-deviation convention cannot be independently recomputed.",
+    "The article reports a time row without a unit; those values are transcribed but are not a portable comparison target.",
+    "No objective-call budget or early-stopping rule is reported; the protocol is iteration-limited."
+  ],
+  "remaining_paper_outputs_not_encoded_here": [
+    "Tables 7-9: f1-f10 at dimensions 30, 50, and 100",
+    "Tables 10-11: Wilcoxon and Friedman results",
+    "Table 13: CEC2017 results",
+    "Tables 14-23: CEC2020 real-world constrained results"
+  ]
+}

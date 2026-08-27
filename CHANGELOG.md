@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable AOBLMOA Tables 5-6 provenance with the paper's 30-run,
+  1,000-iteration classic-function protocol, all 19 published AOBLMOA rows,
+  the exact paper-linked MATLAB commit, and explicit non-reproduction gates for
+  missing seeds/raw runs/source functions plus paper/code/library conflicts.
 - A machine-readable, send-ready DESMA Table 3 clarification request that
   records the public-source audit, six stable exact-preset blockers,
   acceptable primary evidence, and an unsent corresponding-author draft.

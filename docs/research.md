@@ -203,7 +203,13 @@ Open access (PMC10452254).
 
 The sex-to-strategy mapping above follows the paper's equations. Its abstract
 states the opposite assignment; see `aoblmoaStrategyFor`, which carries that
-open question.
+resolution. The paper's Tables 5-6 protocol and 19 AOBLMOA result rows are
+transcribed in
+[`aoblmoa-2023-tables5-6.json`](reference-data/aoblmoa-2023-tables5-6.json).
+The artifact is explicitly non-reproducing because the paper-linked MATLAB
+repository omits the 30-run driver, seeds, raw outputs, and all benchmark
+evaluators except F1, and conflicts with the article on the population mean and
+Levy scale.
 
 ### Multi-Objective Helpers
 

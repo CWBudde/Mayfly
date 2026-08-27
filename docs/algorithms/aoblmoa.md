@@ -31,28 +31,28 @@ The **Aquila Optimizer** mimics the hunting behavior of eagles (Aquila genus) wi
 
 #### X1 - Expanded Exploration (High soar with vertical stoop)
 
-- **When**: First 1/3 of iterations
+- **When**: Exploration phase (first 2/3 of iterations)
 - **Purpose**: Global search across entire space
 - **Formula**: `X₁ = Xbest * (1 - t/T) + (Xmean - Xbest * rand)`
 - **Behavior**: Wide-ranging exploration using population mean
 
 #### X2 - Narrowed Exploration (Contour flight with short glide)
 
-- **When**: Iterations 1/3 to 2/3
+- **When**: Exploration phase (first 2/3 of iterations)
 - **Purpose**: Focused exploration with Lévy flight
 - **Formula**: `X₂ = Xbest * Levy(D) + XR + (y - x) * rand`
 - **Behavior**: Combines heavy-tailed jumps with local search
 
 #### X3 - Expanded Exploitation (Low flight with slow descent)
 
-- **When**: Last 1/3 of iterations
+- **When**: Exploitation phase (last 1/3 of iterations)
 - **Purpose**: Convergence to promising regions
 - **Formula**: `X₃ = (Xbest - Xmean) * α - rand + exploration`
 - **Behavior**: Balances convergence with controlled exploration
 
 #### X4 - Narrowed Exploitation (Walk and grab)
 
-- **When**: Final iterations
+- **When**: Exploitation phase (last 1/3 of iterations)
 - **Purpose**: Intensive local search
 - **Formula**: `X₄ = QF * Xbest - (G1 * X * rand) - G2 * Levy(D)`
 - **Behavior**: Fine-tunes solutions with quality function
@@ -110,16 +110,32 @@ other opposition-based variants use it.
 
 The evaluation budget per iteration is `NPop + NPopF + 2·nc`.
 
-### 3a. Open questions in the paper
+### 3a. Reproduction status and open questions
 
-The paper is ambiguous or self-contradictory at three points. Each is isolated
-to a single function with a comment saying exactly what to change to flip it:
+The paper's Tables 5-6 protocol and all 19 published AOBLMOA rows are transcribed
+in [`aoblmoa-2023-tables5-6.json`](../reference-data/aoblmoa-2023-tables5-6.json).
+That artifact was audited against both the open article and the paper-linked
+MATLAB repository at commit
+`dd3b5b21fc4638cef3c4dde9fc04056296c574e6`. It is deliberately labeled a
+non-reproduction: the source has no seeds, raw 30-run results, batch driver, or
+benchmark implementations beyond F1.
+
+The article, linked source, and current library also differ at several points:
 
 | Question                                                                     | Carried by                     | Current choice                                  |
 | ---------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------- |
 | Female branch inequality: Eq. (30) or the Algorithm 1 pseudocode?            | `aoblmoaFemaleTakesAttraction` | Eq. (30), matching `prepareStandardFemale`      |
 | Which sex gets which strategy pair? The equations and the abstract disagree. | `aoblmoaStrategyFor`           | The equations: males narrowed, females expanded |
 | Is Eq. (31)'s `r` drawn per solution or per dimension?                       | `stochasticOppositionPoint`    | One scalar per solution, matching author code   |
+| Is `xM` Equation 13's population mean or the linked code's coordinate mean?  | `applyAquilaStrategy`          | The equation's per-coordinate population mean  |
+| Is the Levy step scaled by Equation 15's `s=0.01` or left unscaled?           | `levyFlightVec`                | The equation's `0.01` scale                     |
+
+The linked source additionally uses a linear `g=0.9` to `0.4` schedule and
+draws for all females before all males. `NewAOBLMOAConfig` currently inherits
+constant `G=0.8`, and Mayfly's unified sequential/parallel lifecycle processes
+males first against frozen iteration-start snapshots. Those fidelity gates must
+be resolved before adding an exact Tables 5-6 preset or comparing new runs to
+the published aggregates.
 
 ### 4. Multi-Objective Building Blocks
 

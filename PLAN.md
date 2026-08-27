@@ -146,6 +146,18 @@ The API examples, quick-reference guide, and parameter documentation are complet
         validate the supplied code/data, then add an exact preset and comparison.
   - [ ] Source-audit and encode paper-specific protocols/reference outputs for
         EOBBMA, MPMA, and AOBLMOA.
+    - [ ] Resolve EOBBMA's version-of-record and author-manuscript protocol,
+          then encode its wireless-sensor deployment scenarios and outputs.
+    - [ ] Source-audit MPMA's paper protocol and encode its published outputs.
+    - [x] Source-audit AOBLMOA's open article and paper-linked MATLAB code;
+          encode the 30-run, 1,000-iteration Tables 5-6 protocol and all 19
+          published AOBLMOA rows in
+          `docs/reference-data/aoblmoa-2023-tables5-6.json`. The artifact makes
+          no reproduction claim and preserves the paper/code conflicts, absent
+          seeds/raw runs, incomplete benchmark source, and current-library
+          fidelity gates.
+    - [ ] Encode AOBLMOA's remaining dimension-stability, CEC2017, statistical,
+          and CEC2020 real-world outputs from Tables 7-23.
   - [ ] Run and archive exact trials only for variants whose implementation and
         protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and

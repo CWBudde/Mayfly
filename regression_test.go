@@ -401,7 +401,7 @@ func TestRegressionNoRegression(t *testing.T) {
 			t.Logf("DESMA       - Mean: %.6e, Min: %.6e", desmaStats.Mean, desmaStats.Min)
 			t.Logf("Improvement: %.2f%%", improvement)
 
-			// Paper-correct DESMA and standard MA are different stochastic
+			// Current-library DESMA and standard MA are different stochastic
 			// algorithms; one is not guaranteed to dominate the other on every
 			// small sample. Historical relative-performance thresholds encoded
 			// the pre-v0.7 implementation and are intentionally invalidated.

@@ -129,6 +129,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Corrected DESMA's source attribution and removed unsupported fixed
+  performance/overhead claims. The official 51-run CEC2013 protocol and all 28
+  Table 3 DESMA aggregates are now preserved in a non-reproduction reference
+  artifact, together with the missing settings and population-insertion mismatch.
 - Corrected HMMA fidelity documentation after auditing the publisher's Equation
   (10) and Table 1 protocol. The established probability schedule is now
   labeled a compatibility extension, and the published aggregates and all

@@ -114,6 +114,35 @@ experiment, not a reproduction. The reference file records these ambiguities so
 that a future author clarification or archived experiment implementation can
 close them without redoing the protocol audit.
 
+## DESMA protocol audit
+
+The DESMA paper's experiment protocol and complete Table 3 DESMA column are
+transcribed in the
+[machine-readable DESMA reference](reference-data/desma-2022-table3.json). The
+paper reports 51 independent runs of all 28 CEC2013 functions at 30 dimensions,
+a 300,000-objective-evaluation limit and population size 50. Section 4.2 selects
+`k = 10`; the artifact explicitly records that applying it to Table 3 is an
+inference because Section 4.3 does not restate `k`. The paper also
+specifies the dynamic-inertia, dance/flight, and radius multiplier values. The
+artifact records the published mean error and rank for every function, the
+overall ranks, and the reported DESMA-versus-comparator t-test counts.
+
+This is a source audit, not a reproduction preset. The paper omits the initial
+search radius, does not say whether population 50 means each sex or both sexes
+combined, and does not give enough base-MA operator settings to derive exact
+evaluation accounting. Seeds and raw runs are absent. The official supporting
+RAR supplies CEC2013 evaluator/input files but no DESMA implementation.
+
+There are also implementation-fidelity gates. The prose describes replacing
+the current global-best mayfly with a better `egbest`, but Algorithm 2 and
+Equation 16 do not give a consistent lifecycle; Mayfly currently inserts the
+elite at the worst-male slot and retains the previous population best. The
+paper's crossover coefficient is in `[-1,1]`, while the generic library BLX
+operator uses `[-0.4,1.4]` by default. Mayfly's automatic 10%-of-span initial
+radius and population insertion are compatibility choices, and the library
+does not yet expose the paper's CEC2013 suite. An exact preset and comparison
+remain blocked until those implementation and protocol gaps are closed.
+
 ## HMMA protocol audit
 
 The HMMA paper's Table 1 protocol and aggregate rows are transcribed in the

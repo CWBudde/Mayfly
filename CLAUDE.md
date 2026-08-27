@@ -126,16 +126,16 @@ The algorithm maintains two distinct populations with different behaviors:
 
 ### DESMA Enhancement (Dynamic Elite Strategy)
 
-Located in `mayfly.go:473-510` and `generateEliteMayflies()` at line 543.
+Implemented in the DESMA iteration stage and elite-generation helpers.
 
-**Key mechanism**: After selection, generates `EliteCount` (default: 5) candidate solutions around global best within `SearchRange`. Replaces worst male if elite is better.
+**Key mechanism**: After selection, generates `EliteCount` (default: 10) candidate solutions around global best within `SearchRange`. The current library inserts a strict global-best improvement at the worst-male slot; this is a compatibility lifecycle, not the paper's unresolved exact semantics.
 
 **Adaptive search range**:
 
 - If improving: `SearchRange *= EnlargeFactor` (default 1.05)
 - If stagnating: `SearchRange *= ReductionFactor` (default 0.95)
 
-**When to use**: DESMA excels on multimodal functions (Rastrigin, Rosenbrock) with 70%+ improvement over standard MA. Minimal overhead (~8% more function evaluations).
+**When to use**: DESMA targets multimodal functions through an adaptive elite search. Its extra objective-call cost is `EliteCount` per iteration, so the percentage overhead depends on the rest of the configuration.
 
 ### Configuration System
 
@@ -401,7 +401,7 @@ All variants maintain research fidelity to original papers:
 
 4. **Population size too small**: Default 20 works for simple problems, increase `NPop`/`NPopF` for complex/high-dimensional problems
 
-5. **Comparing variants unfairly**: Use same iteration count and random seed for fair comparison. DESMA uses ~8% more function evaluations.
+5. **Comparing variants unfairly**: Use paired seeds and compare actual function-evaluation counts. DESMA adds up to `EliteCount` elite evaluations per iteration.
 
 ## Performance Profiling
 

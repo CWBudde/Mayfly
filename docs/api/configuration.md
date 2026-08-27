@@ -205,7 +205,10 @@ library's own regression suite — Griewank 10D success fell from 70%+ to 60%
 | `EnlargeFactor`   | `float64` | 1.05    | Factor to enlarge range when improving |
 | `ReductionFactor` | `float64` | 0.95    | Factor to reduce range when stagnating |
 
-\*Auto: 10% of (UpperBound - LowerBound)
+\*Auto: 10% of (UpperBound - LowerBound). The DESMA paper does not report its
+initial radius, so this is a library compatibility default rather than a
+paper-derived value. A non-zero value is also an initial radius and continues
+to be adapted each iteration.
 
 ### OLCE-MA Parameters
 

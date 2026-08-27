@@ -3,15 +3,18 @@
 // Implements the DESMA variant with adaptive elite generation around global best.
 //
 // Reference:
-// Du, P., Wang, J., Hao, Y., Niu, T., & Yang, W. (2022). Dynamic elite strategy
-// mayfly algorithm. PLOS One, 17(8), e0273155.
+// Du, Q., & Zhu, H. (2022). Dynamic elite strategy mayfly algorithm.
+// PLOS ONE, 17(8), e0273155.
 // DOI: 10.1371/journal.pone.0273155
 // PMC: https://pmc.ncbi.nlm.nih.gov/articles/PMC9409577/
 //
 // DESMA enhances the standard Mayfly Algorithm with:
 // - Elite solution generation within adaptive search range
 // - Dynamic range adjustment based on improvement (enlarge if improving, reduce if stagnating)
-// - 70%+ improvement on multimodal functions with ~8% overhead
+//
+// The paper does not report the initial search radius. The library's automatic
+// 10%-of-span radius and worst-male population insertion are compatibility
+// choices, not a paper-exact preset. See docs/reference-data/desma-2022-table3.json.
 
 package mayfly
 

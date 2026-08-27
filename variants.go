@@ -250,8 +250,8 @@ func (v *DESMAVariant) FullName() string {
 }
 
 func (v *DESMAVariant) Description() string {
-	return "Enhanced with dynamic elite generation for better local optima escape. " +
-		"70%+ improvement on multimodal problems."
+	return "Enhanced with dynamic elite generation around the current global best " +
+		"and an adaptive search radius."
 }
 
 func (v *DESMAVariant) GetConfig() *Config {
@@ -283,7 +283,9 @@ func (v *DESMAVariant) ApplicableTo(characteristics ProblemCharacteristics) floa
 }
 
 func (v *DESMAVariant) EstimatedOverhead() float64 {
-	return 1.08 // ~8% more evaluations
+	// A fixed selector hint only. Actual evaluation overhead depends on
+	// EliteCount and on the configured population and genetic operators.
+	return 1.08
 }
 
 func (v *DESMAVariant) RecommendedFor() []string {

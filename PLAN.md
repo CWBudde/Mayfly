@@ -123,8 +123,21 @@ The API examples, quick-reference guide, and parameter documentation are complet
         Equation 10/`theta` conflict.
   - [ ] Obtain HMMA author clarification or data for those protocol conflicts, then
         add an exact preset and comparison.
+  - [x] Source-audit DESMA's 51-run, 30-dimensional, 300,000-evaluation CEC2013
+        protocol and encode all 28 published DESMA Table 3 mean-error/rank rows in
+        `docs/reference-data/desma-2022-table3.json`. The artifact makes no
+        reproduction claim and preserves the missing initial radius, population
+        split, seeds, base-MA settings, raw runs, and best-versus-worst replacement
+        mismatch.
+  - [ ] Add official CEC2013 D=30 benchmark support for DESMA's Table 3 protocol.
+  - [ ] Resolve and implement DESMA's Equation 16 elite-attractor/replacement
+        lifecycle and its `L` in `[-1,1]` crossover semantics; add equation-level
+        regression tests.
+  - [ ] Obtain DESMA's initial radius, population split, complete base-MA settings,
+        evaluation accounting, and seeds/raw runs; then add an exact preset and
+        comparison.
   - [ ] Source-audit and encode paper-specific protocols/reference outputs for
-        DESMA, EOBBMA, MPMA, and AOBLMOA.
+        EOBBMA, MPMA, and AOBLMOA.
   - [ ] Run and archive exact trials only for variants whose implementation and
         protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and

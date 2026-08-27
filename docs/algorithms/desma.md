@@ -2,7 +2,9 @@
 
 ## Research Reference
 
-**Dynamic elite strategy mayfly algorithm. PLOS One, 2022.**
+Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
+PLOS ONE 17(8), 2022, e0273155,
+[doi:10.1371/journal.pone.0273155](https://doi.org/10.1371/journal.pone.0273155).
 
 ## Overview
 
@@ -12,22 +14,22 @@ DESMA (Dynamic Elite Strategy Mayfly Algorithm) is an improved variant that addr
 
 ### Dynamic Elite Generation
 
-After selection, DESMA generates `EliteCount` (default: 10) candidate solutions around the global best within a dynamic `SearchRange`. If any elite solution is better than the worst male, it replaces it.
+The paper generates `k` candidates around the current global best:
 
-**Implementation** (mayfly.go:473-510 and generateEliteMayflies() at line 543):
-
-```go
-// Generate elite solutions near global best
-elites := generateEliteMayflies(config, result.GlobalBest, searchRange)
-
-// Replace worst male if elite is better
-for _, elite := range elites {
-    if elite.Cost < males[NPop-1].Cost {
-        males[NPop-1] = elite
-        sortMayflies(males)
-    }
-}
+```text
+r1     = 2*rand(1,n) - 1
+egbest = cgbest + r1*R
 ```
+
+It clips each coordinate to the problem bounds, selects the best candidate,
+and describes replacing the current global-best mayfly only when that candidate
+improves it. The next male-velocity update then uses `egbest`.
+
+The current library generates `EliteCount` candidates after survivor selection
+and inserts an improving candidate at the worst-male slot. This retains the old
+best population member, unlike the published replacement description. That
+population-insertion choice is a documented compatibility extension pending an
+authoritative implementation or clarification.
 
 ### Adaptive Search Range
 
@@ -37,6 +39,10 @@ The search range adapts based on improvement:
 - **If stagnating**: `SearchRange *= ReductionFactor` (default 0.95)
 
 This creates a balance between exploration (large range) and exploitation (small range).
+
+The paper specifies the two multipliers but not the initial value of `R`.
+Mayfly's automatic initial value, 10% of the search-space span, is a library
+default rather than a value recovered from the paper.
 
 ## Usage Example
 
@@ -70,59 +76,58 @@ func main() {
 
 - `UseDESMA`: Enable DESMA variant (default: false)
 - `EliteCount`: Number of elite mayflies to generate per iteration (default: 10)
-- `SearchRange`: Initial search range for elite generation (default: auto-calculated as 10% of search space)
+- `SearchRange`: Initial search range for elite generation (library default: 10% of the search-space span; not reported by the paper)
 - `EnlargeFactor`: Factor to enlarge search range when improving (default: 1.05)
 - `ReductionFactor`: Factor to reduce search range when not improving (default: 0.95)
 
-## Benefits
+## Published experiment and fidelity status
 
-- **Better convergence**: Escapes local optima more effectively
-- **Adaptive search**: Dynamically adjusts search range based on improvement
-- **Faster optimization**: Often achieves better results with the same number of iterations
-- **Minimal overhead**: Only 5-10% more function evaluations (typically ~8%)
+The paper evaluates 28 CEC2013 functions in 30 dimensions, using 51 independent
+runs and at most 300,000 function evaluations. It reports population size 50,
+`k = 10`, `g_max = 0.9`, `g_min = 0.4`, `a1 = 1`, `a2 = 1.5`, dance/attenuation
+`5/0.8`, flight/attenuation `1/0.99`, and radius factors `1.05/0.95`. DESMA's
+Table 3 average rank is 2.57, first among the eight algorithms in that table.
 
-## Performance
+The complete CEC2013 function metadata and DESMA Table 3 mean-error/rank column
+are transcribed in the
+[machine-readable reference artifact](../reference-data/desma-2022-table3.json).
+It is deliberately marked `reproduction_claim: false`: the paper does not give
+the initial radius, clarify whether population 50 is per sex or combined, or
+publish the full base-MA operator settings, seeds, or raw runs. Its supplement
+contains CEC2013 evaluator/input data but no DESMA implementation. The library
+does not yet expose that CEC2013 suite, so the paper's exact benchmark set
+cannot currently be selected by the reproduction command.
 
-### Multimodal Functions
+Two additional implementation gates remain. The paper's crossover uses `L` in
+`[-1,1]`, whereas the current generic BLX operator uses `[-0.4,1.4]` at its
+default `gamma = 0.4`. Equation 16 also prints a minimization-direction
+condition that conflicts with the surrounding prose. These must be resolved
+rather than silently normalized for an exact preset.
 
-DESMA excels on multimodal functions with 70%+ improvement over standard MA:
-
-**Rastrigin Function (highly multimodal)**:
-
-- Standard MA: 45-60 (typical result)
-- DESMA: 15-30 (70%+ improvement)
-
-**Rosenbrock Function (narrow valley)**:
-
-- Standard MA: 10-50
-- DESMA: 0.1-5 (significant improvement)
-
-### Function Evaluation Overhead
-
-DESMA uses approximately 8% more function evaluations than Standard MA:
-
-- Standard MA: ~30,540 evaluations (500 iterations, pop=20)
-- DESMA: ~33,000 evaluations (includes elite generation)
-
-The small overhead is worthwhile for the significant quality improvement.
+Evaluation overhead is configuration-dependent. Each iteration adds up to
+`EliteCount` objective calls; the resulting percentage depends on population,
+crossover, mutation, stopping, and no-op behavior. The paper does not support a
+universal “8% overhead” value.
 
 ## When to Use DESMA
 
-- **Best for**: Multimodal optimization problems with many local optima
-- **Excellent on**: Rastrigin, Rosenbrock, Griewank, Ackley functions
-- **Use when**: Standard MA gets trapped in local optima
-- **Ideal for**: Problems where solution quality matters more than minimal evaluations
+- **Designed for**: Search landscapes where ordinary MA becomes trapped
+- **Published evaluation**: The shifted/rotated CEC2013 suite, not the classic
+  unshifted functions used by Mayfly's default reproduction harness
+- **Use when**: The adaptive elite search is worth its additional objective calls
+- **Measure first**: The paper does not establish a universal improvement for a
+  named classic function or arbitrary configuration
 
 ## Algorithm Workflow (Addition to Standard MA)
 
-After the standard MA selection step:
+In the current library, after the standard MA selection step:
 
-1. **Generate Elite Solutions**: Create `EliteCount` solutions around global best
-2. **Evaluate Elites**: Calculate fitness for each elite solution
-3. **Replacement**: Replace worst male if any elite is better
-4. **Adapt Search Range**:
+1. **Adapt Search Range**:
    - If global best improved → increase range (exploration)
    - If stagnating → decrease range (exploitation)
+2. **Generate Elite Solutions**: Create `EliteCount` solutions around global best
+3. **Evaluate Elites**: Calculate fitness for each elite solution
+4. **Library replacement**: Insert the best improving elite at the worst-male slot
 
 ## Parameter Tuning Guide
 
@@ -156,7 +161,7 @@ config.EliteCount = 3
 
 ### Search Range
 
-**Auto-calculated (recommended)**:
+**Auto-calculated library default**:
 
 ```go
 // Leave SearchRange at 0 for automatic calculation
@@ -166,11 +171,10 @@ config.SearchRange = 0  // Auto: 10% of (UpperBound - LowerBound)
 **Custom range**:
 
 ```go
-config.SearchRange = 2.0  // Fixed range of ±2.0
+config.SearchRange = 2.0  // Initial range of ±2.0; still adapted each iteration
 ```
 
-- Use when: You know the optimal search radius
-- Trade-off: Less adaptive behavior
+- Use when: You know an appropriate initial radius
 
 ### Adaptation Factors
 

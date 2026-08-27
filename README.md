@@ -113,7 +113,7 @@ fmt.Printf("Cost: %f, violation: %g\n",
 | Variant                                           | Best For             | Improvement | Key Features                      |
 | ------------------------------------------------- | -------------------- | ----------- | --------------------------------- |
 | **[Standard MA](docs/algorithms/standard-ma.md)** | General problems     | Baseline    | Balanced, well-tested             |
-| **[DESMA](docs/algorithms/desma.md)**             | Multimodal           | +70%        | Adaptive elite search             |
+| **[DESMA](docs/algorithms/desma.md)**             | Multimodal           | Paper rank 1st | Adaptive elite search          |
 | **[OLCE-MA](docs/algorithms/olce-ma.md)**         | Highly multimodal    | +15-30%     | Orthogonal learning + chaos       |
 | **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes | +55%        | Lévy flights, Bare Bones          |
 | **[GSASMA](docs/algorithms/gsasma.md)**           | Multimodal search    | Variable    | Annealed velocity + golden sine   |
@@ -405,7 +405,7 @@ for worker-count selection and the cheap-versus-expensive benchmark command.
 
 | Variant | Additional Evaluations | When Worth It          |
 | ------- | ---------------------- | ---------------------- |
-| DESMA   | +8%                    | Multimodal problems    |
+| DESMA   | `EliteCount` per iteration | Multimodal problems |
 | OLCE-MA | Dimension-dependent    | Highly multimodal      |
 | EOBBMA  | +1.5%                  | Deceptive landscapes   |
 | GSASMA  | +15%                   | Need fast convergence  |

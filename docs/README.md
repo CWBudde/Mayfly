@@ -33,7 +33,7 @@ Detailed guides for each algorithm variant:
 
 2. **[DESMA](algorithms/desma.md)** - Dynamic Elite Strategy
    - Best for: Multimodal problems
-   - +70% improvement on multimodal functions
+   - Published CEC2013 Table 3 average rank: 1st of 8 algorithms
 
 3. **[OLCE-MA](algorithms/olce-ma.md)** - Orthogonal Learning & Chaotic Exploitation
    - Best for: Highly multimodal problems

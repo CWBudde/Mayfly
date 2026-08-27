@@ -27,22 +27,23 @@ Academic papers and research behind the Mayfly algorithm variants implemented in
 
 ## DESMA - Dynamic Elite Strategy
 
-**Dynamic elite strategy mayfly algorithm. PLOS One, 2022.**
+Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
+[PLOS ONE 17(8), 2022](https://doi.org/10.1371/journal.pone.0273155).
 
 ### Key Contributions
 
 - Adaptive elite generation around global best
 - Dynamic search range adjustment based on improvement
 - Addresses local optima trapping and slow convergence
-- 70%+ improvement on multimodal functions
-- Minimal overhead (~8% more function evaluations)
+- Ranked first overall in the paper's 28-function CEC2013 comparison
+- Adds `k` elite evaluations per iteration; percentage overhead depends on the configuration
 
 ### Enhancement Strategy
 
 - Generates elite solutions within adaptive search range
 - Enlarges range when improving (exploration)
 - Reduces range when stagnating (exploitation)
-- Replaces worst population members with better elites
+- Published text replaces the current best; Mayfly currently inserts at the worst-male slot
 
 ---
 
@@ -216,11 +217,12 @@ callers who want a front:
 
 ### Performance Benchmarks
 
-Research papers report the following improvements over Standard MA:
+Source papers use different protocols, so fixed percentage improvements are not
+directly comparable across variants:
 
 | Variant | Best Problem Type | Improvement     | Overhead            |
 | ------- | ----------------- | --------------- | ------------------- |
-| DESMA   | Multimodal        | 70%+            | +8% evals           |
+| DESMA   | CEC2013           | Table 3 rank 1st | `k` evals/iteration |
 | OLCE-MA | Highly Multimodal | 15-30%          | Dimension-dependent |
 | EOBBMA  | Deceptive         | 55%+            | +1.5% evals         |
 | GSASMA  | Multimodal        | Paper-dependent | baseline batches    |

@@ -12,6 +12,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Official CEC2013 D=30 benchmark support for DESMA's protocol, with all 28
   functions, caller-supplied official transformation data, a 300,000-evaluation
   budget, and source-evaluator conformance coverage.
+- A fixed DESMA Table 3 experiment mode that runs all 28 CEC2013 D=30 functions
+  for 51 seeded trials at exactly 300,000 objective calls, exports raw results
+  and mean absolute errors, and machine-labels them as a descriptive
+  non-reproduction while DESMA fidelity gates remain open.
 - Added machine-readable provenance for every version of the original MA
   authors' Mendeley code archive, explicitly distinguishing its simplified
   50D demo protocol from the paper's 5D Table 6 experiment.

@@ -26,6 +26,7 @@ const schemaVersion = 2
 type options struct {
 	outputDir          string
 	publishedReference string
+	desmaTable3Data    string
 	benchmarks         []string
 	variants           []string
 	dimensions         []int
@@ -61,23 +62,26 @@ type variantProtocol struct {
 }
 
 type manifest struct {
-	Experiment     string              `json:"experiment"`
-	Module         string              `json:"module"`
-	Revision       string              `json:"revision,omitempty"`
-	GoVersion      string              `json:"go_version"`
-	GOOS           string              `json:"goos"`
-	GOARCH         string              `json:"goarch"`
-	SeedSchedule   string              `json:"seed_schedule"`
-	Variants       []variantProtocol   `json:"variants"`
-	Benchmarks     []benchmarkProtocol `json:"benchmarks"`
-	Notes          []string            `json:"notes"`
-	BaseSeed       int64               `json:"base_seed"`
-	SchemaVersion  int                 `json:"schema_version"`
-	Runs           int                 `json:"runs_per_algorithm"`
-	Iterations     int                 `json:"iterations_per_run"`
-	MaxEvaluations int                 `json:"max_function_evaluations,omitempty"`
-	Workers        int                 `json:"comparison_workers"`
-	SourceDirty    bool                `json:"source_dirty,omitempty"`
+	Experiment        string              `json:"experiment"`
+	Module            string              `json:"module"`
+	Revision          string              `json:"revision,omitempty"`
+	GoVersion         string              `json:"go_version"`
+	GOOS              string              `json:"goos"`
+	GOARCH            string              `json:"goarch"`
+	SeedSchedule      string              `json:"seed_schedule"`
+	ProtocolID        string              `json:"protocol_id,omitempty"`
+	ComparisonKind    string              `json:"comparison_kind,omitempty"`
+	ReproductionClaim *bool               `json:"reproduction_claim,omitempty"`
+	Variants          []variantProtocol   `json:"variants"`
+	Benchmarks        []benchmarkProtocol `json:"benchmarks"`
+	Notes             []string            `json:"notes"`
+	BaseSeed          int64               `json:"base_seed"`
+	SchemaVersion     int                 `json:"schema_version"`
+	Runs              int                 `json:"runs_per_algorithm"`
+	Iterations        int                 `json:"iterations_per_run"`
+	MaxEvaluations    int                 `json:"max_function_evaluations,omitempty"`
+	Workers           int                 `json:"comparison_workers"`
+	SourceDirty       bool                `json:"source_dirty,omitempty"`
 }
 
 var benchmarkRegistry = map[string]benchmark{
@@ -126,6 +130,7 @@ func parseOptions(arguments []string) (options, error) {
 	opts := options{
 		outputDir:          "",
 		publishedReference: "",
+		desmaTable3Data:    "",
 		benchmarks:         nil,
 		variants:           nil,
 		dimensions:         nil,
@@ -140,6 +145,8 @@ func parseOptions(arguments []string) (options, error) {
 	flags.StringVar(&opts.outputDir, "output", "paper-results", "directory for the manifest and result files")
 	flags.StringVar(&opts.publishedReference, "published-reference", "",
 		"Table 6 reference JSON for a descriptive current-MA comparison")
+	flags.StringVar(&opts.desmaTable3Data, "desma-table3-data", "",
+		"CEC2013 input-data directory for the fixed DESMA Table 3 non-reproduction protocol")
 	flags.StringVar(&benchmarkNames, "benchmarks", "all", "comma-separated benchmark names, or all")
 	flags.StringVar(&variantNames, "variants", "all", "comma-separated variant names, or all")
 	flags.StringVar(&dimensions, "dimensions", "10,30", "comma-separated positive dimensions")
@@ -164,6 +171,10 @@ func parseOptions(arguments []string) (options, error) {
 
 	if opts.runs <= 0 || opts.iterations <= 0 || opts.workers <= 0 || opts.maxEvals < 0 {
 		return options{}, errors.New("runs, iterations, and workers must be positive; max-evaluations must be non-negative")
+	}
+
+	if opts.desmaTable3Data != "" {
+		return configureDESMATable3Options(flags, opts)
 	}
 
 	if opts.publishedReference != "" {
@@ -197,6 +208,39 @@ func parseOptions(arguments []string) (options, error) {
 	if err != nil {
 		return options{}, err
 	}
+
+	return opts, nil
+}
+
+func configureDESMATable3Options(flags *flag.FlagSet, opts options) (options, error) {
+	if opts.publishedReference != "" {
+		return options{}, errors.New("desma-table3-data and published-reference modes are mutually exclusive")
+	}
+
+	var fixedFlag string
+
+	flags.Visit(func(value *flag.Flag) {
+		switch value.Name {
+		case "benchmarks", "dimensions", "iterations", "max-evaluations", "runs", "variants":
+			if fixedFlag == "" {
+				fixedFlag = value.Name
+			}
+		}
+	})
+
+	if fixedFlag != "" {
+		return options{}, fmt.Errorf("-%s is fixed by desma-table3-data mode", fixedFlag)
+	}
+
+	opts.benchmarks = nil
+	opts.variants = []string{"desma"}
+	opts.dimensions = []int{desmaTable3Dimension}
+	opts.runs = desmaTable3Runs
+	opts.maxEvals = desmaTable3Evaluations
+	// The paper does not report an iteration count. This is the minimum
+	// ceiling under the current recorded DESMA defaults that consumes the
+	// exact call budget, including its partial final generation.
+	opts.iterations = desmaTable3Iterations
 
 	return opts, nil
 }
@@ -290,6 +334,10 @@ func sortedBenchmarkNames() []string {
 }
 
 func runExperiment(ctx context.Context, opts options, output io.Writer) error {
+	if opts.desmaTable3Data != "" {
+		return runDESMATable3(ctx, opts, output)
+	}
+
 	if opts.publishedReference != "" {
 		return runPublishedReferenceComparison(ctx, opts, output)
 	}
@@ -489,22 +537,25 @@ func referenceResultStem(benchmark originalMABenchmark) string {
 func newManifest(opts options, variants []mayfly.AlgorithmVariant) (manifest, error) {
 	revision, dirty := sourceRevision()
 	protocol := manifest{
-		SchemaVersion:  schemaVersion,
-		Experiment:     "Mayfly post-v0.7 classic benchmark baseline",
-		Module:         "github.com/cwbudde/mayfly",
-		Revision:       revision,
-		SourceDirty:    dirty,
-		GoVersion:      runtime.Version(),
-		GOOS:           runtime.GOOS,
-		GOARCH:         runtime.GOARCH,
-		BaseSeed:       opts.seed,
-		SeedSchedule:   "seed(run_index) = base_seed + zero_based_run_index; the same seed is paired across variants",
-		Runs:           opts.runs,
-		Iterations:     opts.iterations,
-		MaxEvaluations: opts.maxEvals,
-		Workers:        opts.workers,
-		Variants:       []variantProtocol{},
-		Benchmarks:     []benchmarkProtocol{},
+		SchemaVersion:     schemaVersion,
+		Experiment:        "Mayfly post-v0.7 classic benchmark baseline",
+		Module:            "github.com/cwbudde/mayfly",
+		Revision:          revision,
+		SourceDirty:       dirty,
+		GoVersion:         runtime.Version(),
+		GOOS:              runtime.GOOS,
+		GOARCH:            runtime.GOARCH,
+		BaseSeed:          opts.seed,
+		SeedSchedule:      "seed(run_index) = base_seed + zero_based_run_index; the same seed is paired across variants",
+		Runs:              opts.runs,
+		Iterations:        opts.iterations,
+		MaxEvaluations:    opts.maxEvals,
+		Workers:           opts.workers,
+		Variants:          []variantProtocol{},
+		Benchmarks:        []benchmarkProtocol{},
+		ProtocolID:        "",
+		ComparisonKind:    "",
+		ReproductionClaim: nil,
 		Notes: []string{
 			"No target-cost early stopping is enabled.",
 			"CSV execution_seconds is machine-dependent; costs, seeds, evaluation counts, " +

@@ -89,6 +89,7 @@ func TestRunExperimentWritesAllVariantRowsAndManifest(t *testing.T) {
 	opts := options{
 		outputDir:          outputDir,
 		publishedReference: "",
+		desmaTable3Data:    "",
 		benchmarks:         []string{"sphere"},
 		variants:           []string{"ma", "desma", "olce-ma", "eobbma", "gsasma", "hmma", "mpma", "aoblmoa"},
 		dimensions:         []int{2},
@@ -145,6 +146,7 @@ func TestRunPublishedReferenceComparisonWritesExplicitNonReproductionSummary(t *
 	opts := options{
 		outputDir:          outputDir,
 		publishedReference: filepath.Join("..", "..", "docs", "reference-data", "original-ma-2020-table6.json"),
+		desmaTable3Data:    "",
 		benchmarks:         nil,
 		variants:           []string{"ma"},
 		dimensions:         nil,

@@ -96,9 +96,12 @@ the initial radius, clarify whether population 50 is per sex or combined, or
 publish the full base-MA operator settings, seeds, or raw runs. Its supplement
 contains CEC2013 evaluator/input data but no DESMA implementation. The library
 now exposes all 28 functions at D=30 through `CEC2013Suite`, using
-caller-supplied official data. The paper's exact benchmark set is therefore
-available to library callers, but it is not yet wired into the reproduction
-command's DESMA Table 3 runner.
+caller-supplied official data. The paper-reproduction command's
+`-desma-table3-data` mode runs the complete suite for 51 runs and exactly
+300,000 objective calls per run, and emits raw results plus per-function mean
+absolute errors. Its manifest and summary explicitly label the result
+`descriptive_non_reproduction`; it exercises current-library DESMA rather than
+claiming a paper-exact preset.
 
 Two additional implementation gates remain. The paper's crossover uses `L` in
 `[-1,1]`, whereas the current generic BLX operator uses `[-0.4,1.4]` at its

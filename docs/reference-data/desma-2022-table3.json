@@ -155,7 +155,7 @@
     "sma": [13, 6, 9]
   },
   "implementation_fidelity_gates": [
-    "The CEC2013 D=30 suite is implemented, but the paper-reproduction command does not yet provide a DESMA Table 3 runner that loads its caller-supplied official data.",
+    "The Table 3 runner uses current-library DESMA defaults and a 4,167-iteration ceiling derived from their evaluation accounting; this is not a published DESMA iteration count or exact preset.",
     "The paper's crossover Equations 6-7 use L in [-1,1], while the current generic BLX crossover samples a coefficient in [-0.4,1.4] at its default gamma=0.4.",
     "The current implementation does not follow Equation 16's printed elite-attractor lifecycle or the paper prose's population replacement description.",
     "Equation 16 applies elite attraction when f(egbest) > f(x_i), which conflicts with the paper's minimization prose and improving-elite requirement; this direction must not be silently chosen."

@@ -141,8 +141,37 @@ paper's crossover coefficient is in `[-1,1]`, while the generic library BLX
 operator uses `[-0.4,1.4]` by default. Mayfly's automatic 10%-of-span initial
 radius and population insertion are compatibility choices. The official
 CEC2013 D=30 suite is now available through `CEC2013Suite`, closing the
-benchmark-availability gate; an exact preset and comparison remain blocked
-until the implementation and protocol gaps are closed.
+benchmark-availability gate. Run the fixed current-library DESMA protocol with
+an already extracted copy of the official input data:
+
+```bash
+./scripts/run-paper-experiments.sh \
+  -desma-table3-data /path/to/CEC2013-or-extracted-S1 \
+  -output paper-results/desma-table3-current \
+  -workers 8 \
+  -seed 20260825
+```
+
+The mode accepts supplement roots containing `data/input_data/`, organizer
+roots containing `input_data/`, or the input-data directory itself. It does not
+download or redistribute the official files. The 28 functions, D=30, current
+DESMA variant, 51 runs, and 300,000 objective calls per run are fixed; generic
+`-benchmarks`, `-dimensions`, `-variants`, `-runs`, `-iterations`, and
+`-max-evaluations` overrides are rejected.
+
+This full command makes 428.4 million objective calls. Each function produces
+raw CSV and JSON, while `desma-table3-summary.json` computes the mean of
+`abs(best_cost - known_minimum)` across its 51 runs. Both that summary and the
+manifest carry `protocol_id: desma-2022-table3`,
+`comparison_kind: descriptive_non_reproduction`, and
+`reproduction_claim: false`.
+
+The command uses 4,167 iterations as the minimum ceiling under the recorded
+current defaults: 40 initialization calls, 72 calls per complete iteration,
+and eight objective calls in the final partial iteration. That ceiling affects
+DESMA's inertia schedule and is current-implementation accounting, not a value
+reported by the paper. An exact preset and published comparison remain blocked
+until the implementation and protocol gaps below are closed.
 
 ## HMMA protocol audit
 

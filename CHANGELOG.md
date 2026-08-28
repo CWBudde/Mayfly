@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable AOBLMOA Tables 7-9 dimension-stability provenance with all
+  30 published AOBLMOA rows for F1-F10 at dimensions 30, 50, and 100, plus an
+  explicit note preserving the source's apparent Table 8 F10 inconsistency and
+  the existing non-reproduction blockers.
 - Machine-readable AOBLMOA Tables 5-6 provenance with the paper's 30-run,
   1,000-iteration classic-function protocol, all 19 published AOBLMOA rows,
   the exact paper-linked MATLAB commit, and explicit non-reproduction gates for

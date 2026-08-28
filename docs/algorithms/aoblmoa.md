@@ -112,13 +112,19 @@ The evaluation budget per iteration is `NPop + NPopF + 2·nc`.
 
 ### 3a. Reproduction status and open questions
 
-The paper's Tables 5-6 protocol and all 19 published AOBLMOA rows are transcribed
-in [`aoblmoa-2023-tables5-6.json`](../reference-data/aoblmoa-2023-tables5-6.json).
-That artifact was audited against both the open article and the paper-linked
-MATLAB repository at commit
-`dd3b5b21fc4638cef3c4dde9fc04056296c574e6`. It is deliberately labeled a
-non-reproduction: the source has no seeds, raw 30-run results, batch driver, or
-benchmark implementations beyond F1.
+The paper's classic-function targets are now transcribed in two reference
+artifacts: Tables 5-6 provide the original 19-function results in
+[`aoblmoa-2023-tables5-6.json`](../reference-data/aoblmoa-2023-tables5-6.json),
+while Tables 7-9 provide all 30 AOBLMOA dimension-stability rows in
+[`aoblmoa-2023-tables7-9.json`](../reference-data/aoblmoa-2023-tables7-9.json).
+The latter covers F1-F10 at 30, 50, and 100 dimensions, with five statistics per
+row. These artifacts were audited against both the open article and the
+paper-linked MATLAB repository at commit
+`dd3b5b21fc4638cef3c4dde9fc04056296c574e6`. They are deliberately labeled as
+non-reproductions: the source has no seeds, raw 30-run results, batch driver, or
+benchmark implementations beyond F1. The Tables 7-9 artifact also calls out the
+source's Table 8 F10 standard deviation, which exceeds its reported worst value
+and is preserved exactly rather than corrected speculatively.
 
 The article, linked source, and current library also differ at several points:
 
@@ -134,7 +140,7 @@ The linked source additionally uses a linear `g=0.9` to `0.4` schedule and
 draws for all females before all males. `NewAOBLMOAConfig` currently inherits
 constant `G=0.8`, and Mayfly's unified sequential/parallel lifecycle processes
 males first against frozen iteration-start snapshots. Those fidelity gates must
-be resolved before adding an exact Tables 5-6 preset or comparing new runs to
+be resolved before adding an exact paper preset or comparing new runs to
 the published aggregates.
 
 ### 4. Multi-Objective Building Blocks

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "protocol_id": "aoblmoa-2023-tables7-9",
+  "status": "source_transcribed_non_reproduction",
+  "reproduction_claim": false,
+  "scope": "AOBLMOA rows from the f1-f10 dimension-stability experiment in Tables 7, 8, and 9",
+  "source": {
+    "title": "AOBLMOA: A Hybrid Biomimetic Optimization Algorithm for Numerical Optimization and Engineering Design Problems",
+    "authors": [
+      "Yanpu Zhao",
+      "Changsheng Huang",
+      "Mengjie Zhang",
+      "Yang Cui"
+    ],
+    "journal": "Biomimetics",
+    "volume": 8,
+    "issue": 4,
+    "article": 381,
+    "publication_date": "2023-08-21",
+    "doi": "10.3390/biomimetics8040381",
+    "tables": [7, 8, 9],
+    "urls": {
+      "publisher": "https://www.mdpi.com/2313-7673/8/4/381",
+      "pmc": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10452254/",
+      "author_code": "https://github.com/SheldonYnuup/AOBLMOA"
+    }
+  },
+  "author_code_audit": {
+    "commit": "dd3b5b21fc4638cef3c4dde9fc04056296c574e6",
+    "files": ["AOBLMOA.m", "main.m"],
+    "available_benchmark_evaluators": ["f1"],
+    "batch_replication_driver_available": false,
+    "raw_run_outputs_available": false,
+    "published_seed_schedule_available": false
+  },
+  "execution": {
+    "replications": 30,
+    "iterations": 1000,
+    "reported_population_size": 30,
+    "dimensions": [30, 50, 100],
+    "maximum_function_evaluations": null,
+    "seed_schedule": null,
+    "software": "MATLAB R2021b",
+    "machine": "Intel Core i7-1165G7, 16 GB RAM, 64-bit Microsoft Windows 11"
+  },
+  "benchmark_suite": {
+    "source_table": 3,
+    "function_ids": ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"],
+    "bounds": {
+      "f1": [-100, 100],
+      "f2": [-10, 10],
+      "f3": [-100, 100],
+      "f4": [-100, 100],
+      "f5": [-128, 128],
+      "f6": [-5.12, 5.12],
+      "f7": [-32, 32],
+      "f8": [-600, 600],
+      "f9": [-50, 50],
+      "f10": [-50, 50]
+    },
+    "optimum": 0
+  },
+  "statistics_order": [
+    "best",
+    "median",
+    "worst",
+    "mean",
+    "standard_deviation"
+  ],
+  "published_aoblmoa_results_by_dimension": {
+    "30": {
+      "f1": [0, 0, 0, 0, 0],
+      "f2": [0, 0, 0, 0, 0],
+      "f3": [0, 0, 0, 0, 0],
+      "f4": [0, 0, 0, 0, 0],
+      "f5": [2.59e-6, 1.68e-5, 0.000145, 3.24e-5, 3.1e-5],
+      "f6": [0, 0, 0, 0, 0],
+      "f7": [8.88e-16, 8.88e-16, 8.88e-16, 8.88e-16, 9.86e-32],
+      "f8": [0, 0, 0, 0, 0],
+      "f9": [1.57e-32, 1.73e-32, 1.56e-30, 2.09e-31, 4.54e-31],
+      "f10": [1.35e-32, 1.84e-32, 1.09e-29, 4.02e-31, 1.95e-30]
+    },
+    "50": {
+      "f1": [0, 0, 0, 0, 0],
+      "f2": [0, 0, 0, 0, 0],
+      "f3": [0, 0, 0, 0, 0],
+      "f4": [0, 0, 0, 0, 0],
+      "f5": [3.63e-7, 1.82e-5, 9.02e-5, 2.78e-5, 2.45e-5],
+      "f6": [0, 0, 0, 0, 0],
+      "f7": [8.882e-16, 8.882e-16, 8.882e-16, 8.882e-16, 9.86e-32],
+      "f8": [0, 0, 0, 0, 0],
+      "f9": [3.9e-23, 6.89e-19, 2.08e-16, 2.23e-17, 5.15e-17],
+      "f10": [1.97e-19, 1.98e-17, 1.39e-15, 1.92e-16, 5.76e-15]
+    },
+    "100": {
+      "f1": [0, 0, 0, 0, 0],
+      "f2": [0, 0, 0, 0, 0],
+      "f3": [0, 0, 0, 0, 0],
+      "f4": [0, 0, 0, 0, 0],
+      "f5": [2.2e-7, 2.18e-5, 0.000102, 3.04e-5, 2.73e-5],
+      "f6": [0, 0, 0, 0, 0],
+      "f7": [8.882e-16, 8.882e-16, 8.882e-16, 8.882e-16, 9.861e-32],
+      "f8": [0, 0, 0, 0, 0],
+      "f9": [3.28e-13, 4.08e-11, 1.56e-9, 2.94e-10, 3.97e-10],
+      "f10": [7.46e-13, 1.53e-9, 1.58e-7, 1.96e-8, 3.75e-8]
+    }
+  },
+  "transcription_notes": [
+    "Only the AOBLMOA column is encoded; the five comparison-algorithm columns are outside this artifact's scope.",
+    "The source's Table 8 reports f10 standard deviation 5.76e-15 even though its reported worst value is 1.39e-15; the apparent source inconsistency is preserved verbatim.",
+    "Rounded equal best, median, worst, and mean values can coexist with a small nonzero reported standard deviation because the raw run values are unavailable."
+  ],
+  "reproduction_blockers": [
+    "The linked repository supplies only the f1 evaluator and no 30-run table-generation driver.",
+    "Neither the article nor linked repository provides random seeds, generator states, or raw per-run outputs.",
+    "The paper/code/library implementation conflicts recorded in aoblmoa-2023-tables5-6.json remain open."
+  ],
+  "companion_reference_artifact": "docs/reference-data/aoblmoa-2023-tables5-6.json",
+  "remaining_paper_outputs_not_encoded": [
+    "Tables 10-11: Wilcoxon and Friedman results",
+    "Table 13: CEC2017 results",
+    "Tables 14-23: CEC2020 real-world constrained results"
+  ]
+}

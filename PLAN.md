@@ -156,8 +156,13 @@ The API examples, quick-reference guide, and parameter documentation are complet
           no reproduction claim and preserves the paper/code conflicts, absent
           seeds/raw runs, incomplete benchmark source, and current-library
           fidelity gates.
-    - [ ] Encode AOBLMOA's remaining dimension-stability, CEC2017, statistical,
-          and CEC2020 real-world outputs from Tables 7-23.
+    - [x] Encode AOBLMOA's 30-, 50-, and 100-dimensional stability protocol
+          and all 30 published AOBLMOA rows from Tables 7-9 in
+          `docs/reference-data/aoblmoa-2023-tables7-9.json`, preserving the
+          source's apparent Table 8 f10 standard-deviation inconsistency and
+          making no reproduction claim.
+    - [ ] Encode AOBLMOA's Wilcoxon, Friedman, CEC2017, and CEC2020 real-world
+          outputs from Tables 10-23.
   - [ ] Run and archive exact trials only for variants whose implementation and
         protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and

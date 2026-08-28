@@ -206,10 +206,14 @@ states the opposite assignment; see `aoblmoaStrategyFor`, which carries that
 resolution. The paper's Tables 5-6 protocol and 19 AOBLMOA result rows are
 transcribed in
 [`aoblmoa-2023-tables5-6.json`](reference-data/aoblmoa-2023-tables5-6.json).
-The artifact is explicitly non-reproducing because the paper-linked MATLAB
+Its Tables 7-9 dimension-stability protocol and all 30 AOBLMOA rows for F1-F10
+at dimensions 30, 50, and 100 are transcribed separately in
+[`aoblmoa-2023-tables7-9.json`](reference-data/aoblmoa-2023-tables7-9.json).
+Both artifacts are explicitly non-reproducing because the paper-linked MATLAB
 repository omits the 30-run driver, seeds, raw outputs, and all benchmark
 evaluators except F1, and conflicts with the article on the population mean and
-Levy scale.
+Levy scale. The dimension artifact also preserves an apparent source
+inconsistency in Table 8's F10 standard deviation.
 
 ### Multi-Objective Helpers
 

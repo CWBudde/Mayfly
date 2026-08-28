@@ -238,15 +238,19 @@ a paper's published table requires a protocol derived from that paper or its
 author implementation, followed by a separate output directory and archived
 manifest.
 
-AOBLMOA's first classic-function target is now machine-readable in
-[`reference-data/aoblmoa-2023-tables5-6.json`](reference-data/aoblmoa-2023-tables5-6.json).
-It records 30 runs, 1,000 iterations, 30 males, 30 females, 30 offspring, the
-reported parameters, and all 19 AOBLMOA rows from Tables 5-6. It remains a
-descriptive reference rather than a runnable reproduction: the paper-linked
-MATLAB repository supplies only F1 and a single-run entry point, while seeds,
-raw runs, and the table driver are absent. The paper and source also disagree
-on the Aquila mean and Levy scale, and the current Go default does not yet use
-the reported `g=0.9` to `0.4` schedule.
+AOBLMOA's classic-function targets are now machine-readable in
+[`reference-data/aoblmoa-2023-tables5-6.json`](reference-data/aoblmoa-2023-tables5-6.json)
+and
+[`reference-data/aoblmoa-2023-tables7-9.json`](reference-data/aoblmoa-2023-tables7-9.json).
+Together they record the 30-run, 1,000-iteration protocol, the reported
+population and parameters, all 19 original benchmark rows, and all 30 F1-F10
+rows at dimensions 30, 50, and 100. They remain descriptive references rather
+than runnable reproductions: the paper-linked MATLAB repository supplies only
+F1 and a single-run entry point, while seeds, raw runs, and the table driver are
+absent. The paper and source also disagree on the Aquila mean and Levy scale,
+and the current Go default does not yet use the reported `g=0.9` to `0.4`
+schedule. The Tables 7-9 artifact preserves and flags the published Table 8 F10
+standard deviation even though it exceeds that row's reported worst value.
 
 In particular, GSASMA's publication does not define its cooling-coefficient
 sequence, temperature update, initial temperature, or four SMA

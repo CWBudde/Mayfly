@@ -214,8 +214,7 @@ func TestAOBLMOA2023Table13ReferenceData(t *testing.T) {
 		[]int{1, 2, 7, 4, 8, 5, 6, 3})
 
 	if len(reference.TranscriptionNotes) < 6 || len(reference.ReproductionBlockers) < 5 ||
-		len(reference.CompanionArtifacts) != 3 ||
-		!reflect.DeepEqual(reference.RemainingOutputs, []string{"Tables 14-23: CEC2020 real-world constrained results"}) {
+		len(reference.CompanionArtifacts) != 4 || len(reference.RemainingOutputs) != 0 {
 		t.Fatalf("incomplete AOBLMOA Table 13 provenance")
 	}
 }

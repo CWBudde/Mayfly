@@ -9,6 +9,12 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable AOBLMOA Tables 14-23 CEC2020 constrained-problem
+  provenance with all 200 objective-summary values for AOBLMOA, SASS,
+  COLSHADE, and sCMAgES. The artifact maps the ten paper acronyms to official
+  RC problem metadata and budgets while recording that AOBLMOA budget
+  adherence, feasibility outputs, penalty semantics, seeds, drivers, and raw
+  runs are unavailable, so it makes no reproduction claim.
 - Machine-readable AOBLMOA Table 13 CEC2017 provenance with all 30 functions'
   averages, standard deviations, per-function ranks, and both Friedman summary
   rows for eight algorithms. The artifact preserves missing F2 comparator

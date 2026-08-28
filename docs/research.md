@@ -215,7 +215,11 @@ their summary rows in
 Table 13's 30 CEC2017 average, standard-deviation, and rank rows for all eight
 algorithms, plus its Friedman summaries, are in
 [`aoblmoa-2023-table13.json`](reference-data/aoblmoa-2023-table13.json).
-All four artifacts are explicitly non-reproducing because the paper-linked
+Tables 14-23 complete the published-output transcription with all 200
+objective-summary values for four algorithms on ten selected CEC2020
+constrained problems in
+[`aoblmoa-2023-tables14-23.json`](reference-data/aoblmoa-2023-tables14-23.json).
+All five artifacts are explicitly non-reproducing because the paper-linked
 MATLAB repository omits the 30-run driver, statistics driver, seeds, raw
 outputs, and all benchmark evaluators except F1, and conflicts with the article
 on the population mean and Levy scale. The dimension artifact also preserves
@@ -225,6 +229,11 @@ non-average tie ranks, which differ from Mayfly's paired signed-rank comparison.
 The CEC2017 artifact additionally records that the paper omits the dimension
 and evaluation budget, includes the officially removed F2 with missing AO/RSA
 values, and contains apparent F14/F28 numerical inconsistencies.
+The CEC2020 artifact maps the paper's problem acronyms to the official RC
+metadata and budgets, but does not infer AOBLMOA adherence: the article omits
+its population, iteration/evaluation budget, penalty definition, seeds, raw
+runs, constraint violations, and feasibility outputs. It also preserves the
+article's RC21/RC22 description conflicts and Table 16 comparator discrepancy.
 
 ### Multi-Objective Helpers
 

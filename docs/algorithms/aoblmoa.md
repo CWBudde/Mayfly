@@ -112,7 +112,7 @@ The evaluation budget per iteration is `NPop + NPopF + 2·nc`.
 
 ### 3a. Reproduction status and open questions
 
-The paper's published targets are now transcribed in four reference artifacts:
+The paper's published targets are now transcribed in five reference artifacts:
 Tables 5-6 provide the original 19-function results in
 [`aoblmoa-2023-tables5-6.json`](../reference-data/aoblmoa-2023-tables5-6.json),
 while Tables 7-9 provide all 30 AOBLMOA dimension-stability rows in
@@ -123,17 +123,20 @@ their summaries in
 Table 13 adds the 30-function, eight-algorithm CEC2017 averages, standard
 deviations, per-function ranks, and Friedman summaries in
 [`aoblmoa-2023-table13.json`](../reference-data/aoblmoa-2023-table13.json).
+Tables 14-23 complete the paper-output transcription with all 200
+objective-summary values for ten selected CEC2020 constrained problems in
+[`aoblmoa-2023-tables14-23.json`](../reference-data/aoblmoa-2023-tables14-23.json).
 The dimension artifact covers F1-F10 at 30, 50, and 100 dimensions, with five
 statistics per row. These artifacts were audited against both the open article
 and the paper-linked MATLAB repository at commit
 `dd3b5b21fc4638cef3c4dde9fc04056296c574e6`. They are deliberately labeled as
-non-reproductions: the source has no seeds, raw 30-run results, batch driver, or
-benchmark implementations beyond F1. The Tables 7-9 artifact also calls out the
-source's Table 8 F10 standard deviation, which exceeds its reported worst value
-and is preserved exactly rather than corrected speculatively. The Tables 10-11
-artifact preserves the paper's unpaired rank-sum terminology and its non-average
-handling of tied ranks; Mayfly's comparison framework instead performs paired
-signed-rank tests.
+non-reproductions: the source has no seeds, raw multi-run results, batch driver,
+or benchmark implementations beyond F1. The Tables 7-9 artifact also calls out
+the source's Table 8 F10 standard deviation, which exceeds its reported worst
+value and is preserved exactly rather than corrected speculatively. The Tables
+10-11 artifact preserves the paper's unpaired rank-sum terminology and its
+non-average handling of tied ranks; Mayfly's comparison framework instead
+performs paired signed-rank tests.
 
 The CEC2017 artifact cannot be used as an exact Mayfly comparison. The paper
 does not state the experiment dimension, evaluation budget, or seeds; its
@@ -142,6 +145,17 @@ includes the officially removed F2, with missing AO/RSA values assigned printed
 rank 8, whereas `CEC2017Suite` implements the final 29-function suite. The
 artifact preserves rather than repairs the printed F14 AOBLMOA standard
 deviation and F28 RSA average anomalies.
+
+The CEC2020 constrained artifact maps WMSR, ODIRS, TCSD1, MDCBDP, PGTDO,
+HTBDP, FGBP, GTCD, TCSD2, and TO to official RC15, RC16, RC17, RC21, RC22,
+RC25, RC26, RC29, RC30, and RC33 metadata. Official dimension-derived budgets
+are recorded only as context: the article reports 25 runs and a static penalty
+method but omits AOBLMOA's budget, population, iteration count, seeds, penalty
+definition, and raw results. It also omits constraint violations, feasibility
+rates, and violation-count vectors required by the competition, so objective
+summaries alone cannot establish feasible solutions. Apparent article/official
+source conflicts, including the RC21/RC22 descriptions and Table 16's sCMAgES
+maximum, are preserved rather than reconciled speculatively.
 
 The article, linked source, and current library also differ at several points:
 

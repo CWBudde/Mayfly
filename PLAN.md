@@ -173,8 +173,15 @@ The API examples, quick-reference guide, and parameter documentation are complet
           missing AO/RSA f2 values and printed ranks, the apparent f14/f28
           inconsistencies, and make no reproduction claim while the dimension,
           evaluation budget, seeds, raw runs, and CEC2017 driver are unavailable.
-    - [ ] Encode AOBLMOA's CEC2020 real-world constrained outputs from Tables
-          14-23.
+    - [x] Encode all 200 AOBLMOA/SASS/COLSHADE/sCMAgES objective-summary
+          values for the ten selected CEC2020 real-world constrained problems
+          from Tables 14-23 in
+          `docs/reference-data/aoblmoa-2023-tables14-23.json`. Map the paper
+          acronyms to official RC15/16/17/21/22/25/26/29/30/33 metadata and
+          budgets without inferring that AOBLMOA followed those budgets, and
+          preserve the paper/official-source inconsistencies and missing
+          feasibility, penalty, seed, driver, and raw-run evidence as explicit
+          non-reproduction gates.
   - [ ] Run and archive exact trials only for variants whose implementation and
         protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and

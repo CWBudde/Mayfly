@@ -172,9 +172,8 @@
   "companion_reference_artifacts": [
     "docs/reference-data/aoblmoa-2023-tables5-6.json",
     "docs/reference-data/aoblmoa-2023-tables7-9.json",
-    "docs/reference-data/aoblmoa-2023-tables10-11.json"
+    "docs/reference-data/aoblmoa-2023-tables10-11.json",
+    "docs/reference-data/aoblmoa-2023-tables14-23.json"
   ],
-  "remaining_paper_outputs_not_encoded": [
-    "Tables 14-23: CEC2020 real-world constrained results"
-  ]
+  "remaining_paper_outputs_not_encoded": []
 }

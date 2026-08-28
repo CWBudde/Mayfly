@@ -9,6 +9,11 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A machine-readable, send-ready HMMA Table 1 clarification request with seven
+  stable exact-preset blocker IDs for population, base-MA/crossover settings,
+  benchmark geometry, `a4`, and Equations 10 and 12, plus two separately gated
+  historical seed/raw-data questions. The Table 1 reference links the unsent
+  request and preserves all nine IDs without claiming reproduction.
 - A machine-readable, send-ready original MA Table 6 clarification request
   with two stable IMA exact-preset blocker IDs for the conflicting
   crossover-rate and Gaussian-mutation-rate semantics. Descriptive comparison

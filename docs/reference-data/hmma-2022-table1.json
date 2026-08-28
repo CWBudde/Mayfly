@@ -78,10 +78,37 @@
   },
   "unresolved_protocol_semantics": [
     "The total population size and its male/female split are not reported.",
+    "The reported tuple omits the base-MA visibility coefficient beta and the Equation 4 crossover-coefficient range and draw semantics.",
     "The dimensions of F3 and F7 are not reported.",
     "The benchmark bounds are not reported consistently: the parameter tuple prints ub=0.1 and lb=10.",
     "Equation 10 and the reported theta=0.005 produce a negative value throughout the stated iteration interval, so the intended OBL/Cauchy branch probability is unclear.",
     "The information-exchange coefficient a4 used by Equation 7 is not included in the reported parameter tuple.",
+    "The prose says Equation 12 converts offspring randomly but does not define selection or whether rho is also a gate.",
     "The paper does not report random seeds, raw per-run results, or a reference implementation; data are available from the authors on request."
-  ]
+  ],
+  "clarification_request": {
+    "artifact": "docs/reference-data/hmma-2022-clarification-request.json",
+    "status": "awaiting_author_or_archival_data",
+    "target_algorithm": "hmma",
+    "blocking_question_ids": [
+      "population_size_and_sex_split",
+      "base_ma_parameters_and_crossover",
+      "f3_f7_dimensions",
+      "benchmark_bounds_and_parameter_tuple",
+      "equation_7_information_exchange_coefficient",
+      "equation_10_probability_schedule",
+      "artificial_mutation_selection_semantics",
+      "published_seed_schedule",
+      "raw_per_run_results_and_reference_code"
+    ],
+    "exact_preset_question_ids": [
+      "population_size_and_sex_split",
+      "base_ma_parameters_and_crossover",
+      "f3_f7_dimensions",
+      "benchmark_bounds_and_parameter_tuple",
+      "equation_7_information_exchange_coefficient",
+      "equation_10_probability_schedule",
+      "artificial_mutation_selection_semantics"
+    ]
+  }
 }

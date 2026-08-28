@@ -157,6 +157,23 @@ artificial gender mutation to offspring pairs.
 
 ---
 
+## HMMA - Hybrid Mutation Mayfly Algorithm
+
+H. Zhang et al., “Improved mayfly algorithm based on hybrid mutation,”
+*Electronics Letters* 58 (2022), 687–689.
+[DOI 10.1049/ell2.12568](https://doi.org/10.1049/ell2.12568).
+
+The paper combines scheduled opposition-based/Cauchy mutation of the global
+best with Equation (12) artificial mutation of offspring. Its Table 1 aggregates
+are preserved in the
+[machine-readable reference](reference-data/hmma-2022-table1.json). The exact
+preset is blocked by seven protocol questions, while historical seeds and raw
+runs are two additional reproduction-comparison limitations. All nine are
+pinned in the
+[machine-readable clarification request](reference-data/hmma-2022-clarification-request.json).
+
+---
+
 ## MPMA - Median Position-Based
 
 Guo, L.; Xu, C.; Yu, T.; Tuerxun, W. “An Improved Mayfly Optimization

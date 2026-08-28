@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "protocol_id": "hmma-2022-table1",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "corresponding_author": "Hua Zhang",
+    "public_email": "hankz@qq.com",
+    "contact_source": "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/ell2.12568",
+    "institutional_email": "zhanghua@hbuas.edu.cn",
+    "institutional_profile": "https://qcxy.hbuas.edu.cn/__local/D/45/A5/C546D3D6637ACF6693BCFCDA834_E062CF68_12712.pdf",
+    "orcid": "https://orcid.org/0000-0002-5263-0106"
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "The version of record, DOI metadata, corresponding-author ORCID record, and institutional profile expose no public experiment implementation or run data and do not resolve the exact-preset questions.",
+    "sources": [
+      {
+        "kind": "publisher_article",
+        "url": "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/ell2.12568",
+        "finding": "The article provides the HMMA equations, 50-run/1,000-iteration summary, parameter tuple, Table 1 aggregates, corresponding-author email, and an on-request data statement. It does not provide the population, complete base-MA settings, consistent benchmark geometry, an executable Equation 10 schedule, seeds, raw runs, or code."
+      },
+      {
+        "kind": "crossref_record",
+        "url": "https://api.crossref.org/works/10.1049%2Fell2.12568",
+        "finding": "The DOI record identifies the version-of-record article and text-mining links but has no relation linking a dataset, software deposit, preprint, or supplement."
+      },
+      {
+        "kind": "corresponding_author_orcid",
+        "url": "https://orcid.org/0000-0002-5263-0106",
+        "finding": "The publisher-linked public record confirms the author's Hubei University of Arts and Science affiliation but contains no works, researcher URLs, software, or research-resource records that supply the Table 1 materials."
+      },
+      {
+        "kind": "institutional_profile",
+        "url": "https://qcxy.hbuas.edu.cn/__local/D/45/A5/C546D3D6637ACF6693BCFCDA834_E062CF68_12712.pdf",
+        "finding": "The university profile identifies the article and a current institutional email, but it links no HMMA implementation, configuration, or experimental data."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "population_size_and_sex_split",
+      "gate": "exact_preset",
+      "question": "For the Table 1 HMMA runs, what was the population size, and was it a total count or the count of each male and female population?",
+      "known_evidence": "The paper describes two randomly generated sex-specific populations and uses n for each update loop, but its experimental protocol reports no numerical population count.",
+      "required_answer_shape": "The exact male and female counts at initialization and after survivor selection, plus whether any reported population-size value denotes one sex or their combined total.",
+      "units": "male mayflies, female mayflies, and total candidates",
+      "acceptable_primary_evidence": [
+        "The Table 1 source code and experiment configuration",
+        "A dated author clarification giving the exact counts and convention"
+      ],
+      "affected_fields": [
+        "Config.NPop",
+        "Config.NPopF",
+        "offspring and survivor counts",
+        "objective-evaluation accounting"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "base_ma_parameters_and_crossover",
+      "gate": "exact_preset",
+      "question": "Which complete base-MA and crossover settings were used by HMMA in Table 1, including beta and the distribution and draw granularity of crossover coefficient L?",
+      "known_evidence": "The reported tuple includes a1, a2, a3, fl, g, damping factors, d, and rho, but omits the visibility coefficient beta and the coefficient L used by Equation 4. The article calls L random within a specific range without giving that range or whether it is drawn per pair or coordinate.",
+      "required_answer_shape": "A complete initial parameter set and damping schedule, including beta, the exact L distribution/range and draw granularity, offspring count, velocity initialization, boundary repair, and survivor-selection convention.",
+      "units": "dimensionless coefficients, probabilities, counts, and decision-space units where applicable",
+      "acceptable_primary_evidence": [
+        "The Table 1 source code and experiment configuration",
+        "A dated author clarification defining every omitted base-MA and crossover setting"
+      ],
+      "affected_fields": [
+        "Config.Beta",
+        "Config.CrossoverGamma",
+        "Config.NC",
+        "velocity initialization",
+        "boundary repair",
+        "survivor selection"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "f3_f7_dimensions",
+      "gate": "exact_preset",
+      "question": "What dimensions were used for F3 and F7 in the Table 1 experiments?",
+      "known_evidence": "The paper prints formulas for F3 and F7 and identifies F15 as fixed-dimensional, but gives no numerical dimension for F3 or F7.",
+      "required_answer_shape": "One positive integer dimension for F3 and one for F7, with any algorithm-specific dimensional differences stated explicitly.",
+      "units": "decision variables",
+      "acceptable_primary_evidence": [
+        "The Table 1 benchmark driver or configuration",
+        "A dated author clarification giving both dimensions"
+      ],
+      "affected_fields": [
+        "F3 Config.ProblemSize",
+        "F7 Config.ProblemSize"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "benchmark_bounds_and_parameter_tuple",
+      "gate": "exact_preset",
+      "question": "What lower and upper bounds were used for F3, F7, and F15, and how should the printed tuple entries ub=0.1 and lb=10 be interpreted?",
+      "known_evidence": "The reported tuple places ub=0.1 before lb=10, which is not a valid lower/upper ordering, and the benchmark descriptions do not otherwise give executable per-function bounds.",
+      "required_answer_shape": "An inclusive lower/upper pair for every Table 1 benchmark, together with whether the tuple labels, values, or ordering contain a typographical error and the corrected text.",
+      "units": "decision-space units per benchmark",
+      "acceptable_primary_evidence": [
+        "The Table 1 benchmark driver or configuration",
+        "A dated author correction giving each bound pair and the intended tuple"
+      ],
+      "affected_fields": [
+        "Config.LowerBound",
+        "Config.UpperBound",
+        "initialization",
+        "opposition-based learning",
+        "boundary repair"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "equation_7_information_exchange_coefficient",
+      "gate": "exact_preset",
+      "question": "What value of the information-exchange coefficient a4 in Equation 7 was used for Table 1?",
+      "known_evidence": "Equation 7 multiplies the difference between the global best and its opposite by a4, but a4 is absent from the reported experimental parameter tuple.",
+      "required_answer_shape": "The exact finite numerical a4 value used in every Table 1 HMMA run, including any iteration or benchmark dependence.",
+      "units": "dimensionless coefficient",
+      "acceptable_primary_evidence": [
+        "The Table 1 source code or configuration containing a4",
+        "A dated author clarification giving the exact value or schedule"
+      ],
+      "affected_fields": [
+        "Config.HMMAInformationExchange"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "equation_10_probability_schedule",
+      "gate": "exact_preset",
+      "question": "What executable probability schedule and branch test were intended by Equation 10 for the OBL-versus-Cauchy global-best mutation?",
+      "known_evidence": "The publisher prints Ps=-exp((1-t/Iter_MAX)^20)+theta and reports theta=0.005. That expression is negative throughout t in [0, Iter_MAX], so it cannot act as an ordinary probability. The current library schedule is explicitly only a compatibility extension.",
+      "required_answer_shape": "A corrected formula with parentheses and sign placement, the exact theta value, iteration indexing, comparison direction, random-variable distribution and draw frequency, endpoint behavior, and the branch selected on equality.",
+      "units": "iteration index and probability in [0,1]",
+      "acceptable_primary_evidence": [
+        "The Table 1 source code implementing Equation 10",
+        "A dated author correction giving a complete executable schedule and branch rule"
+      ],
+      "affected_fields": [
+        "hmmaScheduleProbability",
+        "Config.HMMAScheduleOffset",
+        "OBL/Cauchy branch selection"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "artificial_mutation_selection_semantics",
+      "gate": "exact_preset",
+      "question": "How were offspring selected for Equation 12 artificial mutation in HMMA, and what exactly does the paper's phrase 'convert randomly' mean?",
+      "known_evidence": "Equation 12 defines a deterministic rho-weighted transformation of a male/female offspring pair, while the HMMA prose says the offspring populations are converted randomly. The article does not state whether every pair is transformed, a subset is sampled, rho also acts as a probability, or both outputs use the original unmodified pair.",
+      "required_answer_shape": "An executable selection and update rule specifying candidate and coordinate sampling, whether rho is solely a blend coefficient or also a gate, simultaneous-versus-sequential pair evaluation, application frequency, sex assignment, and survivor insertion.",
+      "units": "probability or fraction, pair and coordinate counts, and dimensionless rho",
+      "acceptable_primary_evidence": [
+        "The Table 1 source code implementing Equation 12",
+        "A dated author clarification defining the complete selection and update semantics"
+      ],
+      "affected_fields": [
+        "Config.HMMAArtificialMutation",
+        "hmmaArtificialMutation",
+        "offspring sex assignment",
+        "survivor selection"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "published_seed_schedule",
+      "gate": "reproduction_comparison",
+      "question": "Which random seeds or random-number-generator states produced the 50 Table 1 replications?",
+      "known_evidence": "The paper reports 50 independent runs but no generator, seed schedule, or saved states.",
+      "required_answer_shape": "The generator and version plus 50 ordered seeds or equivalent reproducible states, mapped to the published runs and shared-across-algorithms policy.",
+      "units": "generator identity and integer seeds or serialized states",
+      "acceptable_primary_evidence": [
+        "The original Table 1 experiment driver and seed records",
+        "A dated author-supplied ordered seed schedule with generator details"
+      ],
+      "affected_fields": [
+        "Config.Seed",
+        "paired-run schedule",
+        "historical run identity"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "raw_per_run_results_and_reference_code",
+      "gate": "reproduction_comparison",
+      "question": "Can the original HMMA implementation, Table 1 driver, and raw per-run objective values be supplied?",
+      "known_evidence": "Only aggregate Best/Worst/Average/Std/Median values are published. The article states that supporting data are available from the corresponding author on reasonable request, but no public code or data deposit is linked.",
+      "required_answer_shape": "Versioned source and configuration files plus 50 ordered terminal objective values per algorithm and benchmark, with checksums and a mapping from files to Table 1 rows.",
+      "units": "source files, configuration files, checksums, and objective values",
+      "acceptable_primary_evidence": [
+        "The original author-supplied experiment archive",
+        "A publisher or institutional archive deposited by the authors"
+      ],
+      "affected_fields": [
+        "source-conformance fixtures",
+        "aggregate-statistic validation",
+        "reproduction comparison"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The original HMMA implementation and Table 1 experiment driver",
+    "Exact configuration files for F3, F7, and F15",
+    "The corrected Equation 10 schedule and Equation 12 selection semantics",
+    "The random-number generator and ordered seed schedule",
+    "Raw per-run results underlying every Table 1 aggregate"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "hmma",
+    "requires_question_ids": [
+      "population_size_and_sex_split",
+      "base_ma_parameters_and_crossover",
+      "f3_f7_dimensions",
+      "benchmark_bounds_and_parameter_tuple",
+      "equation_7_information_exchange_coefficient",
+      "equation_10_probability_schedule",
+      "artificial_mutation_selection_semantics"
+    ],
+    "rule": "An hmma-2022 exact preset may be added only after all seven questions have non-null answers backed by cited primary evidence and the resulting configuration and operators pass equation-, accounting-, and source-conformance tests."
+  },
+  "reproduction_comparison_gate": {
+    "state": "blocked_missing_historical_run_data",
+    "requires_question_ids": [
+      "published_seed_schedule",
+      "raw_per_run_results_and_reference_code"
+    ],
+    "rule": "A historical reproduction claim additionally requires both run-data questions to be resolved. Aggregate-only comparisons must remain explicitly descriptive and unpaired."
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Request for HMMA Table 1 implementation details and data",
+    "body": "Dear Professor Zhang and co-authors,\n\nI am implementing the protocol from your 2022 Electronics Letters article, Improved mayfly algorithm based on hybrid mutation (doi:10.1049/ell2.12568), and would like to reproduce the HMMA results in Table 1 faithfully. Could you please share the original implementation, Table 1 experiment driver/configuration, and raw results offered by the article's data-availability statement? For an executable configuration, could you also clarify: (1) the male and female population counts; (2) the omitted base-MA settings, especially beta and the range/draw granularity of crossover coefficient L; (3) the F3/F7 dimensions and the exact F3/F7/F15 bounds, including the intended correction to printed ub=0.1 and lb=10; (4) the value of Equation 7 coefficient a4; (5) the intended Equation 10 probability formula, theta, iteration indexing, random draw, and OBL/Cauchy branch comparison; and (6) whether Equation 12 transforms every offspring pair or a randomly selected subset, whether rho is only a blend coefficient, and whether both outputs use the original pair? If available, the random-number generator, ordered seeds for the 50 runs, version/checksum information, and 50 per-run objective values for each Table 1 row would make validation possible.\n\nThank you for your time."
+  }
+}

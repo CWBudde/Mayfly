@@ -85,7 +85,11 @@ published statistics for MA, IMA, AMMA, OCMA, and HMMA on F3, F7, and F15.
 It is labeled `reproduction_claim: false`: the paper does not report population
 size, F3/F7 dimensions, seeds, raw runs, consistent bounds, or a usable
 Equation (10) probability. Its data-availability statement offers the missing
-material from the corresponding author on reasonable request.
+material from the corresponding author on reasonable request. A
+[machine-readable clarification request](../reference-data/hmma-2022-clarification-request.json)
+pins seven exact-preset questions and separately tracks the unavailable seed
+schedule and raw run data. Its correspondence draft is prepared but has not
+been sent.
 
 `CauchyMutationRate` and `ApplyOBLToGlobalBest` are deprecated compatibility
 fields and are ignored by HMMA. The paper uses the iteration-dependent `Ps`

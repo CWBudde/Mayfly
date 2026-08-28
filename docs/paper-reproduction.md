@@ -217,7 +217,14 @@ the stated run. Mayfly's existing `-exp(-t/Iter_MAX) + theta` schedule and
 defaults are now explicitly documented as compatibility extensions rather than
 paper-calibrated settings. An exact HMMA preset and comparison remain blocked
 on author clarification or the supporting data, which the paper makes available
-on request.
+on request. The
+[machine-readable clarification request](reference-data/hmma-2022-clarification-request.json)
+turns that dependency into seven stable exact-preset questions covering the
+population, base-MA/crossover settings, benchmark geometry, `a4`, Equation (10),
+and Equation (12). Two separate question IDs request the historical seed
+schedule and raw runs/reference code needed to elevate an aggregate-only
+comparison into a reproduction claim. The included correspondence draft is
+explicitly marked `not_sent`.
 
 ## EOBBMA protocol audit
 

@@ -126,8 +126,15 @@ The API examples, quick-reference guide, and parameter documentation are complet
         no reproduction claim and preserves the missing population, F3/F7
         dimensions, seeds, raw runs, `a4`, inconsistent `ub`/`lb` tuple, and
         Equation 10/`theta` conflict.
-  - [ ] Obtain HMMA author clarification or data for those protocol conflicts, then
-        add an exact preset and comparison.
+  - [x] Exhaust HMMA's publisher, DOI-registry, corresponding-author ORCID, and
+        institutional public artifacts; encode seven stable exact-preset blockers
+        and two historical-comparison data blockers in a machine-readable,
+        send-ready clarification request linked from the Table 1 reference.
+  - [ ] Obtain primary HMMA author or archival evidence resolving all nine
+        clarification blockers.
+  - [ ] Validate that evidence, implement an explicit HMMA-2022 preset, add
+        equation-, accounting-, and source-conformance tests, and compare against
+        Table 1 with claims limited by the recovered seeds and raw runs.
   - [x] Source-audit DESMA's 51-run, 30-dimensional, 300,000-evaluation CEC2013
         protocol and encode all 28 published DESMA Table 3 mean-error/rank rows in
         `docs/reference-data/desma-2022-table3.json`. The artifact makes no

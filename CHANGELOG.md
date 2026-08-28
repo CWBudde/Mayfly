@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- An algorithm-selection guide covering the selector's scalar-objective scope,
+  problem metadata, variant heuristics, score interpretation, classifier
+  limits, budget-matched empirical validation, and common mistakes, with a
+  reproducibly seeded runnable example kept in sync by a documentation test.
 - A focused getting-started tutorial with a complete reproducibly seeded
   optimizer, result interpretation, custom-objective and normalized-bound
   guidance, troubleshooting, and a runnable example kept in sync by a

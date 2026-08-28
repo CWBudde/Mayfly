@@ -82,7 +82,10 @@ The API examples, quick-reference guide, and parameter documentation are complet
 - [x] Write a getting-started tutorial with a complete, reproducibly seeded
       optimizer, result interpretation, custom-objective guidance, normalized
       per-dimension bounds, troubleshooting, and a CI-tested runnable example.
-- [ ] Write an algorithm-selection guide.
+- [x] Write an algorithm-selection guide covering selector scope, explicit
+      problem metadata, all variant heuristics and overhead hints, checked APIs,
+      automatic-classifier limits, budget-matched validation, common mistakes,
+      and a CI-tested reproducibly seeded example.
 - [ ] Write a parameter-tuning tutorial.
 - [ ] Write a custom-objective-function guide.
 

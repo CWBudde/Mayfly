@@ -5,6 +5,7 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 ## Quick Links
 
 - **New to Mayfly?** Start with [Getting Started](getting-started.md)
+- **Choosing a variant?** Follow the [Algorithm-selection Guide](algorithm-selection.md)
 - **Want to understand algorithms?** Check [Algorithm Documentation](#algorithm-documentation)
 - **Need an API summary?** Open the [API Quick Reference](api/quick-reference.md)
 - **Looking for benchmarks?** Visit [Benchmark Functions](benchmarks.md)
@@ -23,6 +24,11 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
   - Custom objective functions
   - Bounds and constraints
   - Common pitfalls
+- **[Algorithm-selection Guide](algorithm-selection.md)** - Build and validate a variant shortlist
+  - Selector scope and problem metadata
+  - Variant heuristics and score interpretation
+  - Automatic-classifier limits
+  - Paired, evaluation-budget-matched comparisons
 
 ### Algorithm Documentation
 
@@ -153,6 +159,7 @@ Complete API reference:
 
 **Choose an algorithm:**
 
+- [Algorithm-selection Guide](algorithm-selection.md)
 - [Algorithm comparison table](../README.md#algorithm-variants)
 - [Unified Framework - Algorithm Selection](api/unified-framework.md#algorithm-selection)
 
@@ -176,6 +183,7 @@ Complete API reference:
 | ----------------------- | ----- | ------------------- |
 | quick-reference.md      | ~230  | Compact API map     |
 | getting-started.md      | ~190  | First optimization  |
+| algorithm-selection.md  | ~200  | Variant selection   |
 | benchmarks.md           | ~410  | Function reference  |
 | research.md             | ~350  | Academic citations  |
 | configuration.md        | ~470  | Parameter reference |

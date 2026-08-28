@@ -173,35 +173,49 @@ algorithm changed.
 
 ## Intelligent Algorithm Selection
 
-Let the library recommend the best algorithm for your problem:
+Use the selector to build a heuristic shortlist, then compare that shortlist
+over repeated paired seeds with equal objective-evaluation budgets. Its scores
+are rules of thumb, not measured success probabilities. See the
+[algorithm-selection guide](docs/algorithm-selection.md) for the complete
+workflow, classifier limits, and a runnable example.
 
 ```go
-// Define problem characteristics
 chars := mayfly.ProblemCharacteristics{
-    Dimensionality:            30,
-    Modality:                  mayfly.HighlyMultimodal,
-    Landscape:                 mayfly.Rugged,
+	Dimensionality: 30,
+	Modality:       mayfly.HighlyMultimodal,
+	Landscape:      mayfly.Rugged,
 }
 
-// Get recommendation
 selector := mayfly.NewAlgorithmSelector()
-best := selector.RecommendBest(chars)
+best, err := selector.RecommendBestChecked(chars)
+if err != nil {
+	return err
+}
 
-// Use recommended variant
-result, err := mayfly.NewBuilderFromVariant(best.Variant).
-    ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
-    WithIterations(500).
-    Optimize()
+builder, err := mayfly.NewBuilderFromVariantChecked(best.Variant)
+if err != nil {
+	return err
+}
+
+result, err := builder.
+	ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
+	WithIterations(500).
+	Optimize()
 ```
 
-Or use the fluent builder API directly:
+Or choose a known variant directly with the checked builder API:
 
 ```go
-result, err := mayfly.NewBuilder("olce").
-    ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
-    WithIterations(500).
-    WithPopulation(30, 30).
-    Optimize()
+builder, err := mayfly.NewBuilderChecked("olce")
+if err != nil {
+	return err
+}
+
+result, err := builder.
+	ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
+	WithIterations(500).
+	WithPopulation(30, 30).
+	Optimize()
 ```
 
 ## Statistical Comparison
@@ -247,6 +261,7 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 ### Getting Started
 
 - **[Getting Started Guide](docs/getting-started.md)** - Tutorial and examples
+- **[Algorithm-selection Guide](docs/algorithm-selection.md)** - Choose and validate a variant
 - **[Configuration Guide](docs/api/configuration.md)** - Complete parameter reference
 - **[v0.7 Migration Guide](docs/migration-v0.7.md)** - Correctness and API changes
 - **[Benchmark Functions](docs/benchmarks.md)** - Test functions and expected results

@@ -85,7 +85,10 @@ result, err := mayfly.NewBuilder("olce").
 
 ## Algorithm Selection
 
-Let the library recommend the best algorithm for your problem:
+Use the selector to build a heuristic shortlist for a supported scalar-objective
+problem. The [algorithm-selection guide](../algorithm-selection.md) explains how
+to describe a problem, interpret scores, and validate candidates under paired
+seeds and equal evaluation budgets.
 
 ### Define Problem Characteristics
 
@@ -120,7 +123,10 @@ characteristics := mayfly.ProblemCharacteristics{
 
 ```go
 selector := mayfly.NewAlgorithmSelector()
-recommendations := selector.RecommendAlgorithms(characteristics)
+recommendations, err := selector.RecommendAlgorithmsChecked(characteristics)
+if err != nil {
+    return err
+}
 
 // recommendations is a slice sorted by score (best first)
 for _, rec := range recommendations {
@@ -128,9 +134,13 @@ for _, rec := range recommendations {
     fmt.Printf("Reason: %s\n", rec.Reasoning)
 }
 
-// Use the best recommendation
 best := recommendations[0]
-result, err := mayfly.NewBuilderFromVariant(best.Variant).
+builder, err := mayfly.NewBuilderFromVariantChecked(best.Variant)
+if err != nil {
+    return err
+}
+
+result, err := builder.
     ForProblem(mayfly.Rastrigin, 30, -5.12, 5.12).
     Optimize()
 ```
@@ -140,15 +150,17 @@ result, err := mayfly.NewBuilderFromVariant(best.Variant).
 For standard benchmarks, use predefined recommendations:
 
 ```go
-rec := mayfly.RecommendForBenchmark("Schwefel")
+rec, err := mayfly.RecommendForBenchmarkChecked("Schwefel")
+if err != nil {
+    return err
+}
+
 fmt.Printf("Recommended: %s (Score: %.1f%%)\n",
     rec.Variant.Name(), rec.Score*100)
 
 // Available benchmark names:
 // "Sphere", "Rastrigin", "Rosenbrock", "Ackley", "Griewank",
-// "Schwefel", "Levy", "Zakharov", "DixonPrice", "Michalewicz",
-// "BentCigar", "Discus", "Weierstrass", "HappyCat", "ExpandedSchafferF6",
-// "Himmelblau"
+// "Schwefel", "BentCigar", "Discus"
 ```
 
 ## Automatic Problem Classification
@@ -156,17 +168,21 @@ fmt.Printf("Recommended: %s (Score: %.1f%%)\n",
 Classify unknown problems automatically by sampling:
 
 ```go
-characteristics := mayfly.ClassifyProblem(
-    myFunction,  // Your objective function
-    10,          // Problem size
-    -10,         // Lower bound
-    10,          // Upper bound
-    nil,         // *rand.Rand; pass a seeded one for a reproducible verdict
+rng := rand.New(rand.NewSource(42))
+characteristics, err := mayfly.ClassifyProblemContext(
+    context.Background(),
+    myFunction,
+    10,
+    -10,
+    10,
+    mayfly.ClassificationOptions{Rand: rng},
 )
+if err != nil {
+    return err
+}
 
-// Now use characteristics for algorithm selection
 selector := mayfly.NewAlgorithmSelector()
-best := selector.RecommendBest(characteristics)
+best, err := selector.RecommendBestChecked(characteristics)
 ```
 
 **Classification Process**:
@@ -216,6 +232,7 @@ result, err := mayfly.Optimize(config)
 | `PresetHighDimensional`   | OLCE-MA     | High-D problems (larger population) |
 | `PresetFastConvergence`   | GSASMA      | Quick results needed                |
 | `PresetStableConvergence` | MPMA        | Robust optimization                 |
+
 `PresetMultiObjective` is deprecated and returns an error: no registered
 variant implements a multi-objective optimizer.
 

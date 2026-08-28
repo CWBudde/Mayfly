@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "protocol_id": "aoblmoa-2023-tables5-23",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "corresponding_author": "Changsheng Huang",
+    "public_institutional_email": "glhcs@upc.edu.cn",
+    "contact_source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10452254/",
+    "affiliation": "School of Economics and Management, China University of Petroleum (East China)",
+    "selection_basis": "The open version of record marks Changsheng Huang as the corresponding author and publishes this institutional address. The article credits Yanpu Zhao with methodology/software and Mengjie Zhang with software/data curation, so the draft requests that the corresponding author involve the holders of the experiment source and data."
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "The open article, DOI records, first-author ORCID, paper-linked GitHub repository, and exact DOI/title searches of public code/data registries expose only a two-file, single-F1 MATLAB example. They do not provide the full benchmark/CEC drivers, authoritative resolutions for the paper/code conflicts, seeds, raw trials, or statistics driver needed to close the preset and comparison gates.",
+    "sources": [
+      {
+        "kind": "open_version_of_record",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10452254/",
+        "finding": "The article supplies Equations 1-32, Algorithm 1, Tables 5-23, the corresponding-author address, and a link to the MATLAB repository. Its data-availability statement says the data are contained in the article, but no raw trials, seed schedule, batch/statistics driver, or supplemental archive is attached; the article and linked code leave the ten questions below unresolved."
+      },
+      {
+        "kind": "crossref_record",
+        "url": "https://api.crossref.org/works/10.3390%2Fbiomimetics8040381",
+        "finding": "The DOI record confirms the article and first-author ORCID, has an empty relation object, and links only the version-of-record PDF; it identifies no software, dataset, or supplement relation."
+      },
+      {
+        "kind": "doaj_record",
+        "url": "https://doaj.org/api/articles/b00781d032304f42bb15feef854a664b",
+        "finding": "The DOAJ record links only the article full text and exposes no research-data, software, or supplementary object."
+      },
+      {
+        "kind": "first_author_orcid",
+        "url": "https://orcid.org/0000-0001-5257-3108",
+        "finding": "Yanpu Zhao's public ORCID record includes the AOBLMOA article and a SciProfiles identifier, but exposes no public email, software, dataset, or research-resource record supplying the missing experiment material."
+      },
+      {
+        "kind": "paper_linked_author_repository",
+        "url": "https://github.com/SheldonYnuup/AOBLMOA/tree/dd3b5b21fc4638cef3c4dde9fc04056296c574e6",
+        "finding": "The repository still resolves to the paper-audited commit and contains only AOBLMOA.m and main.m. The latter runs one unseeded F1 case; there are no other benchmark evaluators, CEC drivers, repeated-run/statistics scripts, saved configurations, or raw outputs."
+      },
+      {
+        "kind": "github_title_search",
+        "url": "https://api.github.com/search/repositories?q=AOBLMOA",
+        "finding": "A public repository-title search returned only the paper-linked SheldonYnuup/AOBLMOA repository. This records the indexed search outcome and does not prove that private or unindexed material is absent."
+      },
+      {
+        "kind": "github_doi_search",
+        "url": "https://api.github.com/search/repositories?q=%2210.3390%2Fbiomimetics8040381%22",
+        "finding": "An exact-DOI public repository search returned zero repositories."
+      },
+      {
+        "kind": "zenodo_record_search",
+        "url": "https://zenodo.org/api/records?q=%2210.3390%2Fbiomimetics8040381%22&size=10",
+        "finding": "An exact-DOI public record search returned zero deposits; a separate AOBLMOA-title search also returned zero deposits."
+      },
+      {
+        "kind": "figshare_record_search",
+        "url": "https://api.figshare.com/v2/articles?institution=0&page_size=100&order=published_date&order_direction=desc&resource_doi=10.3390%2Fbiomimetics8040381",
+        "finding": "An exact resource-DOI public article search returned zero deposits."
+      },
+      {
+        "kind": "mendeley_data_title_search",
+        "url": "https://data.mendeley.com/research-data/?search=AOBLMOA",
+        "finding": "A public title search exposed no author-linked AOBLMOA experiment dataset."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "strategy_and_branch_semantics",
+      "gate": "exact_preset",
+      "question": "Which sex uses each Aquila strategy pair, and which exact fitness inequalities and equality cases select the Mayfly-versus-Aquila branch for males and females?",
+      "known_evidence": "The abstract assigns expanded strategies to males and narrowed strategies to females, while Equations 29-30 and the linked code do the opposite. Equation 30/code apply attraction when the female is worse than its paired male, but Algorithm 1 prints a conflicting female comparison. Equality behavior and the male equation's scalar-versus-coordinate global-best notation also require an executable resolution.",
+      "required_answer_shape": "For minimization and maximization, give the sex-to-X1/X2/X3/X4 mapping, exact branch predicates including equality and ties, global-best comparison semantics, and the authoritative source lines or corrected equations.",
+      "units": "sex, strategy IDs, objective comparisons, and branch decisions",
+      "acceptable_primary_evidence": [
+        "A corrected, versioned AOBLMOA implementation and experiment driver",
+        "A publisher correction or dated author clarification identifying the authoritative equations and predicates"
+      ],
+      "affected_fields": [
+        "aoblmoaStrategyFor",
+        "aoblmoaMaleTakesAttraction",
+        "aoblmoaFemaleTakesAttraction",
+        "AOBLMOA paper preset"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "aquila_mean_semantics",
+      "gate": "exact_preset",
+      "question": "In Equations 13, 16, and 30, is xM the per-coordinate mean across the relevant population, the scalar mean of the current candidate's coordinates used by the linked code, or another quantity?",
+      "known_evidence": "The article defines xM as the mean value of current-position solutions, while AOBLMOA.m calls mean(Mayflyf(i).Position) inside each female update. These produce different vectors and trajectories in more than one dimension.",
+      "required_answer_shape": "An executable formula identifying the population/candidate pool, axes reduced, lifecycle snapshot, sex, and whether the result is scalar or vector for every use of xM.",
+      "units": "decision-space coordinates and population/candidate indices",
+      "acceptable_primary_evidence": [
+        "The exact MATLAB source used to generate Tables 5-23",
+        "A dated author clarification with a corrected formula and worked multidimensional example"
+      ],
+      "affected_fields": [
+        "applyAquilaStrategy",
+        "population snapshots",
+        "expanded exploration and exploitation equations"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "levy_scale_semantics",
+      "gate": "exact_preset",
+      "question": "Did the reported AOBLMOA runs multiply the Mantegna Levy step by Equation 15's s=0.01, or use the unscaled Levy function in the linked MATLAB code?",
+      "known_evidence": "Equation 15 explicitly sets s=0.01. The linked Levy(d) function returns w/abs(v)^(1/beta) without that multiplier, so the published equation and linked code differ by a factor of 100.",
+      "required_answer_shape": "The exact Levy formula, beta and scale, draw granularity, and identification/checksum of the implementation used for every published experiment family.",
+      "units": "dimensionless Levy steps per coordinate",
+      "acceptable_primary_evidence": [
+        "The versioned Tables 5-23 implementation showing the applied scale",
+        "A dated author clarification resolving the Equation 15/code discrepancy"
+      ],
+      "affected_fields": [
+        "levyFlightVec",
+        "Aquila X2 and X4 strategies",
+        "source-conformance fixtures"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "population_and_lifecycle",
+      "gate": "exact_preset",
+      "question": "What do the reported population size and lifecycle mean exactly: male/female/offspring counts, update order and snapshots, global/personal-best timing, crossover pairing, offspring sex assignment, and survivor replacement?",
+      "known_evidence": "The article reports population size 30, while main.m passes 30 males, 30 females, and 30 offspring. AOBLMOA.m updates every female before every male, uses evolving global-best state, splits flattened offspring by array order, and does not document whether this exact lifecycle generated every table. Mayfly currently uses frozen iteration-start snapshots and male-first processing.",
+      "required_answer_shape": "Exact per-sex and offspring counts plus ordered executable stages, live-versus-frozen reads, sort/tie rules, personal/global-best updates, parent pairs, offspring ordering/sex assignment, boundary repair, and truncation semantics.",
+      "units": "candidates, offspring, ordered stages, and state snapshots",
+      "acceptable_primary_evidence": [
+        "The complete versioned experiment implementation and configuration",
+        "A dated author clarification defining every population and lifecycle convention"
+      ],
+      "affected_fields": [
+        "Config.NPop",
+        "Config.NPopF",
+        "Config.NC",
+        "movement, mating, opposition, and survivor lifecycle"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "evaluation_accounting",
+      "gate": "exact_preset",
+      "question": "Which objective calls are part of each reported run, and which calls are counted or omitted from any budget or complexity claim?",
+      "known_evidence": "The article limits the classic experiments by 1,000 iterations and gives no objective-call ceiling. The linked code increments funccount for moved males/females but not offspring, opposition candidates, repeated accepted-opposition evaluations, or history logging; different algorithms can therefore receive different numbers of calls under the same iteration count.",
+      "required_answer_shape": "A per-stage call ledger covering initialization, movement, offspring, opposition candidates, repeated evaluations, history/logging, constraints/penalties, stopping and final selection for each experiment family.",
+      "units": "objective and constraint evaluations per stage, iteration, and run",
+      "acceptable_primary_evidence": [
+        "Instrumented original experiment drivers with a complete call trace",
+        "A dated author clarification defining the accounting and stopping convention"
+      ],
+      "affected_fields": [
+        "Config.MaxFunctionEvaluations",
+        "Result.FuncEvalCount",
+        "paper-reproduction manifest",
+        "cross-algorithm fairness"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "benchmark_and_driver_archive",
+      "gate": "reproduction_comparison",
+      "question": "Can the exact Tables 5-11 AOBLMOA and comparator implementations, all 19 benchmark evaluators, 30-run batch driver, and statistical-analysis driver be supplied?",
+      "known_evidence": "The linked repository contains only AOBLMOA.m and an unseeded, single-run F1 main.m. It omits F2-F19, comparator implementations/configurations, repeated-run orchestration, and the Wilcoxon/Friedman code.",
+      "required_answer_shape": "A versioned archive with checksums containing every evaluator, algorithm/configuration, run loop, output schema, timing convention/unit, standard-deviation convention, Wilcoxon implementation, Friedman tie handling, and software/toolbox versions.",
+      "units": "source files, checksums, algorithms, functions, runs, statistics, and time units",
+      "acceptable_primary_evidence": [
+        "The original Tables 5-11 experiment archive",
+        "An author-controlled or publisher/institutional archival deposit"
+      ],
+      "affected_fields": [
+        "Tables 5-11 runners",
+        "benchmark definitions",
+        "statistics conformance",
+        "timing comparisons"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "cec2017_protocol",
+      "gate": "reproduction_comparison",
+      "question": "What exact CEC2017 suite version, dimension, evaluation/stopping budget, transformations, comparator configurations, and handling of the removed F2 produced Table 13?",
+      "known_evidence": "The article reports 30 runs and 1,000 iterations but no dimension, objective-evaluation budget, seeds, or suite data version. It includes F2 although the final official CEC2017 suite removed that function, and the linked repository contains no CEC2017 evaluator or comparison driver.",
+      "required_answer_shape": "Versioned evaluator/data files and checksums; dimension and bounds; per-algorithm population and exact call/stopping budget; F2 provenance; comparator source/configuration; and the complete Table 13 driver.",
+      "units": "suite version, dimensions, candidates, iterations, and function evaluations",
+      "acceptable_primary_evidence": [
+        "The original Table 13 CEC2017 experiment archive",
+        "A dated author clarification backed by the exact evaluator and driver"
+      ],
+      "affected_fields": [
+        "CEC2017Suite",
+        "Table 13 runner",
+        "30-function Friedman comparison"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "cec2020_constrained_protocol",
+      "gate": "reproduction_comparison",
+      "question": "What complete AOBLMOA protocol and feasibility/penalty semantics produced Tables 14-23 on the ten selected CEC2020 constrained problems?",
+      "known_evidence": "The article reports 25 runs and a static penalty but omits AOBLMOA population, iterations/evaluation budget, penalty definition/coefficient, violation aggregation, feasibility tolerance, table-value semantics, seeds, and feasibility outputs. The linked repository contains no CEC2020 evaluator or driver.",
+      "required_answer_shape": "Versioned official/modified evaluator and driver; exact problem-ID mapping; population/budget; penalty and feasibility rules; raw-objective-versus-penalized reporting; and all competition-required constraint-violation, feasibility-rate, and violation-count outputs.",
+      "units": "problem IDs, candidates, evaluations, objective values, constraint violations, tolerances, and feasible runs",
+      "acceptable_primary_evidence": [
+        "The original Tables 14-23 constrained experiment archive",
+        "A dated author clarification plus the executable evaluator, penalty, and reporting driver"
+      ],
+      "affected_fields": [
+        "CEC2020 constrained runners",
+        "penalty and feasibility configuration",
+        "Tables 14-23 comparison targets"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "seeds_raw_runs_and_statistics",
+      "gate": "reproduction_comparison",
+      "question": "Can the RNG identity and ordered seeds/states, raw per-run outputs, convergence histories, and intermediate statistics for every Tables 5-23 experiment and comparator be supplied?",
+      "known_evidence": "Neither the article nor repository provides seeds/states or ordered raw samples. Without them, the reported aggregates, standard deviations, rank-sum p-values, Friedman ranks, constrained feasibility, and historical pairing cannot be independently validated.",
+      "required_answer_shape": "Generator name/version and ordered seed or state mapping; one uniquely identified raw row per algorithm/function/problem/dimension/run; objective/cost, constraints, feasibility, calls, iterations and time; convergence histories; and scripts regenerating every table cell.",
+      "units": "generator states, runs, objective/fitness values, violations, evaluations, iterations, seconds, p-values, and ranks",
+      "acceptable_primary_evidence": [
+        "The original author-supplied raw experiment archive",
+        "A publisher or institutional archive deposited by the authors"
+      ],
+      "affected_fields": [
+        "Config.Seed",
+        "aggregate and source-conformance tests",
+        "Wilcoxon/Friedman validation",
+        "historical comparison identity"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "source_inconsistencies",
+      "gate": "reproduction_comparison",
+      "question": "What are the intended corrections and underlying raw values for the preserved table and official-suite inconsistencies?",
+      "known_evidence": "Table 8 F10 prints a standard deviation larger than its worst value; Table 13 contains missing AO/RSA F2 values with printed rank 8, an AOBLMOA F14 deviation of 3346 beside mean 1442, and an RSA F28 average below the official bias; Tables 14-23 conflict with official RC21/RC22 metadata, and Table 16's sCMAgES maximum differs from the official submission.",
+      "required_answer_shape": "A publisher correction or original unrounded samples/configuration identifying the intended value and provenance of every anomaly, including whether official suite/problem definitions or modified versions were used.",
+      "units": "objective statistics, ranks, problem dimensions/constraints, and source versions",
+      "acceptable_primary_evidence": [
+        "The original table source and unrounded raw trials",
+        "A publisher correction or dated author clarification backed by the source data"
+      ],
+      "affected_fields": [
+        "Table 8 F10",
+        "Table 13 F2/F14/F28",
+        "Tables 14-23 RC21/RC22 and comparator targets"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The exact AOBLMOA and comparator implementations/configurations used for Tables 5-23",
+    "All classic, CEC2017, and CEC2020 evaluator/data files and complete batch/statistics drivers",
+    "The random-number generator and ordered seed/state schedules",
+    "Raw per-run objective, constraint, feasibility, evaluation, iteration, timing, convergence, and statistical outputs",
+    "A correction or authoritative resolution for every paper/code and paper/official-suite inconsistency"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "aoblmoa",
+    "requires_question_ids": [
+      "strategy_and_branch_semantics",
+      "aquila_mean_semantics",
+      "levy_scale_semantics",
+      "population_and_lifecycle",
+      "evaluation_accounting"
+    ],
+    "rule": "An aoblmoa-2023 exact algorithm preset may be added only after all five questions have non-null answers backed by cited primary evidence. The linked code's known g=0.9-to-0.4 schedule must also be implemented, and the resulting equations, population lifecycle, RNG order, opposition stage, boundary repair, and call ledger must pass source-conformance tests."
+  },
+  "reproduction_comparison_gate": {
+    "state": "blocked_missing_historical_run_data_and_drivers",
+    "requires_question_ids": [
+      "benchmark_and_driver_archive",
+      "cec2017_protocol",
+      "cec2020_constrained_protocol",
+      "seeds_raw_runs_and_statistics",
+      "source_inconsistencies"
+    ],
+    "rule": "A Tables 5-23 reproduction comparison additionally requires the relevant experiment-family questions and the shared raw-run/statistics questions to be resolved. Comparisons may be scoped to an independently closed family, but unavailable families and historical pairing must be identified explicitly and aggregate-only output must remain descriptive."
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Request for AOBLMOA Tables 5-23 implementation, protocol, and raw trial data",
+    "body": "Dear Professor Huang and co-authors,\n\nI am implementing the protocol from your 2023 Biomimetics article, AOBLMOA: A Hybrid Biomimetic Optimization Algorithm for Numerical Optimization and Engineering Design Problems (doi:10.3390/biomimetics8040381), and would like to reproduce Tables 5-23 faithfully. The linked GitHub repository is valuable, but currently contains only AOBLMOA.m and a single-run F1 main.m. Could you please share the exact versioned AOBLMOA/comparator implementations, complete benchmark/CEC drivers and data, configurations, random-number generator and ordered seeds/states, and raw per-run outputs used for the article?\n\nFor an executable AOBLMOA preset, could you also clarify: (1) the authoritative sex-to-Aquila-strategy mapping and male/female branch inequalities, including equality; (2) whether xM is a population-coordinate mean or the current candidate's coordinate mean; (3) whether Levy steps use Equation 15's 0.01 scale or the linked code's unscaled form; (4) the meaning of population size 30 and the exact live/frozen update, best-tracking, crossover, offspring-sex, boundary, and survivor lifecycle; and (5) the complete objective/constraint-call accounting. For Tables 5-11, please include F1-F19, comparator and statistical drivers and timing/standard-deviation conventions. For Table 13, please identify the CEC2017 dimension, suite/F2 version, budget, and comparator configurations. For Tables 14-23, please provide the CEC2020 mapping, static-penalty and feasibility rules, budget, and constraint outputs. Original unrounded samples or corrections for the preserved Table 8, Table 13, RC21/RC22, and Table 16 inconsistencies would make the validation auditable.\n\nThank you for your time."
+  }
+}

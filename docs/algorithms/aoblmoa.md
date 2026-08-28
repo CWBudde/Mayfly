@@ -174,6 +174,15 @@ males first against frozen iteration-start snapshots. Those fidelity gates must
 be resolved before adding an exact paper preset or comparing new runs to
 the published aggregates.
 
+The remaining evidence requirements are pinned in a
+[machine-readable clarification request](../reference-data/aoblmoa-2023-clarification-request.json).
+Its exact-preset gate separates the strategy/branch, Aquila-mean, Levy-scale,
+population/lifecycle, and objective-call questions from five experiment and
+historical-comparison questions covering the classic, CEC2017, and constrained
+CEC2020 drivers, seeds/raw runs/statistics, and preserved source anomalies. The
+request is send-ready but marked `not_sent`; no correspondence has been
+transmitted.
+
 ### 4. Multi-Objective Building Blocks
 
 The package ships a multi-objective toolkit that callers can drive themselves.

@@ -229,6 +229,18 @@ The API examples, quick-reference guide, and parameter documentation are complet
           preserve the paper/official-source inconsistencies and missing
           feasibility, penalty, seed, driver, and raw-run evidence as explicit
           non-reproduction gates.
+    - [x] Exhaust AOBLMOA's open article, DOI/ORCID records, paper-linked
+          MATLAB repository, and public code/data registries; encode five stable
+          exact-preset blockers and five experiment/comparison blockers in a
+          machine-readable, send-ready clarification request linked from the
+          Tables 5-6 reference.
+    - [ ] Obtain primary AOBLMOA author or archival evidence resolving all ten
+          clarification blockers, including the exact table-generating code,
+          complete benchmark/CEC drivers, seeds, raw trials, and statistics.
+    - [ ] Validate that evidence, implement an explicit AOBLMOA-2023 preset and
+          paper-family runners, add equation-, lifecycle-, accounting-,
+          feasibility-, statistics-, and source-conformance tests, and compare
+          against Tables 5-23 with claims limited by the recovered evidence.
   - [ ] Run and archive exact trials only for variants whose implementation and
         protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and

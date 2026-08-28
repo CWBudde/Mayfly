@@ -299,6 +299,13 @@ its population, iteration/evaluation budget, penalty definition, seeds, raw
 runs, constraint violations, and feasibility outputs. It also preserves the
 article's RC21/RC22 description conflicts and Table 16 comparator discrepancy.
 
+The completed publisher/DOI/ORCID/repository audit and ten unresolved evidence
+questions are consolidated in a
+[machine-readable clarification request](reference-data/aoblmoa-2023-clarification-request.json).
+It separates five algorithm-definition questions from five experiment and
+historical-comparison questions, and its send-ready author draft remains marked
+`not_sent`.
+
 ### Multi-Objective Helpers
 
 `Optimize` is single-objective. The package exports a Pareto toolkit for

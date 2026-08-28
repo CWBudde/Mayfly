@@ -9,6 +9,12 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A machine-readable, send-ready AOBLMOA Tables 5-23 clarification request
+  with five stable exact-preset blocker IDs for strategy/branch, Aquila mean,
+  Levy scale, population/lifecycle, and evaluation accounting semantics, plus
+  five separately gated benchmark/CEC driver, seed/raw-statistics, and source-
+  inconsistency questions. The Tables 5-6 reference links the unsent request
+  without claiming reproduction.
 - A machine-readable, send-ready MPMA/MMA Tables 5-10 clarification request
   with five stable exact-preset blocker IDs for `a4`, median-pool semantics,
   genetic operators, initialization/boundaries, and evaluation accounting,

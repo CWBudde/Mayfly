@@ -13,7 +13,7 @@
   },
   "public_source_audit": {
     "checked_on": "2026-08-28",
-    "outcome": "The publisher article and author-linked public implementations do not resolve either exact-preset blocker.",
+    "outcome": "The publisher article, anonymously accessible author artifacts, and institutional repository do not resolve either exact-preset blocker. MATLAB Central retains three authentication-gated pre-simplification releases that remain an unrecovered archival lead.",
     "sources": [
       {
         "kind": "publisher_article",
@@ -34,9 +34,50 @@
         "kind": "author_research_page",
         "url": "https://sites.google.com/view/kzervoudakis/research/metaheuristics/mayfly-algorithm",
         "finding": "The author page links the article and public demo implementations but no separate Table 6 experiment driver, configuration, or clarification of the two rates."
+      },
+      {
+        "kind": "author_matlab_file_exchange_version_history",
+        "url": "https://www.mathworks.com/matlabcentral/fileexchange/76902-mayfly-optimization-algorithm",
+        "finding": "The official version history lists releases 1.0.0 and 1.0.1 from 2020-06-13 and 1.0.2 from 2020-06-19 before release 2.0.1 on 2020-06-23 states that the code was simplified. The public page requires MathWorks authentication to download every historical package, so the three earlier packages could not be inspected and do not yet resolve either blocker."
+      },
+      {
+        "kind": "author_institutional_repository",
+        "url": "https://sndbx.library.tuc.gr/view/89641?locale=en&show=full",
+        "finding": "The Technical University of Crete record is metadata-only: its METS export declares hasFullContentAvailable=false and contains an empty file group, so it provides no implementation, experiment configuration, or raw data."
       }
     ]
   },
+  "unrecovered_archival_leads": [
+    {
+      "id": "matlab_file_exchange_pre_simplification_versions",
+      "source_url": "https://www.mathworks.com/matlabcentral/fileexchange/76902-mayfly-optimization-algorithm",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "published": "2020-06-13",
+          "release_note": ""
+        },
+        {
+          "version": "1.0.1",
+          "published": "2020-06-13",
+          "release_note": "."
+        },
+        {
+          "version": "1.0.2",
+          "published": "2020-06-19",
+          "release_note": "Rastrigin function is now included."
+        }
+      ],
+      "boundary_release": {
+        "version": "2.0.1",
+        "published": "2020-06-23",
+        "release_note": "The code has been simplified."
+      },
+      "access_status": "authentication_required_not_retrieved",
+      "evidentiary_status": "uninspected_lead_not_blocker_resolution",
+      "required_next_action": "Retrieve versions 1.0.0, 1.0.1, and 1.0.2 through an authorized MathWorks account or obtain the packages from the author or MathWorks archive; record checksums and provenance, then test whether any package is the Table 6 driver and whether it resolves both operator blockers."
+    }
+  ],
   "blocking_questions": [
     {
       "id": "crossover_operator_and_rate",

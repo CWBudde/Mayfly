@@ -59,7 +59,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with two stable IMA exact-preset blocker IDs for the conflicting
   crossover-rate and Gaussian-mutation-rate semantics. Descriptive comparison
   summaries now carry the same blocker IDs and artifact path without claiming
-  reproduction.
+  reproduction. Its source audit now also records the metadata-only Technical
+  University of Crete entry and the authentication-gated MATLAB Central
+  releases 1.0.0-1.0.2 that predate the explicitly simplified demo as an
+  unrecovered archival lead, not resolved evidence.
 - Machine-readable MPMA/MMA Tables 1-10 provenance with the 30-run,
   function-evaluation-limited benchmark protocol, the 35-run governor
   protocol, and all 110 published MMA aggregate/performance cells. The

@@ -97,6 +97,17 @@ not explain the paper's crossover rate `0.95` or Gaussian mutation rate `0.1`.
 The authors' later [Python implementation](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python)
 likewise exposes a demo configuration rather than the tuned IMA protocol.
 
+The official [MATLAB Central version history](https://www.mathworks.com/matlabcentral/fileexchange/76902-mayfly-optimization-algorithm)
+adds one unrecovered archival lead. Versions 1.0.0 and 1.0.1 were published on
+2020-06-13 and version 1.0.2 on 2020-06-19; the next release, 2.0.1 on
+2020-06-23, says “The code has been simplified.” The historical packages now
+require MathWorks authentication and have not been inspected, so their contents
+are not evidence for either operator. The clarification artifact records the
+exact versions and the required checksum/provenance review if they are
+recovered. The Technical University of Crete institutional record supplies no
+fallback package: its METS export declares that full content is unavailable and
+contains an empty file group.
+
 The harness can now enforce the paper's exact 95,000-call budget. An
 `original-ma-2020` preset is intentionally not yet exposed. The remaining
 blocker is operator semantics, not missing numerical transcription:
@@ -156,8 +167,7 @@ author response was received.
 The implementation-level ambiguities now have a documented source-guided
 resolution. An improving elite replaces the current best population member and
 becomes the next iteration's global attractor. Equation 16's printed `>` is
-treated as the same minimization-sign error found in the paper's base Equation
-3. DESMA's Equations 6-7 crossover independently samples each coordinate's `L`
+treated as the same minimization-sign error found in the paper's base Equation 3. DESMA's Equations 6-7 crossover independently samples each coordinate's `L`
 uniformly from `[-1,1]` and shares it between the complementary siblings; the
 draw granularity follows the
 [cited original MA authors' implementation](https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python/blob/749251dfd95fe3606fde0c67bbef4c042d4202e8/operators.py#L3-L9)

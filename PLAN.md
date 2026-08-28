@@ -129,6 +129,13 @@ The API examples, quick-reference guide, and parameter documentation are complet
         encode the unresolved crossover-rate and Gaussian-mutation semantics as
         two stable blocker IDs in a machine-readable, send-ready clarification
         request, and expose the same gate in descriptive comparison output.
+  - [x] Re-audit the official MATLAB Central version history and Technical
+        University of Crete repository; record that the institutional entry has
+        no files and preserve the authentication-gated, pre-simplification
+        MATLAB releases 1.0.0-1.0.2 as an unrecovered archival lead.
+  - [ ] Retrieve and provenance-check MATLAB Central releases 1.0.0-1.0.2,
+        then determine whether any is the Table 6 driver or resolves either IMA
+        operator blocker.
   - [ ] Obtain primary author or archival evidence resolving both original MA
         IMA operator blockers.
   - [ ] Validate that evidence, implement an explicit original-MA-2020 IMA

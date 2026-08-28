@@ -35,10 +35,28 @@ func TestOriginalMA2020ClarificationRequestPinsExactPresetBlockers(t *testing.T)
 		PublicSourceAudit struct {
 			Outcome string `json:"outcome"`
 			Sources []struct {
+				Kind    string `json:"kind"`
 				URL     string `json:"url"`
 				Finding string `json:"finding"`
 			} `json:"sources"`
 		} `json:"public_source_audit"`
+		UnrecoveredArchivalLeads []struct {
+			ID        string `json:"id"`
+			SourceURL string `json:"source_url"`
+			Versions  []struct {
+				Version     string `json:"version"`
+				Published   string `json:"published"`
+				ReleaseNote string `json:"release_note"`
+			} `json:"versions"`
+			BoundaryRelease struct {
+				Version     string `json:"version"`
+				Published   string `json:"published"`
+				ReleaseNote string `json:"release_note"`
+			} `json:"boundary_release"`
+			AccessStatus       string `json:"access_status"`
+			EvidentiaryStatus  string `json:"evidentiary_status"`
+			RequiredNextAction string `json:"required_next_action"`
+		} `json:"unrecovered_archival_leads"`
 		ExactPresetGate struct {
 			State               string   `json:"state"`
 			TargetAlgorithm     string   `json:"target_algorithm"`
@@ -97,10 +115,48 @@ func TestOriginalMA2020ClarificationRequestPinsExactPresetBlockers(t *testing.T)
 		t.Fatalf("clarification does not preserve its evidence gate: %+v", clarification.ExactPresetGate)
 	}
 
+	sourceKinds := make(map[string]bool, len(clarification.PublicSourceAudit.Sources))
 	for _, source := range clarification.PublicSourceAudit.Sources {
-		if source.URL == "" || source.Finding == "" {
+		if source.Kind == "" || source.URL == "" || source.Finding == "" {
 			t.Errorf("incomplete public-source audit entry: %+v", source)
 		}
+
+		sourceKinds[source.Kind] = true
+	}
+
+	for _, kind := range []string{
+		"author_matlab_file_exchange_version_history",
+		"author_institutional_repository",
+	} {
+		if !sourceKinds[kind] {
+			t.Errorf("public-source audit does not include %q", kind)
+		}
+	}
+
+	if len(clarification.UnrecoveredArchivalLeads) != 1 {
+		t.Fatalf("unexpected archival leads: %+v", clarification.UnrecoveredArchivalLeads)
+	}
+
+	lead := clarification.UnrecoveredArchivalLeads[0]
+
+	gotVersions := make([]string, 0, len(lead.Versions))
+	for _, version := range lead.Versions {
+		if version.Published == "" {
+			t.Errorf("archival version lacks publication date: %+v", version)
+		}
+
+		gotVersions = append(gotVersions, version.Version)
+	}
+
+	if lead.ID != "matlab_file_exchange_pre_simplification_versions" || lead.SourceURL == "" ||
+		!reflect.DeepEqual(gotVersions, []string{"1.0.0", "1.0.1", "1.0.2"}) ||
+		lead.BoundaryRelease.Version != "2.0.1" ||
+		lead.BoundaryRelease.Published != "2020-06-23" ||
+		lead.BoundaryRelease.ReleaseNote != "The code has been simplified." ||
+		lead.AccessStatus != "authentication_required_not_retrieved" ||
+		lead.EvidentiaryStatus != "uninspected_lead_not_blocker_resolution" ||
+		lead.RequiredNextAction == "" {
+		t.Fatalf("archival lead drifted or was treated as evidence: %+v", lead)
 	}
 
 	if clarification.CorrespondenceDraft.Status != "not_sent" ||

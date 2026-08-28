@@ -38,7 +38,7 @@
       {
         "kind": "author_matlab_file_exchange_version_history",
         "url": "https://www.mathworks.com/matlabcentral/fileexchange/76902-mayfly-optimization-algorithm",
-        "finding": "The official version history lists releases 1.0.0 and 1.0.1 from 2020-06-13 and 1.0.2 from 2020-06-19 before release 2.0.1 on 2020-06-23 states that the code was simplified. The public page requires MathWorks authentication to download every historical package, so the three earlier packages could not be inspected and do not yet resolve either blocker."
+        "finding": "The official version history lists releases 1.0.0 and 1.0.1 from 2020-06-13 and 1.0.2 from 2020-06-19 before release 2.0.1 on 2020-06-23 states that the code was simplified. The unauthenticated page routes every historical download through MathWorks sign-in, and the legacy public submission-revision endpoints return 404, so the three earlier packages could not be inspected and do not yet resolve either blocker."
       },
       {
         "kind": "author_institutional_repository",
@@ -75,6 +75,7 @@
       },
       "access_status": "authentication_required_not_retrieved",
       "evidentiary_status": "uninspected_lead_not_blocker_resolution",
+      "intake_tool": "cmd/audit-original-ma-archive",
       "required_next_action": "Retrieve versions 1.0.0, 1.0.1, and 1.0.2 through an authorized MathWorks account or obtain the packages from the author or MathWorks archive; record checksums and provenance, then test whether any package is the Table 6 driver and whether it resolves both operator blockers."
     }
   ],

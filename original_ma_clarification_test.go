@@ -55,6 +55,7 @@ func TestOriginalMA2020ClarificationRequestPinsExactPresetBlockers(t *testing.T)
 			} `json:"boundary_release"`
 			AccessStatus       string `json:"access_status"`
 			EvidentiaryStatus  string `json:"evidentiary_status"`
+			IntakeTool         string `json:"intake_tool"`
 			RequiredNextAction string `json:"required_next_action"`
 		} `json:"unrecovered_archival_leads"`
 		ExactPresetGate struct {
@@ -155,6 +156,7 @@ func TestOriginalMA2020ClarificationRequestPinsExactPresetBlockers(t *testing.T)
 		lead.BoundaryRelease.ReleaseNote != "The code has been simplified." ||
 		lead.AccessStatus != "authentication_required_not_retrieved" ||
 		lead.EvidentiaryStatus != "uninspected_lead_not_blocker_resolution" ||
+		lead.IntakeTool != "cmd/audit-original-ma-archive" ||
 		lead.RequiredNextAction == "" {
 		t.Fatalf("archival lead drifted or was treated as evidence: %+v", lead)
 	}

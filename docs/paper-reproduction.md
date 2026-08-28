@@ -108,6 +108,29 @@ recovered. The Technical University of Crete institutional record supplies no
 fallback package: its METS export declares that full content is unavailable and
 contains an empty file group.
 
+Once an authorized user has downloaded all three original ZIP packages, create
+the review manifest with:
+
+```bash
+go run ./cmd/audit-original-ma-archive \
+  -retrieved-on YYYY-MM-DD \
+  -acquisition-note "Downloaded from MATLAB Central while authenticated" \
+  -output docs/reference-data/original-ma-2020-matlab-archive-audit.json \
+  1.0.0=/path/to/version-1.0.0.zip \
+  1.0.1=/path/to/version-1.0.1.zip \
+  1.0.2=/path/to/version-1.0.2.zip
+```
+
+Do not put credentials, account identifiers, or session data in the acquisition
+note. The command rejects unsafe or duplicate ZIP paths, records SHA-256 hashes
+for each archive, its normalized content, and every file, and reports coarse
+source-code indicators for the six Table 6 benchmarks, IMA, 95,000 evaluations,
+and the two ambiguous rates. Those indicators are only a review aid: the output
+remains labeled `manual_source_review_required_not_blocker_resolution` until a
+human source-conformance review establishes the driver and executable operator
+semantics. Do not commit the downloaded packages unless their redistribution
+terms have been checked separately.
+
 The harness can now enforce the paper's exact 95,000-call budget. An
 `original-ma-2020` preset is intentionally not yet exposed. The remaining
 blocker is operator semantics, not missing numerical transcription:

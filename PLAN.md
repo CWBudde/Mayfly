@@ -133,6 +133,10 @@ The API examples, quick-reference guide, and parameter documentation are complet
         University of Crete repository; record that the institutional entry has
         no files and preserve the authentication-gated, pre-simplification
         MATLAB releases 1.0.0-1.0.2 as an unrecovered archival lead.
+  - [x] Add a deterministic intake auditor for any recovered MATLAB releases
+        1.0.0-1.0.2; validate safe ZIP structure, record archive/content/file
+        SHA-256 provenance, and emit explicitly non-resolving Table 6/operator
+        triage indicators for subsequent source review.
   - [ ] Retrieve and provenance-check MATLAB Central releases 1.0.0-1.0.2,
         then determine whether any is the Table 6 driver or resolves either IMA
         operator blocker.

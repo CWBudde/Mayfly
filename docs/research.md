@@ -79,17 +79,34 @@ Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
 
 ## EOBBMA - Elite Opposition-Based Bare Bones
 
-**Elite Opposition-Based Bare Bones Mayfly Algorithm (2024). Arabian Journal for Science and Engineering.**
+**Zhou, G., Zhang, T., & Zhou, Y. (2025). Elite Opposition-Based Bare Bones
+Mayfly Algorithm for Optimization Wireless Sensor Networks Coverage Problem.
+Arabian Journal for Science and Engineering, 50(2), 719–739.** Published online
+25 March 2024. [DOI 10.1007/s13369-024-08899-6](https://doi.org/10.1007/s13369-024-08899-6)
 
 ### Key Contributions
 
 - Bare Bones framework: Gaussian sampling instead of velocity
 - Lévy flight distribution for heavy-tailed exploration
 - Elite opposition-based learning for search coverage
-- 55%+ improvement on deceptive functions (Schwefel)
+- Evaluated on eight wireless-sensor deployment scales
 - Fewer parameters to tune than velocity-based approaches
 
-### Technical Details
+### Protocol Audit
+
+The [machine-readable source audit](reference-data/eobbma-2025-tables2-8.json)
+encodes the version of record's eight deployment scenarios and every published
+cell from Tables 5–8. Table 3 prints population size 40 and Figure 4 shows 1,000
+iterations. The artifact separately identifies the 2023 SSRN preprint, which
+has a different title, author list, and DOI but no formal DOI-registry relation
+to the journal article.
+
+This is not an exact reproduction protocol. The public primary-source tables
+and figures omit the independent-run count, seeds, objective weights, raw
+sensor coordinates, and whether population 40 is total or per sex. The current
+library therefore has no paper-exact EOBBMA preset or WSN comparison.
+
+### Current-Library Technical Details
 
 - **Gaussian sampling**: μ = (X_current + X_best)/2, σ = |X_current - X_best|/2
 - **Lévy flights**: Mantegna's algorithm with α=1.5 (stability parameter)

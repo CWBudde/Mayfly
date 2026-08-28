@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "protocol_id": "eobbma-2025-tables2-8",
+  "status": "source_transcribed_non_reproduction",
+  "reproduction_claim": false,
+  "scope": "EOBBMA wireless-sensor coverage protocol and all machine-readable published outputs in version-of-record Tables 2-8",
+  "version_of_record": {
+    "title": "Elite Opposition-Based Bare Bones Mayfly Algorithm for Optimization Wireless Sensor Networks Coverage Problem",
+    "authors": ["Guo Zhou", "Tian Zhang", "Yongquan Zhou"],
+    "journal": "Arabian Journal for Science and Engineering",
+    "volume": 50,
+    "issue": 2,
+    "pages": "719-739",
+    "published_online": "2024-03-25",
+    "issue_year": 2025,
+    "doi": "10.1007/s13369-024-08899-6",
+    "publisher_url": "https://link.springer.com/article/10.1007/s13369-024-08899-6",
+    "table_urls": {
+      "2": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/2",
+      "3": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/3",
+      "4": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/4",
+      "5": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/5",
+      "6": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/6",
+      "7": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/7",
+      "8": "https://link.springer.com/article/10.1007/s13369-024-08899-6/tables/8"
+    },
+    "figure_4_url": "https://link.springer.com/article/10.1007/s13369-024-08899-6/figures/4"
+  },
+  "author_manuscript": {
+    "title": "Elite Opposition-Based Bare Bones Mayfly Algorithm for Wireless Sensor Networks Coverage Optimization",
+    "authors": ["Yongquan Zhou", "Tian Zhang", "Guo Zhou", "Qifang Luo"],
+    "type": "SSRN posted content",
+    "posted": "2023-03-07",
+    "doi": "10.2139/ssrn.4381249",
+    "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4381249",
+    "reported_versions": ["2023-01-07", "2023-03-07"],
+    "pages": 30,
+    "formal_crossref_relation_to_version_of_record": false,
+    "relationship_status": "probable preprint of the version of record based on title, abstract, and shared authors; neither DOI registry record formally links the two",
+    "used_for_numeric_transcription": false,
+    "full_protocol_comparison_complete": false
+  },
+  "execution": {
+    "algorithms": ["EOBBMA", "MA", "DE", "PSO", "FPA", "GWO", "SSA", "COA"],
+    "population_size_as_printed": 40,
+    "population_sex_split": null,
+    "iterations": 1000,
+    "iterations_evidence": "Figure 4 gives every case an iteration axis from 0 through 1000",
+    "independent_runs": null,
+    "seed_schedule": null,
+    "raw_runs_available": false,
+    "raw_sensor_coordinates_available": false,
+    "maximum_function_evaluations": null,
+    "objective_equation": "minimum value obtained by Equation 17",
+    "objective_weights": null,
+    "software": null,
+    "machine": null
+  },
+  "table_2_problem_mapping": {
+    "number_of_sensors_symbol": "k",
+    "search_dimension": "2*k",
+    "candidate_position_semantics": "sensor positions on a two-dimensional plane",
+    "optimal_candidate_semantics": "optimal sensor deployment scheme",
+    "fitness_semantics": "minimum value obtained by Equation 17"
+  },
+  "table_3_algorithm_parameters": {
+    "EOBBMA": ["population size = 40"],
+    "MA": ["population size = 40", "alpha1 = 1", "alpha2 = 1.5", "beta = 2", "d = 0.1", "fl = 0.1"],
+    "DE": ["population size = 40", "F = 0.5", "CR = 0.5"],
+    "PSO": ["population size = 40", "g_max = 0.9", "g_min = 0.4", "C1 = 0.8", "C2 = 0.4"],
+    "FPA": ["population size = 40", "p = 0.5"],
+    "GWO": ["population size = 40", "a ranges from 2 to 0"],
+    "SSA": ["population size = 40", "C1 ranges from 2 to 0", "C2 and C3 are random numbers between 0 and 1"],
+    "COA": ["population size = 40"]
+  },
+  "table_4_cases": [
+    {"case": 1, "radius_m": 3, "sensors": 20, "dimension": 40, "region_m": [20, 20]},
+    {"case": 2, "radius_m": 5, "sensors": 25, "dimension": 50, "region_m": [40, 40]},
+    {"case": 3, "radius_m": 5, "sensors": 40, "dimension": 80, "region_m": [50, 50]},
+    {"case": 4, "radius_m": 5, "sensors": 100, "dimension": 200, "region_m": [80, 80]},
+    {"case": 5, "radius_m": 5, "sensors": 160, "dimension": 320, "region_m": [100, 100]},
+    {"case": 6, "radius_m": 6, "sensors": 240, "dimension": 480, "region_m": [150, 150]},
+    {"case": 7, "radius_m": 7, "sensors": 300, "dimension": 600, "region_m": [200, 200]},
+    {"case": 8, "radius_m": 8, "sensors": 500, "dimension": 1000, "region_m": [300, 300]}
+  ],
+  "table_5": {
+    "title": "Experimental results for the eight algorithms in eight cases",
+    "value_order": ["best", "worst", "average", "standard_deviation", "rank"],
+    "lower_is_better": true,
+    "cases": [
+      {"case": 1, "results": {"EOBBMA": [0.0825, 0.0984, 0.0924, 0.0040, 1], "MA": [0.1206, 0.1822, 0.1465, 0.0190, 5], "DE": [0.1399, 0.1681, 0.1595, 0.0066, 6], "PSO": [0.0863, 0.1056, 0.0958, 0.0058, 2], "FPA": [0.1613, 0.1984, 0.1841, 0.0106, 7], "GWO": [0.0887, 0.1053, 0.0969, 0.0044, 3], "SSA": [0.1050, 0.1434, 0.1189, 0.0098, 4], "COA": [0.1823, 0.2179, 0.1985, 0.0093, 8]}},
+      {"case": 2, "results": {"EOBBMA": [0.1008, 0.1179, 0.1081, 0.0039, 1], "MA": [0.1325, 0.2531, 0.1756, 0.0343, 5], "DE": [0.1867, 0.2043, 0.1973, 0.0048, 6], "PSO": [0.1021, 0.1248, 0.1129, 0.0062, 3], "FPA": [0.1996, 0.2393, 0.2209, 0.0084, 7], "GWO": [0.1040, 0.1226, 0.1122, 0.0055, 2], "SSA": [0.1040, 0.1355, 0.1252, 0.0088, 4], "COA": [0.2227, 0.2630, 0.2385, 0.0107, 8]}},
+      {"case": 3, "results": {"EOBBMA": [0.1032, 0.1255, 0.1132, 0.0048, 1], "MA": [0.1507, 0.2065, 0.1799, 0.0173, 5], "DE": [0.2035, 0.2286, 0.2163, 0.0051, 6], "PSO": [0.1126, 0.1430, 0.1261, 0.0075, 3], "FPA": [0.2172, 0.2577, 0.2393, 0.0110, 7], "GWO": [0.1117, 0.1395, 0.1227, 0.0076, 2], "SSA": [0.1222, 0.1466, 0.1359, 0.0080, 4], "COA": [0.2417, 0.2645, 0.2513, 0.0067, 8]}},
+      {"case": 4, "results": {"EOBBMA": [0.1298, 0.1544, 0.1380, 0.0063, 1], "MA": [0.1845, 0.2379, 0.2073, 0.0145, 5], "DE": [0.2544, 0.2665, 0.2611, 0.0035, 6], "PSO": [0.1478, 0.2001, 0.1685, 0.0146, 3], "FPA": [0.2584, 0.2818, 0.2735, 0.0054, 7], "GWO": [0.1456, 0.2736, 0.1628, 0.0267, 2], "SSA": [0.1501, 0.1848, 0.1690, 0.0089, 4], "COA": [0.2711, 0.2956, 0.2863, 0.0058, 8]}},
+      {"case": 5, "results": {"EOBBMA": [0.1399, 0.1768, 0.1513, 0.0078, 1], "MA": [0.1936, 0.2921, 0.2348, 0.0252, 4], "DE": [0.2631, 0.2780, 0.2708, 0.0036, 6], "PSO": [0.1919, 0.2594, 0.2177, 0.0191, 3], "FPA": [0.2648, 0.2857, 0.2779, 0.0051, 7], "GWO": [0.1647, 0.2977, 0.2672, 0.0435, 5], "SSA": [0.1717, 0.1947, 0.1806, 0.0067, 2], "COA": [0.2804, 0.2951, 0.2890, 0.0045, 8]}},
+      {"case": 6, "results": {"EOBBMA": [0.1505, 0.1800, 0.1589, 0.0067, 1], "MA": [0.2289, 0.3080, 0.2704, 0.0290, 3], "DE": [0.2777, 0.2924, 0.2866, 0.0043, 5], "PSO": [0.2424, 0.3048, 0.2788, 0.0172, 4], "FPA": [0.2869, 0.3020, 0.2943, 0.0044, 6], "GWO": [0.2875, 0.3058, 0.2977, 0.0052, 7], "SSA": [0.1889, 0.2178, 0.1975, 0.0069, 2], "COA": [0.2931, 0.3030, 0.2990, 0.0029, 8]}},
+      {"case": 7, "results": {"EOBBMA": [0.1569, 0.1769, 0.1636, 0.0041, 1], "MA": [0.2199, 0.3187, 0.2984, 0.0291, 3], "DE": [0.2926, 0.3054, 0.3006, 0.0034, 5], "PSO": [0.2736, 0.3145, 0.3000, 0.0138, 4], "FPA": [0.2986, 0.3123, 0.3046, 0.0044, 6], "GWO": [0.3011, 0.3144, 0.3094, 0.0037, 8], "SSA": [0.1950, 0.2230, 0.2093, 0.0066, 2], "COA": [0.2947, 0.3164, 0.3071, 0.0055, 7]}},
+      {"case": 8, "results": {"EOBBMA": [0.1722, 0.1861, 0.1792, 0.0038, 1], "MA": [0.3132, 0.3262, 0.3187, 0.0042, 8], "DE": [0.3069, 0.3181, 0.3135, 0.0031, 3], "PSO": [0.3135, 0.3232, 0.3182, 0.0029, 7], "FPA": [0.3068, 0.3214, 0.3147, 0.0046, 4], "GWO": [0.3085, 0.3232, 0.3174, 0.0036, 5], "SSA": [0.2182, 0.2367, 0.2298, 0.0048, 2], "COA": [0.3087, 0.3223, 0.3180, 0.0031, 6]}}
+    ]
+  },
+  "table_6": {
+    "title": "Experimental results for coverage rate, redundancy and moving distance",
+    "value_order": ["coverage_average", "coverage_standard_deviation", "redundancy_average", "redundancy_standard_deviation", "moving_distance_average", "moving_distance_standard_deviation"],
+    "cases": [
+      {"case": 1, "results": {"EOBBMA": [0.9938, 0.0055, 0.2275, 0.0207, 7.1317, 0.2965], "MA": [0.9096, 0.0282, 0.2759, 0.0371, 6.5071, 0.4546], "DE": [0.9111, 0.0105, 0.3011, 0.0348, 7.7298, 0.4323], "PSO": [0.9902, 0.0063, 0.2057, 0.0224, 7.3644, 0.4113], "FPA": [0.8780, 0.0176, 0.3213, 0.0381, 7.8947, 0.4257], "GWO": [0.9935, 0.0059, 0.1843, 0.0233, 7.9531, 0.3023], "SSA": [0.9655, 0.0156, 0.2607, 0.0272, 7.5259, 0.4279], "COA": [0.8588, 0.0148, 0.2916, 0.0566, 8.4877, 0.5441]}},
+      {"case": 2, "results": {"EOBBMA": [0.9685, 0.0082, 0.1575, 0.0089, 15.5194, 0.7003], "MA": [0.8668, 0.0480, 0.2672, 0.0518, 13.6583, 0.9349], "DE": [0.8434, 0.0078, 0.2544, 0.0301, 15.4472, 0.7846], "PSO": [0.9591, 0.0107, 0.1693, 0.0150, 14.9986, 0.5083], "FPA": [0.8112, 0.0126, 0.3025, 0.0366, 14.9740, 0.8388], "GWO": [0.9611, 0.0089, 0.1371, 0.0211, 15.8505, 0.6156], "SSA": [0.9438, 0.0119, 0.1868, 0.0139, 15.1615, 0.5069], "COA": [0.7888, 0.0164, 0.2782, 0.0450, 16.3413, 0.9334]}},
+      {"case": 3, "results": {"EOBBMA": [0.9664, 0.0070, 0.1975, 0.0088, 19.2721, 0.4468], "MA": [0.8641, 0.0279, 0.2877, 0.0253, 17.1788, 0.9632], "DE": [0.8215, 0.0072, 0.2985, 0.0304, 19.4087, 0.6831], "PSO": [0.9438, 0.0142, 0.2127, 0.0161, 18.4365, 0.6377], "FPA": [0.7924, 0.0148, 0.3449, 0.0352, 19.3188, 0.9770], "GWO": [0.9537, 0.0110, 0.1927, 0.0160, 19.8141, 0.3793], "SSA": [0.9327, 0.0141, 0.2303, 0.0134, 18.6888, 0.9225], "COA": [0.7747, 0.0083, 0.3275, 0.0373, 20.0433, 1.3974]}},
+      {"case": 4, "results": {"EOBBMA": [0.9311, 0.0106, 0.2396, 0.0095, 29.9376, 0.7272], "MA": [0.8299, 0.0233, 0.3282, 0.0197, 28.1415, 1.4173], "DE": [0.7618, 0.0054, 0.3484, 0.0174, 31.7810, 1.0533], "PSO": [0.8908, 0.0207, 0.2763, 0.0178, 30.3997, 0.7539], "FPA": [0.7474, 0.0099, 0.4005, 0.0227, 30.8644, 1.3319], "GWO": [0.8982, 0.0362, 0.2593, 0.0359, 30.7847, 0.9647], "SSA": [0.8876, 0.0135, 0.2828, 0.0137, 29.4508, 1.0570], "COA": [0.7324, 0.0104, 0.4231, 0.0249, 31.2049, 1.0631]}},
+      {"case": 5, "results": {"EOBBMA": [0.9166, 0.0133, 0.2777, 0.0075, 37.4986, 0.8584], "MA": [0.7949, 0.0350, 0.3846, 0.0333, 34.7948, 2.4100], "DE": [0.7525, 0.0058, 0.3835, 0.0170, 39.8171, 0.9906], "PSO": [0.8288, 0.0269, 0.3689, 0.0249, 38.0699, 1.0776], "FPA": [0.7468, 0.0084, 0.4303, 0.0170, 38.9820, 1.1376], "GWO": [0.7605, 0.0574, 0.4318, 0.0588, 37.8096, 1.1899], "SSA": [0.8757, 0.0088, 0.3164, 0.0107, 37.0804, 1.0440], "COA": [0.7331, 0.0064, 0.4554, 0.0122, 38.8602, 0.8950]}},
+      {"case": 6, "results": {"EOBBMA": [0.9026, 0.0107, 0.2647, 0.0102, 56.2960, 1.2971], "MA": [0.7468, 0.0343, 0.4119, 0.0414, 53.9866, 3.2969], "DE": [0.7292, 0.0071, 0.4004, 0.0132, 57.3897, 1.1164], "PSO": [0.7408, 0.0238, 0.4200, 0.0197, 57.0070, 1.4881], "FPA": [0.7204, 0.0071, 0.4347, 0.0169, 57.8659, 1.7090], "GWO": [0.7165, 0.0075, 0.4474, 0.0124, 57.5622, 1.6528], "SSA": [0.8472, 0.0112, 0.3104, 0.0138, 55.2039, 2.0272], "COA": [0.7146, 0.0043, 0.4512, 0.0078, 57.2886, 1.2525]}},
+      {"case": 7, "results": {"EOBBMA": [0.8911, 0.0084, 0.2382, 0.0077, 75.2171, 2.1825], "MA": [0.7094, 0.0379, 0.4191, 0.0390, 75.8238, 2.9996], "DE": [0.7056, 0.0046, 0.3878, 0.0111, 79.1985, 1.5371], "PSO": [0.6888, 0.0189, 0.4240, 0.0227, 76.4411, 1.9055], "FPA": [0.7008, 0.0069, 0.3940, 0.0143, 76.6269, 1.3379], "GWO": [0.6970, 0.0056, 0.4369, 0.0084, 77.2459, 1.8995], "SSA": [0.8276, 0.0112, 0.2965, 0.0097, 74.4924, 2.6580], "COA": [0.6998, 0.0080, 0.4315, 0.0082, 77.2214, 1.5663]}},
+      {"case": 8, "results": {"EOBBMA": [0.8669, 0.0056, 0.2372, 0.0071, 113.5198, 1.7838], "MA": [0.6820, 0.0050, 0.4331, 0.0093, 116.1168, 2.5707], "DE": [0.6860, 0.0050, 0.3968, 0.0113, 118.0498, 2.0452], "PSO": [0.6820, 0.0045, 0.4303, 0.0073, 115.8194, 1.8719], "FPA": [0.6863, 0.0068, 0.4249, 0.0080, 115.5754, 2.0320], "GWO": [0.6830, 0.0051, 0.4297, 0.0079, 115.6872, 1.8969], "SSA": [0.7972, 0.0079, 0.3054, 0.0074, 112.2784, 3.8676], "COA": [0.6823, 0.0051, 0.4300, 0.0073, 115.9051, 1.8984]}}
+    ]
+  },
+  "table_7": {
+    "title": "Wilcoxon rank-sum test results",
+    "baseline": "EOBBMA",
+    "comparator_order": ["MA", "DE", "PSO", "FPA", "GWO", "SSA", "COA"],
+    "p_values_as_printed": [
+      {"case": 1, "values": ["8.8575e−05", "8.8575e−05", "0.0040", "8.8575e−05", "1.0354–04", "8.8575e−05", "8.8575e−05"]},
+      {"case": 2, "values": ["8.8575e−05", "8.8575e−05", "0.0206", "8.8575e−05", "0.0137", "2.9316e−04", "8.8575e−05"]},
+      {"case": 3, "values": ["8.8575e−05", "8.8575e−05", "1.0354e−04", "8.8575e−05", "2.9316e−04", "8.8575e−05", "8.8575e−05"]},
+      {"case": 4, "values": ["8.8575e−05", "8.8575e−05", "1.2043e−04", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05"]},
+      {"case": 5, "values": ["8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05"]},
+      {"case": 6, "values": ["8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05"]},
+      {"case": 7, "values": ["8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05"]},
+      {"case": 8, "values": ["8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05", "8.8575e−05"]}
+    ]
+  },
+  "table_8": {
+    "title": "Friedman mean rank test results and ranking of algorithms",
+    "algorithm_order": ["EOBBMA", "MA", "DE", "PSO", "FPA", "GWO", "SSA", "COA"],
+    "friedman_mean_rank": [1.000, 4.750, 5.375, 3.625, 6.375, 4.250, 3.000, 7.625],
+    "rank": [1, 5, 6, 3, 7, 4, 2, 8]
+  },
+  "figure_only_outputs": [
+    {"figure": 4, "caption": "The convergence curves for eight algorithms in eight cases", "machine_readable_values_encoded": false},
+    {"figure": 5, "caption": "The ANOVA test results", "machine_readable_values_encoded": false},
+    {"figure": 6, "caption": "The histogram of coverage rate", "machine_readable_values_encoded": false},
+    {"figure": 7, "caption": "Sensor deployment of eight algorithms in each case", "machine_readable_values_encoded": false}
+  ],
+  "transcription_notes": [
+    "Tables 2-8 were transcribed from Springer's canonical per-table HTML pages for the version of record.",
+    "Figure 4's canonical image provides the 1000-iteration evidence; the article's public table pages do not state the iteration limit.",
+    "Table 7 Case 1 versus GWO prints '1.0354–04' with an en dash and no exponent marker; it is preserved as text and not silently normalized.",
+    "Table 5 ranks are the per-case ranks printed by the paper, even where rounded averages could obscure the ordering.",
+    "Trailing zeroes are presentation details of the source tables; JSON numeric values preserve their numerical values, not display precision.",
+    "The SSRN and journal DOI metadata have no formal relation field; their likely preprint/version-of-record relationship is explicitly labeled as an inference.",
+    "Figure-only convergence, ANOVA, histogram, and final-coordinate plots are identified but not digitized into invented numerical samples."
+  ],
+  "reproduction_blockers": [
+    "The paper's independent-run count and exact Wilcoxon sample size are not exposed by the canonical public tables or figures.",
+    "Seeds and raw per-run fitness, coverage, redundancy, and moving-distance samples are unavailable.",
+    "The source does not clarify whether population size 40 is total or 40 mayflies of each sex.",
+    "Equation 17 and its AHP-derived objective weights are outside the public table/figure text and are not encoded here.",
+    "The initial and final sensor coordinates shown in Figure 7 are not supplied as machine-readable data.",
+    "The reported 1000 iterations do not define a common objective-evaluation budget, especially when EOBL evaluates additional candidates.",
+    "The complete SSRN manuscript and version-of-record prose have not been compared cell-by-cell, so protocol changes between the two versions remain unresolved.",
+    "No public author implementation or batch experiment driver has been identified.",
+    "The current Go library has no WSN Equation 17 objective, deployment-case runner, or exact EOBBMA paper preset."
+  ]
+}

@@ -2,7 +2,20 @@
 
 ## Research Reference
 
-**Elite Opposition-Based Bare Bones Mayfly Algorithm (2024). Arabian Journal for Science and Engineering.**
+**Zhou, G., Zhang, T., & Zhou, Y. (2025). Elite Opposition-Based Bare Bones
+Mayfly Algorithm for Optimization Wireless Sensor Networks Coverage Problem.
+Arabian Journal for Science and Engineering, 50(2), 719–739.** Published online
+25 March 2024. [DOI 10.1007/s13369-024-08899-6](https://doi.org/10.1007/s13369-024-08899-6)
+
+The paper's public protocol and published targets are transcribed in the
+[machine-readable Tables 2–8 reference](../reference-data/eobbma-2025-tables2-8.json).
+It contains all eight wireless-sensor cases, the printed population size 40,
+the 1,000-iteration limit visible in Figure 4, 64 fitness-summary rows, 64
+coverage/redundancy/moving-distance rows, and the published Wilcoxon/Friedman
+results. It deliberately makes no reproduction claim: the run count, seeds,
+objective weights, sex split, raw sensor coordinates, and exact evaluation
+accounting remain unavailable. The artifact also distinguishes the formally
+unlinked 2023 SSRN preprint from the journal version of record.
 
 ## Overview
 

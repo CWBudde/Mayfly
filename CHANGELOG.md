@@ -9,6 +9,13 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable EOBBMA wireless-sensor provenance for the canonical
+  version-of-record Tables 2-8: eight deployment scenarios, the reported
+  40-member and 1,000-iteration settings, all 64 fitness summaries, all 64
+  coverage/redundancy/distance summaries, 56 Wilcoxon cells, and the complete
+  Friedman result. The artifact distinguishes the formally unlinked SSRN
+  preprint, preserves a malformed printed p-value, and records the remaining
+  protocol and raw-data gates instead of claiming a reproduction.
 - Machine-readable AOBLMOA Tables 14-23 CEC2020 constrained-problem
   provenance with all 200 objective-summary values for AOBLMOA, SASS,
   COLSHADE, and sCMAgES. The artifact maps the ten paper acronyms to official

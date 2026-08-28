@@ -385,7 +385,8 @@ All variants maintain research fidelity to original papers:
 1. **Original MA**: Zervoudakis & Tsafarakis (2020). _Computers & Industrial Engineering_, 145, 106559.
 2. **DESMA**: _PLOS One_, 2022
 3. **OLCE-MA**: Zhou et al. (2022). _International Journal of Machine Learning and Cybernetics_, 13, 3625–3643
-4. **EOBBMA**: _Arabian Journal for Science and Engineering_, 2024
+4. **EOBBMA**: _Arabian Journal for Science and Engineering_, 50(2),
+   719–739 (2025), DOI 10.1007/s13369-024-08899-6 (online 2024)
 5. **GSASMA**: _AIP Advances_, 2022, DOI 10.1063/5.0108278
 6. **HMMA**: _Electronics Letters_, 2022, DOI 10.1049/ell2.12568
 7. **MPMA**: _IEEE Access_, 2022

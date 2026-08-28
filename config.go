@@ -109,8 +109,10 @@ func NewOLCEConfig() *Config {
 // which can provide better exploration on complex landscapes while reducing
 // the number of parameters to tune.
 //
-// Reference: Elite Opposition-Based Bare Bones Mayfly Algorithm (2024),
-// Arabian Journal for Science and Engineering.
+// Reference: Zhou, Zhang, and Zhou, "Elite Opposition-Based Bare Bones Mayfly
+// Algorithm for Optimization Wireless Sensor Networks Coverage Problem",
+// Arabian Journal for Science and Engineering 50(2), 719-739 (2025),
+// https://doi.org/10.1007/s13369-024-08899-6 (published online in 2024).
 func NewEOBBMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseEOBBMA = true

@@ -351,7 +351,8 @@ Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orth
 **Other Variants:**
 
 - DESMA: _PLOS One_, 2022
-- EOBBMA: _Arabian Journal for Science and Engineering_, 2024
+- EOBBMA: Zhou, Zhang, and Zhou (2025), _Arabian Journal for Science and
+  Engineering_, 50(2), 719–739, DOI 10.1007/s13369-024-08899-6 (online 2024)
 - GSASMA: _AIP Advances_, 2022, DOI 10.1063/5.0108278
 - HMMA: _Electronics Letters_, 2022, DOI 10.1049/ell2.12568
 - MPMA: _IEEE Access_, 2022

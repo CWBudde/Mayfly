@@ -208,6 +208,37 @@ paper-calibrated settings. An exact HMMA preset and comparison remain blocked
 on author clarification or the supporting data, which the paper makes available
 on request.
 
+## EOBBMA protocol audit
+
+EOBBMA's version-of-record wireless-sensor targets are transcribed in the
+[machine-readable Tables 2–8 reference](reference-data/eobbma-2025-tables2-8.json).
+The authoritative journal record is Zhou, Zhang, and Zhou, volume 50 issue 2,
+pages 719–739 (2025), published online 25 March 2024 under DOI
+`10.1007/s13369-024-08899-6`. The similarly titled 2023 SSRN manuscript has a
+different title, author order/list, and DOI (`10.2139/ssrn.4381249`); neither
+DOI registry record formally links the two, so the artifact labels their
+preprint/version-of-record relationship as an inference rather than metadata.
+
+The artifact records all eight two-dimensional deployment cases from 20 to 500
+sensors and dimensions 40 to 1,000. Table 3 prints population size 40, while
+the canonical Figure 4 shows 1,000 iterations for every case. All 320 fitness
+summary/rank cells from Table 5, 384 coverage/redundancy/moving-distance cells
+from Table 6, 56 printed Wilcoxon cells from Table 7, and 16 Friedman cells from
+Table 8 are encoded. The malformed Case 1/GWO p-value `1.0354–04` is preserved
+as text instead of silently repaired. Figure-only convergence, ANOVA,
+histogram, and final deployment plots are identified but not digitized into
+invented samples.
+
+This remains a source transcription, not an exact preset or reproduction. The
+public primary-source tables and figures do not provide the independent-run
+count, seed schedule, raw samples, Equation 17 objective weights, machine
+environment, raw initial/final coordinates, or a common objective-evaluation
+budget. They also do not clarify whether population 40 means total mayflies or
+40 of each sex. The complete preprint and version-of-record prose still need a
+cell-by-cell protocol comparison, and no public author implementation or batch
+driver has been identified. Mayfly does not yet implement the paper's WSN
+objective or expose an EOBBMA paper preset.
+
 ## Output contract
 
 Each benchmark/dimension pair produces a raw CSV and the complete comparison

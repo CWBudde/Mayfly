@@ -146,8 +146,18 @@ The API examples, quick-reference guide, and parameter documentation are complet
         validate the supplied code/data, then add an exact preset and comparison.
   - [ ] Source-audit and encode paper-specific protocols/reference outputs for
         EOBBMA, MPMA, and AOBLMOA.
-    - [ ] Resolve EOBBMA's version-of-record and author-manuscript protocol,
-          then encode its wireless-sensor deployment scenarios and outputs.
+    - [x] Resolve EOBBMA's version-of-record identity and encode its public
+          wireless-sensor protocol plus all 776 aggregate/statistical cells
+          from Tables 5-8 in
+          `docs/reference-data/eobbma-2025-tables2-8.json`. Distinguish the
+          formally unlinked 2023 SSRN preprint from the 2025 journal issue,
+          preserve the malformed Table 7 Case 1/GWO p-value, identify
+          figure-only outputs, and make no reproduction claim.
+    - [ ] Obtain and compare the complete EOBBMA author manuscript and
+          version-of-record prose, plus raw trials or author clarification, to
+          close the missing run-count, seed, objective-weight, population-sex,
+          evaluation-accounting, and sensor-coordinate gates before adding an
+          exact preset or comparison.
     - [ ] Source-audit MPMA's paper protocol and encode its published outputs.
     - [x] Source-audit AOBLMOA's open article and paper-linked MATLAB code;
           encode the 30-run, 1,000-iteration Tables 5-6 protocol and all 19

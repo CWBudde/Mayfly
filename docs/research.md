@@ -209,11 +209,16 @@ transcribed in
 Its Tables 7-9 dimension-stability protocol and all 30 AOBLMOA rows for F1-F10
 at dimensions 30, 50, and 100 are transcribed separately in
 [`aoblmoa-2023-tables7-9.json`](reference-data/aoblmoa-2023-tables7-9.json).
-Both artifacts are explicitly non-reproducing because the paper-linked MATLAB
-repository omits the 30-run driver, seeds, raw outputs, and all benchmark
-evaluators except F1, and conflicts with the article on the population mean and
-Levy scale. The dimension artifact also preserves an apparent source
-inconsistency in Table 8's F10 standard deviation.
+Tables 10-11 add all 49 published Wilcoxon p-value and Friedman-rank rows and
+their summary rows in
+[`aoblmoa-2023-tables10-11.json`](reference-data/aoblmoa-2023-tables10-11.json).
+All three artifacts are explicitly non-reproducing because the paper-linked
+MATLAB repository omits the 30-run driver, statistics driver, seeds, raw
+outputs, and all benchmark evaluators except F1, and conflicts with the article
+on the population mean and Levy scale. The dimension artifact also preserves
+an apparent source inconsistency in Table 8's F10 standard deviation. The
+statistics artifact preserves the paper's unpaired rank-sum test and
+non-average tie ranks, which differ from Mayfly's paired signed-rank comparison.
 
 ### Multi-Objective Helpers
 

@@ -161,8 +161,15 @@ The API examples, quick-reference guide, and parameter documentation are complet
           `docs/reference-data/aoblmoa-2023-tables7-9.json`, preserving the
           source's apparent Table 8 f10 standard-deviation inconsistency and
           making no reproduction claim.
-    - [ ] Encode AOBLMOA's Wilcoxon, Friedman, CEC2017, and CEC2020 real-world
-          outputs from Tables 10-23.
+    - [x] Encode all 49 AOBLMOA benchmark-case Wilcoxon p-value rows and
+          Friedman rank rows, plus both published summary rows, from Tables
+          10-11 in `docs/reference-data/aoblmoa-2023-tables10-11.json`. Preserve
+          the source's rank-sum method and non-average tie ranks, and make no
+          reproduction claim while raw samples and the statistics driver are
+          unavailable.
+    - [ ] Encode AOBLMOA's CEC2017 outputs from Table 13.
+    - [ ] Encode AOBLMOA's CEC2020 real-world constrained outputs from Tables
+          14-23.
   - [ ] Run and archive exact trials only for variants whose implementation and
         protocol fidelity gates are closed.
 - [x] Provide experiment scripts. `cmd/paper-reproduction` and

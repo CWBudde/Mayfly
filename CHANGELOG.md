@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable AOBLMOA Tables 10-11 statistical provenance with all 49
+  Wilcoxon rank-sum p-value and Friedman-rank rows, both published summaries,
+  and explicit non-reproduction gates for missing raw samples/statistics code
+  and Mayfly's different paired signed-rank method.
 - Machine-readable AOBLMOA Tables 7-9 dimension-stability provenance with all
   30 published AOBLMOA rows for F1-F10 at dimensions 30, 50, and 100, plus an
   explicit note preserving the source's apparent Table 8 F10 inconsistency and

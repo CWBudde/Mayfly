@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "protocol_id": "aoblmoa-2023-tables10-11",
+  "status": "source_transcribed_non_reproduction",
+  "reproduction_claim": false,
+  "scope": "All 49 benchmark-case Wilcoxon p-value rows and Friedman rank rows from AOBLMOA Tables 10 and 11",
+  "source": {
+    "title": "AOBLMOA: A Hybrid Biomimetic Optimization Algorithm for Numerical Optimization and Engineering Design Problems",
+    "authors": [
+      "Yanpu Zhao",
+      "Changsheng Huang",
+      "Mengjie Zhang",
+      "Yang Cui"
+    ],
+    "journal": "Biomimetics",
+    "volume": 8,
+    "issue": 4,
+    "article": 381,
+    "publication_date": "2023-08-21",
+    "doi": "10.3390/biomimetics8040381",
+    "tables": [10, 11],
+    "urls": {
+      "publisher": "https://www.mdpi.com/2313-7673/8/4/381",
+      "pmc": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10452254/",
+      "author_code": "https://github.com/SheldonYnuup/AOBLMOA"
+    }
+  },
+  "author_code_audit": {
+    "commit": "dd3b5b21fc4638cef3c4dde9fc04056296c574e6",
+    "batch_replication_driver_available": false,
+    "statistical_analysis_driver_available": false,
+    "raw_run_outputs_available": false,
+    "published_seed_schedule_available": false
+  },
+  "execution": {
+    "replications_per_algorithm_and_case": 30,
+    "iterations": 1000,
+    "reported_population_size": 30,
+    "maximum_function_evaluations": null,
+    "seed_schedule": null,
+    "software": "MATLAB R2021b",
+    "machine": "Intel Core i7-1165G7, 16 GB RAM, 64-bit Microsoft Windows 11"
+  },
+  "benchmark_cases": {
+    "count": 49,
+    "variable_dimension_functions": {
+      "function_ids": ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"],
+      "dimensions": [10, 30, 50, 100]
+    },
+    "fixed_dimensions": {
+      "f11": 4,
+      "f12": 2,
+      "f13": 2,
+      "f14": 2,
+      "f15": 3,
+      "f16": 6,
+      "f17": 4,
+      "f18": 4,
+      "f19": 4
+    }
+  },
+  "wilcoxon_rank_sum": {
+    "source_table": 10,
+    "reference_algorithm": "AOBLMOA",
+    "comparator_order": ["AO", "MOA", "AMOA", "OBLAO", "OBLMOA"],
+    "significance_threshold": 0.05,
+    "summary_symbol_order_as_printed": ["+", "-", "="],
+    "published_summary_counts": {
+      "AO": [0, 35, 14],
+      "MOA": [0, 43, 6],
+      "AMOA": [0, 28, 21],
+      "OBLAO": [0, 17, 32],
+      "OBLMOA": [0, 10, 39]
+    }
+  },
+  "friedman": {
+    "source_table": 11,
+    "algorithm_order": ["AO", "MOA", "AMOA", "OBLAO", "OBLMOA", "AOBLMOA"],
+    "published_mean_ranks": [3.510204, 5.367347, 3.142857, 2.081633, 2.122449, 1],
+    "published_final_ranks": [5, 6, 4, 2, 3, 1]
+  },
+  "published_case_rows": [
+    {"function_id": "f1", "dimension": 10, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1, 1, 1], "friedman_ranks": [5, 6, 1, 1, 1, 1]},
+    {"function_id": "f1", "dimension": 30, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f1", "dimension": 50, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f1", "dimension": 100, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f2", "dimension": 10, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f2", "dimension": 30, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f2", "dimension": 50, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f2", "dimension": 100, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f3", "dimension": 10, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f3", "dimension": 30, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f3", "dimension": 50, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f3", "dimension": 100, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [4, 6, 5, 1, 1, 1]},
+    {"function_id": "f4", "dimension": 10, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f4", "dimension": 30, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f4", "dimension": 50, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f4", "dimension": 100, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1, 1], "friedman_ranks": [5, 6, 4, 1, 1, 1]},
+    {"function_id": "f5", "dimension": 10, "wilcoxon_p_values": [0.280214, 1.73e-6, 0.308615, 0.22888, 0.765519], "friedman_ranks": [5, 6, 3, 4, 2, 1]},
+    {"function_id": "f5", "dimension": 30, "wilcoxon_p_values": [0.033269, 1.73e-6, 0.009842, 0.349333, 0.271155], "friedman_ranks": [5, 6, 4, 2, 3, 1]},
+    {"function_id": "f5", "dimension": 50, "wilcoxon_p_values": [0.033269, 1.73e-6, 0.009842, 0.349333, 0.271155], "friedman_ranks": [4, 6, 5, 2, 3, 1]},
+    {"function_id": "f5", "dimension": 100, "wilcoxon_p_values": [0.42843, 1.73e-6, 0.338843, 0.557743, 0.002585], "friedman_ranks": [3, 6, 4, 2, 5, 1]},
+    {"function_id": "f6", "dimension": 10, "wilcoxon_p_values": [0.5, 1.73e-6, 1, 1, 1], "friedman_ranks": [5, 6, 1, 1, 1, 1]},
+    {"function_id": "f6", "dimension": 30, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 5, 1, 1, 1]},
+    {"function_id": "f6", "dimension": 50, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f6", "dimension": 100, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f7", "dimension": 10, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f7", "dimension": 30, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f7", "dimension": 50, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f7", "dimension": 100, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f8", "dimension": 10, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f8", "dimension": 30, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f8", "dimension": 50, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f8", "dimension": 100, "wilcoxon_p_values": [1, 1.73e-6, 1, 1, 1], "friedman_ranks": [1, 6, 1, 1, 1, 1]},
+    {"function_id": "f9", "dimension": 10, "wilcoxon_p_values": [1.73e-6, 0.0625, 0.000122, 1.73e-6, 1.73e-6], "friedman_ranks": [4, 6, 2, 5, 3, 1]},
+    {"function_id": "f9", "dimension": 30, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6], "friedman_ranks": [3, 6, 2, 4, 5, 1]},
+    {"function_id": "f9", "dimension": 50, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6], "friedman_ranks": [2, 6, 4, 3, 5, 1]},
+    {"function_id": "f9", "dimension": 100, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6], "friedman_ranks": [2, 6, 4, 3, 5, 1]},
+    {"function_id": "f10", "dimension": 10, "wilcoxon_p_values": [1.73e-6, 0.003906, 1, 1.73e-6, 1.73e-6], "friedman_ranks": [3, 5, 1, 4, 6, 1]},
+    {"function_id": "f10", "dimension": 30, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6], "friedman_ranks": [3, 5, 4, 2, 6, 1]},
+    {"function_id": "f10", "dimension": 50, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6], "friedman_ranks": [2, 6, 4, 3, 5, 1]},
+    {"function_id": "f10", "dimension": 100, "wilcoxon_p_values": [1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6, 1.73e-6], "friedman_ranks": [3, 6, 4, 2, 5, 1]},
+    {"function_id": "f11", "dimension": 4, "wilcoxon_p_values": [1.73e-6, 1, 1, 1.73e-6, 1], "friedman_ranks": [5, 1, 4, 6, 3, 1]},
+    {"function_id": "f12", "dimension": 2, "wilcoxon_p_values": [1.73e-6, 1, 1, 1.73e-6, 1], "friedman_ranks": [6, 1, 1, 5, 1, 1]},
+    {"function_id": "f13", "dimension": 2, "wilcoxon_p_values": [0.000453, 0.25, 0.25, 0.000241, 0.25], "friedman_ranks": [6, 1, 1, 5, 1, 1]},
+    {"function_id": "f14", "dimension": 2, "wilcoxon_p_values": [1.73e-6, 1, 1, 1.73e-6, 1], "friedman_ranks": [6, 1, 1, 5, 4, 1]},
+    {"function_id": "f15", "dimension": 3, "wilcoxon_p_values": [1.73e-6, 1, 1, 1.73e-6, 1], "friedman_ranks": [5, 1, 1, 4, 6, 1]},
+    {"function_id": "f16", "dimension": 6, "wilcoxon_p_values": [1.73e-6, 0.000244, 0.007813, 1.73e-6, 0.015625], "friedman_ranks": [6, 4, 3, 5, 2, 1]},
+    {"function_id": "f17", "dimension": 4, "wilcoxon_p_values": [1.73e-6, 0.000122, 3.79e-6, 1.73e-6, 1], "friedman_ranks": [4, 6, 5, 3, 1, 1]},
+    {"function_id": "f18", "dimension": 4, "wilcoxon_p_values": [1.73e-6, 0.03125, 3.79e-6, 1.73e-6, 1], "friedman_ranks": [4, 5, 6, 3, 1, 1]},
+    {"function_id": "f19", "dimension": 4, "wilcoxon_p_values": [1.73e-6, 0.003906, 3.79e-6, 1.73e-6, 1], "friedman_ranks": [3, 5, 6, 2, 4, 1]}
+  ],
+  "transcription_notes": [
+    "The article names Table 10's method the Wilcoxon rank sum test; this artifact does not relabel it as the paired Wilcoxon signed-rank test used by Mayfly's comparison framework.",
+    "The +/−/= summary is preserved in the source's printed symbol order. Combining the zero '+' totals with the prose that AOBLMOA has no significant disadvantage implies that '-' denotes an AOBLMOA advantage, but the absent raw samples prevent an independent direction check.",
+    "Table 11 assigns tied algorithms the same integer rank without averaging the occupied ranks. The published rank rows and their resulting mean ranks are preserved exactly.",
+    "The source reports p-values rounded to the displayed precision; 1.73e-6 and 3.79e-6 are transcribed values, not recomputed statistics."
+  ],
+  "reproduction_blockers": [
+    "Neither the article nor linked repository provides the 30 raw result samples for every algorithm and benchmark case, so the published tests cannot be recomputed.",
+    "The linked repository has no 30-run table driver, statistical-analysis driver, or published seed schedule and supplies only the f1 benchmark evaluator.",
+    "Mayfly's comparison framework implements paired Wilcoxon signed-rank tests, while the paper explicitly reports independent-run Wilcoxon rank-sum tests.",
+    "The paper/code/library AOBLMOA fidelity conflicts recorded in aoblmoa-2023-tables5-6.json remain open."
+  ],
+  "companion_reference_artifacts": [
+    "docs/reference-data/aoblmoa-2023-tables5-6.json",
+    "docs/reference-data/aoblmoa-2023-tables7-9.json"
+  ],
+  "remaining_paper_outputs_not_encoded": [
+    "Table 13: CEC2017 results",
+    "Tables 14-23: CEC2020 real-world constrained results"
+  ]
+}

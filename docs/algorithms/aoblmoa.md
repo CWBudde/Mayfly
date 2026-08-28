@@ -112,19 +112,25 @@ The evaluation budget per iteration is `NPop + NPopF + 2·nc`.
 
 ### 3a. Reproduction status and open questions
 
-The paper's classic-function targets are now transcribed in two reference
+The paper's classic-function targets are now transcribed in three reference
 artifacts: Tables 5-6 provide the original 19-function results in
 [`aoblmoa-2023-tables5-6.json`](../reference-data/aoblmoa-2023-tables5-6.json),
 while Tables 7-9 provide all 30 AOBLMOA dimension-stability rows in
-[`aoblmoa-2023-tables7-9.json`](../reference-data/aoblmoa-2023-tables7-9.json).
-The latter covers F1-F10 at 30, 50, and 100 dimensions, with five statistics per
-row. These artifacts were audited against both the open article and the
-paper-linked MATLAB repository at commit
+[`aoblmoa-2023-tables7-9.json`](../reference-data/aoblmoa-2023-tables7-9.json),
+and Tables 10-11 provide all 49 Wilcoxon p-value and Friedman-rank rows plus
+their summaries in
+[`aoblmoa-2023-tables10-11.json`](../reference-data/aoblmoa-2023-tables10-11.json).
+The dimension artifact covers F1-F10 at 30, 50, and 100 dimensions, with five
+statistics per row. These artifacts were audited against both the open article
+and the paper-linked MATLAB repository at commit
 `dd3b5b21fc4638cef3c4dde9fc04056296c574e6`. They are deliberately labeled as
 non-reproductions: the source has no seeds, raw 30-run results, batch driver, or
 benchmark implementations beyond F1. The Tables 7-9 artifact also calls out the
 source's Table 8 F10 standard deviation, which exceeds its reported worst value
-and is preserved exactly rather than corrected speculatively.
+and is preserved exactly rather than corrected speculatively. The Tables 10-11
+artifact preserves the paper's unpaired rank-sum terminology and its non-average
+handling of tied ranks; Mayfly's comparison framework instead performs paired
+signed-rank tests.
 
 The article, linked source, and current library also differ at several points:
 

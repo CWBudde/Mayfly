@@ -88,7 +88,10 @@ The complete source-audited protocol and all 110 tabular MMA output cells are
 available in the
 [machine-readable reference](../reference-data/mpma-2022-tables1-10.json).
 The artifact records the remaining exact-reproduction gates and makes no
-reproduction claim.
+reproduction claim. A separate
+[machine-readable clarification request](../reference-data/mpma-2022-clarification-request.json)
+pins the five exact-preset and three comparison/model questions and includes an
+unsent correspondence draft.
 
 ## Usage Examples
 
@@ -397,6 +400,7 @@ population pool, genetic-operator parameters, initialization and boundary
 semantics, function-evaluation accounting, seeds, raw runs, and Simulink model
 must be resolved first. See the
 [paper-reproduction audit](../paper-reproduction.md#mpma-protocol-audit).
+The corresponding clarification draft is explicitly marked `not_sent`.
 
 ## Related Documentation
 

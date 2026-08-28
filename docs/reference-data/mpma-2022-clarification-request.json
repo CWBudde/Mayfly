@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "protocol_id": "mpma-2022-tables1-10",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "contact_author": "Chang Xu",
+    "public_institutional_email": "zhuifengxu@hhu.edu.cn",
+    "contact_source": "https://jszy.hhu.edu.cn/xc/",
+    "orcid": "https://orcid.org/0000-0002-8411-9636",
+    "affiliation": "School of Renewable Energy, Hohai University",
+    "selection_basis": "The DOI registries identify Chang Xu and his ORCID; that ORCID links the current Hohai University profile publishing this institutional address."
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "The open IEEE article, Crossref and DOAJ records, all four author ORCID records, the current institutional contact profile, and DOI/title searches of public code/data registries expose no MPMA/MMA experiment implementation, raw trials, or Simulink model and do not resolve the preset or comparison questions.",
+    "sources": [
+      {
+        "kind": "publisher_article",
+        "url": "https://ieeexplore.ieee.org/document/9738632",
+        "finding": "The open version of record supplies Equations 1-21, benchmark and governor protocols, aggregate tables, and figure-only outputs. It links no supplementary implementation, configuration, raw trials, seed schedule, or Simulink model, and it leaves the eight questions below unresolved."
+      },
+      {
+        "kind": "crossref_record",
+        "url": "https://api.crossref.org/works/10.1109%2FACCESS.2022.3160714",
+        "finding": "The DOI record identifies all four authors and ORCIDs, has an empty relation object, and contains only a version-of-record PDF link intended for similarity checking; it links no dataset, software deposit, or supplement."
+      },
+      {
+        "kind": "doaj_record",
+        "url": "https://doaj.org/api/articles/4ca870348a794517b35bc0b96d299a6d",
+        "finding": "The DOAJ record confirms the article, affiliations, and four ORCIDs but links only the IEEE full text and no research-data or software object."
+      },
+      {
+        "kind": "first_author_orcid",
+        "url": "https://orcid.org/0000-0002-0538-3843",
+        "finding": "Lei Guo's public ORCID record includes the article but exposes no email, researcher URL, employment, software, dataset, or research-resource entry supplying the missing materials."
+      },
+      {
+        "kind": "contact_author_orcid",
+        "url": "https://orcid.org/0000-0002-8411-9636",
+        "finding": "Chang Xu's public ORCID record exposes no email or research-resource deposit. It links a current Hohai University profile but no MPMA code, data, or model."
+      },
+      {
+        "kind": "third_author_orcid",
+        "url": "https://orcid.org/0000-0002-1302-7195",
+        "finding": "Tianhang Yu's public ORCID record includes the article but exposes no email, researcher URL, employment, software, dataset, or research-resource entry supplying the missing materials."
+      },
+      {
+        "kind": "fourth_author_orcid",
+        "url": "https://orcid.org/0000-0002-6660-3387",
+        "finding": "Wumaier Tuerxun's public ORCID record includes the article and two verified public emails but exposes no researcher URL, employment, software, dataset, or research-resource entry supplying the missing materials."
+      },
+      {
+        "kind": "institutional_contact_profile",
+        "url": "https://jszy.hhu.edu.cn/xc/",
+        "finding": "The current Hohai University profile publishes Chang Xu's institutional email and research biography but links no MPMA implementation, experiment archive, or Simulink model."
+      },
+      {
+        "kind": "github_repository_search",
+        "url": "https://api.github.com/search/repositories?q=%2210.1109%2FACCESS.2022.3160714%22",
+        "finding": "An exact-DOI public repository search returned zero repositories. This records the search outcome and does not prove that private or unindexed code is absent."
+      },
+      {
+        "kind": "zenodo_record_search",
+        "url": "https://zenodo.org/api/records?q=%2210.1109%2FACCESS.2022.3160714%22&size=25",
+        "finding": "An exact-DOI public record search returned zero deposits."
+      },
+      {
+        "kind": "figshare_record_search",
+        "url": "https://api.figshare.com/v2/articles?institution=0&page_size=100&order=published_date&order_direction=desc&resource_doi=10.1109%2FACCESS.2022.3160714",
+        "finding": "An exact resource-DOI public article search returned zero deposits."
+      },
+      {
+        "kind": "mendeley_data_title_search",
+        "url": "https://data.mendeley.com/research-data/?search=mayfly%20median%20position",
+        "finding": "A title/algorithm search exposed no author-linked MPMA experiment dataset; the Mendeley catalogue article record is bibliographic rather than a research-data deposit."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "a4_median_attraction",
+      "gate": "exact_preset",
+      "question": "What numerical value or iteration-dependent schedule for Equation 16's median-attraction coefficient a4 was used in the MMA runs reported in Tables 5-7 and 9-10?",
+      "known_evidence": "Equation 16 defines a4 as a positive social-attraction coefficient, but Table 4 reports a1, a2, beta, d, and fl without an a4 value. Mayfly's MedianWeight=0.5 is a compatibility choice, not a paper-derived value.",
+      "required_answer_shape": "The exact finite a4 value or complete executable schedule, including whether it differs between benchmark functions, governor conditions, or iterations.",
+      "units": "dimensionless attraction coefficient",
+      "acceptable_primary_evidence": [
+        "The Tables 5-10 MMA source code and experiment configuration",
+        "A dated author clarification giving the exact value or schedule"
+      ],
+      "affected_fields": [
+        "Config.MedianWeight",
+        "Equation 16 male-velocity update",
+        "MPMA paper preset"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "median_population_pool",
+      "gate": "exact_preset",
+      "question": "Does Equation 15 rank and take the middle position from males only, females only, or the combined male and female population, and at what lifecycle point is that pool sampled?",
+      "known_evidence": "The prose says all mayfly individuals, Equation 15 uses male-position notation x, and Equation 16 applies the result only to male velocity. The article does not state whether n denotes one sex or both, or whether ranking occurs before or after movement, mating, and survivor selection.",
+      "required_answer_shape": "An executable definition of the candidate pool, objective-value ranking direction and tie handling, odd/even rule, and lifecycle point for every median calculation.",
+      "units": "candidate identities, ranks, and lifecycle stages",
+      "acceptable_primary_evidence": [
+        "The original Equation 15/16 implementation",
+        "A dated author clarification defining the complete median lifecycle"
+      ],
+      "affected_fields": [
+        "calculateMedianPosition",
+        "male and female population pooling",
+        "sorting and update order"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "genetic_operator_parameters",
+      "gate": "exact_preset",
+      "question": "What offspring count, crossover-coefficient distribution and draw granularity, mutation scale, and complete mating/mutation settings were used for MMA in Tables 5-10?",
+      "known_evidence": "The article gives the generic mating and Gaussian-mutation equations and says round(0.05 times the male count) individuals mutate, but Table 4 does not provide the offspring count, crossover-coefficient range/distribution, Gaussian sigma, or whether draws are per pair, offspring, or coordinate.",
+      "required_answer_shape": "Exact offspring and survivor counts, crossover distribution/range with draw granularity, mutation selection rule and sigma, simultaneous-versus-sequential offspring semantics, and any benchmark/governor differences.",
+      "units": "offspring, probabilities or fractions, dimensionless crossover coefficients, and decision-space mutation scale",
+      "acceptable_primary_evidence": [
+        "The Tables 5-10 source and configuration implementing mating and mutation",
+        "A dated author clarification defining every operator parameter and random draw"
+      ],
+      "affected_fields": [
+        "Config.NC",
+        "Config.CrossoverGamma",
+        "Config.MutationSigma",
+        "mating, mutation, and survivor selection"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "initialization_and_boundaries",
+      "gate": "exact_preset",
+      "question": "How were positions and velocities initialized, and what velocity limits and position/velocity boundary-repair rules were used in the benchmark and governor experiments?",
+      "known_evidence": "The article says two sex-specific populations are randomly placed and positions and velocities are initialized, but it does not state the distributions, initial velocity bounds, clipping/reflection/resampling rules, or whether algorithms shared initial populations.",
+      "required_answer_shape": "The exact position and velocity distributions and bounds, random-draw granularity, repair rules after every update/operator, and across-algorithm/run sharing policy.",
+      "units": "decision-space and velocity units, distributions, and draws per candidate or coordinate",
+      "acceptable_primary_evidence": [
+        "The original initialization and boundary-handling source",
+        "A dated author clarification giving deterministic executable rules"
+      ],
+      "affected_fields": [
+        "Config.LowerBound",
+        "Config.UpperBound",
+        "Config.VelocityMin",
+        "Config.VelocityMax",
+        "initialization and repair lifecycle"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "evaluation_accounting",
+      "gate": "exact_preset",
+      "question": "Which objective calls count toward each function-evaluation limit, and how does a run stop when the remaining budget cannot cover a full update, offspring, or mutation batch?",
+      "known_evidence": "The paper specifies function-dependent FE ceilings but does not define whether initialization, parent re-evaluation, male/female movement, offspring, mutants, rejected candidates, or repaired candidates count, nor partial-generation stopping and final-best selection.",
+      "required_answer_shape": "A per-stage objective-call ledger, iteration indexing, partial-generation rule, target/early stopping behavior, and final-result selection convention.",
+      "units": "objective-function evaluations and iterations",
+      "acceptable_primary_evidence": [
+        "The benchmark driver with objective-call counters",
+        "A dated author clarification defining the complete budget and stopping convention"
+      ],
+      "affected_fields": [
+        "Config.MaxFunctionEvaluations",
+        "Result.FuncEvalCount",
+        "partial-generation stopping",
+        "paper-reproduction manifest"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "seeds_and_raw_runs",
+      "gate": "reproduction_comparison",
+      "question": "Can the original MMA implementation, batch drivers, random-number generator and ordered seeds/states, and raw per-run benchmark and governor outputs be supplied?",
+      "known_evidence": "The paper reports 30 benchmark runs and 35 governor runs but no generator, seeds, saved states, code, or ordered trial data. Only aggregate tables and figure-only convergence/response outputs are public.",
+      "required_answer_shape": "Versioned source/configuration files with checksums; generator/version and ordered seed or state mapping; and ordered terminal values, iteration counts, convergence histories, PID gains, and response metrics for every algorithm, function, condition, and run.",
+      "units": "source files, checksums, generator states, objective values, iterations, PID gains, and response metrics",
+      "acceptable_primary_evidence": [
+        "The original author-supplied experiment archive",
+        "A publisher or institutional archive deposited by the authors"
+      ],
+      "affected_fields": [
+        "Config.Seed",
+        "source-conformance fixtures",
+        "aggregate-statistic validation",
+        "historical comparison identity"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "governor_model",
+      "gate": "reproduction_comparison",
+      "question": "Can the exact MATLAB/Simulink hydro-turbine governor model and simulation configuration used for Tables 9-10 and Figures 8-9 be supplied?",
+      "known_evidence": "The article prints the transfer functions, two Table 8 parameter tuples, a block-diagram figure, 20-second horizon, PID bounds, and disturbance size, but not the Simulink file, MATLAB release, solver, step size/tolerances, block settings, PID form, saturation, initial conditions, disturbance timing, or numerical ITAE integration rule.",
+      "required_answer_shape": "The versioned model and MATLAB scripts plus release/toolbox versions, solver and sample-time settings, every block parameter and initial condition, PID convention and limits, disturbance injection, and executable ITAE calculation.",
+      "units": "model files, software versions, seconds, solver tolerances, PID gains, and ITAE integration units",
+      "acceptable_primary_evidence": [
+        "The original SLX/MDL model and governor experiment scripts",
+        "A dated author clarification plus an equivalent versioned executable model"
+      ],
+      "affected_fields": [
+        "governor objective runner",
+        "Tables 9-10 validation",
+        "Figures 8-9 validation",
+        "governor reproduction claim"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "source_inconsistencies",
+      "gate": "reproduction_comparison",
+      "question": "What are the intended corrections and underlying raw values for the printed F10 domain, F18 MMA best/median ordering, and Table 9 success-rate omission?",
+      "known_evidence": "Table 3 prints F10 as [65.536,65.536] without a negative lower bound; Table 7 prints the minimizing F18 median below the reported best; and the Table 9 prose says success rate is listed although the table contains no success-rate row.",
+      "required_answer_shape": "An author correction or original source/configuration and ordered trials establishing the intended F10 bounds, correct F18 statistics, and both working-condition success-rate definition, numerator, denominator, and values.",
+      "units": "decision-space bounds, objective values, successes, trials, and percent",
+      "acceptable_primary_evidence": [
+        "The original benchmark/governor source and raw trials",
+        "A publisher correction or dated author clarification backed by the source data"
+      ],
+      "affected_fields": [
+        "F10 benchmark bounds",
+        "Table 7 F18 comparison target",
+        "Table 9 success-rate target"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The original MMA implementation and Tables 5-10 benchmark/governor drivers",
+    "Complete parameter, initialization, boundary, and function-evaluation configurations",
+    "The MATLAB/Simulink governor model and its solver/ITAE configuration",
+    "The random-number generator and ordered seed/state schedule",
+    "Raw per-run benchmark, convergence, PID, ITAE, iteration, and response outputs"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "mpma",
+    "requires_question_ids": [
+      "a4_median_attraction",
+      "median_population_pool",
+      "genetic_operator_parameters",
+      "initialization_and_boundaries",
+      "evaluation_accounting"
+    ],
+    "rule": "An mpma-2022 exact algorithm preset and benchmark runner may be added only after all five questions have non-null answers backed by cited primary evidence and the resulting configuration, operators, lifecycle, and evaluation ledger pass equation-, accounting-, and source-conformance tests."
+  },
+  "reproduction_comparison_gate": {
+    "state": "blocked_missing_historical_run_data_and_model",
+    "requires_question_ids": [
+      "seeds_and_raw_runs",
+      "governor_model",
+      "source_inconsistencies"
+    ],
+    "rule": "A full Tables 5-10 reproduction comparison additionally requires all three comparison questions to be resolved. A benchmark-only comparison must identify the unavailable governor model explicitly; aggregate-only comparisons must remain descriptive and must not imply historical-run identity or pairing."
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Request for MMA/MPMA Tables 5-10 implementation, protocol, and trial data",
+    "body": "Dear Professor Xu and co-authors,\n\nI am implementing the protocol from your 2022 IEEE Access article, An Improved Mayfly Optimization Algorithm Based on Median Position and Its Application in the Optimization of PID Parameters of Hydro-Turbine Governor (doi:10.1109/ACCESS.2022.3160714), and would like to reproduce Tables 5-10 faithfully. Could you please share the original MMA implementation, benchmark and governor drivers/configurations, raw trials, and MATLAB/Simulink governor model? For an executable preset, could you also clarify: (1) Equation 16's a4 value or schedule; (2) whether Equation 15's ranked median covers males, females, or both and when it is calculated; (3) offspring count, crossover-coefficient distribution/draw granularity, mutation sigma, and survivor settings; (4) position/velocity initialization, limits, repair, and shared-initialization policy; and (5) exact function-evaluation accounting and partial-generation stopping? For validation, please also provide the generator and ordered seeds/states for the 30 benchmark and 35 governor runs; model, solver, sample-time, PID, disturbance, and ITAE-integration settings; and the intended corrections/raw values for the F10 range, F18 best/median ordering, and omitted Table 9 success rates. Version identifiers or checksums and ordered per-run objective, convergence, PID, iteration, ITAE, overshoot, and adjustment-time data would make the comparison auditable.\n\nThank you for your time."
+  }
+}

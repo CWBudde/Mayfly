@@ -165,11 +165,18 @@ The API examples, quick-reference guide, and parameter documentation are complet
           formally unlinked 2023 SSRN preprint from the 2025 journal issue,
           preserve the malformed Table 7 Case 1/GWO p-value, identify
           figure-only outputs, and make no reproduction claim.
-    - [ ] Obtain and compare the complete EOBBMA author manuscript and
-          version-of-record prose, plus raw trials or author clarification, to
-          close the missing run-count, seed, objective-weight, population-sex,
-          evaluation-accounting, and sensor-coordinate gates before adding an
-          exact preset or comparison.
+    - [x] Exhaust EOBBMA's publisher, both DOI-registry records, SSRN record,
+          and corresponding-author ORCID; encode seven stable exact-preset
+          blockers and three historical-comparison blockers in a
+          machine-readable, send-ready clarification request linked from the
+          Tables 2-8 reference.
+    - [ ] Obtain primary author or archival evidence resolving all ten EOBBMA
+          clarification blockers, including the complete versioned protocol,
+          reference code, seeds, raw trials, and sensor coordinates.
+    - [ ] Validate that evidence, implement an explicit EOBBMA-2025 WSN preset
+          and runner, add equation-, accounting-, statistics-, and
+          source-conformance tests, and compare against Tables 5-8 with claims
+          limited by the recovered seeds and raw trials.
     - [x] Resolve MPMA's paper identity and MMA-versus-MPMA naming; encode the
           30-run benchmark protocol, 35-run governor protocol, and all 110
           published MMA aggregate/performance cells from Tables 5-7 and 9-10
@@ -177,10 +184,18 @@ The API examples, quick-reference guide, and parameter documentation are complet
           malformed Table 3 Foxholes range, inconsistent Table 7 F18
           best/median cells, missing Table 9 success rate, and figure-only
           outputs without making a reproduction claim.
-    - [ ] Obtain MPMA author code, raw trials, Simulink model, or clarification
-          for `a4`, the median population pool, genetic parameters,
-          initialization/boundaries, evaluation accounting, seeds, and source
-          inconsistencies before adding an exact preset or comparison.
+    - [x] Exhaust MPMA's publisher, DOI registries, all four author ORCIDs,
+          current institutional contact path, and public code/data registries;
+          encode five stable exact-preset blockers and three historical-
+          comparison/model blockers in a machine-readable, send-ready
+          clarification request linked from the Tables 1-10 reference.
+    - [ ] Obtain primary MPMA author or archival evidence resolving all eight
+          clarification blockers, including the implementation, complete
+          configuration, raw trials, seed schedule, and Simulink model.
+    - [ ] Validate that evidence, implement an explicit MPMA-2022 preset and
+          benchmark/governor runners, add equation-, accounting-, model-,
+          statistics-, and source-conformance tests, and compare against
+          Tables 5-10 with claims limited by the recovered seeds and raw trials.
     - [x] Source-audit AOBLMOA's open article and paper-linked MATLAB code;
           encode the 30-run, 1,000-iteration Tables 5-6 protocol and all 19
           published AOBLMOA rows in

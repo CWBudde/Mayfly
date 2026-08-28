@@ -148,6 +148,32 @@
     "The SSRN and journal DOI metadata have no formal relation field; their likely preprint/version-of-record relationship is explicitly labeled as an inference.",
     "Figure-only convergence, ANOVA, histogram, and final-coordinate plots are identified but not digitized into invented numerical samples."
   ],
+  "clarification_request": {
+    "artifact": "docs/reference-data/eobbma-2025-clarification-request.json",
+    "status": "awaiting_author_or_archival_data",
+    "target_algorithm": "eobbma",
+    "blocking_question_ids": [
+      "versioned_protocol_source",
+      "population_size_and_sex_split",
+      "levy_distribution_and_draw_semantics",
+      "eobl_elite_selection_and_activation",
+      "wsn_objective_equation_and_weights",
+      "initialization_boundary_and_coordinate_semantics",
+      "evaluation_accounting_and_stopping",
+      "independent_run_count_and_statistics",
+      "published_seed_schedule",
+      "raw_trials_coordinates_and_reference_code"
+    ],
+    "exact_preset_question_ids": [
+      "versioned_protocol_source",
+      "population_size_and_sex_split",
+      "levy_distribution_and_draw_semantics",
+      "eobl_elite_selection_and_activation",
+      "wsn_objective_equation_and_weights",
+      "initialization_boundary_and_coordinate_semantics",
+      "evaluation_accounting_and_stopping"
+    ]
+  },
   "reproduction_blockers": [
     "The paper's independent-run count and exact Wilcoxon sample size are not exposed by the canonical public tables or figures.",
     "Seeds and raw per-run fitness, coverage, redundancy, and moving-distance samples are unavailable.",

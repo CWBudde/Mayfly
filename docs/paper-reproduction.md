@@ -257,6 +257,16 @@ cell-by-cell protocol comparison, and no public author implementation or batch
 driver has been identified. Mayfly does not yet implement the paper's WSN
 objective or expose an EOBBMA paper preset.
 
+The
+[machine-readable clarification request](reference-data/eobbma-2025-clarification-request.json)
+records the completed publisher/DOI/SSRN/ORCID audit and assigns stable IDs to
+seven exact-preset gates and three historical-comparison gates. The exact gate
+covers the versioned protocol, population split, Lévy and EOBL semantics, WSN
+objective, coordinate initialization/boundaries, and evaluation accounting.
+The comparison gate separately covers the run/statistics protocol, seed
+schedule, and raw trials/reference code. Its correspondence draft is marked
+`not_sent`; no request has been transmitted.
+
 ## MPMA protocol audit
 
 The library name MPMA corresponds to the paper's “Mayfly Algorithm Based on
@@ -294,6 +304,15 @@ figure-only outputs and are not converted into invented raw samples. Mayfly's
 `MedianWeight = 0.5`, male-only median pool, alternative gravity schedules, and
 weighted median are therefore documented compatibility choices or extensions,
 not paper-derived settings.
+
+The remaining questions are pinned in a
+[machine-readable clarification request](reference-data/mpma-2022-clarification-request.json).
+Its exact-preset gate separately identifies `a4`, median-pool lifecycle,
+genetic-operator parameters, initialization/boundary behavior, and objective-
+call accounting. Its historical-comparison gate covers the versioned source,
+ordered seeds and raw trials, the executable Simulink model, and the three
+printed source inconsistencies. The request is send-ready but marked
+`not_sent`; no correspondence has been transmitted.
 
 ## Output contract
 

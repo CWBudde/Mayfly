@@ -17,6 +17,16 @@ objective weights, sex split, raw sensor coordinates, and exact evaluation
 accounting remain unavailable. The artifact also distinguishes the formally
 unlinked 2023 SSRN preprint from the journal version of record.
 
+The linked
+[clarification request](../reference-data/eobbma-2025-clarification-request.json)
+turns the remaining uncertainty into seven stable exact-preset questions and
+three separately gated historical-comparison questions. It records the public
+source audit, corresponding-author contact published by Springer, required
+answer shapes, acceptable primary evidence, and an explicitly unsent
+correspondence draft. In particular, the current `LevyAlpha`, `LevyBeta`,
+`OppositionRate`, and `EliteOppositionCount` defaults are not represented as
+the paper's experimental settings.
+
 ## Overview
 
 EOBBMA replaces traditional velocity-based updates with Gaussian sampling and introduces Lévy flight for exploration. This "bare bones" approach provides excellent exploration-exploitation balance on complex, deceptive landscapes.

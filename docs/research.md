@@ -111,6 +111,13 @@ and figures omit the independent-run count, seeds, objective weights, raw
 sensor coordinates, and whether population 40 is total or per sex. The current
 library therefore has no paper-exact EOBBMA preset or WSN comparison.
 
+The linked
+[machine-readable clarification request](reference-data/eobbma-2025-clarification-request.json)
+captures the completed publisher, DOI-registry, SSRN, and ORCID audit. It
+separates seven exact-preset blockers from three historical-comparison data
+blockers, pins them to stable IDs, and includes a send-ready draft that remains
+explicitly unsent.
+
 ### Current-Library Technical Details
 
 - **Gaussian sampling**: μ = (X_current + X_best)/2, σ = |X_current - X_best|/2
@@ -208,6 +215,12 @@ All 110 tabular MMA output cells and the public protocol are preserved in
 [`mpma-2022-tables1-10.json`](reference-data/mpma-2022-tables1-10.json), along
 with the printed Foxholes-range and F18 best/median inconsistencies. The
 artifact is explicitly a source transcription, not a reproduction.
+
+Five exact-preset questions and three historical-comparison/model questions
+are pinned in the
+[machine-readable clarification request](reference-data/mpma-2022-clarification-request.json).
+Its correspondence draft is marked `not_sent`; no request has been
+transmitted.
 
 ### Paper Application
 

@@ -9,6 +9,18 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A machine-readable, send-ready MPMA/MMA Tables 5-10 clarification request
+  with five stable exact-preset blocker IDs for `a4`, median-pool semantics,
+  genetic operators, initialization/boundaries, and evaluation accounting,
+  plus three separately gated historical run, Simulink-model, and source-
+  inconsistency questions. The Tables 1-10 reference links the unsent request
+  without claiming reproduction.
+- A machine-readable, send-ready EOBBMA Tables 5-8 clarification request with
+  seven stable exact-preset blocker IDs for the versioned protocol,
+  population, Lévy/EOBL semantics, WSN objective, coordinates/boundaries, and
+  evaluation accounting, plus three separately gated historical run,
+  seed, and raw-data questions. The source reference links the unsent request
+  without claiming reproduction.
 - A machine-readable, send-ready HMMA Table 1 clarification request with seven
   stable exact-preset blocker IDs for population, base-MA/crossover settings,
   benchmark geometry, `a4`, and Equations 10 and 12, plus two separately gated

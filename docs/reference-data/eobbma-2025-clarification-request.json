@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "protocol_id": "eobbma-2025-tables2-8",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "corresponding_author": "Yongquan Zhou",
+    "public_email": "yongquanzhou@126.com",
+    "contact_source": "https://link.springer.com/article/10.1007/s13369-024-08899-6",
+    "orcid": "https://orcid.org/0000-0003-4404-952X",
+    "affiliation": "College of Artificial Intelligence, Guangxi University for Nationalities"
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "The publisher record, both DOI-registry records, SSRN record, and corresponding-author ORCID record expose no public experiment implementation, raw trial archive, or formal version relation and do not close the exact-preset or historical-comparison questions.",
+    "sources": [
+      {
+        "kind": "publisher_article",
+        "url": "https://link.springer.com/article/10.1007/s13369-024-08899-6",
+        "finding": "The canonical record identifies Yongquan Zhou as corresponding author, publishes his contact email, states that original contributions are in the article and inquiries may be directed to the corresponding authors, and links no supplementary code or data. Public tables and figures expose the aggregate targets but not a complete executable protocol."
+      },
+      {
+        "kind": "crossref_version_of_record",
+        "url": "https://api.crossref.org/works/10.1007%2Fs13369-024-08899-6",
+        "finding": "The journal DOI record has an empty relation object and only version-of-record text-mining and similarity-checking links; it links no dataset, software deposit, supplement, or preprint."
+      },
+      {
+        "kind": "ssrn_posted_content",
+        "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4381249",
+        "finding": "The SSRN record identifies two 30-page manuscript versions and Yongquan Zhou as contact author, but links no experiment archive or code. Its title, author list, and DOI differ from the journal record."
+      },
+      {
+        "kind": "crossref_ssrn_record",
+        "url": "https://api.crossref.org/works/10.2139%2Fssrn.4381249",
+        "finding": "The SSRN DOI record also has an empty relation object and no link entries, so registry metadata does not establish that it is a version of the journal article or attach research artifacts."
+      },
+      {
+        "kind": "corresponding_author_orcid",
+        "url": "https://orcid.org/0000-0003-4404-952X",
+        "finding": "The publisher-linked public ORCID record includes the journal article but exposes no email, researcher URL, employment record, software, dataset, or research-resource entry supplying the missing protocol or trials."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "versioned_protocol_source",
+      "gate": "exact_preset",
+      "question": "Can the accepted author manuscript or version-of-record algorithm and experiment sections be supplied, together with a list of protocol changes from the two SSRN versions to the journal version?",
+      "known_evidence": "SSRN lists two 30-page versions under DOI 10.2139/ssrn.4381249, while the journal article has a different title, author list, and DOI. Neither DOI registry record formally relates them, and the public journal page exposes only preview prose, tables, and figures.",
+      "required_answer_shape": "A dated, paginated manuscript matching the version of record or an author-provided change list that identifies the exact equations, pseudocode, parameters, and experiment protocol used for Tables 5-8.",
+      "units": "version identifiers, dates, page and equation numbers",
+      "acceptable_primary_evidence": [
+        "The accepted author manuscript deposited by an author or institution",
+        "The version-of-record article plus an author-supplied version history"
+      ],
+      "affected_fields": [
+        "EOBBMA equation conformance",
+        "paper-preset provenance",
+        "SSRN-to-version-of-record protocol mapping"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "population_size_and_sex_split",
+      "gate": "exact_preset",
+      "question": "For the Tables 5-8 EOBBMA trials, does population size 40 mean 40 total mayflies, 40 males plus 40 females, or another sex-specific allocation, and what survivor counts were retained each iteration?",
+      "known_evidence": "Table 3 prints only 'population size = 40'. EOBBMA retains separate male and female populations, so the printed value does not determine executable sex-specific counts.",
+      "required_answer_shape": "Exact initialized and retained male and female counts, total candidate count, offspring count, and survivor-selection counts for every iteration.",
+      "units": "male mayflies, female mayflies, offspring, and total candidates",
+      "acceptable_primary_evidence": [
+        "The Tables 5-8 source code and experiment configuration",
+        "A dated author clarification giving all population-count conventions"
+      ],
+      "affected_fields": [
+        "Config.NPop",
+        "Config.NPopF",
+        "Config.NC",
+        "survivor selection",
+        "objective-evaluation accounting"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "levy_distribution_and_draw_semantics",
+      "gate": "exact_preset",
+      "question": "What exact Levy-flight distribution, parameters, scale, random-draw granularity, and update convention were used by EOBBMA in Tables 5-8?",
+      "known_evidence": "The public record identifies Levy flight as an EOBBMA component, but Table 3 gives EOBBMA no parameters beyond population size. Mayfly's LevyAlpha=1.5 and LevyBeta=1.0 are library defaults, not a paper-exact preset.",
+      "required_answer_shape": "The complete executable distribution formula, parameter values, generator/draw granularity, multiplicative-versus-additive update rule, and the male/female branches and frequencies on which it is applied.",
+      "units": "dimensionless distribution parameters, scale, and draws per candidate or coordinate",
+      "acceptable_primary_evidence": [
+        "The Tables 5-8 EOBBMA source implementing Levy flight",
+        "A dated author clarification with the complete formula and parameter values"
+      ],
+      "affected_fields": [
+        "Config.LevyAlpha",
+        "Config.LevyBeta",
+        "eobbmaLevyPosition",
+        "male and female update branches"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "eobl_elite_selection_and_activation",
+      "gate": "exact_preset",
+      "question": "How many elites entered EOBL, how were they selected, and what activation probability, schedule, draw frequency, opposition bounds, and replacement rule were used in Tables 5-8?",
+      "known_evidence": "The public article identifies elite opposition-based learning but Table 3 supplies no EOBL parameters. Mayfly's EliteOppositionCount=3 and OppositionRate=0.3 are library defaults and cannot be attributed to the paper protocol.",
+      "required_answer_shape": "An executable rule specifying elite count or fraction, ranking population, activation timing and probability, draw granularity, dynamic/static bounds, out-of-bounds repair, objective evaluations, and replacement target.",
+      "units": "elite candidates or fraction, probability, iterations, and objective calls",
+      "acceptable_primary_evidence": [
+        "The Tables 5-8 EOBL source and experiment configuration",
+        "A dated author clarification defining every selection and activation step"
+      ],
+      "affected_fields": [
+        "Config.EliteOppositionCount",
+        "Config.OppositionRate",
+        "eliteBounds",
+        "eliteOppositionPoint",
+        "opposition replacement lifecycle"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "wsn_objective_equation_and_weights",
+      "gate": "exact_preset",
+      "question": "What complete executable Equation 17 objective, AHP weights, coverage discretization, sensing model, redundancy definition, and movement-distance normalization were used for each deployment case?",
+      "known_evidence": "Table 2 calls fitness the minimum value from Equation 17, and Tables 5-6 publish aggregate fitness and component metrics. The public tables and figures do not expose Equation 17's weights or enough numerical semantics to reconstruct the objective.",
+      "required_answer_shape": "Source or equations defining every objective term, constant, weight, grid or sampling resolution, distance convention, normalization, and minimization transformation for all eight cases.",
+      "units": "objective weights, metres, probabilities or coverage fractions, and grid resolution",
+      "acceptable_primary_evidence": [
+        "The original WSN objective implementation and case configuration",
+        "A dated author clarification supplying all Equation 17 definitions and weights"
+      ],
+      "affected_fields": [
+        "WSN Equation 17 objective",
+        "deployment-case runner",
+        "fitness and metric validation"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "initialization_boundary_and_coordinate_semantics",
+      "gate": "exact_preset",
+      "question": "How were initial sensor coordinates generated or loaded, what coordinate bounds and boundary-repair rules were used, and were identical initial deployments shared across algorithms and runs?",
+      "known_evidence": "Table 4 gives square region sizes, and Figure 7 visualizes final deployments, but no machine-readable initial coordinates, generation rule, pairing policy, or complete boundary protocol is supplied.",
+      "required_answer_shape": "For each case, exact coordinate bounds, initialization distribution or coordinate files, rounding/discretization, fixed-versus-mobile sensor handling, boundary repair, and across-algorithm sharing policy.",
+      "units": "metres and ordered x/y coordinate pairs",
+      "acceptable_primary_evidence": [
+        "The original sensor-coordinate files and deployment-case loader",
+        "A dated author clarification defining deterministic coordinate generation and boundary handling"
+      ],
+      "affected_fields": [
+        "Config.LowerBound",
+        "Config.UpperBound",
+        "initial populations",
+        "eobbmaRepairPosition",
+        "paired comparison design"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "evaluation_accounting_and_stopping",
+      "gate": "exact_preset",
+      "question": "What stopping and objective-evaluation accounting rules produced the 1,000-iteration EOBBMA results, especially for EOBL candidates and any objective/component recomputation?",
+      "known_evidence": "Figure 4 shows 1,000 iterations, but no maximum function-evaluation budget is published. EOBL evaluates additional candidates, so equal iteration counts do not establish equal evaluation budgets or the reported accounting convention.",
+      "required_answer_shape": "Iteration indexing and stopping conditions plus a per-stage objective-call ledger covering initialization, male/female updates, offspring, EOBL, rejected or repaired candidates, and metric reporting.",
+      "units": "iterations and objective-function evaluations",
+      "acceptable_primary_evidence": [
+        "The Tables 5-8 batch driver with counters",
+        "A dated author clarification giving the complete accounting convention"
+      ],
+      "affected_fields": [
+        "Config.MaxIterations",
+        "Result.FuncEvalCount",
+        "paper-reproduction manifest",
+        "fairness claims"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "independent_run_count_and_statistics",
+      "gate": "reproduction_comparison",
+      "question": "How many independent runs underlie Tables 5-8, and what exact sample, test variant, tail, pairing, tie handling, and significance settings produced Tables 7-8?",
+      "known_evidence": "The public tables publish best, worst, average, standard deviation, Wilcoxon, and Friedman values but do not state the independent-run count or exact statistical sample and test configuration.",
+      "required_answer_shape": "A positive run count and a complete statistics protocol, including whether algorithms shared seeds/initial deployments and whether the Wilcoxon calculation was rank-sum or signed-rank.",
+      "units": "runs, samples, significance level, and test parameters",
+      "acceptable_primary_evidence": [
+        "The original statistics driver and experiment manifest",
+        "A dated author clarification defining the run and test protocol"
+      ],
+      "affected_fields": [
+        "comparison run count",
+        "Wilcoxon validation",
+        "Friedman validation",
+        "paired-versus-unpaired claims"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "published_seed_schedule",
+      "gate": "reproduction_comparison",
+      "question": "Which random-number generator and ordered seeds or saved states produced the Tables 5-8 trials?",
+      "known_evidence": "Neither the public journal record nor Tables 2-8 identify a generator, seed schedule, or saved random states.",
+      "required_answer_shape": "Generator name/version and an ordered seed or state for every run and algorithm, mapped to deployment cases and documenting shared-randomness policy.",
+      "units": "generator identity and integer seeds or serialized states",
+      "acceptable_primary_evidence": [
+        "The original batch driver and seed records",
+        "A dated author-supplied ordered seed schedule with generator details"
+      ],
+      "affected_fields": [
+        "Config.Seed",
+        "paired-run schedule",
+        "historical run identity"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "raw_trials_coordinates_and_reference_code",
+      "gate": "reproduction_comparison",
+      "question": "Can the original EOBBMA implementation, Tables 5-8 batch/statistics drivers, case files, and raw per-run fitness, metric, and sensor-coordinate outputs be supplied?",
+      "known_evidence": "The public record provides aggregate tables and figure-only convergence, ANOVA, histogram, and deployment plots. It links no code or raw archive, while its data statement directs further inquiries to the corresponding authors.",
+      "required_answer_shape": "Versioned source/configuration files, checksums, ordered per-run terminal fitness and component metrics, convergence histories, and initial/final coordinates mapped to every table row and figure.",
+      "units": "source files, configuration files, checksums, objective values, metric values, and x/y coordinates",
+      "acceptable_primary_evidence": [
+        "The original author-supplied experiment archive",
+        "A publisher or institutional archive deposited by the authors"
+      ],
+      "affected_fields": [
+        "source-conformance fixtures",
+        "aggregate-statistic validation",
+        "figure validation",
+        "reproduction comparison"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The accepted author manuscript or version-of-record protocol sections and SSRN-to-journal change list",
+    "The original EOBBMA implementation and Tables 5-8 experiment/statistics drivers",
+    "Exact WSN objective, AHP weights, deployment-case configurations, and coordinate files",
+    "The random-number generator and ordered seed schedule",
+    "Raw per-run fitness, component metrics, convergence histories, and sensor coordinates"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "eobbma",
+    "requires_question_ids": [
+      "versioned_protocol_source",
+      "population_size_and_sex_split",
+      "levy_distribution_and_draw_semantics",
+      "eobl_elite_selection_and_activation",
+      "wsn_objective_equation_and_weights",
+      "initialization_boundary_and_coordinate_semantics",
+      "evaluation_accounting_and_stopping"
+    ],
+    "rule": "An eobbma-2025 exact preset and WSN runner may be added only after all seven questions have non-null answers backed by cited primary evidence and the resulting objective, configuration, operators, and evaluation ledger pass equation-, accounting-, and source-conformance tests."
+  },
+  "reproduction_comparison_gate": {
+    "state": "blocked_missing_historical_run_data",
+    "requires_question_ids": [
+      "independent_run_count_and_statistics",
+      "published_seed_schedule",
+      "raw_trials_coordinates_and_reference_code"
+    ],
+    "rule": "A historical reproduction claim additionally requires all three comparison questions to be resolved. Aggregate-only comparisons must remain explicitly descriptive and must not imply paired trials."
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Request for EOBBMA Tables 5-8 protocol, implementation, and trial data",
+    "body": "Dear Professor Zhou and co-authors,\n\nI am implementing the protocol from your article, Elite Opposition-Based Bare Bones Mayfly Algorithm for Optimization Wireless Sensor Networks Coverage Problem (doi:10.1007/s13369-024-08899-6), and would like to reproduce Tables 5-8 faithfully. Could you please share the accepted manuscript or version-of-record protocol sections, the original EOBBMA and WSN objective source, experiment/statistics drivers, case configurations, and raw trials? For an executable preset, could you also clarify: (1) whether population size 40 is total or per sex and the offspring/survivor counts; (2) the exact Levy formula, parameters, scale, branches, and draw granularity; (3) the EOBL elite count, activation schedule/probability, bounds, repair, evaluation, and replacement rule; (4) the complete Equation 17 objective, AHP weights, sensing/coverage discretization, redundancy, and distance normalization; (5) coordinate initialization, bounds, repair, and whether initial deployments were shared across algorithms; and (6) iteration indexing and objective-call accounting, including EOBL candidates? For comparison, please also provide the independent-run count and statistical-test settings, random-number generator and ordered seeds, and ordered per-run fitness, coverage, redundancy, movement-distance, convergence, and initial/final coordinate data. If the two SSRN versions differ from the journal protocol, a short change list would also be valuable.\n\nThank you for your time."
+  }
+}

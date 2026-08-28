@@ -215,6 +215,28 @@
     {"id": "governor_model", "closed": false, "detail": "The Simulink model, solver configuration, step size, and PID saturation settings are unavailable."},
     {"id": "source_inconsistencies", "closed": false, "detail": "The printed F10 range, F18 ordering, and missing governor success-rate output require source data or author clarification."}
   ],
+  "clarification_request": {
+    "artifact": "docs/reference-data/mpma-2022-clarification-request.json",
+    "status": "awaiting_author_or_archival_data",
+    "target_algorithm": "mpma",
+    "blocking_question_ids": [
+      "a4_median_attraction",
+      "median_population_pool",
+      "genetic_operator_parameters",
+      "initialization_and_boundaries",
+      "evaluation_accounting",
+      "seeds_and_raw_runs",
+      "governor_model",
+      "source_inconsistencies"
+    ],
+    "exact_preset_question_ids": [
+      "a4_median_attraction",
+      "median_population_pool",
+      "genetic_operator_parameters",
+      "initialization_and_boundaries",
+      "evaluation_accounting"
+    ]
+  },
   "current_library_status": {
     "exact_preset_available": false,
     "published_comparison_available": false,

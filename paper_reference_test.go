@@ -44,6 +44,12 @@ func TestOriginalMA2020Table6ReferenceData(t *testing.T) {
 			Upper     float64 `json:"upper_bound"`
 		} `json:"benchmarks"`
 		PublishedResults map[string]map[string][]float64 `json:"published_results"`
+		Clarification    struct {
+			Artifact            string   `json:"artifact"`
+			Status              string   `json:"status"`
+			TargetAlgorithm     string   `json:"target_algorithm"`
+			BlockingQuestionIDs []string `json:"blocking_question_ids"`
+		} `json:"clarification_request"`
 	}
 
 	err := json.Unmarshal(originalMA2020Table6JSON, &reference)
@@ -72,6 +78,16 @@ func TestOriginalMA2020Table6ReferenceData(t *testing.T) {
 		reference.AuthorCode.Version1.ActualFunctionEvaluations != 122_040 ||
 		reference.AuthorCode.Version1.DisplayedFunctionEvaluations != 120_040 {
 		t.Fatalf("unexpected author-code audit: %+v", reference.AuthorCode)
+	}
+
+	if reference.Clarification.Artifact !=
+		"docs/reference-data/original-ma-2020-clarification-request.json" ||
+		reference.Clarification.Status != "awaiting_author_or_archival_data" ||
+		reference.Clarification.TargetAlgorithm != "ima" ||
+		len(reference.Clarification.BlockingQuestionIDs) != 2 ||
+		reference.Clarification.BlockingQuestionIDs[0] != "crossover_operator_and_rate" ||
+		reference.Clarification.BlockingQuestionIDs[1] != "gaussian_mutation_rate_semantics" {
+		t.Fatalf("unexpected clarification request link: %+v", reference.Clarification)
 	}
 
 	wantBenchmarks := map[string]struct {

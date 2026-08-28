@@ -9,6 +9,11 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A machine-readable, send-ready original MA Table 6 clarification request
+  with two stable IMA exact-preset blocker IDs for the conflicting
+  crossover-rate and Gaussian-mutation-rate semantics. Descriptive comparison
+  summaries now carry the same blocker IDs and artifact path without claiming
+  reproduction.
 - Machine-readable MPMA/MMA Tables 1-10 provenance with the 30-run,
   function-evaluation-limited benchmark protocol, the 35-run governor
   protocol, and all 110 published MMA aggregate/performance cells. The

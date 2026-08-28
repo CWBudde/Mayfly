@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "protocol_id": "original-ma-2020-table6",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "corresponding_author": "Konstantinos Zervoudakis",
+    "public_email": "kzervoudakis@isc.tuc.gr",
+    "contact_source": "https://www.sciencedirect.com/science/article/pii/S036083522030293X",
+    "author_repository_email": "kzervoudakis@tuc.gr",
+    "author_repository": "https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python"
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "The publisher article and author-linked public implementations do not resolve either exact-preset blocker.",
+    "sources": [
+      {
+        "kind": "publisher_article",
+        "url": "https://www.sciencedirect.com/science/article/pii/S036083522030293X",
+        "finding": "Section 3.2.3 defines arithmetic offspring using L, while Section 4.2 calls the configured operator single point uniform crossover with rate 0.95. Equation 22 defines additive Gaussian mutation but does not define what the reported mutation rate 0.1 controls."
+      },
+      {
+        "kind": "author_mendeley_archive",
+        "url": "https://data.mendeley.com/datasets/5w58s8hhz2/4",
+        "finding": "All four audited versions are simplified 50-dimensional Sphere/Rastrigin demos, not the six-benchmark Table 6 experiment. Their separate offspring and mutation settings therefore do not establish the Table 6 operator semantics."
+      },
+      {
+        "kind": "author_python_repository",
+        "url": "https://github.com/KZervoudakis/Mayfly-Optimization-Algorithm-Python",
+        "finding": "The later author repository exposes another demo configuration and does not identify itself as the Table 6 driver or resolve how the paper's rates were applied."
+      },
+      {
+        "kind": "author_research_page",
+        "url": "https://sites.google.com/view/kzervoudakis/research/metaheuristics/mayfly-algorithm",
+        "finding": "The author page links the article and public demo implementations but no separate Table 6 experiment driver, configuration, or clarification of the two rates."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "crossover_operator_and_rate",
+      "question": "Which crossover equation was used for the IMA Table 6 experiments, and exactly how did crossover rate 0.95 gate or parameterize it?",
+      "known_evidence": "Section 3.2.3 gives two arithmetic offspring using coefficient L, says offspring are randomly assigned as male or female, and replaces the worst population members, but Section 4.2 describes the selected operator as single point uniform crossover with rate 0.95. The Mendeley demo crosses every selected pair and has no corresponding 0.95 setting.",
+      "required_answer_shape": "An executable operator definition identifying parent selection, crossover points or coefficient distribution and draw granularity, the event to which probability 0.95 applies, offspring count, random sex-assignment semantics, survivor insertion, boundary repair, and behavior when crossover is not applied.",
+      "units": "probability and dimensionless crossover coefficients, plus offspring counts",
+      "acceptable_primary_evidence": [
+        "The original Table 6 MATLAB implementation and experiment configuration",
+        "A dated author clarification defining the complete crossover operator and the role of 0.95"
+      ],
+      "affected_fields": [
+        "Config.NC",
+        "Config.NCRatio",
+        "Config.CrossoverGamma",
+        "parent selection",
+        "offspring construction and sex assignment"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "gaussian_mutation_rate_semantics",
+      "question": "Exactly what did Gaussian mutation rate 0.1 control in the IMA Table 6 experiments?",
+      "known_evidence": "Equation 22 adds a Gaussian perturbation but does not identify 0.1 as a candidate probability, coordinate probability, mutant fraction, standard deviation, or search-span-scaled standard deviation. The Mendeley demo instead has separate settings for one mutant, coordinate fraction 0.01, and sigma equal to 0.1 times the search span.",
+      "required_answer_shape": "An executable mutation definition identifying mutant selection and count, coordinate selection and draw granularity, the exact Gaussian mean and standard deviation including units or search-span scaling, survivor insertion, boundary repair, and the role of probability/rate 0.1.",
+      "units": "probability or fraction, mutant and coordinate counts, and decision-space units for Gaussian standard deviation",
+      "acceptable_primary_evidence": [
+        "The original Table 6 MATLAB implementation and experiment configuration",
+        "A dated author clarification defining the complete mutation operator and the role of 0.1"
+      ],
+      "affected_fields": [
+        "Config.NM",
+        "Config.Mu",
+        "Gaussian standard deviation",
+        "mutant and coordinate selection"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The original MATLAB implementation used for the IMA Table 6 experiments",
+    "The Table 6 experiment driver and exact parameter/configuration files",
+    "A definition of the crossover event controlled by rate 0.95",
+    "A definition of every mutation event and distribution parameter controlled by rate 0.1"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "ima",
+    "requires_question_ids": [
+      "crossover_operator_and_rate",
+      "gaussian_mutation_rate_semantics"
+    ],
+    "rule": "An original-ma-2020 exact preset may be added only after both questions have non-null answers backed by cited primary evidence and the resulting operators pass equation-level and source-conformance tests. Unavailable Table 6 seeds remain a separate limitation on paired reproduction comparisons."
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Clarification request for the Mayfly Algorithm Table 6 operators",
+    "body": "Dear Dr. Zervoudakis and Prof. Tsafarakis,\n\nI am implementing the protocol from your 2020 article, A mayfly optimization algorithm (doi:10.1016/j.cie.2020.106559), and would like to reproduce the IMA results in Table 6 faithfully. Could you please share the original Table 6 MATLAB implementation and experiment configuration, or clarify two operator details? First, Section 3.2.3 defines arithmetic offspring using L, while Section 4.2 describes single point uniform crossover with rate 0.95. Which crossover equation was used, what distribution and draw granularity did it use, and exactly what event did 0.95 control? Second, Equation 22 defines additive Gaussian mutation, but what did mutation rate 0.1 control: mutant selection, coordinate selection, Gaussian standard deviation, or another quantity? Please also identify the mutant count, coordinate-selection rule, and Gaussian scaling used in Table 6. Machine-readable configuration or source files and version/checksum information would be especially helpful.\n\nThank you for your time."
+  }
+}

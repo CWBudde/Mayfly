@@ -14,11 +14,19 @@ import (
 )
 
 const (
-	originalMAReferenceSchema = 1
-	publishedComparisonSchema = 1
+	originalMAReferenceSchema   = 1
+	publishedComparisonSchema   = 1
+	originalMAClarificationPath = "docs/reference-data/original-ma-2020-clarification-request.json"
+	originalMAExactPresetState  = "blocked_missing_author_or_archival_data"
+	originalMATargetAlgorithm   = "ima"
 )
 
 var originalMAStatisticOrder = []string{"best", "worst", "mean", "median", "standard_deviation"}
+
+var originalMAClarificationBlockerIDs = []string{
+	"crossover_operator_and_rate",
+	"gaussian_mutation_rate_semantics",
+}
 
 type originalMAReference struct {
 	PublishedResults map[string]map[string][]float64 `json:"published_results"`
@@ -28,7 +36,13 @@ type originalMAReference struct {
 	SHA256           string                          `json:"-"`
 	Source           originalMAReferenceSource       `json:"source"`
 	IMA              originalMAParameters            `json:"ima"`
-	Execution        struct {
+	Clarification    struct {
+		Artifact            string   `json:"artifact"`
+		Status              string   `json:"status"`
+		TargetAlgorithm     string   `json:"target_algorithm"`
+		BlockingQuestionIDs []string `json:"blocking_question_ids"`
+	} `json:"clarification_request"`
+	Execution struct {
 		Replications        int `json:"replications"`
 		FunctionEvaluations int `json:"function_evaluations_per_replication"`
 		MalePopulation      int `json:"male_population"`
@@ -123,6 +137,7 @@ type publishedComparisonSummary struct { //nolint:govet // Keep provenance and s
 	Comparisons                       []publishedBenchmarkComparison `json:"comparisons"`
 	UnresolvedOperatorSemantics       []string                       `json:"unresolved_operator_semantics"`
 	UnavailablePublishedAlgorithms    []string                       `json:"unavailable_published_algorithms"`
+	ExactPresetStatus                 originalMAExactPresetStatus    `json:"exact_preset_status"`
 	ComparisonKind                    string                         `json:"comparison_kind"`
 	ProtocolID                        string                         `json:"protocol_id"`
 	ReferenceDOI                      string                         `json:"reference_doi"`
@@ -130,6 +145,13 @@ type publishedComparisonSummary struct { //nolint:govet // Keep provenance and s
 	PublishedStandardDeviationMeaning string                         `json:"published_standard_deviation_convention"`
 	SchemaVersion                     int                            `json:"schema_version"`
 	ReproductionClaim                 bool                           `json:"reproduction_claim"`
+}
+
+type originalMAExactPresetStatus struct {
+	State               string   `json:"state"`
+	TargetAlgorithm     string   `json:"target_algorithm"`
+	Clarification       string   `json:"clarification_artifact"`
+	BlockingQuestionIDs []string `json:"blocking_question_ids"`
 }
 
 type basicMAComparisonInput struct {
@@ -200,6 +222,13 @@ func validateOriginalMAReferenceMetadata(reference originalMAReference) error {
 
 	if reference.Source.DOI == "" || reference.Source.PublisherURL == "" || reference.Source.Table != 6 {
 		return errors.New("source DOI, publisher URL, and Table 6 provenance are required")
+	}
+
+	if reference.Clarification.Artifact != originalMAClarificationPath ||
+		reference.Clarification.Status != "awaiting_author_or_archival_data" ||
+		reference.Clarification.TargetAlgorithm != originalMATargetAlgorithm ||
+		!equalStrings(reference.Clarification.BlockingQuestionIDs, originalMAClarificationBlockerIDs) {
+		return errors.New("clarification request path, status, and blocker IDs must match the exact-preset gate")
 	}
 
 	if reference.Execution.Replications <= 0 || reference.Execution.FunctionEvaluations <= 0 ||
@@ -315,7 +344,13 @@ func buildBasicMAComparisonSummary(
 		PublishedStandardDeviationMeaning: "unknown",
 		UnresolvedOperatorSemantics:       append([]string(nil), reference.IMA.UnresolvedOperatorSemantics...),
 		UnavailablePublishedAlgorithms:    []string{"vgma", "sma", "ima"},
-		Comparisons:                       make([]publishedBenchmarkComparison, 0, len(inputs)),
+		ExactPresetStatus: originalMAExactPresetStatus{
+			State:               originalMAExactPresetState,
+			TargetAlgorithm:     originalMATargetAlgorithm,
+			Clarification:       originalMAClarificationPath,
+			BlockingQuestionIDs: append([]string(nil), originalMAClarificationBlockerIDs...),
+		},
+		Comparisons: make([]publishedBenchmarkComparison, 0, len(inputs)),
 	}
 
 	for _, input := range inputs {

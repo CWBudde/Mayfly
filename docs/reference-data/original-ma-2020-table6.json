@@ -91,6 +91,15 @@
       "Equation 22 defines additive Gaussian mutation, but mutation rate 0.1 is not identified as a candidate probability, coordinate probability, or Gaussian standard deviation."
     ]
   },
+  "clarification_request": {
+    "artifact": "docs/reference-data/original-ma-2020-clarification-request.json",
+    "status": "awaiting_author_or_archival_data",
+    "target_algorithm": "ima",
+    "blocking_question_ids": [
+      "crossover_operator_and_rate",
+      "gaussian_mutation_rate_semantics"
+    ]
+  },
   "benchmarks": [
     {"id": "F1", "name": "Sphere", "dimension": 5, "lower_bound": -10.0, "upper_bound": 10.0, "known_minimum": 0.0},
     {"id": "F2", "name": "Rosenbrock", "dimension": 5, "lower_bound": -5.0, "upper_bound": 10.0, "known_minimum": 0.0},

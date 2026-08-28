@@ -114,6 +114,17 @@ experiment, not a reproduction. The reference file records these ambiguities so
 that a future author clarification or archived experiment implementation can
 close them without redoing the protocol audit.
 
+The repository also provides a
+[machine-readable clarification request](reference-data/original-ma-2020-clarification-request.json).
+It pins the two unresolved questions under the stable IDs
+`crossover_operator_and_rate` and `gaussian_mutation_rate_semantics`, records
+acceptable primary evidence, and includes an unsent correspondence draft. The
+generated `published-comparison.json` carries the same artifact path, target
+algorithm (`ima`), and blocker IDs in `exact_preset_status`. An exact historical
+IMA preset remains blocked until both answers are supported by primary evidence
+and equation-level tests; the unpublished Table 6 seeds remain a separate
+limitation on paired comparison.
+
 ## DESMA protocol audit
 
 The DESMA paper's experiment protocol and complete Table 3 DESMA column are

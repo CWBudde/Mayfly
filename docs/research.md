@@ -15,6 +15,11 @@ Academic papers and research behind the Mayfly algorithm variants implemented in
 - **Language**: MATLAB
 - **Year**: 2020
 
+The Table 6 IMA exact preset remains blocked on the paper's crossover-rate and
+Gaussian-mutation-rate semantics. The
+[machine-readable clarification request](reference-data/original-ma-2020-clarification-request.json)
+pins both questions and the primary evidence required to resolve them.
+
 ### Key Contributions
 
 - Introduced mayfly-inspired swarm intelligence algorithm

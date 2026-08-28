@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
 	"path/filepath"
 	"strings"
@@ -86,6 +87,17 @@ func TestValidateOriginalMAReferenceRejectsReorderedStatistics(t *testing.T) {
 	}
 }
 
+func TestValidateOriginalMAReferenceRejectsClarificationDrift(t *testing.T) {
+	reference := loadTestOriginalMAReference(t)
+	reference.Clarification.BlockingQuestionIDs[0], reference.Clarification.BlockingQuestionIDs[1] =
+		reference.Clarification.BlockingQuestionIDs[1], reference.Clarification.BlockingQuestionIDs[0]
+
+	err := validateOriginalMAReference(reference)
+	if err == nil || !strings.Contains(err.Error(), "clarification request") {
+		t.Fatalf("validateOriginalMAReference() error = %v", err)
+	}
+}
+
 func TestBuildBasicMAComparisonSummaryIsExplicitlyNonReproduction(t *testing.T) {
 	reference := loadTestOriginalMAReference(t)
 	runs := make([]mayfly.RunResult, reference.Execution.Replications)
@@ -111,6 +123,27 @@ func TestBuildBasicMAComparisonSummaryIsExplicitlyNonReproduction(t *testing.T) 
 
 	if summary.ReproductionClaim || summary.ComparisonKind != "descriptive_non_reproduction" {
 		t.Fatalf("summary mislabels reproduction status: %+v", summary)
+	}
+
+	if summary.ExactPresetStatus.State != originalMAExactPresetState ||
+		summary.ExactPresetStatus.TargetAlgorithm != originalMATargetAlgorithm ||
+		summary.ExactPresetStatus.Clarification != originalMAClarificationPath ||
+		!equalStrings(summary.ExactPresetStatus.BlockingQuestionIDs, originalMAClarificationBlockerIDs) {
+		t.Fatalf("summary exact-preset gate drifted: %+v", summary.ExactPresetStatus)
+	}
+
+	encoded, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatalf("marshal published comparison: %v", err)
+	}
+
+	for _, required := range append(
+		[]string{originalMAExactPresetState, originalMAClarificationPath},
+		originalMAClarificationBlockerIDs...,
+	) {
+		if !strings.Contains(string(encoded), required) {
+			t.Errorf("published comparison omits %q: %s", required, encoded)
+		}
 	}
 
 	if len(summary.Comparisons) != 1 || summary.Comparisons[0].PublishedAlgorithm != "basic_ma" {

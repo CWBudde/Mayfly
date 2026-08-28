@@ -112,9 +112,14 @@ The API examples, quick-reference guide, and parameter documentation are complet
   - [x] Add a machine-labeled `descriptive_non_reproduction` comparison of corrected
         current MA against the published Basic MA row without presenting modern
         variants as the unavailable historical VGMA/SMA/IMA implementations.
-  - [ ] Resolve how the original MA paper's crossover rate 0.95 applies to its
-        conflicting crossover descriptions and what its Gaussian mutation rate 0.1
-        controls, then add an exact preset.
+  - [x] Exhaust the original MA publisher and author-linked public artifacts;
+        encode the unresolved crossover-rate and Gaussian-mutation semantics as
+        two stable blocker IDs in a machine-readable, send-ready clarification
+        request, and expose the same gate in descriptive comparison output.
+  - [ ] Obtain primary author or archival evidence resolving both original MA
+        IMA operator blockers.
+  - [ ] Validate that evidence, implement an explicit original-MA-2020 IMA
+        preset, and add equation-, accounting-, and source-conformance tests.
   - [x] Source-audit HMMA's 50-run, 1,000-iteration Table 1 protocol and encode all
         published MA/IMA/AMMA/OCMA/HMMA aggregates in
         `docs/reference-data/hmma-2022-table1.json`. The artifact deliberately makes

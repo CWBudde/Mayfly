@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A focused getting-started tutorial with a complete reproducibly seeded
+  optimizer, result interpretation, custom-objective and normalized-bound
+  guidance, troubleshooting, and a runnable example kept in sync by a
+  documentation regression test.
 - A machine-readable, send-ready OLCE-MA chaotic-exploitation clarification
   request with three stable evidence blockers for the Chebyshev recurrence and
   seed, sequence lifecycle, and offspring-component mutation equation. The

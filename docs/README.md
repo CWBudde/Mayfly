@@ -18,9 +18,10 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 
 - **[Getting Started Guide](getting-started.md)** - Tutorial with practical examples
   - Installation
-  - Basic usage
+  - Complete, reproducible first optimizer
+  - Understanding results
   - Custom objective functions
-  - Real-world examples
+  - Bounds and constraints
   - Common pitfalls
 
 ### Algorithm Documentation
@@ -171,22 +172,22 @@ Complete API reference:
 
 ## Document Sizes
 
-| Document                | Lines | Focus                 |
-| ----------------------- | ----- | --------------------- |
-| quick-reference.md      | ~230  | Compact API map       |
-| getting-started.md      | ~440  | Tutorial and examples |
-| benchmarks.md           | ~410  | Function reference    |
-| research.md             | ~350  | Academic citations    |
-| configuration.md        | ~470  | Parameter reference   |
-| unified-framework.md    | ~570  | Advanced API          |
-| comparison-framework.md | ~180  | Statistical testing   |
-| standard-ma.md          | ~170  | Algorithm guide       |
-| desma.md                | ~220  | Algorithm guide       |
-| olce-ma.md              | ~360  | Algorithm guide       |
-| eobbma.md               | ~480  | Algorithm guide       |
-| gsasma.md               | ~430  | Algorithm guide       |
-| mpma.md                 | ~440  | Algorithm guide       |
-| aoblmoa.md              | ~490  | Algorithm guide       |
+| Document                | Lines | Focus               |
+| ----------------------- | ----- | ------------------- |
+| quick-reference.md      | ~230  | Compact API map     |
+| getting-started.md      | ~190  | First optimization  |
+| benchmarks.md           | ~410  | Function reference  |
+| research.md             | ~350  | Academic citations  |
+| configuration.md        | ~470  | Parameter reference |
+| unified-framework.md    | ~570  | Advanced API        |
+| comparison-framework.md | ~180  | Statistical testing |
+| standard-ma.md          | ~170  | Algorithm guide     |
+| desma.md                | ~220  | Algorithm guide     |
+| olce-ma.md              | ~360  | Algorithm guide     |
+| eobbma.md               | ~480  | Algorithm guide     |
+| gsasma.md               | ~430  | Algorithm guide     |
+| mpma.md                 | ~440  | Algorithm guide     |
+| aoblmoa.md              | ~490  | Algorithm guide     |
 
 **Total:** more than 5,000 lines across these reference documents.
 

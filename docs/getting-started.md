@@ -1,438 +1,199 @@
-# Getting Started with Mayfly Optimization
+# Getting Started with Mayfly
 
-A practical tutorial for getting started with the Mayfly optimization library.
+Mayfly is a Go library for bounded, continuous, single-objective optimization.
+Give it a function that maps a vector of numbers to a cost, and it searches for
+the vector with the lowest cost.
 
-## Installation
+This tutorial builds and runs a complete optimizer, explains its result, and
+shows the changes needed for a real objective function.
+
+## Prerequisites and installation
+
+Use a supported Go release and start from a Go module:
 
 ```bash
+mkdir mayfly-demo
+cd mayfly-demo
+go mod init example.com/mayfly-demo
 go get github.com/cwbudde/mayfly
 ```
 
-## Basic Usage
+## Basic usage
 
-### 1. Simple Optimization
-
-The simplest way to get started:
+Create `main.go` with the following complete program. The same source is kept
+as the runnable [`cmd/getting-started`](../cmd/getting-started/)
+example and is checked in CI.
 
 ```go
 package main
 
 import (
-    "fmt"
-    "github.com/cwbudde/mayfly"
+	"fmt"
+	"os"
+
+	"github.com/cwbudde/mayfly"
 )
 
-func main() {
-    // Create configuration
-    config := mayfly.NewDefaultConfig()
+func objective(x []float64) float64 {
+	dx := x[0] - 1.5
+	dy := x[1] + 0.5
 
-    // Define problem
-    config.ObjectiveFunc = mayfly.Sphere  // Built-in test function
-    config.ProblemSize = 30               // 30 dimensions
-    config.LowerBound = -10              // Search bounds
-    config.UpperBound = 10
-    config.MaxIterations = 1000
-
-    // Run optimization
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    // Print results
-    fmt.Printf("Best Cost: %f\n", result.GlobalBest.Cost)
-    fmt.Printf("Best Position: %v\n", result.GlobalBest.Position)
+	return dx*dx + dy*dy
 }
-```
 
-### 2. Custom Objective Function
+func optimize() (*mayfly.Result, error) {
+	seed := int64(42)
+	config := mayfly.NewDefaultConfig()
+	config.ObjectiveFunc = objective
+	config.ProblemSize = 2
+	config.LowerBound = -5
+	config.UpperBound = 5
+	config.MaxIterations = 200
+	config.Seed = &seed
 
-Optimize your own function:
-
-```go
-// Define your optimization problem
-func myFunction(x []float64) float64 {
-    // Example: Minimize sum of squares
-    sum := 0.0
-    for _, val := range x {
-        sum += val * val
-    }
-    return sum
+	return mayfly.Optimize(config)
 }
 
 func main() {
-    config := mayfly.NewDefaultConfig()
-    config.ObjectiveFunc = myFunction  // Use your function
-    config.ProblemSize = 10
-    config.LowerBound = -5
-    config.UpperBound = 5
-    config.MaxIterations = 500
+	result, err := optimize()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "optimization failed: %v\n", err)
+		os.Exit(1)
+	}
 
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Printf("Minimum found: %f\n", result.GlobalBest.Cost)
+	fmt.Fprintf(os.Stdout, "best cost: %.8g\n", result.GlobalBest.Cost)
+	fmt.Fprintf(os.Stdout, "best position: %.6f, %.6f\n",
+		result.GlobalBest.Position[0],
+		result.GlobalBest.Position[1],
+	)
+	fmt.Fprintf(os.Stdout, "iterations: %d; evaluations: %d; stopped: %s\n",
+		result.IterationCount,
+		result.FuncEvalCount,
+		result.TerminationReason,
+	)
 }
 ```
 
-### 3. Using Algorithm Variants
-
-Try different variants for better performance:
-
-```go
-// Standard MA (baseline)
-config := mayfly.NewDefaultConfig()
-
-// DESMA (better for multimodal)
-config := mayfly.NewDESMAConfig()
-
-// OLCE-MA (best for highly multimodal)
-config := mayfly.NewOLCEConfig()
-
-// EOBBMA (best for deceptive landscapes)
-config := mayfly.NewEOBBMAConfig()
-
-// GSASMA (annealed velocity and golden-sine position updates)
-config := mayfly.NewGSASMAConfig()
-
-// MPMA (most stable)
-config := mayfly.NewMPMAConfig()
-
-// AOBLMOA (adaptive multi-phase)
-config := mayfly.NewAOBLMOAConfig()
-```
-
-## Real-World Examples
-
-### Example 1: Function Fitting
-
-Fit parameters to minimize error:
-
-```go
-// Observed data
-observedX := []float64{1, 2, 3, 4, 5}
-observedY := []float64{2.1, 4.3, 5.9, 8.2, 10.1}
-
-// Model: y = a*x + b
-func modelError(params []float64) float64 {
-    a, b := params[0], params[1]
-
-    totalError := 0.0
-    for i := range observedX {
-        predicted := a*observedX[i] + b
-        error := predicted - observedY[i]
-        totalError += error * error  // Sum of squared errors
-    }
-
-    return totalError
-}
-
-func main() {
-    config := mayfly.NewDefaultConfig()
-    config.ObjectiveFunc = modelError
-    config.ProblemSize = 2  // Two parameters: a and b
-    config.LowerBound = -10
-    config.UpperBound = 10
-    config.MaxIterations = 500
-
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    a, b := result.GlobalBest.Position[0], result.GlobalBest.Position[1]
-    fmt.Printf("Best fit: y = %.3f*x + %.3f\n", a, b)
-    fmt.Printf("Error: %.6f\n", result.GlobalBest.Cost)
-}
-```
-
-### Example 2: Resource Allocation
-
-Optimize resource distribution:
-
-```go
-// Allocate budget across N projects to maximize ROI
-func projectROI(allocation []float64) float64 {
-    // Expected returns for each project (example data)
-    returns := []float64{0.15, 0.12, 0.18, 0.10, 0.20}
-    risks := []float64{0.05, 0.03, 0.08, 0.02, 0.10}
-
-    totalReturn := 0.0
-    totalRisk := 0.0
-
-    for i := range allocation {
-        totalReturn += allocation[i] * returns[i]
-        totalRisk += allocation[i] * risks[i]
-    }
-
-    // Maximize return while minimizing risk
-    // (negate for minimization)
-    score := totalReturn - 0.5*totalRisk
-    return -score
-}
-
-func main() {
-    config := mayfly.NewGSASMAConfig()  // Fast convergence
-    config.ObjectiveFunc = projectROI
-    config.ProblemSize = 5  // 5 projects
-    config.LowerBound = 0   // Minimum allocation
-    config.UpperBound = 100 // Maximum allocation per project
-    config.MaxIterations = 300
-
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Println("Optimal allocation:")
-    for i, amount := range result.GlobalBest.Position {
-        fmt.Printf("Project %d: $%.2f\n", i+1, amount)
-    }
-    fmt.Printf("Expected score: %.4f\n", -result.GlobalBest.Cost)
-}
-```
-
-### Example 3: Hyperparameter Tuning
-
-Optimize machine learning hyperparameters:
-
-```go
-import "math"
-
-// Simulate model validation error
-func modelPerformance(hyperparams []float64) float64 {
-    learningRate := hyperparams[0]
-    momentum := hyperparams[1]
-    dropout := hyperparams[2]
-
-    // Simulate training (replace with real model)
-    // This is a synthetic error function
-    error := math.Abs(learningRate - 0.01) +
-             math.Abs(momentum - 0.9) +
-             math.Abs(dropout - 0.2)
-
-    return error
-}
-
-func main() {
-    config := mayfly.NewOLCEConfig()  // Good for multimodal
-    config.ObjectiveFunc = modelPerformance
-    config.ProblemSize = 3  // 3 hyperparameters
-
-    // Set appropriate bounds for each parameter
-    config.LowerBound = 0.0001  // Will apply to all
-    config.UpperBound = 0.5
-    config.MaxIterations = 200
-
-    result, err := mayfly.Optimize(config)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Printf("Best hyperparameters:\n")
-    fmt.Printf("Learning rate: %.6f\n", result.GlobalBest.Position[0])
-    fmt.Printf("Momentum: %.6f\n", result.GlobalBest.Position[1])
-    fmt.Printf("Dropout: %.6f\n", result.GlobalBest.Position[2])
-    fmt.Printf("Validation error: %.6f\n", result.GlobalBest.Cost)
-}
-```
-
-## Advanced Features
-
-### Reproducible Results
-
-Use a fixed random seed for reproducibility:
-
-```go
-import "math/rand"
-
-config := mayfly.NewDefaultConfig()
-config.Rand = rand.New(rand.NewSource(42))  // Fixed seed
-config.ObjectiveFunc = mayfly.Rastrigin
-config.ProblemSize = 30
-config.LowerBound = -5.12
-config.UpperBound = 5.12
-
-// Results will be identical across runs
-result, _ := mayfly.Optimize(config)
-```
-
-### Maximization Problems
-
-The library minimizes by default. For maximization, negate:
-
-```go
-func profit(x []float64) float64 {
-    // Calculate profit
-    p := calculateProfit(x)
-    return -p  // Negate for maximization
-}
-
-config := mayfly.NewDefaultConfig()
-config.ObjectiveFunc = profit
-// ... rest of config
-
-result, _ := mayfly.Optimize(config)
-actualProfit := -result.GlobalBest.Cost  // Negate back
-```
-
-### Different Bounds Per Dimension
-
-Currently, the library uses uniform bounds. For per-dimension bounds, use transformation:
-
-```go
-func transformedObjective(normalizedX []float64) float64 {
-    // Define actual bounds per dimension
-    lowerBounds := []float64{-10, 0, -5}
-    upperBounds := []float64{10, 100, 5}
-
-    // Transform from [0,1] to actual bounds
-    actualX := make([]float64, len(normalizedX))
-    for i := range normalizedX {
-        actualX[i] = lowerBounds[i] + normalizedX[i]*(upperBounds[i]-lowerBounds[i])
-    }
-
-    // Evaluate with actual values
-    return yourObjective(actualX)
-}
-
-config := mayfly.NewDefaultConfig()
-config.ObjectiveFunc = transformedObjective
-config.LowerBound = 0
-config.UpperBound = 1
-```
-
-## Algorithm Selection Guide
-
-### Quick Selection
-
-**Not sure which variant to use?** Use the selector:
-
-```go
-// Define your problem characteristics
-chars := mayfly.ProblemCharacteristics{
-    Dimensionality:            30,
-    Modality:                  mayfly.HighlyMultimodal,
-    Landscape:                 mayfly.Rugged,
-    ExpensiveEvaluations:      false,
-    RequiresFastConvergence:   false,
-    RequiresStableConvergence: false,
-}
-
-// Get recommendation
-selector := mayfly.NewAlgorithmSelector()
-best := selector.RecommendBest(chars)
-
-// Use recommended variant
-result, err := mayfly.NewBuilderFromVariant(best.Variant).
-    ForProblem(myFunction, 30, -10, 10).
-    WithIterations(500).
-    Optimize()
-```
-
-### Rule of Thumb
-
-| Problem Type           | Recommended Variant | Why                         |
-| ---------------------- | ------------------- | --------------------------- |
-| Smooth, single optimum | **Standard MA**     | Efficient baseline          |
-| Multiple local optima  | **DESMA**           | Adaptive elite search       |
-| Highly multimodal      | **OLCE-MA**         | Orthogonal learning + chaos |
-| Deceptive landscape    | **EOBBMA**          | Lévy flights escape traps   |
-| Need fast results      | **GSASMA**          | Fastest convergence         |
-| Need stability         | **MPMA**            | Most robust                 |
-| Complex/adaptive needs | **AOBLMOA**         | 4 hunting strategies        |
-
-## Common Pitfalls
-
-### 1. Not Setting Required Parameters
-
-```go
-// ❌ WRONG - Missing required fields
-config := mayfly.NewDefaultConfig()
-result, err := mayfly.Optimize(config)  // Will error!
-
-// ✅ CORRECT - All required fields set
-config := mayfly.NewDefaultConfig()
-config.ObjectiveFunc = mayfly.Sphere
-config.ProblemSize = 30
-config.LowerBound = -10
-config.UpperBound = 10
-result, err := mayfly.Optimize(config)
-```
-
-### 2. Wrong Bounds Order
-
-```go
-// ❌ WRONG - Lower > Upper
-config.LowerBound = 10
-config.UpperBound = -10  // Will error!
-
-// ✅ CORRECT
-config.LowerBound = -10
-config.UpperBound = 10
-```
-
-### 3. Too Few Iterations
-
-```go
-// ❌ WRONG - Too few iterations
-config.MaxIterations = 10  // Won't converge well
-
-// ✅ CORRECT - Sufficient iterations
-config.MaxIterations = 500  // Start with at least 500
-```
-
-### 4. Inappropriate Population Size
-
-```go
-// ❌ WRONG - Too small for high dimensions
-config.ProblemSize = 100
-config.NPop = 10  // Insufficient
-
-// ✅ CORRECT - Scale with dimensions
-config.ProblemSize = 100
-config.NPop = 50  // Better coverage
-```
-
-## Running Examples
-
-The library includes complete examples in the `examples/` directory:
+Run it:
 
 ```bash
-# Basic usage
-cd examples
-go run main.go
-
-# Algorithm comparison
-cd examples/comparison
-go run main.go
-
-# Algorithm selector demo
-cd examples/selector
-go run main.go
+go run .
 ```
 
-## Next Steps
+The known minimum of this example is at `[1.5, -0.5]`, where the cost is zero.
+Mayfly is stochastic, so expect a nearby position and a small nonnegative cost,
+not necessarily the exact analytical answer.
 
-- **[Algorithm Documentation](algorithms/)** - Learn about each variant in detail
-- **[Configuration Guide](api/configuration.md)** - Full parameter reference
-- **[Benchmark Functions](benchmarks.md)** - Test functions and expected results
-- **[Comparison Framework](api/comparison-framework.md)** - Statistical testing
+## What the configuration means
 
-## Quick Tips
+Every run needs these four problem fields:
 
-1. **Start simple**: Begin with Standard MA on a simple function
-2. **Test on benchmarks**: Validate your setup with built-in functions
-3. **Choose variant**: Pick specialized variant based on problem type
-4. **Tune incrementally**: Start with defaults, tune only if needed
-5. **Use reproducibility**: Set random seed for debugging
-6. **Monitor convergence**: Check if solution improves over iterations
-7. **Scale resources**: Increase population/iterations for complex problems
+- `ObjectiveFunc` is the function to minimize.
+- `ProblemSize` is the number of values in each candidate vector.
+- `LowerBound` and `UpperBound` define one finite search interval shared by
+  every dimension.
 
-## Getting Help
+`NewDefaultConfig` supplies the algorithm parameters. The example lowers
+`MaxIterations` to keep the first run quick. Start with those defaults; change
+population and algorithm parameters only after measuring repeated runs on the
+actual objective.
 
-- Check [GitHub Issues](https://github.com/cwbudde/mayfly/issues)
-- Read [CLAUDE.md](../CLAUDE.md) for development guidance
-- See [PLAN.md](../PLAN.md) for roadmap and future features
+The fixed `Seed` makes repeated runs with the same Mayfly version and
+configuration reproducible. It is useful for tests and debugging. Use several
+independent seeds when judging solution quality, because one seeded run is not
+a performance comparison.
+
+## Reading the result
+
+`Optimize` returns a `*mayfly.Result` and an error. Check the error before using
+the result. Its main fields are:
+
+- `GlobalBest.Position`: the best candidate vector found.
+- `GlobalBest.Cost`: that candidate's objective value.
+- `IterationCount` and `FuncEvalCount`: work actually performed.
+- `TerminationReason`: whether the iteration limit, a target cost, or
+  stagnation stopped the run.
+- `ConvergenceCurve`: the best cost recorded at each completed iteration.
+
+A finite result only means that the search completed. It does not prove a
+global optimum. Validate the returned position against domain rules and, for
+important work, compare repeated seeded runs with a baseline method.
+
+## Use your own objective
+
+Replace `objective` with a function of type
+`func([]float64) float64`. For example, least-squares fitting of a line can use
+two decision variables, slope and intercept:
+
+```go
+func squaredError(parameters []float64) float64 {
+	slope, intercept := parameters[0], parameters[1]
+	x := []float64{1, 2, 3, 4}
+	y := []float64{2.2, 3.9, 6.1, 7.8}
+
+	total := 0.0
+	for i := range x {
+		residual := slope*x[i] + intercept - y[i]
+		total += residual * residual
+	}
+
+	return total
+}
+```
+
+Set `ProblemSize` to `2`, choose bounds that are meaningful for both
+parameters, and assign `squaredError` to `ObjectiveFunc`.
+
+The optimizer minimizes. To maximize a score such as profit, return its
+negative from the objective and negate `GlobalBest.Cost` when reporting it.
+The objective should return a finite value for every vector inside the search
+box. If `EnableParallel` is true, it and any constraint functions must also be
+safe for concurrent calls.
+
+## Different bounds and constraints
+
+The core configuration uses the same bounds for every dimension. When
+variables need different ranges, optimize normalized values in `[0, 1]` and
+decode each component before evaluating the domain objective:
+
+```go
+func decode(unit, lower, upper []float64) []float64 {
+	actual := make([]float64, len(unit))
+	for i := range unit {
+		actual[i] = lower[i] + unit[i]*(upper[i]-lower[i])
+	}
+
+	return actual
+}
+```
+
+Set `LowerBound = 0` and `UpperBound = 1`; keep `ProblemSize` equal to the
+number of domain variables. For constrained optimization, inequalities use
+`g(x) <= 0` and equalities use `h(x) = 0`. The
+[configuration guide](api/configuration.md#constraint-handling) covers feasibility
+rules, penalties, and equality tolerance.
+
+## Common first-run problems
+
+- `ObjectiveFunc is required`: assign the objective before calling
+  `Optimize`.
+- `ProblemSize must be positive`: match it to the number of values read by the
+  objective.
+- `LowerBound must be less than UpperBound`: use finite bounds in ascending
+  order.
+- A panic while indexing `x`: the objective expects more components than
+  `ProblemSize` provides.
+- Results that look plausible but violate the domain: encode the constraint or
+  decode/project the candidate before evaluation; do not silently accept it.
+
+## Where to go next
+
+- [API quick reference](api/quick-reference.md) for entry points and result
+  fields.
+- [Configuration guide](api/configuration.md) for constraints, stopping,
+  parallel evaluation, and parameter definitions.
+- [Run lifecycle](api/run-lifecycle.md) for cancellation, progress observers,
+  logging, and initial populations.
+- [Benchmark functions](benchmarks.md) for test objectives with known minima.
+- [Algorithm documentation](algorithms/) before selecting a specialized
+  variant.

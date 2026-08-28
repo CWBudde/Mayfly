@@ -79,7 +79,9 @@ The API examples, quick-reference guide, and parameter documentation are complet
 
 #### Tutorials
 
-- [ ] Write a getting-started tutorial.
+- [x] Write a getting-started tutorial with a complete, reproducibly seeded
+      optimizer, result interpretation, custom-objective guidance, normalized
+      per-dimension bounds, troubleshooting, and a CI-tested runnable example.
 - [ ] Write an algorithm-selection guide.
 - [ ] Write a parameter-tuning tutorial.
 - [ ] Write a custom-objective-function guide.

@@ -9,6 +9,12 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A machine-readable, send-ready OLCE-MA chaotic-exploitation clarification
+  request with three stable evidence blockers for the Chebyshev recurrence and
+  seed, sequence lifecycle, and offspring-component mutation equation. The
+  unsent request records the publisher, DOI, institutional-contact, and public
+  code/data audit without treating Mayfly's Logistic-map extension as the
+  published algorithm.
 - A machine-readable, send-ready AOBLMOA Tables 5-23 clarification request
   with five stable exact-preset blocker IDs for strategy/branch, Aquila mean,
   Levy scale, population/lifecycle, and evaluation accounting semantics, plus

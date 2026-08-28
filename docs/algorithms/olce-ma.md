@@ -62,7 +62,9 @@ equal-fitness offspring tie to resolve. The accessible figures do not expose
 the exact Chebyshev recurrence or component mutation equation, so the library
 retains its prior behavior rather than guessing those formulas. Do not label
 OLCE results as exact paper reproductions until that open fidelity item is
-resolved.
+resolved. The public-source audit, three stable evidence blockers, acceptable
+primary evidence, and unsent author-request draft are preserved in the
+[machine-readable clarification request](../reference-data/olce-ma-2022-clarification-request.json).
 
 **Properties**:
 

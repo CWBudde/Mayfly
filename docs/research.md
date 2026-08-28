@@ -77,7 +77,10 @@ Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
 - **Chaos exploitation**: The publisher pseudocode applies Chebyshev-based
   mutation to all crossover offspring. Mayfly's current one-offspring
   Logistic-map stage predates access to that figure and remains a documented
-  extension until the exact component equation is available.
+  extension until the recurrence/seed, sequence lifecycle, and exact component
+  equation are available. The public audit and unsent evidence request are
+  preserved in the
+  [machine-readable clarification artifact](reference-data/olce-ma-2022-clarification-request.json).
 - **Target problems**: High-dimensional multimodal optimization
 
 ---

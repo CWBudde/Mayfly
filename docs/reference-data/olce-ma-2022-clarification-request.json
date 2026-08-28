@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "protocol_id": "olce-ma-2022-chaotic-exploitation",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-28",
+  "source_contact": {
+    "contact_author": "Xiaoping Su",
+    "paper_correspondence_email": "suxiaoping@njtech.edu.cn",
+    "current_public_email": "suxiaoping@vip.163.com",
+    "paper_contact_source": "https://www.researchgate.net/publication/362507515_An_enhanced_Mayfly_optimization_algorithm_based_on_orthogonal_learning_and_chaotic_exploitation_strategy",
+    "current_contact_source": "https://mech.njtech.edu.cn/info/1018/1772.htm",
+    "affiliation": "School of Mechanical and Power Engineering, Nanjing Tech University",
+    "selection_basis": "The version-of-record landing page identifies Xiaoping Su as the corresponding author; the indexed author-shared full text exposes the paper address, and the current institutional profile publishes a second public address."
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-28",
+    "outcome": "The publisher article and authoritative pseudocode figures establish Chebyshev mutation over the N crossover offspring and show a sequence in [-1,1] labeled C1=0.65. They do not expose the executable recurrence, sequence lifecycle, or offspring-component mutation equation. DOI and discovery records, the current institutional profile, and exact DOI/title searches of public code and data registries expose no author implementation or archive resolving those three questions.",
+    "sources": [
+      {
+        "kind": "publisher_article",
+        "url": "https://link.springer.com/article/10.1007/s13042-022-01617-4",
+        "finding": "The version-of-record landing page confirms the article identity, authors, dates, affiliation, corresponding author, abstract, figures, and references. The accessible page is a subscription preview and links no supplementary code, data, or implementation archive."
+      },
+      {
+        "kind": "publisher_mating_pseudocode",
+        "url": "https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig1_HTML.png",
+        "finding": "The authoritative mating pseudocode creates N crossover offspring before chaotic exploitation. This rules out the current library extension's fittest-offspring-only premise."
+      },
+      {
+        "kind": "publisher_chaotic_exploitation_pseudocode",
+        "url": "https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig3_HTML.png",
+        "finding": "The authoritative pseudocode loops from 1 through N, generates a Chebyshev chaotic-variable sequence Cx_it for the current iteration, mutates an offspring according to Cx_it, evaluates the mutant, and updates gbest. It does not print the Chebyshev recurrence, seed, sequence advancement rules, or component mutation formula, and its loop variable i versus offspring subscript k is not executable as written."
+      },
+      {
+        "kind": "publisher_chebyshev_map_figure",
+        "url": "https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig4_HTML.png",
+        "finding": "The authoritative plot labels the Chebyshev sequence C1=0.65 and shows values in [-1,1]. A plotted trajectory and probability curve do not uniquely identify the recurrence, its order or parameter, indexing convention, or component mutation equation."
+      },
+      {
+        "kind": "crossref_record",
+        "url": "https://api.crossref.org/works/10.1007%2Fs13042-022-01617-4",
+        "finding": "The DOI record confirms the bibliographic identity and exposes version-of-record text-mining links, but its relation object is empty and it identifies no dataset, software deposit, supplement, or reference implementation."
+      },
+      {
+        "kind": "openalex_record",
+        "url": "https://api.openalex.org/works/https://doi.org/10.1007/s13042-022-01617-4",
+        "finding": "The discovery record reports one closed version-of-record location, no open-access location, no repository full text, and no content URL. Author-identity suggestions from this secondary index were not treated as primary contact evidence."
+      },
+      {
+        "kind": "institutional_contact_profile",
+        "url": "https://mech.njtech.edu.cn/info/1018/1772.htm",
+        "finding": "Nanjing Tech University's current Xiaoping Su profile supplies a public contact address and research biography but links no OLCE-MA or MAOLC implementation, experiment archive, or raw runs."
+      },
+      {
+        "kind": "github_doi_repository_search",
+        "url": "https://api.github.com/search/repositories?q=%2210.1007%2Fs13042-022-01617-4%22",
+        "finding": "An exact-DOI public repository search returned zero repositories. This records the search outcome and does not prove that private or unindexed code is absent."
+      },
+      {
+        "kind": "github_title_repository_search",
+        "url": "https://api.github.com/search/repositories?q=%22An%20enhanced%20Mayfly%20optimization%20algorithm%20based%20on%20orthogonal%20learning%20and%20chaotic%20exploitation%20strategy%22",
+        "finding": "An exact-title public repository search returned zero repositories."
+      },
+      {
+        "kind": "zenodo_doi_record_search",
+        "url": "https://zenodo.org/api/records?q=%2210.1007%2Fs13042-022-01617-4%22&size=25",
+        "finding": "An exact-DOI public record search returned zero deposits."
+      },
+      {
+        "kind": "zenodo_title_record_search",
+        "url": "https://zenodo.org/api/records?q=%22An%20enhanced%20Mayfly%20optimization%20algorithm%20based%20on%20orthogonal%20learning%20and%20chaotic%20exploitation%20strategy%22&size=25",
+        "finding": "An exact-title public record search returned zero deposits."
+      },
+      {
+        "kind": "figshare_doi_record_search",
+        "url": "https://api.figshare.com/v2/articles?institution=0&page_size=100&order=published_date&order_direction=desc&resource_doi=10.1007%2Fs13042-022-01617-4",
+        "finding": "An exact resource-DOI public article search returned zero deposits."
+      },
+      {
+        "kind": "mendeley_data_title_search",
+        "url": "https://data.mendeley.com/research-data/?search=orthogonal%20learning%20chaotic%20exploitation%20mayfly",
+        "finding": "A paper-title and algorithm search exposed no author-linked implementation or experiment-data deposit."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "chebyshev_recurrence_and_seed",
+      "gate": "exact_chaotic_exploitation",
+      "question": "What exact Chebyshev-map recurrence generated Cx, what does the printed C1=0.65 denote, and how was the initial state or seed selected?",
+      "known_evidence": "Figure 4 plots a sequence in [-1,1] and labels C1=0.65, while Figure 3 only says to use a Chebyshev map. Neither accessible figure gives an equation, order or control parameter, seed policy, or indexing convention.",
+      "required_answer_shape": "A finite executable recurrence with every constant/order/control parameter, domain, initial-state rule, one-based or zero-based indexing, and boundary or exceptional-value handling.",
+      "units": "dimensionless chaotic state and iteration index",
+      "acceptable_primary_evidence": [
+        "The original chaotic-exploitation source code and its initialization",
+        "The complete published equation or a dated author clarification defining an executable recurrence"
+      ],
+      "affected_fields": [
+        "chaos-map implementation",
+        "chaotic sequence initialization",
+        "equation-level regression fixtures"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "chaotic_sequence_lifecycle",
+      "gate": "exact_chaotic_exploitation",
+      "question": "How is Cx_it generated and consumed across generations, the N offspring, and D components?",
+      "known_evidence": "Figure 3 takes it, k, D, and N, loops with i, refers to the kth offspring, and requests a sequence for the current number of iterations. It does not say whether one state is reset or advanced per generation, offspring, or component; whether offspring share a sequence; or how k, i, D, and it index it.",
+      "required_answer_shape": "An executable state-and-index lifecycle specifying reset points, sequence length, advancement order, sharing versus independent streams, draw granularity, and deterministic mapping from generation/offspring/component indices to sequence values.",
+      "units": "sequence states and generation, offspring, and component indices",
+      "acceptable_primary_evidence": [
+        "The original loop and chaotic-state implementation",
+        "A dated author clarification resolving every state transition and index"
+      ],
+      "affected_fields": [
+        "offspring batch lifecycle",
+        "random and chaotic state reproducibility",
+        "serial and parallel evaluation equivalence"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "offspring_component_mutation",
+      "gate": "exact_chaotic_exploitation",
+      "question": "What exact component equation mutates offspring_kD according to Cx_it, including scaling, constriction, bounds, and replacement semantics?",
+      "known_evidence": "Figure 3 says only that each offspring conducts mutation according to Cx_it, then evaluates the mutant and updates gbest. The indexed paper prose refers to Equation 12, a constriction factor s, and decision bounds, but the accessible authoritative figures do not expose the formula. Mayfly's current Logistic-map blend and greedy finite-candidate installation are documented library choices, not recovered paper semantics.",
+      "required_answer_shape": "The exact vector or per-component Equation 12, including the definition and schedule of s, conversion between [-1,1] and decision bounds, random draws, clipping or other repair, whether the mutation is unconditional or greedy, personal-best initialization, and when gbest is updated.",
+      "units": "decision-space position, dimensionless chaotic state, and constriction factor",
+      "acceptable_primary_evidence": [
+        "The original Equation 12 implementation and offspring replacement loop",
+        "The complete typeset Equation 12 plus a dated author clarification for any remaining lifecycle ambiguity"
+      ],
+      "affected_fields": [
+        "chaoticExploitationCandidate",
+        "applyChaoticExploitation",
+        "offspring replacement and best-state accounting",
+        "Config.ChaosFactor"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The original MAOLC/OLCE-MA implementation, especially the Chebyshev map and chaotic-exploitation function",
+    "The complete typeset Chebyshev recurrence and Equation 12 with all symbols and constants defined",
+    "The initialization, indexing, state-advancement, bound-repair, replacement, and evaluation-accounting rules",
+    "A small deterministic trace containing the seed/state, sequence values, input offspring, mutated offspring, and objective evaluations"
+  ],
+  "exact_chaotic_exploitation_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "olce-ma",
+    "requires_question_ids": [
+      "chebyshev_recurrence_and_seed",
+      "chaotic_sequence_lifecycle",
+      "offspring_component_mutation"
+    ],
+    "rule": "Mayfly may replace its documented Logistic-map compatibility extension with a paper-faithful OLCE-MA chaotic-exploitation stage only after all three questions have non-null answers backed by cited primary evidence and the all-N implementation passes recurrence-, sequence-, component-, lifecycle-, bounds-, evaluation-accounting-, and serial/parallel-conformance tests."
+  },
+  "current_library_status": {
+    "paper_faithful_chaotic_exploitation_available": false,
+    "documented_extension": "One Logistic-map candidate derived from the fittest crossover offspring",
+    "allowed_claim": "current-library baseline",
+    "forbidden_claim": "exact OLCE-MA or MAOLC paper reproduction"
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Request for OLCE-MA/MAOLC Chebyshev mutation equation and reference implementation",
+    "body": "Dear Professor Su and co-authors,\n\nI am implementing the chaotic-exploitation stage from your 2022 article, An enhanced Mayfly optimization algorithm based on orthogonal learning and chaotic exploitation strategy (doi:10.1007/s13042-022-01617-4). The publisher pseudocode establishes Chebyshev mutation over the N crossover offspring, and Figure 4 labels a sequence C1=0.65 in [-1,1], but I cannot recover three details needed for an executable, paper-faithful implementation: (1) the exact Chebyshev recurrence, all constants or order parameters, the meaning of C1=0.65, and the initial-state rule; (2) how Cx_it is reset or advanced and indexed across generations, N offspring, and D components, including how i, k, it, and D in the pseudocode relate; and (3) the complete offspring-component mutation equation referred to as Equation 12, including the constriction factor s, bound mapping or repair, replacement rule, best-state updates, and objective-evaluation accounting.\n\nCould you please share the original MAOLC/OLCE-MA source or the complete equations and clarify those lifecycle rules? A small deterministic trace with the initial chaotic state, generated Cx values, one input offspring batch, the mutated positions, and evaluation/best updates would also make an equation-level conformance test possible. Version identifiers or checksums would help keep the result auditable.\n\nThank you for your time."
+  }
+}

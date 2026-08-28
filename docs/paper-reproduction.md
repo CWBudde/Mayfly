@@ -413,4 +413,6 @@ assumption, but the accessible figures do not expose the exact recurrence and
 component mutation equation. Until that stage is corrected from an
 authoritative equation or reference implementation, results using Mayfly's
 documented defaults must be labeled as current-library baselines, not exact
-paper replications.
+paper replications. The audited sources, three executable evidence questions,
+and unsent correspondence draft are pinned in the
+[OLCE-MA clarification request](reference-data/olce-ma-2022-clarification-request.json).

@@ -251,9 +251,14 @@ The API examples, quick-reference guide, and parameter documentation are complet
   - [x] Audit the publisher's authoritative pseudocode figures: they specify
         Chebyshev mutation over all `N` crossover offspring, invalidating the earlier
         equal-fitness/fittest-offspring premise.
-  - [x] Document the current Logistic-map, first-best stage as a library extension.
-  - [ ] Obtain the authoritative recurrence and component mutation equation or a
-        reference implementation.
+  - [x] Document the current Logistic-map, fittest-offspring stage as a library extension.
+  - [x] Exhaust the publisher article and figures, DOI/discovery records,
+        current institutional contact path, and public code/data registries;
+        encode three stable recurrence/seed, sequence-lifecycle, and component-
+        mutation blockers in a machine-readable, send-ready clarification request.
+  - [ ] Obtain primary author or archival evidence resolving all three OLCE-MA
+        clarification blockers, preferably the original reference implementation
+        plus a deterministic chaotic-mutation trace.
   - [ ] Implement Chebyshev mutation over all `N` offspring and add equation-level
         regression tests.
 - [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA crossover and

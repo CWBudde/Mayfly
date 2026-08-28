@@ -131,18 +131,21 @@ func NewEOBBMAConfig() *Config {
 // MPMA enhances the standard Mayfly Algorithm with:
 // - Median position guidance for better population-level convergence
 // - Non-linear gravity coefficient for adaptive exploration/exploitation balance
-// - Optional fitness-weighted median for emphasizing better solutions
+// - Optional fitness-weighted median as a library extension
 //
-// The Median Position approach uses the population's median rather than just
-// the global best, which can provide more stable convergence and better
-// resistance to premature convergence on multimodal problems.
+// The paper calls this method MMA. It does not publish the median-attraction
+// coefficient a4 or resolve whether the ranked median covers males only or both
+// sexes. MedianWeight=0.5 and the male-only pool are compatibility choices;
+// alternative gravity schedules and weighted medians are library extensions.
 //
-// Reference: An Improved Mayfly Optimization Algorithm Based on Median Position (2022),
-// IEEE Access, DOI: 10.1109/ACCESS.2022.3160714.
+// Reference: Guo Lei, Xu Chang, Yu Tianhang, and Wumaier Tuerxun,
+// "An Improved Mayfly Optimization Algorithm Based on Median Position and Its
+// Application in the Optimization of PID Parameters of Hydro-Turbine Governor",
+// IEEE Access 10, 36335-36349 (2022), DOI: 10.1109/ACCESS.2022.3160714.
 func NewMPMAConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseMPMA = true
-	config.MedianWeight = 0.5         // Balanced influence of median vs global best
+	config.MedianWeight = 0.5         // Compatibility value; the paper omits a4
 	config.GravityType = GravityPaper // Published nonlinear gravity schedule
 	config.UseWeightedMedian = false  // Standard median by default
 

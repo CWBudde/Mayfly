@@ -118,7 +118,7 @@ fmt.Printf("Cost: %f, violation: %g\n",
 | **[EOBBMA](docs/algorithms/eobbma.md)**           | Deceptive landscapes | +55%        | Lévy flights, Bare Bones          |
 | **[GSASMA](docs/algorithms/gsasma.md)**           | Multimodal search    | Variable    | Annealed velocity + golden sine   |
 | **[HMMA](docs/algorithms/hmma.md)**               | Mutation diversity   | Variable    | Scheduled global mutation + gender exchange |
-| **[MPMA](docs/algorithms/mpma.md)**               | Stable convergence   | +10-30%     | Median guidance, robust           |
+| **[MPMA](docs/algorithms/mpma.md)**               | Classic/PID paper cases | Better on 16/18 paper functions | Fitness-ranked median guidance |
 | **[AOBLMOA](docs/algorithms/aoblmoa.md)**         | Adaptive             | Variable    | 4 hunting strategies + opposition |
 
 ### Using Variants
@@ -355,7 +355,8 @@ Zhou, D., et al. (2022). An enhanced Mayfly optimization algorithm based on orth
   Engineering_, 50(2), 719–739, DOI 10.1007/s13369-024-08899-6 (online 2024)
 - GSASMA: _AIP Advances_, 2022, DOI 10.1063/5.0108278
 - HMMA: _Electronics Letters_, 2022, DOI 10.1049/ell2.12568
-- MPMA: _IEEE Access_, 2022
+- MPMA: Guo et al. (paper acronym MMA), _IEEE Access_ 10 (2022), 36335–36349,
+  DOI 10.1109/ACCESS.2022.3160714
 - AOBLMOA: Zhao et al. (2023). _Biomimetics_, 8(4), 381. DOI 10.3390/biomimetics8040381
 
 See [Research References](docs/research.md) for complete citations.

@@ -144,7 +144,7 @@ The API examples, quick-reference guide, and parameter documentation are complet
         IDs in fixed-run output.
   - [ ] Obtain author or archival answers for every DESMA clarification blocker,
         validate the supplied code/data, then add an exact preset and comparison.
-  - [ ] Source-audit and encode paper-specific protocols/reference outputs for
+  - [x] Source-audit and encode paper-specific protocols/reference outputs for
         EOBBMA, MPMA, and AOBLMOA.
     - [x] Resolve EOBBMA's version-of-record identity and encode its public
           wireless-sensor protocol plus all 776 aggregate/statistical cells
@@ -158,7 +158,17 @@ The API examples, quick-reference guide, and parameter documentation are complet
           close the missing run-count, seed, objective-weight, population-sex,
           evaluation-accounting, and sensor-coordinate gates before adding an
           exact preset or comparison.
-    - [ ] Source-audit MPMA's paper protocol and encode its published outputs.
+    - [x] Resolve MPMA's paper identity and MMA-versus-MPMA naming; encode the
+          30-run benchmark protocol, 35-run governor protocol, and all 110
+          published MMA aggregate/performance cells from Tables 5-7 and 9-10
+          in `docs/reference-data/mpma-2022-tables1-10.json`. Preserve the
+          malformed Table 3 Foxholes range, inconsistent Table 7 F18
+          best/median cells, missing Table 9 success rate, and figure-only
+          outputs without making a reproduction claim.
+    - [ ] Obtain MPMA author code, raw trials, Simulink model, or clarification
+          for `a4`, the median population pool, genetic parameters,
+          initialization/boundaries, evaluation accounting, seeds, and source
+          inconsistencies before adding an exact preset or comparison.
     - [x] Source-audit AOBLMOA's open article and paper-linked MATLAB code;
           encode the 30-run, 1,000-iteration Tables 5-6 protocol and all 19
           published AOBLMOA rows in

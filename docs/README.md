@@ -48,8 +48,8 @@ Detailed guides for each algorithm variant:
    - Annealed velocity and golden-sine updates for both populations
 
 6. **[MPMA](algorithms/mpma.md)** - Median Position-Based
-   - Best for: Stable convergence
-   - +10-30% improvement on ill-conditioned problems
+   - Paper scope: 18 classic functions and hydro-turbine PID tuning
+   - Paper reports better performance on 16 of 18 functions; raw runs are unavailable
 
 7. **[AOBLMOA](algorithms/aoblmoa.md)** - Aquila Optimizer-Based Learning
    - Best for: Adaptive multi-phase optimization

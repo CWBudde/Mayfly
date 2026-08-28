@@ -239,6 +239,44 @@ cell-by-cell protocol comparison, and no public author implementation or batch
 driver has been identified. Mayfly does not yet implement the paper's WSN
 objective or expose an EOBBMA paper preset.
 
+## MPMA protocol audit
+
+The library name MPMA corresponds to the paper's “Mayfly Algorithm Based on
+Median Position,” which the authors abbreviate as MMA. The exact article is
+Guo Lei, Xu Chang, Yu Tianhang, and Wumaier Tuerxun, “An Improved Mayfly
+Optimization Algorithm Based on Median Position and Its Application in the
+Optimization of PID Parameters of Hydro-Turbine Governor,” _IEEE Access_ 10
+(2022), 36335–36349, DOI
+[`10.1109/ACCESS.2022.3160714`](https://doi.org/10.1109/ACCESS.2022.3160714).
+
+The complete public protocol and every tabular MMA output are transcribed in
+the [machine-readable Tables 1–10 reference](reference-data/mpma-2022-tables1-10.json).
+The benchmark experiment uses 20 male and 20 female mayflies, 30 independent
+runs, and function-specific limits: 100,000 evaluations for F1–F10, 10,000 for
+F11, 1,000 for F12–F15, and 2,000 for F16–F18. The artifact contains all 90 MMA
+Best/Worst/Average/Median/Std cells from Tables 5–7. It also records the
+35-run, 50-iteration hydro-turbine governor protocol, both Table 8 working
+conditions, all 16 MMA ITAE/iteration cells from Table 9, and all four MMA
+overshoot/adjustment-time cells from Table 10.
+
+This is source transcription, not a reproduction preset. Equation 16 introduces
+the median-attraction coefficient `a4`, but Table 4 does not assign it a value.
+The paper also omits the offspring count, crossover-coefficient range, mutation
+scale, initialization details, boundary handling, seeds, raw runs, and exact
+objective-call accounting. Its prose does not settle whether the fitness-ranked
+median covers males only or both sexes. The Simulink model, solver settings, and
+raw governor trials are not publicly archived. No paper-linked or public author
+implementation was found in the code/data registries audited on 28 August 2026.
+
+The artifact preserves three source problems instead of guessing corrections:
+Table 3 prints the F10 Foxholes range as `[65.536,65.536]`; Table 7 prints an
+F18 MMA median better than its “best”; and the Table 9 prose promises a success
+rate that the table does not contain. Figures 1–4 and 8–9 remain identified as
+figure-only outputs and are not converted into invented raw samples. Mayfly's
+`MedianWeight = 0.5`, male-only median pool, alternative gravity schedules, and
+weighted median are therefore documented compatibility choices or extensions,
+not paper-derived settings.
+
 ## Output contract
 
 Each benchmark/dimension pair produces a raw CSV and the complete comparison

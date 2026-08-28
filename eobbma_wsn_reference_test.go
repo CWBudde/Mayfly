@@ -130,6 +130,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 		reference.ProblemMapping.FitnessSemantics != "minimum value obtained by Equation 17" {
 		t.Fatalf("unexpected Table 2 problem mapping: %+v", reference.ProblemMapping)
 	}
+
 	wantAlgorithmParameters := map[string][]string{
 		"EOBBMA": {"population size = 40"},
 		"MA":     {"population size = 40", "alpha1 = 1", "alpha2 = 1.5", "beta = 2", "d = 0.1", "fl = 0.1"},
@@ -179,8 +180,11 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 	}
 
 	for caseIndex := range 8 {
-		fitnessCase := reference.Table5.Cases[caseIndex]
-		metricsCase := reference.Table6.Cases[caseIndex]
+		var (
+			fitnessCase = reference.Table5.Cases[caseIndex]
+			metricsCase = reference.Table6.Cases[caseIndex]
+		)
+
 		if fitnessCase.Case != caseIndex+1 || metricsCase.Case != caseIndex+1 ||
 			len(fitnessCase.Results) != 8 || len(metricsCase.Results) != 8 {
 			t.Fatalf("unexpected result case %d", caseIndex+1)
@@ -197,6 +201,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 			if len(fitness) != 5 || len(metrics) != 6 {
 				t.Fatalf("case %d %s result width", caseIndex+1, algorithm)
 			}
+
 			if fitness[0] > fitness[2] || fitness[2] > fitness[1] || fitness[3] < 0 ||
 				fitness[4] < 1 || fitness[4] > 8 || fitness[4] != math.Trunc(fitness[4]) {
 				t.Errorf("case %d %s invalid fitness summary %v", caseIndex+1, algorithm, fitness)
@@ -206,7 +211,9 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 			if seenRanks[rank] {
 				t.Errorf("case %d duplicate rank %d", caseIndex+1, rank)
 			}
+
 			seenRanks[rank] = true
+
 			if algorithm == "EOBBMA" && rank != 1 {
 				t.Errorf("case %d EOBBMA rank = %d, want 1", caseIndex+1, rank)
 			}
@@ -215,6 +222,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 				metrics[2] < 0 || metrics[2] > 1 || metrics[3] < 0 || metrics[4] < 0 || metrics[5] < 0 {
 				t.Errorf("case %d %s invalid deployment metrics %v", caseIndex+1, algorithm, metrics)
 			}
+
 			for _, value := range fitness {
 				hashFloat(value)
 			}
@@ -230,6 +238,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 		len(reference.Table7.PValues) != 8 {
 		t.Fatalf("unexpected Table 7 layout")
 	}
+
 	for caseIndex, result := range reference.Table7.PValues {
 		if result.Case != caseIndex+1 || len(result.Values) != 7 {
 			t.Fatalf("unexpected Table 7 case %d", caseIndex+1)
@@ -240,6 +249,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 			_, _ = hash.Write([]byte{0})
 		}
 	}
+
 	if reference.Table7.PValues[0].Values[4] != "1.0354–04" {
 		t.Errorf("Table 7 malformed source cell was normalized")
 	}
@@ -248,6 +258,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 		len(reference.Table8.FriedmanMeanRank) != 8 || len(reference.Table8.Rank) != 8 {
 		t.Fatalf("unexpected Table 8 layout")
 	}
+
 	meanRankSum := 0.0
 	seenOverallRanks := make([]bool, 9)
 
@@ -264,6 +275,7 @@ func TestEOBBMA2025Tables2To8ReferenceData(t *testing.T) {
 		hashFloat(reference.Table8.FriedmanMeanRank[index])
 		hashFloat(rank)
 	}
+
 	if meanRankSum != 36 || reference.Table8.Rank[0] != 1 {
 		t.Errorf("unexpected Friedman summary")
 	}

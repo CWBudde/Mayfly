@@ -2,102 +2,70 @@
 
 ## Research Reference
 
-**An Improved Mayfly Optimization Algorithm Based on Median Position (2022). IEEE Access**
+Guo, L.; Xu, C.; Yu, T.; Tuerxun, W. “An Improved Mayfly Optimization
+Algorithm Based on Median Position and Its Application in the Optimization of
+PID Parameters of Hydro-Turbine Governor.” _IEEE Access_ **2022**, 10,
+36335–36349. DOI:
+[10.1109/ACCESS.2022.3160714](https://doi.org/10.1109/ACCESS.2022.3160714).
+
+The paper abbreviates the method as MMA. Mayfly calls it MPMA to avoid an
+ambiguous acronym.
 
 ## Overview
 
-MPMA enhances convergence stability by using the median position of the population as a guide, combined with non-linear gravity coefficients for better exploration-exploitation balance. This variant excels on control system problems and optimization tasks requiring stable, predictable convergence.
+MPMA adds a fitness-ranked middle position and a nonlinear gravity coefficient
+to standard MA. The paper evaluates it on classic benchmarks and hydro-turbine
+governor PID tuning. Those published results are evidence for that protocol,
+not a general performance guarantee.
 
 ## Key Innovations
 
 ### 1. Median Position Guidance
 
-The **median position** provides more robust population guidance than the mean:
+The paper sorts mayflies by objective value. For an odd population it takes the
+middle-ranked mayfly's complete position vector; for an even population it
+averages the complete position vectors of the two middle-ranked mayflies. It is
+not a coordinate-wise population median.
 
 **Mathematical Foundation**:
 
 ```
-For each dimension i:
-  median_i = median(population positions in dimension i)
+Sort mayflies by objective value.
+pm = x[(n+1)/2]                         when n is odd
+pm = (x[n/2] + x[n/2+1]) / 2           when n is even
 
 Velocity update includes median attraction:
   v = g*v + a1*exp(-β*r_pb²)*(pbest - x)
         + a2*exp(-β*r_gb²)*(gbest - x)
-        + w*exp(-β*r_med²)*(median - x)
+        + a4*exp(-β*r_med²)*(pm - x)
 
 where:
   r_pb  = distance to personal best
   r_gb  = distance to global best
   r_med = distance to median position
-  w     = median weight (default: 0.5)
+  a4    = median-attraction coefficient
 ```
 
-**Properties**:
-
-- **Robustness to outliers**: Median is less affected by extreme values
-- **Stable convergence**: Reduces oscillatory behavior during optimization
-- **Better for heterogeneous populations**: Works well when fitness values vary widely
-
-**Applied to**: Male velocity updates throughout optimization
+The paper does not publish `a4` and does not clearly state whether `n` covers
+males only or both sexes. Mayfly's `MedianWeight = 0.5` and male-only pool are
+compatibility choices, not exact paper settings.
 
 ### 2. Non-linear Gravity Coefficient
 
-**Gravity coefficient** controls exploration-exploitation transition with three options:
-
-#### Linear Gravity (default)
+The paper's schedule is:
 
 ```
-g(t) = 1 - t/T
+g(t) = 0.5*sqrt(1-(t/T)^2) + 0.4
 ```
 
-- **Characteristics**: Simple, predictable linear decay
-- **Best for**: General problems, initial testing
-- **Behavior**: Steady transition from exploration to exploitation
-
-#### Exponential Gravity
-
-```
-g(t) = exp(-4*t/T)
-```
-
-- **Characteristics**: Fast early decay, slow late decay
-- **Best for**: Problems requiring quick exploitation
-- **Behavior**: Rapid convergence, good for unimodal functions
-
-#### Sigmoid Gravity
-
-```
-g(t) = 1 / (1 + exp(10*(t/T - 0.5)))
-```
-
-- **Characteristics**: S-curve with smooth transition
-- **Best for**: Problems needing balanced phase transition
-- **Behavior**: Gradual exploration→exploitation shift
-
-**Visual comparison** (iteration progress 0% → 100%):
-
-```
-Linear:      ╲                (steady decline)
-             ╲
-              ╲
-               ╲___
-
-Exponential: ╲╲               (fast then slow)
-              ╲
-               ╲
-                ╲___
-
-Sigmoid:     ╲                (slow-fast-slow)
-              ╲╲
-               ╲╲
-                ╲___
-```
-
-**Applied to**: Velocity damping (replaces standard g parameter)
+It decreases from 0.9 to 0.4. `GravityPaper` is the default. Linear,
+exponential, and sigmoid schedules remain available as explicit library
+extensions.
 
 ### 3. Weighted Median (Optional)
 
-**Fitness-weighted median** emphasizes better solutions:
+Fitness-weighted median guidance is a Mayfly extension and is not part of the
+paper protocol:
 
 - **Weight calculation**: Better fitness → higher weight
 - **Weighted median**: Cumulative weight ≥ 50% determines median
@@ -113,7 +81,14 @@ Regular median: 0.3
 Weighted median: ~0.2 (shifted toward better solution x1)
 ```
 
-**Applied to**: Median calculation when `UseWeightedMedian = true`
+Enable it only for an exploratory library experiment, not for a paper
+reproduction.
+
+The complete source-audited protocol and all 110 tabular MMA output cells are
+available in the
+[machine-readable reference](../reference-data/mpma-2022-tables1-10.json).
+The artifact records the remaining exact-reproduction gates and makes no
+reproduction claim.
 
 ## Usage Examples
 
@@ -289,18 +264,21 @@ func main() {
 ## MPMA Parameters
 
 - `UseMPMA`: Enable MPMA variant (default: false)
-- `MedianWeight`: Influence of median position on velocity (default: 0.5, range: 0-1)
+- `MedianWeight`: Influence of the ranked median position (default: 0.5,
+  range: 0-1). The paper's corresponding `a4` is unpublished.
 - `GravityType`: Type of gravity coefficient (default: "paper")
-  - Options: "linear", "exponential", "sigmoid"
-- `UseWeightedMedian`: Use fitness-weighted median (default: false)
+  - Options: "paper", "linear", "exponential", "sigmoid"
+  - Only "paper" is the published MPMA schedule.
+- `UseWeightedMedian`: Use the library's fitness-weighted extension (default:
+  false)
 
-## Benefits
+## Published Evidence
 
-- **10-30% improvement** on problems with outliers or noisy landscapes
-- **More stable**: Lower variance across multiple runs
-- **Robust convergence**: Works well on ill-conditioned problems
-- **Minimal overhead**: Same function evaluations as Standard MA
-- **Easy tuning**: Only two parameters (MedianWeight, GravityType)
+The source paper reports MMA aggregates for 18 classic functions and two
+hydro-turbine governor conditions. It reports stronger results on 16 of the 18
+functions, but does not publish seeds or raw trials. Treat those tables as
+descriptive evidence for the reported setup, not as universal improvement
+percentages or variance guarantees.
 
 ## When to Use MPMA
 
@@ -336,14 +314,14 @@ config.MedianWeight = 0.2  // Weak median influence
 
 ### Gravity Type Selection
 
-**Linear** (default - most problems):
+**Paper schedule** (default):
 
 ```go
 config.GravityType = "paper"
 ```
 
-- Predictable, balanced exploration-exploitation
-- Good starting point for new problems
+- Exact published gravity equation
+- Required when investigating the paper protocol
 
 **Exponential** (fast convergence):
 
@@ -412,22 +390,13 @@ config.UseWeightedMedian = true
 - Need systematic parameter space exploration
 - High dimensionality (20D+)
 
-## Performance
+## Reproduction Status
 
-**Rosenbrock (D=10, narrow valley)**:
-
-- Standard MA: 10-50 (high variance)
-- MPMA: 1-10 (lower variance, more stable)
-
-**BentCigar (D=10, ill-conditioned)**:
-
-- Standard MA: 100-1000
-- MPMA: 10-100 (better handling of ill-conditioning)
-
-**Stability across runs** (30 runs):
-
-- Standard MA: Std dev = 15-25
-- MPMA: Std dev = 5-10 (60% reduction in variance)
+No exact preset or published comparison is exposed. The missing `a4`, median
+population pool, genetic-operator parameters, initialization and boundary
+semantics, function-evaluation accounting, seeds, raw runs, and Simulink model
+must be resolved first. See the
+[paper-reproduction audit](../paper-reproduction.md#mpma-protocol-audit).
 
 ## Related Documentation
 

@@ -154,31 +154,43 @@ artificial gender mutation to offspring pairs.
 
 ## MPMA - Median Position-Based
 
-**An Improved Mayfly Optimization Algorithm Based on Median Position (2022). IEEE Access**
+Guo, L.; Xu, C.; Yu, T.; Tuerxun, W. “An Improved Mayfly Optimization
+Algorithm Based on Median Position and Its Application in the Optimization of
+PID Parameters of Hydro-Turbine Governor.” _IEEE Access_ **2022**, 10,
+36335–36349. DOI:
+[10.1109/ACCESS.2022.3160714](https://doi.org/10.1109/ACCESS.2022.3160714).
+
+The paper calls the method MMA; this library uses MPMA to disambiguate it.
 
 ### Key Contributions
 
-- Median position guidance for robust convergence
-- Non-linear gravity coefficients (linear, exponential, sigmoid)
-- Weighted median option for elite emphasis
-- 10-30% improvement on ill-conditioned problems
-- Lower variance across runs (more stable)
+- Ranks mayflies by objective value and uses the middle-ranked position vector,
+  or the average of the two middle-ranked vectors, in male velocity updates
+- Adds the nonlinear gravity schedule
+  `g(t) = 0.5*sqrt(1-(t/T)^2)+0.4`
+- Evaluates 18 classic functions and a hydro-turbine governor PID model
 
 ### Technical Details
 
-- **Median guidance**: More robust than mean to outliers
-- **Gravity types**:
-  - Linear: g(t) = 1 - t/T
-  - Exponential: g(t) = exp(-4t/T)
-  - Sigmoid: g(t) = 1/(1 + exp(10(t/T - 0.5)))
-- **Weighted median**: Fitness-weighted for elite emphasis
+- The benchmark protocol uses 20 males, 20 females, 30 runs, and
+  function-specific evaluation budgets from 1,000 to 100,000.
+- The governor protocol uses 35 runs and 50 iterations under two operating
+  conditions.
+- The paper does not report `a4`, the median pool, genetic parameters, seeds,
+  raw runs, or exact evaluation accounting, so no exact preset is available.
+- Linear, exponential, and sigmoid gravity choices and the weighted median are
+  library extensions. `MedianWeight = 0.5` and the male-only median pool are
+  compatibility choices, not values resolved by the paper.
 
-### Target Applications
+All 110 tabular MMA output cells and the public protocol are preserved in
+[`mpma-2022-tables1-10.json`](reference-data/mpma-2022-tables1-10.json), along
+with the printed Foxholes-range and F18 best/median inconsistencies. The
+artifact is explicitly a source transcription, not a reproduction.
+
+### Paper Application
 
 - Control system optimization (PID tuning)
-- System identification
-- Problems requiring stable, predictable convergence
-- Ill-conditioned optimization (narrow valleys)
+- Hydro-turbine governor frequency-disturbance response
 
 ---
 
@@ -278,7 +290,7 @@ directly comparable across variants:
 | OLCE-MA | Highly Multimodal | 15-30%          | Dimension-dependent |
 | EOBBMA  | Deceptive         | 55%+            | +1.5% evals         |
 | GSASMA  | Multimodal        | Paper-dependent | baseline batches    |
-| MPMA    | Ill-conditioned   | 10-30%          | 0% (baseline)       |
+| MPMA    | Classic/PID paper cases | Better on 16/18 paper functions | Exact accounting unpublished |
 | AOBLMOA | Complex/Adaptive  | Variable        | +20-30% evals       |
 
 ### Common Benchmark Functions

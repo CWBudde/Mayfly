@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "protocol_id": "mpma-2022-tables1-10",
+  "status": "source_transcribed_non_reproduction",
+  "reproduction_claim": false,
+  "scope": "The paper's MMA protocol plus every published MMA aggregate/performance cell in Tables 5-7, 9, and 10",
+  "source": {
+    "title": "An Improved Mayfly Optimization Algorithm Based on Median Position and Its Application in the Optimization of PID Parameters of Hydro-Turbine Governor",
+    "authors": [
+      "Guo Lei",
+      "Xu Chang",
+      "Yu Tianhang",
+      "Wumaier Tuerxun"
+    ],
+    "journal": "IEEE Access",
+    "volume": 10,
+    "pages": "36335-36349",
+    "received_date": "2022-03-02",
+    "accepted_date": "2022-03-14",
+    "publication_date": "2022-03-21",
+    "current_version_date": "2022-04-08",
+    "doi": "10.1109/ACCESS.2022.3160714",
+    "license": "CC BY-NC-ND 4.0",
+    "protocol_tables": [1, 2, 3, 4, 8],
+    "result_tables": [5, 6, 7, 9, 10],
+    "urls": {
+      "doi": "https://doi.org/10.1109/ACCESS.2022.3160714",
+      "publisher": "https://ieeexplore.ieee.org/document/9738632",
+      "publisher_pdf": "https://ieeexplore.ieee.org/ielx7/6287639/9668973/09738632.pdf"
+    }
+  },
+  "naming": {
+    "paper_acronym": "MMA",
+    "paper_expansion": "Mayfly Algorithm Based on Median Position",
+    "library_acronym": "MPMA",
+    "note": "Mayfly uses MPMA to avoid the paper acronym's collision with other algorithms; the paper itself consistently calls this method MMA."
+  },
+  "public_source_audit": {
+    "audit_date": "2026-08-28",
+    "version_of_record_available": true,
+    "paper_linked_code_or_data": false,
+    "public_author_implementation_found": false,
+    "public_raw_runs_found": false,
+    "public_simulink_model_found": false,
+    "registries_checked": [
+      "GitHub",
+      "Zenodo",
+      "Mendeley Data",
+      "Figshare",
+      "OSF"
+    ]
+  },
+  "benchmark_execution": {
+    "replications": 30,
+    "male_population_size": 20,
+    "female_population_size": 20,
+    "offspring_count": null,
+    "seed_schedule": null,
+    "software": "MATLAB",
+    "software_version": null,
+    "machine": "AMD Ryzen eight-core 3.40 GHz desktop, 8 GB RAM",
+    "maximum_function_evaluations": {
+      "f1-f10": 100000,
+      "f11": 10000,
+      "f12-f15": 1000,
+      "f16-f18": 2000
+    },
+    "function_evaluation_accounting": null,
+    "raw_runs_available": false
+  },
+  "reported_mma_parameters": {
+    "a1_personal_learning": 1.0,
+    "a2_global_learning": 1.5,
+    "beta_distance_sight": 2.0,
+    "nuptial_dance": 5.0,
+    "random_flight": 1.0,
+    "gravity_formula": "g(t) = 0.5*sqrt(1-(t/Maxt)^2)+0.4",
+    "gravity_at_t0": 0.9,
+    "gravity_at_maxt": 0.4,
+    "a4_median_attraction": null,
+    "crossover_coefficient_range": null,
+    "mutation_sigma": null,
+    "initial_velocity_distribution": null,
+    "boundary_handling": null
+  },
+  "median_definition": {
+    "ranking": "sort mayfly individuals by objective-function value",
+    "odd_population": "position vector of rank (n+1)/2",
+    "even_population": "coordinate-wise average of the position vectors at ranks n/2 and n/2+1",
+    "coordinate_wise_population_median": false,
+    "population_pool": null,
+    "population_pool_ambiguity": "The prose says all mayfly individuals, Equation 15 uses male-position notation x, and Equation 16 applies the result only to male velocity; it does not state whether n covers males alone or both sexes."
+  },
+  "benchmark_suite": [
+    {"id": "f1", "name": "Sphere", "dimension": 30, "range_printed": "[-100,100]", "optimum": 0, "result_table": 5, "maximum_function_evaluations": 100000},
+    {"id": "f2", "name": "Schwefel 1.2", "dimension": 30, "range_printed": "[-100,100]", "optimum": 0, "result_table": 5, "maximum_function_evaluations": 100000},
+    {"id": "f3", "name": "Schwefel 2.21", "dimension": 30, "range_printed": "[-100,100]", "optimum": 0, "result_table": 5, "maximum_function_evaluations": 100000},
+    {"id": "f4", "name": "Rosenbrock", "dimension": 30, "range_printed": "[-30,30]", "optimum": 0, "result_table": 5, "maximum_function_evaluations": 100000},
+    {"id": "f5", "name": "Step", "dimension": 30, "range_printed": "[-100,100]", "optimum": 0, "result_table": 5, "maximum_function_evaluations": 100000},
+    {"id": "f6", "name": "Schwefel", "dimension": 30, "range_printed": "[-500,500]", "optimum": -12569.5, "result_table": 6, "maximum_function_evaluations": 100000},
+    {"id": "f7", "name": "Griewank", "dimension": 30, "range_printed": "[-600,600]", "optimum": 0, "result_table": 6, "maximum_function_evaluations": 100000},
+    {"id": "f8", "name": "Penalized", "dimension": 30, "range_printed": "[-50,50]", "optimum": 0, "result_table": 6, "maximum_function_evaluations": 100000},
+    {"id": "f9", "name": "Penalized 2", "dimension": 30, "range_printed": "[-50,50]", "optimum": 0, "result_table": 6, "maximum_function_evaluations": 100000},
+    {"id": "f10", "name": "Foxholes", "dimension": 2, "range_printed": "[65.536,65.536]", "optimum": 0.998, "result_table": 7, "maximum_function_evaluations": 100000},
+    {"id": "f11", "name": "Kowalik", "dimension": 4, "range_printed": "[-5,5]", "optimum": 0.0003075, "result_table": 7, "maximum_function_evaluations": 10000},
+    {"id": "f12", "name": "Six Hump Camel", "dimension": 2, "range_printed": "[-5,5]", "optimum": -1.0316, "result_table": 7, "maximum_function_evaluations": 1000},
+    {"id": "f13", "name": "Branin", "dimension": 2, "range_printed": "[-5,10]x[0,15]", "optimum": 0.398, "result_table": 7, "maximum_function_evaluations": 1000},
+    {"id": "f14", "name": "GoldStein-Price", "dimension": 2, "range_printed": "[-2,2]", "optimum": 3, "result_table": 7, "maximum_function_evaluations": 1000},
+    {"id": "f15", "name": "Hartman 3", "dimension": 3, "range_printed": "[0,1]", "optimum": -3.86, "result_table": 7, "maximum_function_evaluations": 1000},
+    {"id": "f16", "name": "Hartman 6", "dimension": 6, "range_printed": "[0,1]", "optimum": -3.322, "result_table": 7, "maximum_function_evaluations": 2000},
+    {"id": "f17", "name": "Shekel 5", "dimension": 4, "range_printed": "[0,10]", "optimum": -10.1532, "result_table": 7, "maximum_function_evaluations": 2000},
+    {"id": "f18", "name": "Shekel 7", "dimension": 4, "range_printed": "[0,10]", "optimum": -10.4028, "result_table": 7, "maximum_function_evaluations": 2000}
+  ],
+  "benchmark_statistics_order": [
+    "best",
+    "worst",
+    "average",
+    "median",
+    "standard_deviation"
+  ],
+  "published_mma_benchmark_results": {
+    "f1": [1.0804e-43, 1.3864e-36, 6.21894e-38, 7.6066e-40, 2.53562e-37],
+    "f2": [2.6675e-13, 8.0789e-10, 8.58719e-11, 9.51475e-12, 2.04735e-10],
+    "f3": [0.00321, 0.1339, 0.069699367, 0.0668895, 0.031902923],
+    "f4": [0.9458, 21.369, 13.03488333, 13.698, 3.814522529],
+    "f5": [0, 0, 0, 0, 0],
+    "f6": [-12489.2368, -8656.8406, -11043.75613, -11226.37685, 1071.345463],
+    "f7": [0, 0, 0, 0, 0],
+    "f8": [1.5705e-32, 8.6731e-22, 2.89113e-23, 1.6028e-32, 1.58348e-22],
+    "f9": [1.3498e-32, 9.2384e-32, 1.74423e-32, 1.3498e-32, 1.58789e-32],
+    "f10": [0.998, 0.998, 0.998, 0.998, 0],
+    "f11": [0.00030749, 0.00030749, 0.00030749, 0.00030749, 0],
+    "f12": [-1.0316, -1.0316, -1.0316, -1.0316, 0],
+    "f13": [0.39789, 0.39789, 0.39789, 0.39789, 0],
+    "f14": [3, 3, 3, 3, 0],
+    "f15": [-3.862789763, -3.862776763, -3.862780033, -3.862779263, 2.80829e-6],
+    "f16": [-3.321996147, -3.321988758, -3.321994303, -3.321994936, 1.51728e-6],
+    "f17": [-10.15319969, -2.682860392, -9.05913182, -10.15319967, 2.404293121],
+    "f18": [-10.40280066, -2.765897324, -9.292606962, -10.40294052, 2.551279479]
+  },
+  "governor_protocol": {
+    "objective": "J_ITAE = integral from 0 to Ts of t*abs(e(t)) dt",
+    "frequency_disturbance_percent": 10,
+    "kp_bounds": [0, 5],
+    "ki_bounds": [0, 5],
+    "kd_bounds": [0, 5],
+    "simulation_time_seconds": 20,
+    "maximum_iterations": 50,
+    "replications": 35,
+    "seed_schedule": null,
+    "raw_runs_available": false,
+    "table8_parameter_order": ["Ty", "Ta", "Tw", "en", "eh", "ey", "eqh", "eqy"],
+    "table8_working_conditions": {
+      "1": [0.05, 10.54, 1.6, 1.3, 0.86, 1.12, 0.18, 1.4],
+      "2": [0.05, 10.54, 2.2, 1.6, 1.43, 0.65, 0.4, 0.85]
+    }
+  },
+  "governor_itae_statistics_order": [
+    "best",
+    "worst",
+    "average",
+    "median",
+    "standard_deviation"
+  ],
+  "governor_optimal_iteration_statistics_order": [
+    "minimum",
+    "maximum",
+    "average"
+  ],
+  "published_mma_governor_table9": {
+    "working_condition_1": {
+      "itae": [0.205412036, 0.205412056, 0.205412047, 0.205412046, 4.68968e-9],
+      "iterations_to_within_0.1_percent": [12, 20, 16.53]
+    },
+    "working_condition_2": {
+      "itae": [0.713073506, 0.713075526, 0.713074031, 0.713073523, 8.02469e-7],
+      "iterations_to_within_0.1_percent": [13, 21, 18.143]
+    }
+  },
+  "governor_performance_statistics_order": [
+    "overshoot_percent",
+    "adjustment_time_seconds"
+  ],
+  "published_mma_governor_table10": {
+    "working_condition_1": [3.1, 5.35],
+    "working_condition_2": [3.2, 8.135]
+  },
+  "source_inconsistencies": [
+    {
+      "id": "foxholes_range_missing_minus",
+      "location": "Table 3, F10",
+      "printed": "[65.536,65.536]",
+      "note": "The standard Foxholes domain normally has a negative lower bound; this artifact preserves the version of record instead of repairing it."
+    },
+    {
+      "id": "f18_best_median_order",
+      "location": "Table 7, F18, MMA",
+      "printed": "best=-10.40280066; median=-10.40294052",
+      "note": "For a minimization problem the printed median is better than the printed best. Both cells are preserved verbatim."
+    },
+    {
+      "id": "governor_success_rate_missing",
+      "location": "Table 9 surrounding prose",
+      "printed": "The prose says success rate is listed, but Table 9 contains no success-rate row.",
+      "note": "No success-rate value is inferred from the aggregates."
+    }
+  ],
+  "exact_reproduction_gates": [
+    {"id": "a4_median_attraction", "closed": false, "detail": "Equation 16 defines a4 but Table 4 does not report its value."},
+    {"id": "median_population_pool", "closed": false, "detail": "The paper does not resolve whether the fitness-ranked median covers males only or both sexes."},
+    {"id": "genetic_operator_parameters", "closed": false, "detail": "The offspring count, crossover-coefficient range, and Gaussian mutation scale are not reported."},
+    {"id": "initialization_and_boundaries", "closed": false, "detail": "Initial velocity sampling and boundary handling are not reported."},
+    {"id": "evaluation_accounting", "closed": false, "detail": "The benchmark budget is stated in FEs, but the paper does not define counting or partial-generation stopping."},
+    {"id": "seeds_and_raw_runs", "closed": false, "detail": "Seeds, generator state, and raw benchmark/governor trials are unavailable."},
+    {"id": "governor_model", "closed": false, "detail": "The Simulink model, solver configuration, step size, and PID saturation settings are unavailable."},
+    {"id": "source_inconsistencies", "closed": false, "detail": "The printed F10 range, F18 ordering, and missing governor success-rate output require source data or author clarification."}
+  ],
+  "current_library_status": {
+    "exact_preset_available": false,
+    "published_comparison_available": false,
+    "compatible_fields": [
+      "20 male and 20 female defaults",
+      "a1=1",
+      "a2=1.5",
+      "beta=2",
+      "nuptial dance=5",
+      "random flight=1",
+      "paper nonlinear gravity schedule",
+      "fitness-ranked position-vector median"
+    ],
+    "documented_extensions_or_assumptions": [
+      "MedianWeight=0.5 is a library compatibility value for the unpublished a4.",
+      "The library computes the median from the male population only.",
+      "Linear, exponential, and sigmoid gravity schedules are library extensions.",
+      "Fitness-weighted median guidance is a library extension."
+    ]
+  },
+  "figure_only_outputs_not_digitized": [
+    "Figures 1-3 benchmark convergence curves",
+    "Figure 4 convergence-rate bars",
+    "Figure 8 governor average-best convergence curves",
+    "Figure 9 governor response curves"
+  ]
+}

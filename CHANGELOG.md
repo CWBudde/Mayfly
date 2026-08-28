@@ -9,6 +9,13 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable MPMA/MMA Tables 1-10 provenance with the 30-run,
+  function-evaluation-limited benchmark protocol, the 35-run governor
+  protocol, and all 110 published MMA aggregate/performance cells. The
+  artifact preserves the source's malformed Foxholes range, inconsistent F18
+  best/median values, and missing promised success rate while recording the
+  unpublished `a4`, median-pool, operator, seed, raw-data, and Simulink gates;
+  it makes no reproduction claim.
 - Machine-readable EOBBMA wireless-sensor provenance for the canonical
   version-of-record Tables 2-8: eight deployment scenarios, the reported
   40-member and 1,000-iteration settings, all 64 fitness summaries, all 64

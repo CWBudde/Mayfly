@@ -86,7 +86,11 @@ The API examples, quick-reference guide, and parameter documentation are complet
       problem metadata, all variant heuristics and overhead hints, checked APIs,
       automatic-classifier limits, budget-matched validation, common mistakes,
       and a CI-tested reproducibly seeded example.
-- [ ] Write a parameter-tuning tutorial.
+- [x] Write a parameter-tuning tutorial covering baseline-first experimental
+      design, parameter prioritization and coupling, checked heuristic
+      auto-tuning limits, paired seeds, exact evaluation budgets, held-out
+      validation, reproducible configuration handoff, common mistakes, and a
+      CI-tested runnable population-size sweep.
 - [ ] Write a custom-objective-function guide.
 
 #### Real-world examples

@@ -208,5 +208,5 @@ execution, statistical output, exact evaluation budgets, and exports.
   only.
 
 After choosing a variant, keep its defaults initially. Change parameters only
-through repeated, budget-matched measurements; the next tutorial in the plan
-covers parameter tuning in detail.
+through repeated, budget-matched measurements; the
+[parameter-tuning tutorial](parameter-tuning.md) provides a complete workflow.

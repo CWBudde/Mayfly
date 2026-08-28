@@ -6,6 +6,7 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 
 - **New to Mayfly?** Start with [Getting Started](getting-started.md)
 - **Choosing a variant?** Follow the [Algorithm-selection Guide](algorithm-selection.md)
+- **Tuning parameters?** Use the [Parameter-tuning Tutorial](parameter-tuning.md)
 - **Want to understand algorithms?** Check [Algorithm Documentation](#algorithm-documentation)
 - **Need an API summary?** Open the [API Quick Reference](api/quick-reference.md)
 - **Looking for benchmarks?** Visit [Benchmark Functions](benchmarks.md)
@@ -29,6 +30,11 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
   - Variant heuristics and score interpretation
   - Automatic-classifier limits
   - Paired, evaluation-budget-matched comparisons
+- **[Parameter-tuning Tutorial](parameter-tuning.md)** - Tune configurations with held-out validation
+  - Baseline-first, one-parameter experiments
+  - Paired seeds and exact evaluation budgets
+  - Heuristic auto-tuning limits
+  - CI-tested population-size sweep
 
 ### Algorithm Documentation
 
@@ -169,6 +175,7 @@ Complete API reference:
 
 **Tune parameters:**
 
+- [Parameter-tuning Tutorial](parameter-tuning.md)
 - [Configuration Guide](api/configuration.md)
 - Individual algorithm docs (parameter tuning sections)
 
@@ -184,6 +191,7 @@ Complete API reference:
 | quick-reference.md      | ~230  | Compact API map     |
 | getting-started.md      | ~190  | First optimization  |
 | algorithm-selection.md  | ~200  | Variant selection   |
+| parameter-tuning.md     | ~300  | Empirical tuning    |
 | benchmarks.md           | ~410  | Function reference  |
 | research.md             | ~350  | Academic citations  |
 | configuration.md        | ~470  | Parameter reference |

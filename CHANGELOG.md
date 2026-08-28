@@ -9,6 +9,10 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A parameter-tuning tutorial covering baseline-first experimental design,
+  parameter prioritization and coupling, heuristic auto-tuning limits, paired
+  seeds, exact evaluation budgets, held-out validation, configuration handoff,
+  and common mistakes, with a CI-tested runnable population-size sweep.
 - An algorithm-selection guide covering the selector's scalar-objective scope,
   problem metadata, variant heuristics, score interpretation, classifier
   limits, budget-matched empirical validation, and common mistakes, with a

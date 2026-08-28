@@ -191,6 +191,7 @@ selected worker count.
 
 ## Related Documentation
 
+- [Parameter-tuning Tutorial](../parameter-tuning.md)
 - [Configuration Guide](configuration.md)
 - [Unified Framework](unified-framework.md)
 - [Algorithm Variants](../algorithms/)

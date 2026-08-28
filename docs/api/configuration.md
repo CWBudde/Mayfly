@@ -571,6 +571,7 @@ config.ObjectiveFunc = maximize
 
 ## Related Documentation
 
+- [Parameter-tuning Tutorial](../parameter-tuning.md) - Empirical tuning workflow
 - [Unified Framework](unified-framework.md) - Builder API and algorithm selection
 - [Algorithm Comparison](comparison-framework.md) - Statistical comparison tools
 - [Getting Started](../getting-started.md) - Tutorial and examples

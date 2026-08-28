@@ -9,6 +9,12 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Machine-readable AOBLMOA Table 13 CEC2017 provenance with all 30 functions'
+  averages, standard deviations, per-function ranks, and both Friedman summary
+  rows for eight algorithms. The artifact preserves missing F2 comparator
+  values and apparent F14/F28 source anomalies, and records the omitted
+  dimension, evaluation budget, seeds, raw runs, and CEC2017 driver as explicit
+  non-reproduction gates.
 - Machine-readable AOBLMOA Tables 10-11 statistical provenance with all 49
   Wilcoxon rank-sum p-value and Friedman-rank rows, both published summaries,
   and explicit non-reproduction gates for missing raw samples/statistics code

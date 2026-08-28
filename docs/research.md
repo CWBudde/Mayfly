@@ -212,13 +212,19 @@ at dimensions 30, 50, and 100 are transcribed separately in
 Tables 10-11 add all 49 published Wilcoxon p-value and Friedman-rank rows and
 their summary rows in
 [`aoblmoa-2023-tables10-11.json`](reference-data/aoblmoa-2023-tables10-11.json).
-All three artifacts are explicitly non-reproducing because the paper-linked
+Table 13's 30 CEC2017 average, standard-deviation, and rank rows for all eight
+algorithms, plus its Friedman summaries, are in
+[`aoblmoa-2023-table13.json`](reference-data/aoblmoa-2023-table13.json).
+All four artifacts are explicitly non-reproducing because the paper-linked
 MATLAB repository omits the 30-run driver, statistics driver, seeds, raw
 outputs, and all benchmark evaluators except F1, and conflicts with the article
 on the population mean and Levy scale. The dimension artifact also preserves
 an apparent source inconsistency in Table 8's F10 standard deviation. The
 statistics artifact preserves the paper's unpaired rank-sum test and
 non-average tie ranks, which differ from Mayfly's paired signed-rank comparison.
+The CEC2017 artifact additionally records that the paper omits the dimension
+and evaluation budget, includes the officially removed F2 with missing AO/RSA
+values, and contains apparent F14/F28 numerical inconsistencies.
 
 ### Multi-Objective Helpers
 

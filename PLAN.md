@@ -167,7 +167,12 @@ The API examples, quick-reference guide, and parameter documentation are complet
           the source's rank-sum method and non-average tie ranks, and make no
           reproduction claim while raw samples and the statistics driver are
           unavailable.
-    - [ ] Encode AOBLMOA's CEC2017 outputs from Table 13.
+    - [x] Encode all 30 AOBLMOA CEC2017 average, standard-deviation, and
+          per-function rank rows plus both Friedman summary rows from Table 13
+          in `docs/reference-data/aoblmoa-2023-table13.json`. Preserve the
+          missing AO/RSA f2 values and printed ranks, the apparent f14/f28
+          inconsistencies, and make no reproduction claim while the dimension,
+          evaluation budget, seeds, raw runs, and CEC2017 driver are unavailable.
     - [ ] Encode AOBLMOA's CEC2020 real-world constrained outputs from Tables
           14-23.
   - [ ] Run and archive exact trials only for variants whose implementation and

@@ -112,14 +112,17 @@ The evaluation budget per iteration is `NPop + NPopF + 2·nc`.
 
 ### 3a. Reproduction status and open questions
 
-The paper's classic-function targets are now transcribed in three reference
-artifacts: Tables 5-6 provide the original 19-function results in
+The paper's published targets are now transcribed in four reference artifacts:
+Tables 5-6 provide the original 19-function results in
 [`aoblmoa-2023-tables5-6.json`](../reference-data/aoblmoa-2023-tables5-6.json),
 while Tables 7-9 provide all 30 AOBLMOA dimension-stability rows in
 [`aoblmoa-2023-tables7-9.json`](../reference-data/aoblmoa-2023-tables7-9.json),
 and Tables 10-11 provide all 49 Wilcoxon p-value and Friedman-rank rows plus
 their summaries in
 [`aoblmoa-2023-tables10-11.json`](../reference-data/aoblmoa-2023-tables10-11.json).
+Table 13 adds the 30-function, eight-algorithm CEC2017 averages, standard
+deviations, per-function ranks, and Friedman summaries in
+[`aoblmoa-2023-table13.json`](../reference-data/aoblmoa-2023-table13.json).
 The dimension artifact covers F1-F10 at 30, 50, and 100 dimensions, with five
 statistics per row. These artifacts were audited against both the open article
 and the paper-linked MATLAB repository at commit
@@ -131,6 +134,14 @@ and is preserved exactly rather than corrected speculatively. The Tables 10-11
 artifact preserves the paper's unpaired rank-sum terminology and its non-average
 handling of tied ranks; Mayfly's comparison framework instead performs paired
 signed-rank tests.
+
+The CEC2017 artifact cannot be used as an exact Mayfly comparison. The paper
+does not state the experiment dimension, evaluation budget, or seeds; its
+linked repository contains no CEC2017 evaluator or batch driver. It also
+includes the officially removed F2, with missing AO/RSA values assigned printed
+rank 8, whereas `CEC2017Suite` implements the final 29-function suite. The
+artifact preserves rather than repairs the printed F14 AOBLMOA standard
+deviation and F28 RSA average anomalies.
 
 The article, linked source, and current library also differ at several points:
 

@@ -7,6 +7,7 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 - **New to Mayfly?** Start with [Getting Started](getting-started.md)
 - **Choosing a variant?** Follow the [Algorithm-selection Guide](algorithm-selection.md)
 - **Tuning parameters?** Use the [Parameter-tuning Tutorial](parameter-tuning.md)
+- **Writing a real objective?** Read the [Custom-objective Guide](custom-objective-functions.md)
 - **Want to understand algorithms?** Check [Algorithm Documentation](#algorithm-documentation)
 - **Need an API summary?** Open the [API Quick Reference](api/quick-reference.md)
 - **Looking for benchmarks?** Visit [Benchmark Functions](benchmarks.md)
@@ -35,6 +36,11 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
   - Paired seeds and exact evaluation budgets
   - Heuristic auto-tuning limits
   - CI-tested population-size sweep
+- **[Custom-objective Guide](custom-objective-functions.md)** - Translate a real problem into a cost
+  - Scalar minimization, scaling, and maximization
+  - Heterogeneous, integer, and categorical variables
+  - Constraints, failure handling, and concurrency
+  - CI-tested nonlinear curve-fitting example
 
 ### Algorithm Documentation
 
@@ -160,6 +166,7 @@ Complete API reference:
 **Optimize a function:**
 
 - [Getting Started](getting-started.md#basic-usage)
+- [Custom-objective Guide](custom-objective-functions.md)
 - [API Quick Reference](api/quick-reference.md#minimal-optimization)
 - [Configuration Guide](api/configuration.md)
 
@@ -186,24 +193,25 @@ Complete API reference:
 
 ## Document Sizes
 
-| Document                | Lines | Focus               |
-| ----------------------- | ----- | ------------------- |
-| quick-reference.md      | ~230  | Compact API map     |
-| getting-started.md      | ~190  | First optimization  |
-| algorithm-selection.md  | ~200  | Variant selection   |
-| parameter-tuning.md     | ~300  | Empirical tuning    |
-| benchmarks.md           | ~410  | Function reference  |
-| research.md             | ~350  | Academic citations  |
-| configuration.md        | ~470  | Parameter reference |
-| unified-framework.md    | ~570  | Advanced API        |
-| comparison-framework.md | ~180  | Statistical testing |
-| standard-ma.md          | ~170  | Algorithm guide     |
-| desma.md                | ~220  | Algorithm guide     |
-| olce-ma.md              | ~360  | Algorithm guide     |
-| eobbma.md               | ~480  | Algorithm guide     |
-| gsasma.md               | ~430  | Algorithm guide     |
-| mpma.md                 | ~440  | Algorithm guide     |
-| aoblmoa.md              | ~490  | Algorithm guide     |
+| Document                      | Lines | Focus               |
+| ----------------------------- | ----- | ------------------- |
+| quick-reference.md            | ~230  | Compact API map     |
+| getting-started.md            | ~190  | First optimization  |
+| algorithm-selection.md        | ~200  | Variant selection   |
+| parameter-tuning.md           | ~300  | Empirical tuning    |
+| custom-objective-functions.md | ~360  | Objective modeling  |
+| benchmarks.md                 | ~410  | Function reference  |
+| research.md                   | ~350  | Academic citations  |
+| configuration.md              | ~470  | Parameter reference |
+| unified-framework.md          | ~570  | Advanced API        |
+| comparison-framework.md       | ~180  | Statistical testing |
+| standard-ma.md                | ~170  | Algorithm guide     |
+| desma.md                      | ~220  | Algorithm guide     |
+| olce-ma.md                    | ~360  | Algorithm guide     |
+| eobbma.md                     | ~480  | Algorithm guide     |
+| gsasma.md                     | ~430  | Algorithm guide     |
+| mpma.md                       | ~440  | Algorithm guide     |
+| aoblmoa.md                    | ~490  | Algorithm guide     |
 
 **Total:** more than 5,000 lines across these reference documents.
 

@@ -9,6 +9,11 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- A custom-objective-function guide covering the scalar minimization contract,
+  normalized heterogeneous and projected variables, objective scaling and
+  maximization, constraints, finite failure handling, concurrency and
+  expensive evaluations, validation tests, and common mistakes, with a
+  CI-tested runnable nonlinear curve-fitting example.
 - A parameter-tuning tutorial covering baseline-first experimental design,
   parameter prioritization and coupling, heuristic auto-tuning limits, paired
   seeds, exact evaluation budgets, held-out validation, configuration handoff,

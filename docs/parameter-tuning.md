@@ -8,7 +8,8 @@ or problem instances that did not select it.
 
 Mayfly minimizes scalar objectives. Before tuning, make sure the objective,
 bounds, constraints, and variant are correct; tuning cannot repair a model that
-rewards the wrong behavior.
+rewards the wrong behavior. The [custom-objective guide](custom-objective-functions.md)
+covers that modeling and validation step.
 
 ## Tune one parameter reproducibly
 

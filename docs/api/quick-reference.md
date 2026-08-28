@@ -216,6 +216,8 @@ All bundled functions have signature `func([]float64) float64`:
 
 Typical bounds and known minima are listed in the
 [benchmark reference](../benchmarks.md).
+For heterogeneous variables, objective scaling, maximization, failure handling,
+and concurrency, see the [custom-objective guide](../custom-objective-functions.md).
 
 ## Lower-level utilities
 

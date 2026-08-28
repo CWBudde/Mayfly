@@ -263,6 +263,7 @@ See [Benchmark Functions](docs/benchmarks.md) for details.
 - **[Getting Started Guide](docs/getting-started.md)** - Tutorial and examples
 - **[Algorithm-selection Guide](docs/algorithm-selection.md)** - Choose and validate a variant
 - **[Parameter-tuning Tutorial](docs/parameter-tuning.md)** - Tune and validate configurations
+- **[Custom-objective Guide](docs/custom-objective-functions.md)** - Model and test real objectives
 - **[Configuration Guide](docs/api/configuration.md)** - Complete parameter reference
 - **[v0.7 Migration Guide](docs/migration-v0.7.md)** - Correctness and API changes
 - **[Benchmark Functions](docs/benchmarks.md)** - Test functions and expected results
@@ -304,6 +305,9 @@ cd examples/selector && go run main.go
 
 # Reproducible parameter-tuning demo (from the repository root)
 go run ./cmd/parameter-tuning
+
+# Nonlinear custom-objective demo (from the repository root)
+go run ./cmd/custom-objective
 
 # Comprehensive benchmark suite
 cd examples/benchmark_suite && go run main.go

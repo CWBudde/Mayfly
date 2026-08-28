@@ -188,6 +188,8 @@ rules, penalties, and equality tolerance.
 
 ## Where to go next
 
+- [Custom-objective Guide](custom-objective-functions.md) for modeling,
+  validating, and safely evaluating a real objective.
 - [API quick reference](api/quick-reference.md) for entry points and result
   fields.
 - [Configuration guide](api/configuration.md) for constraints, stopping,

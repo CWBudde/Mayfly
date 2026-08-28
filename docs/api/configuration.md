@@ -571,6 +571,7 @@ config.ObjectiveFunc = maximize
 
 ## Related Documentation
 
+- [Custom-objective Guide](../custom-objective-functions.md) - Objective modeling and validation
 - [Parameter-tuning Tutorial](../parameter-tuning.md) - Empirical tuning workflow
 - [Unified Framework](unified-framework.md) - Builder API and algorithm selection
 - [Algorithm Comparison](comparison-framework.md) - Statistical comparison tools

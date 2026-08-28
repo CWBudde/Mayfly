@@ -91,7 +91,11 @@ The API examples, quick-reference guide, and parameter documentation are complet
       auto-tuning limits, paired seeds, exact evaluation budgets, held-out
       validation, reproducible configuration handoff, common mistakes, and a
       CI-tested runnable population-size sweep.
-- [ ] Write a custom-objective-function guide.
+- [x] Write a custom-objective-function guide covering the scalar minimization
+      contract, normalized heterogeneous and projected variables, objective
+      scaling and maximization, constraints, finite failure handling,
+      concurrency and expensive evaluations, validation tests, common
+      mistakes, and a CI-tested runnable nonlinear curve-fitting example.
 
 #### Real-world examples
 

@@ -886,20 +886,21 @@ func OptimizeContext(ctx context.Context, config *Config, options ...RunOption) 
 			offspring = append(offspring, maleOffspring...)
 			offspring = append(offspring, femaleOffspring...)
 
-			// The historical OLCE compatibility stage applies Logistic-map
-			// exploitation to one fittest crossover offspring. The published
-			// pseudocode instead uses Chebyshev mutation over all offspring;
-			// see chaos.go. One additional candidate is currently evaluated.
+			// The OLCE compatibility stage retains Mayfly's documented
+			// Logistic-map equation, but follows the publisher pseudocode's
+			// verified all-offspring batch topology. The exact Chebyshev map
+			// and component equation remain blocked on primary evidence.
 			if config.UseOLCE && config.ChaosFactor > 0 && len(offspring) > 0 {
-				bestOffspring := fittestMayfly(offspring, candidateEvaluator)
-				applyChaoticExploitation(
-					bestOffspring, config, chaosMap, it, candidateEvaluator,
-				)
+				for _, child := range offspring {
+					applyChaoticExploitation(
+						child, config, chaosMap, it, candidateEvaluator,
+					)
 
-				funcCount++
+					funcCount++
 
-				if candidateEvaluator.betterMayflyThanBest(bestOffspring, globalBest) {
-					copyMayflyToBest(&globalBest, bestOffspring)
+					if candidateEvaluator.betterMayflyThanBest(child, globalBest) {
+						copyMayflyToBest(&globalBest, child)
+					}
 				}
 			}
 

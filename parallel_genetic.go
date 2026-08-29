@@ -67,9 +67,10 @@ func evaluateParallelGeneticOperators(
 
 	initializeOffspringBests(offspring)
 
-	// The historical OLCE compatibility stage forms one new position from the
-	// fittest crossover offspring. Publisher pseudocode discovered later uses
-	// Chebyshev mutation over the whole offspring batch; see chaos.go.
+	// Retain Mayfly's documented Logistic-map compatibility equation while
+	// following the publisher pseudocode's verified all-offspring batch
+	// topology. The exact Chebyshev recurrence and component equation remain
+	// blocked on primary evidence; see chaos.go.
 	if config.UseOLCE && config.ChaosFactor > 0 && len(offspring) > 0 {
 		var chaosMap *LogisticMap
 		if len(chaosMaps) > 0 {
@@ -80,24 +81,20 @@ func evaluateParallelGeneticOperators(
 			chaosMap = NewLogisticMap(rng.Float64())
 		}
 
-		target := fittestMayfly(offspring, evaluator.evaluator)
-		candidate := newMayfly(config.ProblemSize)
-		chaoticExploitationCandidate(
-			candidate.Position, target.Position, config, chaosMap,
-			chaoticConstrictionFactor(config, iteration),
+		chaoticEvaluations, evaluationErr := evaluateParallelChaoticExploitation(
+			ctx, offspring, config, chaosMap, iteration, evaluator,
 		)
-
-		if _, evaluationErr := evaluator.evaluate(ctx, []*Mayfly{candidate}, false, false); evaluationErr != nil {
+		if evaluationErr != nil {
 			return nil, Best{}, 0, evaluationErr
 		}
 
-		commitChaoticOffspring(target, candidate)
-
-		if evaluator.evaluator.betterMayflyThanBest(target, crossoverBest) {
-			copyMayflyToBest(&crossoverBest, target)
+		for _, child := range offspring {
+			if evaluator.evaluator.betterMayflyThanBest(child, crossoverBest) {
+				copyMayflyToBest(&crossoverBest, child)
+			}
 		}
 
-		evaluations++
+		evaluations += chaoticEvaluations
 	}
 
 	if config.UseAOBLMOA {

@@ -337,43 +337,46 @@ func evaluateParallelAOBLMOA(
 	return len(batch), nil
 }
 
-// evaluateParallelChaoticExploitation is retained as an internal compatibility
-// helper. Mayfly's historical stage applies chaos to one fittest offspring, so
-// numElite is ignored and this function evaluates exactly one candidate. This
-// is not the published all-offspring Chebyshev stage; see chaos.go.
+// evaluateParallelChaoticExploitation applies Mayfly's documented Logistic-map
+// compatibility equation to the complete supplied crossover batch. The
+// all-offspring topology follows the publisher pseudocode, but the equation is
+// not the still-unresolved published Chebyshev mutation; see chaos.go.
 func evaluateParallelChaoticExploitation(
 	ctx context.Context,
-	males []*Mayfly,
-	numElite int,
+	offspring []*Mayfly,
 	config *Config,
 	chaosMap *LogisticMap,
 	iteration int,
 	evaluator *evaluationPool,
 ) (int, error) {
-	_ = numElite
-
 	err := ctx.Err()
 	if err != nil {
 		return 0, err
 	}
 
-	target := fittestMayfly(males, evaluator.evaluator)
-	if target == nil {
+	if len(offspring) == 0 {
 		return 0, nil
 	}
 
-	candidate := newMayfly(len(target.Position))
-	chaoticExploitationCandidate(
-		candidate.Position, target.Position, config, chaosMap,
-		chaoticConstrictionFactor(config, iteration),
-	)
+	candidates := make([]*Mayfly, len(offspring))
+	constriction := chaoticConstrictionFactor(config, iteration)
 
-	_, evaluationErr := evaluator.evaluate(ctx, []*Mayfly{candidate}, false, false)
+	for index, child := range offspring {
+		candidate := newMayfly(len(child.Position))
+		chaoticExploitationCandidate(
+			candidate.Position, child.Position, config, chaosMap, constriction,
+		)
+		candidates[index] = candidate
+	}
+
+	_, evaluationErr := evaluator.evaluate(ctx, candidates, false, false)
 	if evaluationErr != nil {
 		return 0, evaluationErr
 	}
 
-	commitChaoticOffspring(target, candidate)
+	for index, candidate := range candidates {
+		commitChaoticOffspring(offspring[index], candidate)
+	}
 
-	return 1, nil
+	return len(candidates), nil
 }

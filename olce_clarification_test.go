@@ -28,8 +28,9 @@ func TestOLCEMA2022ClarificationRequest(t *testing.T) {
 			CurrentContactSource     string `json:"current_contact_source"`
 		} `json:"source_contact"`
 		PublicSourceAudit struct {
-			Outcome string `json:"outcome"`
-			Sources []struct {
+			CheckedOn string `json:"checked_on"`
+			Outcome   string `json:"outcome"`
+			Sources   []struct {
 				Kind    string `json:"kind"`
 				URL     string `json:"url"`
 				Finding string `json:"finding"`
@@ -92,6 +93,8 @@ func TestOLCEMA2022ClarificationRequest(t *testing.T) {
 	gotIDs := make([]string, 0, len(clarification.BlockingQuestions))
 	seen := make(map[string]bool, len(clarification.BlockingQuestions))
 
+	var lifecycleEvidence string
+
 	for _, blocker := range clarification.BlockingQuestions {
 		gotIDs = append(gotIDs, blocker.ID)
 		if blocker.ID == "" || seen[blocker.ID] {
@@ -99,6 +102,9 @@ func TestOLCEMA2022ClarificationRequest(t *testing.T) {
 		}
 
 		seen[blocker.ID] = true
+		if blocker.ID == "chaotic_sequence_lifecycle" {
+			lifecycleEvidence = blocker.KnownEvidence
+		}
 
 		if blocker.Gate != "exact_chaotic_exploitation" || blocker.Question == "" ||
 			blocker.KnownEvidence == "" || blocker.RequiredAnswerShape == "" ||
@@ -116,18 +122,43 @@ func TestOLCEMA2022ClarificationRequest(t *testing.T) {
 
 	if clarification.ExactGate.State != "blocked_missing_author_or_archival_data" ||
 		clarification.ExactGate.TargetAlgorithm != "olce-ma" || clarification.ExactGate.Rule == "" ||
-		clarification.PublicSourceAudit.Outcome == "" || len(clarification.PublicSourceAudit.Sources) < 8 {
+		clarification.PublicSourceAudit.CheckedOn != "2026-08-29" ||
+		clarification.PublicSourceAudit.Outcome == "" || len(clarification.PublicSourceAudit.Sources) < 13 {
 		t.Fatalf("clarification does not preserve its evidence gate: %+v", clarification.ExactGate)
 	}
 
+	sourceKinds := make(map[string]bool, len(clarification.PublicSourceAudit.Sources))
 	for _, source := range clarification.PublicSourceAudit.Sources {
 		if source.Kind == "" || !strings.HasPrefix(source.URL, "https://") || source.Finding == "" {
 			t.Fatalf("incomplete public-source audit entry: %+v", source)
 		}
+
+		sourceKinds[source.Kind] = true
+	}
+
+	for _, kind := range []string{
+		"indexed_author_shared_full_text",
+		"crossref_text_mining_endpoint",
+		"cited_chaotic_exploitation_predecessor",
+		"earlier_chebyshev_mayfly_article",
+		"github_maolc_code_search",
+		"internet_archive_researchgate_asset_search",
+	} {
+		if !sourceKinds[kind] {
+			t.Fatalf("OLCE source-lineage audit does not pin %q", kind)
+		}
+	}
+
+	if !strings.Contains(lifecycleEvidence, "fittest offspring") ||
+		!strings.Contains(lifecycleEvidence, "cardinality conflict") ||
+		!strings.Contains(clarification.ExactGate.Rule, "Figure 3's all-N loop") {
+		t.Fatalf("OLCE gate does not preserve the prose/pseudocode conflict: evidence=%q rule=%q",
+			lifecycleEvidence, clarification.ExactGate.Rule)
 	}
 
 	status := clarification.CurrentLibraryStatus
 	if status.PaperFaithfulAvailable || status.DocumentedExtension == "" ||
+		status.DocumentedExtension != "One Logistic-map candidate per crossover offspring, consumed in stable batch order" ||
 		status.AllowedClaim != "current-library baseline" || status.ForbiddenClaim == "" {
 		t.Fatalf("clarification mislabels current OLCE-MA behavior: %+v", status)
 	}
@@ -143,5 +174,10 @@ func TestOLCEMAAlgorithmGuideLinksClarificationRequest(t *testing.T) {
 
 	if !strings.Contains(olceMAAlgorithmGuide, clarificationPath) {
 		t.Fatalf("OLCE-MA guide does not link %q", clarificationPath)
+	}
+
+	if !strings.Contains(olceMAAlgorithmGuide, "fittest offspring's") ||
+		!strings.Contains(olceMAAlgorithmGuide, "batch-cardinality conflict") {
+		t.Fatal("OLCE-MA guide does not preserve the source's cardinality conflict")
 	}
 }

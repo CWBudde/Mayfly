@@ -403,8 +403,8 @@ Objective calls for initialization, male/female population updates, crossover
 offspring, and mutation offspring are parallelized. Variant-specific batches
 are covered too: DESMA elites, OLCE male-movement candidates, EOBBMA
 opposition points, GSASMA male/female movement batches, and AOBLMOA Aquila and
-opposition candidates. OLCE evaluates one chaotic candidate for the fittest
-crossover offspring before mutation and survivor selection.
+opposition candidates. OLCE evaluates one compatibility-stage chaotic candidate
+for every crossover offspring before mutation and survivor selection.
 
 DESMA pre-draws random offsets and constructs independent elite positions with
 bounded workers before evaluating them. MPMA computes independent position

@@ -75,10 +75,11 @@ Qianhang Du and Honghao Zhu, **Dynamic elite strategy mayfly algorithm**,
 
 - **Orthogonal learning**: Applied to the primary male movement operator
 - **Chaos exploitation**: The publisher pseudocode applies Chebyshev-based
-  mutation to all crossover offspring. Mayfly's current one-offspring
-  Logistic-map stage predates access to that figure and remains a documented
-  extension until the recurrence/seed, sequence lifecycle, and exact component
-  equation are available. The public audit and unsent evidence request are
+  mutation in an all-offspring loop, while the indexed full-text prose names the
+  fittest offspring. Mayfly follows the pseudocode loop but retains its
+  Logistic-map component equation as a documented extension until that
+  cardinality conflict, recurrence/seed, sequence lifecycle, and exact component
+  equation are resolved. The public audit and unsent evidence request are
   preserved in the
   [machine-readable clarification artifact](reference-data/olce-ma-2022-clarification-request.json).
 - **Target problems**: High-dimensional multimodal optimization

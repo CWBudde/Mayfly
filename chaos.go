@@ -196,10 +196,11 @@ func chaoticConstrictionFactor(config *Config, iteration int) float64 {
 
 // chaoticExploitationCandidate implements Mayfly's historical OLCE
 // compatibility equation. Publisher pseudocode discovered after this stage was
-// written specifies a Chebyshev mutation over all crossover offspring, but its
-// exact component equation is not available in the accessible figures.
+// written loops over all crossover offspring, while indexed full-text prose
+// names the fittest offspring. Both describe Chebyshev mutation, but its exact
+// component equation is not available in accessible primary evidence.
 // For every component C'=LB+C(UB-LB) is first mapped from the logistic
-// sequence, then the fittest crossover offspring O is replaced by
+// sequence, then a crossover offspring O is replaced by
 // O'=(1-s)O+sC'. Both slices must have the same length.
 func chaoticExploitationCandidate(
 	destination, source []float64, config *Config, chaosMap *LogisticMap, constriction float64,
@@ -213,10 +214,11 @@ func chaoticExploitationCandidate(
 	}
 }
 
-// applyChaoticExploitation forms and evaluates the historical compatibility
-// position for one caller-selected crossover offspring. The published
-// pseudocode instead applies Chebyshev mutation to all crossover offspring;
-// retain this behavior only until the exact component equation is available.
+// applyChaoticExploitation forms and evaluates Mayfly's historical
+// compatibility position for one caller-selected crossover offspring. The
+// optimizer calls it for every crossover offspring to follow the publisher
+// pseudocode loop, while retaining this Logistic equation until the prose versus
+// pseudocode cardinality conflict and exact Chebyshev equation are resolved.
 //
 // Exactly one objective evaluation is spent per call. It returns true when the
 // finite candidate was installed.
@@ -255,22 +257,4 @@ func commitChaoticOffspring(target, candidate *Mayfly) bool {
 	target.Best.ConstraintViolation = target.ConstraintViolation
 
 	return true
-}
-
-// fittestMayfly returns the best evaluated individual without reordering the
-// input. OLCE's current compatibility stage uses this on the crossover batch;
-// it is not part of the published all-offspring pseudocode.
-func fittestMayfly(population []*Mayfly, evaluator *constraintEvaluator) *Mayfly {
-	if len(population) == 0 {
-		return nil
-	}
-
-	best := population[0]
-	for _, candidate := range population[1:] {
-		if evaluator.betterMayfly(candidate, best) {
-			best = candidate
-		}
-	}
-
-	return best
 }

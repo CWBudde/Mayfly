@@ -14,8 +14,8 @@
     "selection_basis": "The version-of-record landing page identifies Xiaoping Su as the corresponding author; the indexed author-shared full text exposes the paper address, and the current institutional profile publishes a second public address."
   },
   "public_source_audit": {
-    "checked_on": "2026-08-28",
-    "outcome": "The publisher article and authoritative pseudocode figures establish Chebyshev mutation over the N crossover offspring and show a sequence in [-1,1] labeled C1=0.65. They do not expose the executable recurrence, sequence lifecycle, or offspring-component mutation equation. DOI and discovery records, the current institutional profile, and exact DOI/title searches of public code and data registries expose no author implementation or archive resolving those three questions.",
+    "checked_on": "2026-08-29",
+    "outcome": "The publisher pseudocode loops over N crossover offspring, while indexed author-shared full-text prose describes the fittest offspring's candidate position. The figures show a Chebyshev sequence in [-1,1] labeled C1=0.65 but do not expose the executable recurrence, sequence lifecycle, or Equation 12. The cited OLCGOA predecessor narrows the blend's lineage without defining OLCE semantics, and an earlier open Chebyshev-Mayfly paper also omits its recurrence and lifecycle. DOI/discovery records, public archives, institutional profiles, and repository and code searches expose no author implementation resolving the three stable questions or the source's cardinality conflict.",
     "sources": [
       {
         "kind": "publisher_article",
@@ -25,12 +25,12 @@
       {
         "kind": "publisher_mating_pseudocode",
         "url": "https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig1_HTML.png",
-        "finding": "The authoritative mating pseudocode creates N crossover offspring before chaotic exploitation. This rules out the current library extension's fittest-offspring-only premise."
+        "finding": "The authoritative mating pseudocode creates N crossover offspring before chaotic exploitation. Together with Figure 3 it supplies an all-N executable path, but it does not reconcile the indexed full-text prose's fittest-offspring description. Mayfly follows the figure loop as a documented library choice, not as a resolved paper-wide cardinality claim."
       },
       {
         "kind": "publisher_chaotic_exploitation_pseudocode",
         "url": "https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig3_HTML.png",
-        "finding": "The authoritative pseudocode loops from 1 through N, generates a Chebyshev chaotic-variable sequence Cx_it for the current iteration, mutates an offspring according to Cx_it, evaluates the mutant, and updates gbest. It does not print the Chebyshev recurrence, seed, sequence advancement rules, or component mutation formula, and its loop variable i versus offspring subscript k is not executable as written."
+        "finding": "The authoritative pseudocode loops from 1 through N, generates a Chebyshev chaotic-variable sequence Cx_it for the current iteration, mutates an offspring according to Cx_it, evaluates the mutant, and updates gbest. It conflicts with the indexed full-text prose's fittest-offspring wording, does not print the recurrence, seed, sequence advancement rules, or component formula, and uses loop variable i versus offspring subscript k inconsistently."
       },
       {
         "kind": "publisher_chebyshev_map_figure",
@@ -38,9 +38,29 @@
         "finding": "The authoritative plot labels the Chebyshev sequence C1=0.65 and shows values in [-1,1]. A plotted trajectory and probability curve do not uniquely identify the recurrence, its order or parameter, indexing convention, or component mutation equation."
       },
       {
+        "kind": "indexed_author_shared_full_text",
+        "url": "https://www.researchgate.net/publication/362507515_An_enhanced_Mayfly_optimization_algorithm_based_on_orthogonal_learning_and_chaotic_exploitation_strategy",
+        "finding": "The publicly indexed author-shared text describes Equation 12 as changing the candidate solution of the fittest offspring's position and defines its symbols as an offspring component, constriction factor, and motion bounds. The equation itself is not exposed as searchable text, and the fittest-offspring wording conflicts with Figure 3's loop through N."
+      },
+      {
         "kind": "crossref_record",
         "url": "https://api.crossref.org/works/10.1007%2Fs13042-022-01617-4",
-        "finding": "The DOI record confirms the bibliographic identity and exposes version-of-record text-mining links, but its relation object is empty and it identifies no dataset, software deposit, supplement, or reference implementation."
+        "finding": "The DOI record confirms the bibliographic identity, exposes version-of-record text-mining links, and confirms that the paper cites the OLCGOA predecessor DOI 10.1016/j.eswa.2020.113282. Its relation object is empty and it identifies no dataset, software deposit, supplement, or reference implementation."
+      },
+      {
+        "kind": "crossref_text_mining_endpoint",
+        "url": "https://link.springer.com/content/pdf/10.1007/s13042-022-01617-4.pdf",
+        "finding": "The official Crossref text-mining PDF URL returned the subscription landing HTML with access marked No to an anonymous request, not a PDF containing Equation 12. No access control was bypassed."
+      },
+      {
+        "kind": "cited_chaotic_exploitation_predecessor",
+        "url": "https://doi.org/10.1016/j.eswa.2020.113282",
+        "finding": "OLCE's publisher-supplied Crossref references cite OLCGOA. Its author-shared full text gives the analogous candidate equation CS=(1-s)*Fbest+s*C'_i for the best grasshopper, but a different algorithm's equation cannot establish OLCE's Equation 12, offspring cardinality, replacement rule, or sequence lifecycle."
+      },
+      {
+        "kind": "earlier_chebyshev_mayfly_article",
+        "url": "https://doi.org/10.1088/1742-6596/1684/1/012075",
+        "finding": "This open Chebyshev-Mayfly paper states that its map fluctuates in [-1,1] and replaces two uniform random variables with two chaotic numbers randomly selected from the chaos. It prints no Chebyshev recurrence, initialization, sequence-generation algorithm, or deterministic consumption lifecycle, and Crossref does not list it among OLCE's references."
       },
       {
         "kind": "openalex_record",
@@ -61,6 +81,16 @@
         "kind": "github_title_repository_search",
         "url": "https://api.github.com/search/repositories?q=%22An%20enhanced%20Mayfly%20optimization%20algorithm%20based%20on%20orthogonal%20learning%20and%20chaotic%20exploitation%20strategy%22",
         "finding": "An exact-title public repository search returned zero repositories."
+      },
+      {
+        "kind": "github_maolc_code_search",
+        "url": "https://api.github.com/search/code?q=MAOLC+language%3AMATLAB",
+        "finding": "An authenticated public-code search returned zero MATLAB files for MAOLC; searches for the DOI and Equation 12's Mayflyoffspring token exposed no external implementation."
+      },
+      {
+        "kind": "internet_archive_researchgate_asset_search",
+        "url": "https://web.archive.org/cdx/search/cdx?url=www.researchgate.net/publication/362507515*&output=json&filter=statuscode:200",
+        "finding": "The public archive index exposed captures of the publication's Figure 1 and Figure 4 images but no archived article PDF, full-text asset, source archive, or deterministic trace."
       },
       {
         "kind": "zenodo_doi_record_search",
@@ -89,7 +119,7 @@
       "id": "chebyshev_recurrence_and_seed",
       "gate": "exact_chaotic_exploitation",
       "question": "What exact Chebyshev-map recurrence generated Cx, what does the printed C1=0.65 denote, and how was the initial state or seed selected?",
-      "known_evidence": "Figure 4 plots a sequence in [-1,1] and labels C1=0.65, while Figure 3 only says to use a Chebyshev map. Neither accessible figure gives an equation, order or control parameter, seed policy, or indexing convention.",
+      "known_evidence": "Figure 4 plots a sequence in [-1,1] and labels C1=0.65, while Figure 3 only says to use a Chebyshev map. The earlier open Chebyshev-Mayfly paper also supplies no recurrence or initialization and merely says that chaotic values are randomly selected from a sequence. None of these sources gives an executable equation, order or control parameter, seed policy, or indexing convention for OLCE.",
       "required_answer_shape": "A finite executable recurrence with every constant/order/control parameter, domain, initial-state rule, one-based or zero-based indexing, and boundary or exceptional-value handling.",
       "units": "dimensionless chaotic state and iteration index",
       "acceptable_primary_evidence": [
@@ -108,9 +138,9 @@
     {
       "id": "chaotic_sequence_lifecycle",
       "gate": "exact_chaotic_exploitation",
-      "question": "How is Cx_it generated and consumed across generations, the N offspring, and D components?",
-      "known_evidence": "Figure 3 takes it, k, D, and N, loops with i, refers to the kth offspring, and requests a sequence for the current number of iterations. It does not say whether one state is reset or advanced per generation, offspring, or component; whether offspring share a sequence; or how k, i, D, and it index it.",
-      "required_answer_shape": "An executable state-and-index lifecycle specifying reset points, sequence length, advancement order, sharing versus independent streams, draw granularity, and deterministic mapping from generation/offspring/component indices to sequence values.",
+      "question": "How is Cx_it generated and consumed across generations, the selected offspring, and D components, and does chaotic exploitation target all N offspring or only the fittest?",
+      "known_evidence": "Figure 3 takes it, k, D, and N, loops with i, refers to the kth offspring, and requests a sequence for the current number of iterations; indexed full-text prose instead describes the fittest offspring's candidate position. The source neither reconciles that cardinality conflict nor says whether one state is reset or advanced per generation, offspring, or component, whether offspring share a sequence, or how k, i, D, and it index it.",
+      "required_answer_shape": "An executable offspring-selection and state-and-index lifecycle reconciling the prose with Figure 3 and specifying batch cardinality, tie handling if fittest-only, reset points, sequence length, advancement order, sharing versus independent streams, draw granularity, and deterministic mapping from generation/offspring/component indices to sequence values.",
       "units": "sequence states and generation, offspring, and component indices",
       "acceptable_primary_evidence": [
         "The original loop and chaotic-state implementation",
@@ -128,8 +158,8 @@
     {
       "id": "offspring_component_mutation",
       "gate": "exact_chaotic_exploitation",
-      "question": "What exact component equation mutates offspring_kD according to Cx_it, including scaling, constriction, bounds, and replacement semantics?",
-      "known_evidence": "Figure 3 says only that each offspring conducts mutation according to Cx_it, then evaluates the mutant and updates gbest. The indexed paper prose refers to Equation 12, a constriction factor s, and decision bounds, but the accessible authoritative figures do not expose the formula. Mayfly's current Logistic-map blend and greedy finite-candidate installation are documented library choices, not recovered paper semantics.",
+      "question": "What exact component equation mutates the selected offspring_kD according to Cx_it, including scaling, constriction, bounds, and replacement semantics?",
+      "known_evidence": "Figure 3 says that an offspring conducts mutation according to Cx_it, then evaluates the mutant and updates gbest. The indexed OLCE prose refers to Equation 12, a constriction factor s, decision bounds, and the fittest offspring, but does not expose the formula as searchable text. OLCE cites OLCGOA, whose analogous equation is CS=(1-s)*Fbest+s*C'_i for a grasshopper; that lineage narrows the likely blend but does not prove OLCE's Equation 12 or lifecycle. Mayfly's all-offspring Logistic-map blend and finite-candidate installation remain documented library choices.",
       "required_answer_shape": "The exact vector or per-component Equation 12, including the definition and schedule of s, conversion between [-1,1] and decision bounds, random draws, clipping or other repair, whether the mutation is unconditional or greedy, personal-best initialization, and when gbest is updated.",
       "units": "decision-space position, dimensionless chaotic state, and constriction factor",
       "acceptable_primary_evidence": [
@@ -150,7 +180,7 @@
   "requested_artifacts": [
     "The original MAOLC/OLCE-MA implementation, especially the Chebyshev map and chaotic-exploitation function",
     "The complete typeset Chebyshev recurrence and Equation 12 with all symbols and constants defined",
-    "The initialization, indexing, state-advancement, bound-repair, replacement, and evaluation-accounting rules",
+    "The offspring-selection/cardinality, initialization, indexing, state-advancement, bound-repair, replacement, and evaluation-accounting rules, including reconciliation of the fittest-offspring prose with Figure 3's all-N loop",
     "A small deterministic trace containing the seed/state, sequence values, input offspring, mutated offspring, and objective evaluations"
   ],
   "exact_chaotic_exploitation_gate": {
@@ -161,17 +191,17 @@
       "chaotic_sequence_lifecycle",
       "offspring_component_mutation"
     ],
-    "rule": "Mayfly may replace its documented Logistic-map compatibility extension with a paper-faithful OLCE-MA chaotic-exploitation stage only after all three questions have non-null answers backed by cited primary evidence and the all-N implementation passes recurrence-, sequence-, component-, lifecycle-, bounds-, evaluation-accounting-, and serial/parallel-conformance tests."
+    "rule": "Mayfly may replace its documented Logistic-map compatibility extension with a paper-faithful OLCE-MA chaotic-exploitation stage only after all three questions have non-null answers backed by cited primary evidence, the full-text fittest-offspring prose is reconciled with Figure 3's all-N loop, and the resolved implementation passes recurrence-, sequence-, component-, lifecycle-, bounds-, evaluation-accounting-, and serial/parallel-conformance tests."
   },
   "current_library_status": {
     "paper_faithful_chaotic_exploitation_available": false,
-    "documented_extension": "One Logistic-map candidate derived from the fittest crossover offspring",
+    "documented_extension": "One Logistic-map candidate per crossover offspring, consumed in stable batch order",
     "allowed_claim": "current-library baseline",
     "forbidden_claim": "exact OLCE-MA or MAOLC paper reproduction"
   },
   "correspondence_draft": {
     "status": "not_sent",
     "subject": "Request for OLCE-MA/MAOLC Chebyshev mutation equation and reference implementation",
-    "body": "Dear Professor Su and co-authors,\n\nI am implementing the chaotic-exploitation stage from your 2022 article, An enhanced Mayfly optimization algorithm based on orthogonal learning and chaotic exploitation strategy (doi:10.1007/s13042-022-01617-4). The publisher pseudocode establishes Chebyshev mutation over the N crossover offspring, and Figure 4 labels a sequence C1=0.65 in [-1,1], but I cannot recover three details needed for an executable, paper-faithful implementation: (1) the exact Chebyshev recurrence, all constants or order parameters, the meaning of C1=0.65, and the initial-state rule; (2) how Cx_it is reset or advanced and indexed across generations, N offspring, and D components, including how i, k, it, and D in the pseudocode relate; and (3) the complete offspring-component mutation equation referred to as Equation 12, including the constriction factor s, bound mapping or repair, replacement rule, best-state updates, and objective-evaluation accounting.\n\nCould you please share the original MAOLC/OLCE-MA source or the complete equations and clarify those lifecycle rules? A small deterministic trace with the initial chaotic state, generated Cx values, one input offspring batch, the mutated positions, and evaluation/best updates would also make an equation-level conformance test possible. Version identifiers or checksums would help keep the result auditable.\n\nThank you for your time."
+    "body": "Dear Professor Su and co-authors,\n\nI am implementing the chaotic-exploitation stage from your 2022 article, An enhanced Mayfly optimization algorithm based on orthogonal learning and chaotic exploitation strategy (doi:10.1007/s13042-022-01617-4). Figure 3 loops over N crossover offspring, while the indexed full-text prose describes the candidate solution of the fittest offspring's position; Figure 4 labels a Chebyshev sequence C1=0.65 in [-1,1]. I cannot recover three details needed for an executable, paper-faithful implementation: (1) the exact Chebyshev recurrence, all constants or order parameters, the meaning of C1=0.65, and the initial-state rule; (2) whether chaotic exploitation targets all N offspring or only the fittest and how Cx_it is reset, advanced, and indexed across generations, selected offspring, and D components, including how i, k, it, and D in the pseudocode relate; and (3) the complete offspring-component mutation equation referred to as Equation 12, including the constriction factor s, bound mapping or repair, replacement rule, best-state updates, and objective-evaluation accounting.\n\nCould you please share the original MAOLC/OLCE-MA source or the complete equations and clarify those lifecycle rules and the prose/pseudocode cardinality difference? A small deterministic trace with the initial chaotic state, generated Cx values, one input offspring batch, the selected and mutated positions, and evaluation/best updates would also make an equation-level conformance test possible. Version identifiers or checksums would help keep the result auditable.\n\nThank you for your time."
   }
 }

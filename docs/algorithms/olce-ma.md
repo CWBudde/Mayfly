@@ -34,13 +34,13 @@ Applies **orthogonal experimental design** as part of every male's movement:
 
 ### 2. Chaotic Exploitation
 
-Mayfly currently forms one new position from the **fittest crossover offspring**
+Mayfly currently forms one new position from **every crossover offspring**
 after mating:
 
 ```
 s = (MaxIterations - generation + 1) / MaxIterations
 chaotic[j] = LowerBound + z[j] * (UpperBound - LowerBound)
-candidate[j] = (1 - s) * bestOffspring[j] + s * chaotic[j]
+candidate[i][j] = (1 - s) * offspring[i][j] + s * chaotic[i][j]
 ```
 
 The compatibility implementation uses a logistic map:
@@ -49,21 +49,32 @@ The compatibility implementation uses a logistic map:
 z(n+1) = 4 * z(n) * (1 - z(n))
 ```
 
-The candidate is evaluated once and becomes the new offspring position.
-`ChaosFactor` is a compatibility multiplier on `s`; its default is 1 and zero
-disables the stage.
+Each candidate is evaluated once and becomes its corresponding offspring
+position. `ChaosFactor` is a compatibility multiplier on `s`; its default is 1
+and zero disables the stage.
 
 This stage is now known to be a library extension, not a paper-faithful
 implementation. The publisher's [mating pseudocode](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig1_HTML.png)
 creates `N` crossover offspring, and its [chaotic-exploitation pseudocode](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig3_HTML.png)
-applies Chebyshev-based mutation to all `N`; the [published map figure](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig4_HTML.png)
-also shows values in `[-1,1]` with `C1 = 0.65`. There is therefore no
-equal-fitness offspring tie to resolve. The accessible figures do not expose
-the exact Chebyshev recurrence or component mutation equation, so the library
-retains its prior behavior rather than guessing those formulas. Do not label
-OLCE results as exact paper reproductions until that open fidelity item is
-resolved. The public-source audit, three stable evidence blockers, acceptable
-primary evidence, and unsent author-request draft are preserved in the
+loops over all `N`; the [published map figure](https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs13042-022-01617-4/MediaObjects/13042_2022_1617_Fig4_HTML.png)
+also shows values in `[-1,1]` with `C1 = 0.65`. However, the indexed
+author-shared full-text prose describes the candidate as the fittest offspring's
+position. The paper therefore contains a batch-cardinality conflict rather than
+an established all-`N` rule.
+
+Mayfly's serial and parallel compatibility paths follow the literal all-`N`
+pseudocode loop. This remains a documented library choice: the accessible
+primary material does not expose the exact Chebyshev recurrence or Equation 12,
+and it does not reconcile that loop with the fittest-offspring prose. The paper's
+cited OLCGOA predecessor gives the analogous candidate blend
+`CS = (1-s)*Fbest + s*C'`, but that different algorithm cannot establish OLCE's
+offspring lifecycle. The earlier open Chebyshev-Mayfly paper likewise says only
+that two values are randomly selected from a Chebyshev sequence; it supplies no
+recurrence or lifecycle that can safely be transplanted. The library retains its
+Logistic-map equation rather than guessing those semantics. Do not label OLCE
+results as exact paper reproductions until the fidelity gate is resolved. The
+public-source audit, three stable evidence blockers, acceptable primary
+evidence, and unsent author-request draft are preserved in the
 [machine-readable clarification request](../reference-data/olce-ma-2022-clarification-request.json).
 
 **Properties**:
@@ -263,9 +274,9 @@ func main() {
 
 Each generation evaluates one orthogonal design plus one factor-analysis
 candidate per male, and the current compatibility stage evaluates one chaotic
-candidate for the best crossover offspring. The exact overhead therefore
-depends on dimension and population; a future paper-faithful all-offspring
-stage will have a different budget.
+candidate per crossover offspring. The exact overhead therefore depends on
+dimension and population; a future paper-faithful Chebyshev stage may retain
+that count while changing the generated positions.
 
 ## When to Use OLCE-MA
 
@@ -374,12 +385,13 @@ config.ChaosFactor = 0.05
 ### Chaotic Perturbation Application
 
 1. **After crossover**: Generate offspring from parents
-2. **Compatibility selection**: Select the first fittest crossover offspring
-3. **Compatibility map**: Blend it with a bounded Logistic-map position using `s`
-4. **Evaluate**: Test the new offspring position before mutation and selection
+2. **Compatibility batch**: Visit every crossover offspring in stable slice order
+3. **Compatibility map**: Blend each with bounded Logistic-map positions using `s`
+4. **Evaluate**: Test every new offspring position before mutation and selection
 
-These are the current library steps, not the publisher pseudocode's
-Chebyshev mutation over every crossover offspring; see the fidelity note above.
+These are the current library steps. The all-offspring topology matches the
+publisher pseudocode, but the Logistic equation is not its unresolved
+Chebyshev mutation; see the fidelity note above.
 
 ## Related Documentation
 

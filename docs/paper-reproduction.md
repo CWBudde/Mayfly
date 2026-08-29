@@ -440,12 +440,16 @@ sequence, temperature update, initial temperature, or four SMA
 crossover/mutation probability bounds. Its data-availability statement offers
 supporting data only on request, and an August 2026 public artifact search found
 no author code or raw seeded runs. The official OLCE-MA pseudocode figures
-specify Chebyshev mutation over all `N`
-crossover offspring, invalidating Mayfly's earlier fittest-offspring tie
-assumption, but the accessible figures do not expose the exact recurrence and
-component mutation equation. Until that stage is corrected from an
-authoritative equation or reference implementation, results using Mayfly's
-documented defaults must be labeled as current-library baselines, not exact
-paper replications. The audited sources, three executable evidence questions,
-and unsent correspondence draft are pinned in the
-[OLCE-MA clarification request](reference-data/olce-ma-2022-clarification-request.json).
+show a Chebyshev-mutation loop over all `N` crossover offspring, but the indexed
+author-shared full-text prose describes the fittest offspring's position. Mayfly
+follows the literal all-`N` pseudocode loop while retaining a documented
+Logistic-map compatibility equation; this is a library choice, because the
+accessible primary evidence neither reconciles the cardinality conflict nor
+exposes the exact recurrence and Equation 12. The cited OLCGOA predecessor's
+analogous blend and the earlier open Chebyshev-Mayfly paper narrow the source
+lineage but do not define OLCE's sequence lifecycle. Until the conflict and
+equations are resolved from an authoritative equation or reference
+implementation, results using Mayfly's documented defaults must be labeled as
+current-library baselines, not exact paper replications. The audited sources,
+three executable evidence questions, and unsent correspondence draft are pinned
+in the [OLCE-MA clarification request](reference-data/olce-ma-2022-clarification-request.json).

@@ -367,13 +367,13 @@ func TestParallelVariantEvaluationUsesVariantBatchCapacity(t *testing.T) {
 		{
 			// 2 initial + 2 update + 2 crossover + 2 mutations (one per
 			// sex) + 4 orthogonal male-movement rows + 1 factor-analysis
-			// candidate + 1 chaotic best-crossover-offspring candidate.
+			// candidate + 2 chaotic candidates, one per crossover offspring.
 			name:                "OLCE candidates",
 			newConfig:           NewOLCEConfig,
 			malePopulation:      1,
 			femalePopulation:    1,
 			wantConcurrency:     4,
-			wantEvaluationCount: 14,
+			wantEvaluationCount: 15,
 			configure:           func(*Config) {},
 		},
 		{

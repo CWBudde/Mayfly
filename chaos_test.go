@@ -1,6 +1,7 @@
 package mayfly
 
 import (
+	"context"
 	"math"
 	"math/rand"
 	"testing"
@@ -230,7 +231,7 @@ func TestChaoticExploitationSpendsOneEvaluation(t *testing.T) {
 	}
 }
 
-func TestOptimizeOLCEAppliesChaosOncePerGeneration(t *testing.T) {
+func TestOptimizeOLCEAppliesChaosToEveryCrossoverOffspring(t *testing.T) {
 	newConfig := func(chaosFactor float64) *Config {
 		config := NewOLCEConfig()
 		config.ObjectiveFunc = Sphere
@@ -257,7 +258,52 @@ func TestOptimizeOLCEAppliesChaosOncePerGeneration(t *testing.T) {
 		t.Fatalf("Optimize with chaotic offspring: %v", err)
 	}
 
-	if difference := enabled.FuncEvalCount - disabled.FuncEvalCount; difference != 6 {
-		t.Fatalf("chaotic offspring evaluations = %d, want one for each of 6 generations", difference)
+	wantDifference := effectiveNC(newConfig(1)) * newConfig(1).MaxIterations
+	if difference := enabled.FuncEvalCount - disabled.FuncEvalCount; difference != wantDifference {
+		t.Fatalf("chaotic offspring evaluations = %d, want %d (every crossover offspring)",
+			difference, wantDifference)
+	}
+}
+
+// TestParallelChaoticExploitationUsesCompleteBatch pins Mayfly's documented
+// Figure-3-aligned extension independently of the unresolved Chebyshev equation
+// and prose/pseudocode cardinality conflict. The compatibility map advances once
+// per component in stable offspring order and evaluates every resulting
+// candidate as one parallel batch.
+func TestParallelChaoticExploitationUsesCompleteBatch(t *testing.T) {
+	config := NewOLCEConfig()
+	config.ProblemSize = 1
+	config.LowerBound = -1
+	config.UpperBound = 1
+	config.MaxIterations = 1
+
+	offspring := []*Mayfly{newMayfly(1), newMayfly(1), newMayfly(1)}
+	for _, child := range offspring {
+		child.Best.Cost = math.MaxFloat64
+	}
+
+	pool := newEvaluationPool(Sphere, 3)
+	defer pool.close()
+
+	evaluations, err := evaluateParallelChaoticExploitation(
+		context.Background(), offspring, config, NewLogisticMap(0.2), 0, pool,
+	)
+	if err != nil {
+		t.Fatalf("evaluateParallelChaoticExploitation: %v", err)
+	}
+
+	if evaluations != len(offspring) {
+		t.Fatalf("chaotic evaluations = %d, want complete batch of %d", evaluations, len(offspring))
+	}
+
+	want := []float64{0.28, 0.8432, -0.42197248}
+	for index, child := range offspring {
+		if math.Abs(child.Position[0]-want[index]) > 1e-12 {
+			t.Errorf("offspring[%d] position = %v, want %v", index, child.Position[0], want[index])
+		}
+
+		if math.Abs(child.Cost-want[index]*want[index]) > 1e-12 {
+			t.Errorf("offspring[%d] cost = %v, want %v", index, child.Cost, want[index]*want[index])
+		}
 	}
 }

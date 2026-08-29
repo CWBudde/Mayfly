@@ -82,11 +82,12 @@ func NewDESMAConfig() *Config {
 // - Chaotic exploitation to improve local search capability
 //
 // Orthogonal learning augments the male movement operator. The current chaotic
-// compatibility stage forms one Logistic-map position from the fittest
-// crossover offspring. Publisher pseudocode instead specifies Chebyshev
-// mutation over all crossover offspring, but its exact component equation is
-// not available in the accessible figures. Setting OrthogonalFactor or
-// ChaosFactor to zero disables the corresponding stage.
+// compatibility stage forms one Logistic-map position for every crossover
+// offspring, following the publisher pseudocode's all-offspring loop. Indexed
+// full-text prose instead names the fittest offspring, and the published
+// Chebyshev recurrence and component equation remain unavailable in accessible
+// primary evidence. Setting OrthogonalFactor or ChaosFactor to zero disables
+// the corresponding stage.
 func NewOLCEConfig() *Config {
 	config := NewDefaultConfig()
 	config.UseOLCE = true

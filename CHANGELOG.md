@@ -147,15 +147,21 @@ and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Align OLCE's documented Logistic-map compatibility extension with the
+  publisher pseudocode's all-offspring loop in serial and parallel execution.
+  Every crossover child now receives one chaotic candidate and one objective
+  evaluation; the unavailable Chebyshev recurrence and component equation
+  remain explicit reproduction blockers.
 - Correct DESMA's source-guided Equation 16 lifecycle: a strictly improving
   elite now replaces the current best population member and becomes the next
   male attractor, while DESMA crossover uses per-coordinate `L` in `[-1,1]` in
   both sequential and parallel execution.
-- OLCE documentation now reflects the publisher's newly accessible complete
-  pseudocode: chaotic exploitation uses Chebyshev mutation over all crossover
-  offspring, so the former fittest-offspring tie premise was incorrect. The
-  existing one-offspring Logistic-map behavior is explicitly labeled a library
-  extension pending an authoritative exact mutation equation.
+- OLCE documentation now preserves the source's internal cardinality conflict:
+  the publisher pseudocode loops over all crossover offspring, while indexed
+  full-text prose names the fittest offspring. The cited OLCGOA blend and the
+  earlier Chebyshev-Mayfly paper narrow the strategy lineage but leave the
+  recurrence, lifecycle, and exact Equation 12 unresolved. Logistic-map behavior
+  remains explicitly labeled a library extension.
 
 ## [0.7.0] - 2026-08-24
 

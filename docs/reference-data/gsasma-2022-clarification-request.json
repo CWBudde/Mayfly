@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "protocol_id": "gsasma-2022-algorithm-and-benchmarks",
+  "status": "awaiting_author_or_archival_data",
+  "reproduction_claim": false,
+  "prepared_on": "2026-08-29",
+  "source_contact": {
+    "corresponding_author": "Mengling Zhao",
+    "public_email": "zhaomengling@126.com",
+    "contact_source": "https://lxy.xust.edu.cn/info/1226/3714.htm",
+    "affiliation": "College of Science, Xi'an University of Science and Technology",
+    "selection_basis": "The article metadata identifies Mengling Zhao as the corresponding author, and the current official university profile publishes this contact address and lists intelligent optimization among her research areas."
+  },
+  "public_source_audit": {
+    "checked_on": "2026-08-29",
+    "outcome": "The open version-of-record article and its flowchart define the broad GSASMA lifecycle but do not supply an executable annealing-temperature recurrence, the tau_i sequence, the four SMA probability bounds, or an unambiguous fitness orientation for the Metropolis equations. DOI and author records, the current institutional profile, and public code/data registries expose no reference implementation, seed schedule, or raw 30-run outputs that resolve those omissions.",
+    "sources": [
+      {
+        "kind": "publisher_article",
+        "url": "https://pubs.aip.org/adv/article/12/10/105320/2820237/An-improved-mayfly-algorithm-and-its-application",
+        "finding": "The version of record defines the Metropolis expression, prints tau=max(tau_i,rand) for i=0,...,10, and gives the adaptive SMA equations. It does not define T0, the update of T, tau_i, pc_min, pc_max, pm_min, or pm_max, and its parameter table does not supply them. Its 30-run aggregates are unseeded and are not accompanied by raw runs."
+      },
+      {
+        "kind": "publisher_flowchart",
+        "url": "https://pubs.aip.org/view-large/figure/81960653/105320_1_f2.jpg",
+        "finding": "Figure 2 sends the first half through the ordinary velocity formulas and the second half through the annealed formulas, then applies Equation 10 and the selected Section III crossover/mutation policy. It supplies no annealing recurrence, SMA probability bounds, seeds, or evaluation-accounting detail."
+      },
+      {
+        "kind": "crossref_record",
+        "url": "https://api.crossref.org/works/10.1063%2F5.0108278",
+        "finding": "The DOI record confirms the title, authors, affiliations, publication date, author ORCIDs, and version-of-record links. Its relation object identifies no software, dataset, supplement, or archival implementation."
+      },
+      {
+        "kind": "corresponding_author_orcid",
+        "url": "https://orcid.org/0000-0001-9423-4091",
+        "finding": "The public ORCID record confirms Mengling Zhao's identity but exposes no public email, implementation, dataset, or experiment archive."
+      },
+      {
+        "kind": "coauthor_orcid",
+        "url": "https://orcid.org/0000-0001-5977-1983",
+        "finding": "The public ORCID record confirms Xinlu Yang's identity but exposes no public email, implementation, dataset, or experiment archive."
+      },
+      {
+        "kind": "institutional_contact_profile",
+        "url": "https://lxy.xust.edu.cn/info/1226/3714.htm",
+        "finding": "The official College of Science profile publishes Mengling Zhao's current contact address and identifies intelligent optimization as a research area, but it links no GSASMA source code, parameter archive, seeds, or raw runs."
+      },
+      {
+        "kind": "github_doi_repository_search",
+        "url": "https://api.github.com/search/repositories?q=%2210.1063%2F5.0108278%22",
+        "finding": "An exact-DOI public repository search returned zero repositories. This does not establish that private or unindexed code is absent."
+      },
+      {
+        "kind": "zenodo_doi_record_search",
+        "url": "https://zenodo.org/api/records?q=%2210.1063%2F5.0108278%22&size=25",
+        "finding": "An exact-DOI public record search returned zero deposits."
+      },
+      {
+        "kind": "figshare_resource_doi_search",
+        "url": "https://api.figshare.com/v2/articles",
+        "finding": "A public article search using resource DOI 10.1063/5.0108278 returned zero deposits."
+      },
+      {
+        "kind": "mendeley_data_title_search",
+        "url": "https://data.mendeley.com/research-data/?search=golden%20annealing%20crossover-mutation%20mayfly",
+        "finding": "A title and algorithm search exposed no author-linked implementation, parameter archive, seed schedule, or raw benchmark deposit."
+      },
+      {
+        "kind": "osf_title_search",
+        "url": "https://osf.io/search/?q=%22An%20improved%20mayfly%20algorithm%20and%20its%20application%22",
+        "finding": "A public title search exposed no author-linked project, preprint attachment, implementation, or experiment archive."
+      }
+    ]
+  },
+  "blocking_questions": [
+    {
+      "id": "initial_temperature",
+      "gate": "exact_algorithm_preset",
+      "question": "What initial annealing temperature T0 was used for GSASMA, and was it fixed or derived from the objective values or search problem?",
+      "known_evidence": "The article's Metropolis expressions use T, but neither the equations nor the parameter table specifies an initial value or a problem-dependent initialization rule.",
+      "required_answer_shape": "An executable definition of T0, including every constant, units or normalization, any objective-sample statistic used to derive it, and whether it is reset for every independent run.",
+      "units": "objective-value units or dimensionless normalized temperature",
+      "acceptable_primary_evidence": [
+        "The original GSASMA source and benchmark configuration",
+        "A dated author clarification defining the complete initial-temperature rule"
+      ],
+      "affected_fields": [
+        "Config.InitialTemperature",
+        "NewAnnealingScheduler",
+        "paper-exact GSASMA preset"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "temperature_update_recurrence",
+      "gate": "exact_algorithm_preset",
+      "question": "What exact recurrence updates annealing temperature T, and at which points and how often is it advanced?",
+      "known_evidence": "The paper calls tau a cooling coefficient but gives no equation connecting tau to T and no separate update recurrence. The library's exponential, linear, and logarithmic schedules are documented extensions.",
+      "required_answer_shape": "A finite recurrence for T with all constants, its update timing relative to the half-run boundary and male/female loops, draw granularity if stochastic, lower-bound or termination handling, and reset behavior between runs.",
+      "units": "temperature per generation, population, or individual update",
+      "acceptable_primary_evidence": [
+        "The original annealing scheduler and its call sites",
+        "A dated author clarification defining the recurrence and complete lifecycle"
+      ],
+      "affected_fields": [
+        "Config.CoolingRate",
+        "Config.CoolingSchedule",
+        "advanceGSASMATemperature",
+        "AnnealingScheduler"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "tau_sequence_and_lifecycle",
+      "gate": "exact_algorithm_preset",
+      "question": "What are the eleven tau_i values for i=0,...,10, and how is tau=max(tau_i,rand) generated, indexed, and connected to T?",
+      "known_evidence": "The article prints tau=max(tau_i,rand), calls tau a cooling coefficient, and gives i=0,...,10, but it does not define the tau_i sequence, the distribution or draw granularity of rand, the indexing lifecycle, or how tau changes T.",
+      "required_answer_shape": "All eleven values or an executable formula for them, the distribution and draw granularity of rand, the mapping from iteration to i, the reset/advancement lifecycle, and the exact equation in which the resulting tau changes T.",
+      "units": "dimensionless coefficient and iteration or phase index",
+      "acceptable_primary_evidence": [
+        "The original tau sequence and every use in the GSASMA source",
+        "A dated author clarification defining tau_i, rand, indexing, and its connection to temperature"
+      ],
+      "affected_fields": [
+        "annealing coefficient generation",
+        "temperature recurrence",
+        "deterministic equation fixtures"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "sma_probability_bounds",
+      "gate": "exact_algorithm_preset",
+      "question": "What values were used for pc_min, pc_max, pm_min, and pm_max in GSASMA's selected SMA crossover and mutation policy?",
+      "known_evidence": "The paper publishes adaptive SMA probability equations and selects SMA after comparing AMA, SMA, and ASMA, but its parameter table and prose omit all four bounds. The library therefore uses ordinary configured Mayfly mating instead of claiming an SMA reproduction.",
+      "required_answer_shape": "All four numeric bounds, their inclusive/exclusive interpretation, the generation index convention, probability clipping, random-draw granularity, and behavior at equal or non-finite fitness values.",
+      "units": "candidate-level or pair-level crossover probability and candidate-level or coordinate-level mutation probability",
+      "acceptable_primary_evidence": [
+        "The original SMA crossover/mutation implementation and benchmark configuration",
+        "A dated author clarification defining the four bounds and probability lifecycle"
+      ],
+      "affected_fields": [
+        "SMA crossover probability",
+        "SMA mutation probability",
+        "offspring generation",
+        "paper-exact GSASMA preset"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "fitness_orientation_and_annealing_delta",
+      "gate": "exact_algorithm_preset",
+      "question": "What fitness orientation and exact current-versus-previous fitness delta were used by the simulated-annealing velocity decision?",
+      "known_evidence": "The article's comparison and Metropolis notation does not unambiguously establish a minimization/maximization convention and signed delta that remains valid across its benchmark and SVM objectives. Aggregate outputs cannot distinguish the alternatives.",
+      "required_answer_shape": "An executable branch definition for minimization and maximization, identifying the two compared states, the signed energy delta, equality and non-finite handling, acceptance draw granularity, and any objective transformation used by the SVM experiment.",
+      "units": "objective-value difference and dimensionless acceptance probability",
+      "acceptable_primary_evidence": [
+        "The original fitness comparison and Metropolis decision source",
+        "A dated author clarification defining the objective orientation and delta for every experiment family"
+      ],
+      "affected_fields": [
+        "gsasmaAnnealedAttraction",
+        "previous-fitness state",
+        "objective orientation",
+        "constraint and SVM objective handling"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "seed_schedule_and_rng_lifecycle",
+      "gate": "historical_comparison",
+      "question": "Which random seeds and random-stream lifecycle produced the 30 reported runs for each benchmark and comparison algorithm?",
+      "known_evidence": "The paper reports means and standard deviations from 30 runs but does not publish seeds, per-run ordering, generator details, or random-stream reset and sharing rules.",
+      "required_answer_shape": "The complete ordered seed list, generator and version, stream initialization/reset rules, and allocation of draws across initialization, movement, annealing, crossover, mutation, algorithms, functions, and runs.",
+      "units": "integer seeds and random-stream events",
+      "acceptable_primary_evidence": [
+        "The original experiment driver with persisted RNG state or seed list",
+        "A dated author-supplied seed schedule and deterministic RNG lifecycle"
+      ],
+      "affected_fields": [
+        "Config.Seed",
+        "30-run experiment runner",
+        "paired historical comparison"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    },
+    {
+      "id": "raw_30_run_outputs",
+      "gate": "historical_comparison",
+      "question": "Can the per-run outputs underlying every reported 30-run benchmark aggregate be provided?",
+      "known_evidence": "The article provides aggregate means and standard deviations but no per-run final values, convergence traces, objective-call counts, or machine-readable statistics input.",
+      "required_answer_shape": "Machine-readable per-run final objectives keyed by function, algorithm, and seed, preferably with convergence/evaluation traces and the exact script that produced each published aggregate.",
+      "units": "objective values, iterations, evaluations, runtime, and seed identifiers",
+      "acceptable_primary_evidence": [
+        "The original raw result files and aggregation script",
+        "An author or institutional archive with version and checksum provenance"
+      ],
+      "affected_fields": [
+        "historical aggregate comparison",
+        "variance and rank validation",
+        "evaluation-accounting validation"
+      ],
+      "status": "unresolved",
+      "answer": null,
+      "evidence": []
+    }
+  ],
+  "requested_artifacts": [
+    "The original GSASMA implementation and complete benchmark/SVM experiment drivers",
+    "The exact T0 and T recurrence, all tau_i values and lifecycle rules, and the complete fitness-comparison orientation",
+    "The values and semantics of pc_min, pc_max, pm_min, and pm_max for SMA",
+    "The ordered seeds, RNG implementation/lifecycle, raw 30-run outputs, convergence traces, and aggregation scripts",
+    "Version identifiers or checksums for every supplied source and data artifact"
+  ],
+  "exact_preset_gate": {
+    "state": "blocked_missing_author_or_archival_data",
+    "target_algorithm": "gsasma",
+    "requires_question_ids": [
+      "initial_temperature",
+      "temperature_update_recurrence",
+      "tau_sequence_and_lifecycle",
+      "sma_probability_bounds",
+      "fitness_orientation_and_annealing_delta"
+    ],
+    "rule": "A GSASMA-2022 exact preset and paper-faithful SMA mating stage may be added only after all five exact-algorithm questions have non-null answers backed by cited primary evidence and the resulting implementation passes equation-, lifecycle-, bounds-, objective-orientation-, random-draw-, and evaluation-accounting-conformance tests."
+  },
+  "reproduction_comparison_gate": {
+    "state": "blocked_missing_historical_run_data",
+    "requires_question_ids": [
+      "initial_temperature",
+      "temperature_update_recurrence",
+      "tau_sequence_and_lifecycle",
+      "sma_probability_bounds",
+      "fitness_orientation_and_annealing_delta",
+      "seed_schedule_and_rng_lifecycle",
+      "raw_30_run_outputs"
+    ],
+    "rule": "No exact or paired comparison against the paper's 30-run aggregates may be claimed until the exact preset gate is closed and the historical seed schedule and raw per-run outputs are provenance-checked. Aggregate-only resemblance is descriptive, not reproduction evidence."
+  },
+  "current_library_status": {
+    "paper_faithful_annealing_recurrence_available": false,
+    "paper_faithful_sma_mating_available": false,
+    "documented_extensions": [
+      "Configured exponential, linear, or logarithmic cooling beginning at the annealed half-run boundary",
+      "Ordinary configured Mayfly crossover and Gaussian mutation"
+    ],
+    "allowed_claim": "current-library GSASMA baseline",
+    "forbidden_claim": "exact GSASMA-2022 paper reproduction"
+  },
+  "correspondence_draft": {
+    "status": "not_sent",
+    "subject": "Request for GSASMA annealing/SMA parameters and 30-run data",
+    "body": "Dear Dr. Zhao, Dr. Yang, and Dr. Yin,\n\nI am implementing the protocol from your 2022 article, An improved mayfly algorithm and its application (doi:10.1063/5.0108278), and would like to reproduce GSASMA faithfully. Could you please share the original GSASMA source and experiment configuration, or clarify five algorithm details? (1) What initial temperature T0 was used? (2) What exact recurrence updated T, and at what point and frequency? (3) What are the eleven tau_i values in tau=max(tau_i,rand), what distribution and draw granularity does rand use, how is i advanced, and how does tau change T? (4) What values and candidate/pair/coordinate semantics were used for pc_min, pc_max, pm_min, and pm_max in the selected SMA policy? (5) What minimization/maximization orientation, compared states, and signed fitness delta were used in the Metropolis decision, including for the SVM objective?\n\nFor the reported 30-run comparisons, could you also provide the ordered seeds and RNG lifecycle, per-run final values and convergence/evaluation traces, and the aggregation scripts? A small deterministic trace covering the half-run transition, temperature and tau updates, one annealing decision, and one SMA crossover/mutation batch would make equation-level conformance tests possible. Version identifiers or checksums would help keep the result auditable.\n\nThank you for your time."
+  }
+}

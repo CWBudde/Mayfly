@@ -87,5 +87,14 @@ available from the corresponding author upon reasonable request. Calibration
 therefore requires that author material; aggregate means and standard
 deviations from 30 unseeded runs cannot uniquely identify the missing values.
 
+The completed audit is preserved in a
+[machine-readable clarification request](../reference-data/gsasma-2022-clarification-request.json).
+It pins five exact-algorithm blockers (the initial temperature, temperature
+recurrence, `tau_i` sequence/lifecycle, four SMA probability bounds, and
+fitness orientation) and two historical-comparison blockers (the seed/RNG
+lifecycle and raw 30-run outputs). Its correspondence draft is send-ready but
+remains explicitly `not_sent`; neither the artifact nor aggregate resemblance
+is evidence that those gates have been resolved.
+
 Hybrid Cauchy/Gaussian offspring mutation and periodic opposition are not
 GSASMA stages. See [HMMA](hmma.md) for its distinct mutation cascade.

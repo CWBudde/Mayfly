@@ -290,10 +290,19 @@ The API examples, quick-reference guide, and parameter documentation are complet
         prose/pseudocode batch-cardinality contradiction, the cited OLCGOA
         candidate equation, and the earlier Chebyshev-Mayfly paper's missing
         recurrence/lifecycle as explicit evidence rather than inferred semantics.
-  - [ ] Obtain primary author or archival evidence resolving all three OLCE-MA
-        clarification blockers and reconciling the offspring-cardinality conflict,
-        preferably the original reference implementation plus a deterministic
-        chaotic-mutation trace.
+  - [x] Verify that the OLCE-MA author request is ready for dispatch: the
+        corresponding-author addresses and complete question set are preserved,
+        the local mail bridge is healthy, and a read-only Inbox/Sent/Drafts search
+        on 2026-08-29 found no prior DOI-matched request or response. Keep the
+        request `not_sent`; the bridge can create drafts but cannot transmit mail.
+  - [ ] After explicit outbound-correspondence authorization, create the prepared
+        OLCE-MA request in Drafts for user review and manual transmission, then
+        record the selected recipient, Message-ID, and send date without treating
+        dispatch as evidence resolution.
+  - [ ] Obtain and provenance-check primary author or archival evidence resolving
+        all three OLCE-MA clarification blockers and reconciling the offspring-
+        cardinality conflict, preferably the original reference implementation
+        plus a deterministic chaotic-mutation trace.
   - [ ] Implement Chebyshev mutation over the author-confirmed offspring set and
         add equation-level regression tests.
 - [ ] Calibrate GSASMA's undocumented annealing recurrence/defaults and SMA crossover and
@@ -305,8 +314,12 @@ The API examples, quick-reference guide, and parameter documentation are complet
   - [x] Audit the version-of-record article, publisher flowchart, Crossref metadata,
         GitHub, Zenodo, Mendeley Data, Figshare, and OSF; no public author
         implementation or raw seeded results were available in August 2026.
-  - [ ] Obtain the authors' `T0`, `T` update, undefined `tau_i` sequence, four SMA
-        probability bounds, fitness orientation, seeds, and raw 30-run outputs.
+  - [x] Encode five stable exact-algorithm blockers and two historical-comparison
+        blockers in a machine-readable, send-ready clarification request linked
+        from the GSASMA guide; keep the request explicitly `not_sent`.
+  - [ ] Obtain primary author or archival evidence resolving the `T0`, `T` update,
+        undefined `tau_i` sequence, four SMA probability bounds, fitness orientation,
+        seeds, and raw 30-run output blockers.
   - [ ] Implement the exact recurrence and SMA mating, then validate it against the
         author material.
 - [x] Re-test Dragonfly's selector thresholds across multiple seeds and, if it still uses

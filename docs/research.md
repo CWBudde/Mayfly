@@ -163,6 +163,12 @@ Lévy flights follow power-law distribution:
    - The paper does not publish the temperature recurrence or defaults; the
      library's cooling schedules are documented extensions
 
+The five exact-algorithm questions and two historical-comparison data
+questions are pinned in the
+[machine-readable clarification request](reference-data/gsasma-2022-clarification-request.json).
+Its send-ready correspondence draft remains explicitly unsent, and the current
+library behavior must not be described as an exact GSASMA-2022 reproduction.
+
 HMMA instead schedules OBL/Cauchy mutation of the global optimum and applies
 artificial gender mutation to offspring pairs.
 

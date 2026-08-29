@@ -96,5 +96,11 @@ lifecycle and raw 30-run outputs). Its correspondence draft is send-ready but
 remains explicitly `not_sent`; neither the artifact nor aggregate resemblance
 is evidence that those gates have been resolved.
 
+Dispatch readiness was verified on 2026-08-29: the restricted mail bridge was
+connected, and a non-marking Inbox/Sent/Drafts search for the DOI, acronym,
+exact title, and proposed recipient found no prior thread. The bridge can append
+to Drafts but cannot send mail. Creating the prepared draft remains gated on
+explicit outbound-correspondence authorization.
+
 Hybrid Cauchy/Gaussian offspring mutation and periodic opposition are not
 GSASMA stages. See [HMMA](hmma.md) for its distinct mutation cascade.

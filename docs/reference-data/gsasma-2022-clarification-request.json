@@ -259,6 +259,54 @@
     "allowed_claim": "current-library GSASMA baseline",
     "forbidden_claim": "exact GSASMA-2022 paper reproduction"
   },
+  "dispatch_readiness": {
+    "checked_on": "2026-08-29",
+    "state": "ready_for_authorized_draft_creation",
+    "outbound_authorization_required": true,
+    "proposed_recipient": "zhaomengling@126.com",
+    "mail_bridge": {
+      "connected": true,
+      "capabilities_checked": [
+        "non-marking message search",
+        "Drafts-only message creation",
+        "no mail transmission capability"
+      ]
+    },
+    "prior_thread_search": {
+      "non_marking": true,
+      "mailboxes": [
+        "INBOX",
+        "Sent",
+        "Drafts"
+      ],
+      "identifier_queries": [
+        "10.1063/5.0108278",
+        "GSASMA",
+        "An improved mayfly algorithm and its application",
+        "zhaomengling@126.com"
+      ],
+      "results": [
+        {
+          "mailbox": "INBOX",
+          "matches": 0
+        },
+        {
+          "mailbox": "Sent",
+          "matches": 0
+        },
+        {
+          "mailbox": "Drafts",
+          "matches": 0
+        }
+      ],
+      "outcome": "No prior DOI-, acronym-, title-, or recipient-matched request or response was found in the bounded mailbox search."
+    },
+    "draft_created": false,
+    "draft_mailbox": null,
+    "draft_uid": null,
+    "message_id": null,
+    "next_action": "After explicit outbound-correspondence authorization, create the prepared request in Drafts for user review and manual transmission; record the selected recipient, Drafts UID, Message-ID, and eventual send date without treating dispatch as evidence resolution."
+  },
   "correspondence_draft": {
     "status": "not_sent",
     "subject": "Request for GSASMA annealing/SMA parameters and 30-run data",

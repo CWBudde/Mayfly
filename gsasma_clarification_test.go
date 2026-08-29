@@ -66,6 +66,31 @@ func TestGSASMA2022ClarificationRequest(t *testing.T) {
 			AllowedClaim           string   `json:"allowed_claim"`
 			ForbiddenClaim         string   `json:"forbidden_claim"`
 		} `json:"current_library_status"`
+		DispatchReadiness struct {
+			CheckedOn                     string `json:"checked_on"`
+			State                         string `json:"state"`
+			OutboundAuthorizationRequired bool   `json:"outbound_authorization_required"`
+			ProposedRecipient             string `json:"proposed_recipient"`
+			MailBridge                    struct {
+				Connected           bool     `json:"connected"`
+				CapabilitiesChecked []string `json:"capabilities_checked"`
+			} `json:"mail_bridge"`
+			PriorThreadSearch struct {
+				NonMarking        bool     `json:"non_marking"`
+				Mailboxes         []string `json:"mailboxes"`
+				IdentifierQueries []string `json:"identifier_queries"`
+				Results           []struct {
+					Mailbox string `json:"mailbox"`
+					Matches int    `json:"matches"`
+				} `json:"results"`
+				Outcome string `json:"outcome"`
+			} `json:"prior_thread_search"`
+			DraftCreated bool    `json:"draft_created"`
+			DraftMailbox *string `json:"draft_mailbox"`
+			DraftUID     *int    `json:"draft_uid"`
+			MessageID    *string `json:"message_id"`
+			NextAction   string  `json:"next_action"`
+		} `json:"dispatch_readiness"`
 		CorrespondenceDraft struct {
 			Status  string `json:"status"`
 			Subject string `json:"subject"`
@@ -172,6 +197,30 @@ func TestGSASMA2022ClarificationRequest(t *testing.T) {
 		t.Fatalf("clarification mislabels current GSASMA behavior: %+v", status)
 	}
 
+	readiness := clarification.DispatchReadiness
+	if readiness.CheckedOn != "2026-08-29" ||
+		readiness.State != "ready_for_authorized_draft_creation" ||
+		!readiness.OutboundAuthorizationRequired ||
+		readiness.ProposedRecipient != contact.PublicEmail ||
+		!readiness.MailBridge.Connected || len(readiness.MailBridge.CapabilitiesChecked) != 3 ||
+		!readiness.PriorThreadSearch.NonMarking || readiness.PriorThreadSearch.Outcome == "" ||
+		readiness.DraftCreated || readiness.DraftMailbox != nil || readiness.DraftUID != nil ||
+		readiness.MessageID != nil || readiness.NextAction == "" {
+		t.Fatalf("unexpected GSASMA dispatch readiness: %+v", readiness)
+	}
+
+	if !reflect.DeepEqual(readiness.PriorThreadSearch.Mailboxes, []string{"INBOX", "Sent", "Drafts"}) ||
+		len(readiness.PriorThreadSearch.IdentifierQueries) != 4 ||
+		len(readiness.PriorThreadSearch.Results) != 3 {
+		t.Fatalf("incomplete bounded prior-thread search: %+v", readiness.PriorThreadSearch)
+	}
+
+	for _, result := range readiness.PriorThreadSearch.Results {
+		if result.Mailbox == "" || result.Matches != 0 {
+			t.Fatalf("unexpected prior GSASMA thread result: %+v", result)
+		}
+	}
+
 	if clarification.CorrespondenceDraft.Status != "not_sent" ||
 		clarification.CorrespondenceDraft.Subject == "" || clarification.CorrespondenceDraft.Body == "" {
 		t.Fatalf("clarification request is not send-ready: %+v", clarification.CorrespondenceDraft)
@@ -188,5 +237,10 @@ func TestGSASMAAlgorithmGuideLinksClarificationRequest(t *testing.T) {
 	if !strings.Contains(gsasmaAlgorithmGuide, "five exact-algorithm blockers") ||
 		!strings.Contains(gsasmaAlgorithmGuide, "two historical-comparison blockers") {
 		t.Fatal("GSASMA guide does not preserve the clarification gate scope")
+	}
+
+	if !strings.Contains(gsasmaAlgorithmGuide, "Dispatch readiness was verified") ||
+		!strings.Contains(gsasmaAlgorithmGuide, "explicit outbound-correspondence authorization") {
+		t.Fatal("GSASMA guide does not preserve the unsent dispatch gate")
 	}
 }

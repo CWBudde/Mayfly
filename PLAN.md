@@ -317,6 +317,15 @@ The API examples, quick-reference guide, and parameter documentation are complet
   - [x] Encode five stable exact-algorithm blockers and two historical-comparison
         blockers in a machine-readable, send-ready clarification request linked
         from the GSASMA guide; keep the request explicitly `not_sent`.
+  - [x] Verify that the GSASMA author request is ready for dispatch: the public
+        corresponding-author address and complete question set are preserved,
+        the restricted mail bridge is connected, and a non-marking Inbox/Sent/
+        Drafts search on 2026-08-29 found no prior DOI-, acronym-, title-, or
+        recipient-matched thread. Keep the request `not_sent`.
+  - [ ] After explicit outbound-correspondence authorization, create the prepared
+        GSASMA request in Drafts for user review and manual transmission, then
+        record the selected recipient, Drafts UID, Message-ID, and send date
+        without treating dispatch as evidence resolution.
   - [ ] Obtain primary author or archival evidence resolving the `T0`, `T` update,
         undefined `tau_i` sequence, four SMA probability bounds, fitness orientation,
         seeds, and raw 30-run output blockers.

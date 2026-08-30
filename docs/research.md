@@ -380,9 +380,9 @@ Papers typically evaluate on:
 ## Implementation Notes
 
 This Go implementation targets **research fidelity** while recording known
-source ambiguities and compatibility extensions explicitly. In particular,
-DESMA's missing Table 3 protocol/data, OLCE chaotic exploitation, and GSASMA's
-undocumented schedules are open Phase 7 items. The library also provides:
+source ambiguities and compatibility extensions explicitly. The completed
+audits and all open evidence gates are summarized in the
+[Phase 7 reproducibility status](phase-7-status.md). The library also provides:
 
 - Idiomatic Go code structure
 - Accessible paper components covered by equation-level fixtures

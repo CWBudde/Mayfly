@@ -14,6 +14,8 @@ Welcome to the Mayfly optimization library documentation. This folder contains c
 - **Wondering about the initial population?** See [Quasi-Random Initial Populations](qmc-initialization.md)
 - **Interested in research?** Read [Research References](research.md)
 - **Reproducing experiments?** Use the [Paper-reproduction Experiments](paper-reproduction.md)
+- **Tracking paper-fidelity work?** See the
+  [Phase 7 Reproducibility Status](phase-7-status.md)
 
 ## Documentation Structure
 
@@ -189,6 +191,7 @@ Complete API reference:
 **Understand research:**
 
 - [Research References](research.md)
+- [Phase 7 Reproducibility Status](phase-7-status.md)
 - Algorithm-specific papers in each variant doc
 
 ## Document Sizes
@@ -202,6 +205,7 @@ Complete API reference:
 | custom-objective-functions.md | ~360  | Objective modeling  |
 | benchmarks.md                 | ~410  | Function reference  |
 | research.md                   | ~350  | Academic citations  |
+| phase-7-status.md             | ~70   | Fidelity status     |
 | configuration.md              | ~470  | Parameter reference |
 | unified-framework.md          | ~570  | Advanced API        |
 | comparison-framework.md       | ~180  | Statistical testing |
